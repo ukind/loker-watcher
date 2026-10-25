@@ -1,3 +1,4 @@
 node_modules/
-.rpiv/
+.rpiv/*
+!.rpiv/artifacts/
 .pi/
