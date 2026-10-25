@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { filterPostsByKeywords, matchesKeywords } from "../src/keywords.js";
 import { loadWatcherConfig } from "../src/config-file.js";
 import {
+  type JudgeConfig,
   judgePost,
   judgePosts,
   parseVerdict,
   resolveJudgeConfig,
-  type JudgeConfig,
 } from "../src/judge.js";
+import { filterPostsByKeywords, matchesKeywords } from "../src/keywords.js";
 import type { Post } from "../src/types.js";
 
 // The keyword list is a required parameter (Phase 10): watcher.config.json is
@@ -48,7 +48,10 @@ describe("matchesKeywords", () => {
   it("rejects non-tech and non-matching job posts", () => {
     assert.equal(matchesKeywords("HIRING ‼️ Barista Waiter", CONFIG.keywords), false);
     assert.equal(matchesKeywords("HIRING!! CHATTER VA", CONFIG.keywords), false);
-    assert.equal(matchesKeywords("Safety, Health and Environmental Officer Site Supervisor", CONFIG.keywords), false);
+    assert.equal(
+      matchesKeywords("Safety, Health and Environmental Officer Site Supervisor", CONFIG.keywords),
+      false,
+    );
     assert.equal(matchesKeywords("Marketing manager needed in Bali", CONFIG.keywords), false);
     assert.equal(matchesKeywords("Graphic designer for clothing brand", CONFIG.keywords), false);
   });
@@ -108,10 +111,7 @@ describe("matchesKeywords with the shipped config", () => {
   });
 
   it("accepts a frontend posting", () => {
-    assert.equal(
-      matchesKeywords("Hiring React developer in Jakarta", CONFIG.keywords),
-      true,
-    );
+    assert.equal(matchesKeywords("Hiring React developer in Jakarta", CONFIG.keywords), true);
   });
 });
 
@@ -122,12 +122,12 @@ describe("parseVerdict", () => {
   });
 
   it("parses markdown code fenced JSON", () => {
-    const raw = "```json\n{\"relevant\": true, \"locationOk\": true}\n```";
+    const raw = '```json\n{"relevant": true, "locationOk": true}\n```';
     assert.deepEqual(parseVerdict(raw), { relevant: true, locationOk: true });
   });
 
   it("parses JSON with surrounding conversational text", () => {
-    const raw = "Here is the verdict: {\"relevant\": false, \"locationOk\": false}. Let me know!";
+    const raw = 'Here is the verdict: {"relevant": false, "locationOk": false}. Let me know!';
     assert.deepEqual(parseVerdict(raw), { relevant: false, locationOk: false });
   });
 
@@ -155,10 +155,7 @@ describe("resolveJudgeConfig", () => {
   });
 
   it("throws when required env variables are missing", () => {
-    assert.throws(
-      () => resolveJudgeConfig({}),
-      /missing required environment variables/,
-    );
+    assert.throws(() => resolveJudgeConfig({}), /missing required environment variables/);
   });
 });
 

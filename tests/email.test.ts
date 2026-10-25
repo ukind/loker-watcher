@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { Transporter } from "nodemailer";
 import {
+  type EmailConfig,
   buildDigest,
   buildSubject,
   resolveEmailConfig,
   sendDigest,
-  type EmailConfig,
 } from "../src/email.js";
 import type { Post } from "../src/types.js";
-import type { Transporter } from "nodemailer";
 
 describe("buildSubject", () => {
   it("returns null for empty post array", () => {
@@ -25,10 +25,7 @@ describe("buildSubject", () => {
         timestamp: "2026-10-24T00:00:00.000Z",
       },
     ];
-    assert.equal(
-      buildSubject(posts),
-      "1 new job post on Threads (#hiring indonesia)",
-    );
+    assert.equal(buildSubject(posts), "1 new job post on Threads (#hiring indonesia)");
   });
 
   it("formats subject for multiple posts with plural s", () => {
@@ -55,10 +52,7 @@ describe("buildSubject", () => {
         timestamp: "2026-10-24T02:00:00.000Z",
       },
     ];
-    assert.equal(
-      buildSubject(posts),
-      "3 new job posts on Threads (#hiring indonesia)",
-    );
+    assert.equal(buildSubject(posts), "3 new job posts on Threads (#hiring indonesia)");
   });
 });
 
@@ -107,8 +101,16 @@ describe("buildDigest", () => {
     const digest = buildDigest(posts);
     assert.ok(digest !== null);
     assert.ok(digest.startsWith("2 new job posts on Threads (#hiring indonesia)\n\n"));
-    assert.ok(digest.includes("1. First job post\n   — @companyA\n   https://www.threads.com/@companyA/post/P1"));
-    assert.ok(digest.includes("2. Second job post\n   — @companyB\n   https://www.threads.com/@companyB/post/P2"));
+    assert.ok(
+      digest.includes(
+        "1. First job post\n   — @companyA\n   https://www.threads.com/@companyA/post/P1",
+      ),
+    );
+    assert.ok(
+      digest.includes(
+        "2. Second job post\n   — @companyB\n   https://www.threads.com/@companyB/post/P2",
+      ),
+    );
   });
 
   it("preserves multi-line captions without breaking post structure", () => {
@@ -124,7 +126,9 @@ describe("buildDigest", () => {
 
     const digest = buildDigest(posts);
     assert.ok(digest !== null);
-    assert.ok(digest.includes("1. HIRING NOW!\n- React\n- TypeScript\nApply via DM\n   — @recruiter"));
+    assert.ok(
+      digest.includes("1. HIRING NOW!\n- React\n- TypeScript\nApply via DM\n   — @recruiter"),
+    );
   });
 });
 

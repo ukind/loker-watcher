@@ -7,15 +7,26 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "test": "tsx --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src tests",
+    "format": "biome format --write src tests",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
   },
   "dependencies": {
     "nodemailer": "^6.9.16",
     "playwright": "^1.49.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.1",
     "@types/nodemailer": "^6.4.17",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

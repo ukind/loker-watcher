@@ -37,9 +37,7 @@ export function resolveEmailConfig(
   if (!pass) missing.push(ENV_NAMES.gmailAppPassword);
 
   if (missing.length > 0) {
-    throw new Error(
-      `email: missing required environment variables: ${missing.join(", ")}`,
-    );
+    throw new Error(`email: missing required environment variables: ${missing.join(", ")}`);
   }
 
   return {

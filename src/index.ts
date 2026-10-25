@@ -1,3 +1,6 @@
+import { type ResolvedSurface, loadWatcherConfig, resolveSurfaces } from "./config-file.js";
+import { isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
+import { resolveEmailConfig, sendDigest } from "./email.js";
 /**
  * CLI entry point: the full v1 pipeline (FRD #1-#9).
  *
@@ -10,27 +13,13 @@
  * loaded once at startup. A missing or malformed file fails the run.
  */
 import { extractPosts } from "./extract.js";
-import {
-  fetchSurfaces,
-  fetchSurfacesAuthenticated,
-} from "./fetch-threads.js";
-import {
-  loadWatcherConfig,
-  resolveSurfaces,
-  type ResolvedSurface,
-} from "./config-file.js";
-import { isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
-import { filterPostsByKeywords } from "./keywords.js";
+import { fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
+import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { judgePosts, resolveJudgeConfig } from "./judge.js";
-import { diffNew, loadState, saveState } from "./state.js";
-import { resolveEmailConfig, sendDigest } from "./email.js";
-import { resolveSession } from "./threads-session.js";
+import { filterPostsByKeywords } from "./keywords.js";
 import { filterRecent } from "./recency.js";
-import {
-  selectCandidates,
-  sendHeartbeat,
-  type HeartbeatStats,
-} from "./heartbeat.js";
+import { diffNew, loadState, saveState } from "./state.js";
+import { resolveSession } from "./threads-session.js";
 import type { Post } from "./types.js";
 
 /**
@@ -72,9 +61,7 @@ async function main(): Promise<void> {
       ? await fetchSurfacesAuthenticated(surfaces, sessionPath)
       : await fetchLoggedOutPosts(surfaces);
   const posts = dedupePosts(collected);
-  console.log(
-    `extract: ${posts.length} unique post(s) across ${surfaces.length} surface(s)`,
-  );
+  console.log(`extract: ${posts.length} unique post(s) across ${surfaces.length} surface(s)`);
 
   const recencyHours = config.recencyHours;
   const recent = filterRecent(posts, recencyHours);
@@ -113,10 +100,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { judged, skippedPostIds } = await judgePosts(
-    maybes,
-    resolveJudgeConfig(process.env),
-  );
+  const { judged, skippedPostIds } = await judgePosts(maybes, resolveJudgeConfig(process.env));
   const matches = judged
     .filter((j) => j.verdict.relevant && j.verdict.locationOk)
     .map((j) => j.post);
@@ -146,9 +130,7 @@ async function main(): Promise<void> {
 }
 
 /** Logged-out path: blob extraction per surface, in input order. */
-async function fetchLoggedOutPosts(
-  surfaces: readonly ResolvedSurface[],
-): Promise<Post[]> {
+async function fetchLoggedOutPosts(surfaces: readonly ResolvedSurface[]): Promise<Post[]> {
   const fetched = await fetchSurfaces(surfaces);
   const posts: Post[] = [];
   for (const surface of fetched) {

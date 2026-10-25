@@ -17,7 +17,7 @@
  * surface is tolerated while at least one succeeds; all-fail throws. The
  * surface list itself lives in watcher.config.json (Phase 10).
  */
-import { chromium, type BrowserContext } from "playwright";
+import { type BrowserContext, chromium } from "playwright";
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
 import type { Post } from "./types.js";
@@ -76,9 +76,7 @@ export interface SurfaceFetch {
  * Fetch every configured surface and return the successes in input order.
  * Throws when every surface fails (message lists per-surface errors).
  */
-export async function fetchSurfaces(
-  surfaces: readonly ResolvedSurface[],
-): Promise<SurfaceFetch[]> {
+export async function fetchSurfaces(surfaces: readonly ResolvedSurface[]): Promise<SurfaceFetch[]> {
   const browser = await chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({
@@ -104,9 +102,7 @@ export async function fetchSurfaces(
     }
 
     if (results.length === 0) {
-      throw new Error(
-        `fetch: all ${surfaces.length} surface(s) failed:\n${failures.join("\n")}`,
-      );
+      throw new Error(`fetch: all ${surfaces.length} surface(s) failed:\n${failures.join("\n")}`);
     }
     return results;
   } finally {
@@ -115,10 +111,7 @@ export async function fetchSurfaces(
 }
 
 /** Fetch one surface: up to MAX_ATTEMPTS tries with linear backoff. */
-async function fetchOne(
-  context: BrowserContext,
-  surface: ResolvedSurface,
-): Promise<string> {
+async function fetchOne(context: BrowserContext, surface: ResolvedSurface): Promise<string> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const page = await context.newPage();
@@ -134,9 +127,7 @@ async function fetchOne(
       return await page.content();
     } catch (error) {
       lastError = error;
-      console.warn(
-        `fetch: ${surface.label} attempt ${attempt}/${MAX_ATTEMPTS} failed`,
-      );
+      console.warn(`fetch: ${surface.label} attempt ${attempt}/${MAX_ATTEMPTS} failed`);
       if (attempt < MAX_ATTEMPTS) {
         await sleep(RETRY_BASE_DELAY_MS * attempt);
       }
@@ -144,9 +135,7 @@ async function fetchOne(
       await page.close();
     }
   }
-  throw lastError instanceof Error
-    ? lastError
-    : new Error(String(lastError));
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 /**

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { Transporter } from "nodemailer";
 import {
+  type Candidate,
+  type HeartbeatStats,
   ageHours,
   buildHeartbeatBody,
   buildHeartbeatSubject,
@@ -8,11 +11,8 @@ import {
   selectCandidates,
   sendHeartbeat,
   snippet,
-  type Candidate,
-  type HeartbeatStats,
 } from "../src/heartbeat.js";
 import type { Post } from "../src/types.js";
-import type { Transporter } from "nodemailer";
 
 const NOW = Date.UTC(2026, 9, 25, 12, 0, 0);
 
@@ -84,9 +84,7 @@ describe("selectCandidates", () => {
   });
 
   it("caps the list at the limit", () => {
-    const posts = Array.from({ length: 30 }, (_, i) =>
-      post(`p${i}`, "Software engineer", i),
-    );
+    const posts = Array.from({ length: 30 }, (_, i) => post(`p${i}`, "Software engineer", i));
     assert.equal(selectCandidates(posts, [], TERMS, 10).length, 10);
     assert.equal(selectCandidates(posts, [], TERMS, 3).length, 3);
   });
@@ -174,20 +172,11 @@ describe("sendHeartbeat", () => {
       },
     } as unknown as Transporter;
 
-    await sendHeartbeat(
-      STATS,
-      [],
-      { user: "a@gmail.com", pass: "p" },
-      NOW,
-      mockTransport,
-    );
+    await sendHeartbeat(STATS, [], { user: "a@gmail.com", pass: "p" }, NOW, mockTransport);
 
     assert.ok(captured !== null);
     const mail = captured as { subject: string; text: string };
-    assert.equal(
-      mail.subject,
-      "loker-watcher: 0 new matches — 303 post(s) scanned",
-    );
+    assert.equal(mail.subject, "loker-watcher: 0 new matches — 303 post(s) scanned");
     assert.ok(mail.text.includes("337 unique post(s)"));
   });
 

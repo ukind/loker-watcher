@@ -46,9 +46,7 @@ export function resolveJudgeConfig(
   if (!model) missing.push(ENV_NAMES.llmModel);
 
   if (missing.length > 0) {
-    throw new Error(
-      `judge: missing required environment variables: ${missing.join(", ")}`,
-    );
+    throw new Error(`judge: missing required environment variables: ${missing.join(", ")}`);
   }
 
   return {
@@ -82,12 +80,12 @@ export function parseVerdict(content: string): JudgeVerdict | null {
     if (
       typeof parsed === "object" &&
       parsed !== null &&
-      typeof parsed["relevant"] === "boolean" &&
-      typeof parsed["locationOk"] === "boolean"
+      typeof parsed.relevant === "boolean" &&
+      typeof parsed.locationOk === "boolean"
     ) {
       return {
-        relevant: parsed["relevant"],
-        locationOk: parsed["locationOk"],
+        relevant: parsed.relevant,
+        locationOk: parsed.locationOk,
       };
     }
     return null;
@@ -110,17 +108,7 @@ function buildMessages(post: Post): Array<{ role: string; content: string }> {
     },
     {
       role: "user",
-      content:
-        `Analyze the following Threads post by @${post.author}:\n\n` +
-        `\\"${post.text}\\"\n\n` +
-        "Determine two criteria:\n" +
-        "1. relevant: true ONLY if the post is a hiring announcement or job opening for frontend, " +
-        "fullstack, or closely adjacent web developer roles (e.g. React, Vue, Next.js, TypeScript, Node.js web development). " +
-        "Set false if it is a job seeker seeking work, an internship inquiry, training promotion, or non-web engineering role.\n" +
-        "2. locationOk: true ONLY if the job is located in Indonesia (e.g. Jakarta, Bali, Surabaya, hybrid in ID), " +
-        "or explicitly remote / work from anywhere. Set false if the role is on-site or hybrid in another country with no remote option.\n\n" +
-        "Respond with ONLY a raw JSON object matching this schema:\n" +
-        '{"relevant": boolean, "locationOk": boolean}',
+      content: `Analyze the following Threads post by @${post.author}:\n\n\\"${post.text}\\"\n\nDetermine two criteria:\n1. relevant: true ONLY if the post is a hiring announcement or job opening for frontend, fullstack, or closely adjacent web developer roles (e.g. React, Vue, Next.js, TypeScript, Node.js web development). Set false if it is a job seeker seeking work, an internship inquiry, training promotion, or non-web engineering role.\n2. locationOk: true ONLY if the job is located in Indonesia (e.g. Jakarta, Bali, Surabaya, hybrid in ID), or explicitly remote / work from anywhere. Set false if the role is on-site or hybrid in another country with no remote option.\n\nRespond with ONLY a raw JSON object matching this schema:\n{"relevant": boolean, "locationOk": boolean}`,
     },
   ];
 }
@@ -169,9 +157,7 @@ export async function judgePost(
 
       const rawContent = data.choices?.[0]?.message?.content;
       if (typeof rawContent !== "string") {
-        console.warn(
-          `judge: post ${post.id} attempt ${attempt}/2 missing message content`,
-        );
+        console.warn(`judge: post ${post.id} attempt ${attempt}/2 missing message content`);
         continue;
       }
 
@@ -185,9 +171,7 @@ export async function judgePost(
       );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.warn(
-        `judge: post ${post.id} attempt ${attempt}/2 request error: ${msg}`,
-      );
+      console.warn(`judge: post ${post.id} attempt ${attempt}/2 request error: ${msg}`);
     }
   }
 
@@ -218,4 +202,3 @@ export async function judgePosts(
 
   return { judged, skippedPostIds };
 }
-

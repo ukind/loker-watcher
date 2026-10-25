@@ -5,9 +5,7 @@ import { isValidStorageState, resolveSession } from "../src/threads-session.js";
 
 const VALID = Buffer.from(
   JSON.stringify({
-    cookies: [
-      { name: "sessionid", value: "x", domain: ".threads.com", path: "/" },
-    ],
+    cookies: [{ name: "sessionid", value: "x", domain: ".threads.com", path: "/" }],
     origins: [],
   }),
   "utf8",
@@ -33,17 +31,11 @@ describe("resolveSession", () => {
   });
 
   it("returns null for a secret that is not base64 JSON", async () => {
-    assert.equal(
-      await resolveSession({ THREADS_SESSION_STATE: "!!!not-base64!!!" }),
-      null,
-    );
+    assert.equal(await resolveSession({ THREADS_SESSION_STATE: "!!!not-base64!!!" }), null);
   });
 
   it("returns null when the document carries no cookies", async () => {
-    const empty = Buffer.from(
-      JSON.stringify({ cookies: [] }),
-      "utf8",
-    ).toString("base64");
+    const empty = Buffer.from(JSON.stringify({ cookies: [] }), "utf8").toString("base64");
     assert.equal(await resolveSession({ THREADS_SESSION_STATE: empty }), null);
   });
 

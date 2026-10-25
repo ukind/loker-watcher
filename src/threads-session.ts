@@ -41,9 +41,7 @@ export async function resolveSession(
     return null;
   }
   if (!isValidStorageState(doc)) {
-    console.warn(
-      "session: THREADS_SESSION_STATE carries no cookies — using the logged-out fetch",
-    );
+    console.warn("session: THREADS_SESSION_STATE carries no cookies — using the logged-out fetch");
     return null;
   }
 

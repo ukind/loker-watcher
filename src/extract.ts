@@ -13,8 +13,7 @@ import type { Post } from "./types.js";
 /** Matches data-sjs blobs in both raw and DOM-serialized attribute order. */
 const SCRIPT_BLOB_RE = /<script[^>]*\bdata-sjs\b[^>]*>([\s\S]*?)<\/script>/g;
 
-const BASE64URL_ALPHABET =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const BASE64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /**
  * Derive a post shortcode from its numeric pk (Instagram/Threads algorithm,
@@ -102,10 +101,7 @@ export function normalizeThreadItem(item: unknown): Post | null {
   ) {
     return null;
   }
-  const code =
-    typeof post.code === "string" && post.code.length > 0
-      ? post.code
-      : codeFromPk(pk);
+  const code = typeof post.code === "string" && post.code.length > 0 ? post.code : codeFromPk(pk);
   return {
     id: pk,
     text,
@@ -120,9 +116,7 @@ function readPost(item: unknown): Record<string, unknown> | null {
   if (item === null || typeof item !== "object") return null;
   const record = item as Record<string, unknown>;
   const post: unknown = record.post;
-  return post !== null && typeof post === "object"
-    ? (post as Record<string, unknown>)
-    : record;
+  return post !== null && typeof post === "object" ? (post as Record<string, unknown>) : record;
 }
 
 function readPk(value: unknown): string | null {
@@ -143,4 +137,3 @@ function readUsername(user: unknown): string | null {
   const username: unknown = (user as Record<string, unknown>).username;
   return typeof username === "string" && username.length > 0 ? username : null;
 }
-

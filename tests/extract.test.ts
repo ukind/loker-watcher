@@ -3,7 +3,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { codeFromPk, collectThreadItems, extractPosts, normalizeThreadItem } from "../src/extract.js";
+import {
+  codeFromPk,
+  collectThreadItems,
+  extractPosts,
+  normalizeThreadItem,
+} from "../src/extract.js";
 import type { Post } from "../src/types.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -26,12 +31,7 @@ describe("extractPosts", () => {
     const posts = extractPosts(fixture);
     assert.deepEqual(
       posts.map((p) => p.id),
-      [
-        "4012496661532082278",
-        "4001747734230078501",
-        "3998973357877860537",
-        "3993862290835326832",
-      ],
+      ["4012496661532082278", "4001747734230078501", "3998973357877860537", "3993862290835326832"],
     );
   });
 
@@ -46,15 +46,15 @@ describe("extractPosts", () => {
     const posts = extractPosts(fixture);
     const derived = posts.find((p) => p.id === "3993862290835326832");
     assert.ok(derived);
-    assert.equal(
-      derived.permalink,
-      "https://www.threads.com/@meyyah.ah/post/DdtDJfXEUdw",
-    );
+    assert.equal(derived.permalink, "https://www.threads.com/@meyyah.ah/post/DdtDJfXEUdw");
   });
 
   it("drops items without caption text (edge 6)", () => {
     const posts = extractPosts(fixture);
-    assert.equal(posts.some((p) => p.id === "3982574977840405311"), false);
+    assert.equal(
+      posts.some((p) => p.id === "3982574977840405311"),
+      false,
+    );
   });
 
   it("tolerates unparsable data-sjs blobs", () => {
@@ -82,15 +82,10 @@ describe("codeFromPk", () => {
 
 describe("graphql XHR body extraction", () => {
   it("walks a real captured graphql response into posts", () => {
-    const body = readFileSync(
-      join(here, "fixture", "graphql-response.json"),
-      "utf8",
-    );
+    const body = readFileSync(join(here, "fixture", "graphql-response.json"), "utf8");
     const items: unknown[] = [];
     collectThreadItems(JSON.parse(body), items);
-    const posts = items
-      .map(normalizeThreadItem)
-      .filter((p): p is Post => p !== null);
+    const posts = items.map(normalizeThreadItem).filter((p): p is Post => p !== null);
     assert.equal(posts.length, 3);
     assert.deepEqual(posts[0], {
       id: "4014250536231619721",
@@ -101,4 +96,3 @@ describe("graphql XHR body extraction", () => {
     });
   });
 });
-

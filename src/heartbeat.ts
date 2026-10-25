@@ -1,3 +1,5 @@
+import type { Transporter } from "nodemailer";
+import { type EmailConfig, sendText } from "./email.js";
 /**
  * No-match heartbeat (Phase 9).
  *
@@ -14,8 +16,6 @@
  * frontend/fullstack keyword can still be worth a human look.
  */
 import type { Post } from "./types.js";
-import { sendText, type EmailConfig } from "./email.js";
-import type { Transporter } from "nodemailer";
 
 /** Maximum candidates listed in one heartbeat email. */
 export const MAX_CANDIDATES = 10;
@@ -48,10 +48,7 @@ export interface Candidate {
 }
 
 /** True when the text mentions any candidate term (case-insensitive). */
-export function matchesCandidateTerms(
-  text: string,
-  terms: readonly string[],
-): boolean {
+export function matchesCandidateTerms(text: string, terms: readonly string[]): boolean {
   const normalized = text.toLowerCase();
   return terms.some((term) => normalized.includes(term));
 }
@@ -74,10 +71,7 @@ export function selectCandidates(
 
   const maybeIds = new Set(maybes.map((post) => post.id));
   const nearMisses = recent
-    .filter(
-      (post) =>
-        !maybeIds.has(post.id) && matchesCandidateTerms(post.text, terms),
-    )
+    .filter((post) => !maybeIds.has(post.id) && matchesCandidateTerms(post.text, terms))
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   for (const post of nearMisses) {

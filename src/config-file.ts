@@ -11,9 +11,7 @@ import { readFile } from "node:fs/promises";
 import { CONFIG_PATH } from "./config.js";
 
 /** One surface to sample. `tag` builds the tag-page URL; `url` is verbatim. */
-export type Surface =
-  | { type: "tag"; value: string }
-  | { type: "url"; value: string };
+export type Surface = { type: "tag"; value: string } | { type: "url"; value: string };
 
 /** A surface resolved to the URL Playwright loads, plus its log label. */
 export interface ResolvedSurface {
@@ -31,12 +29,7 @@ export interface WatcherConfig {
   recencyHours: number;
 }
 
-const ALLOWED_KEYS = [
-  "keywords",
-  "candidateTerms",
-  "surfaces",
-  "recencyHours",
-] as const;
+const ALLOWED_KEYS = ["keywords", "candidateTerms", "surfaces", "recencyHours"] as const;
 
 const THREADS_HOST = "www.threads.com";
 
@@ -44,9 +37,7 @@ const THREADS_HOST = "www.threads.com";
  * Read and validate the config file. Throws with the path and the offending
  * key when the file is missing, unparsable, or fails any rule below.
  */
-export async function loadWatcherConfig(
-  filePath: string = CONFIG_PATH,
-): Promise<WatcherConfig> {
+export async function loadWatcherConfig(filePath: string = CONFIG_PATH): Promise<WatcherConfig> {
   let raw: string;
   try {
     raw = await readFile(filePath, "utf8");
@@ -85,15 +76,10 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
     }
   }
 
-  const keywords = readStringArray(record["keywords"], "keywords", filePath, true);
-  const candidateTerms = readStringArray(
-    record["candidateTerms"],
-    "candidateTerms",
-    filePath,
-    false,
-  );
-  const surfaces = readSurfaces(record["surfaces"], filePath);
-  const recencyHours = readRecencyHours(record["recencyHours"], filePath);
+  const keywords = readStringArray(record.keywords, "keywords", filePath, true);
+  const candidateTerms = readStringArray(record.candidateTerms, "candidateTerms", filePath, false);
+  const surfaces = readSurfaces(record.surfaces, filePath);
+  const recencyHours = readRecencyHours(record.recencyHours, filePath);
 
   return { keywords, candidateTerms, surfaces, recencyHours };
 }
@@ -110,9 +96,7 @@ function readStringArray(
   const out: string[] = [];
   for (const item of value) {
     if (typeof item !== "string" || item.trim().length === 0) {
-      throw new Error(
-        `config: ${filePath} "${key}" must contain only non-empty strings`,
-      );
+      throw new Error(`config: ${filePath} "${key}" must contain only non-empty strings`);
     }
     out.push(item);
   }
@@ -137,17 +121,15 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
       );
     }
     const entry = item as Record<string, unknown>;
-    const type = entry["type"];
-    const surfaceValue = entry["value"];
+    const type = entry.type;
+    const surfaceValue = entry.value;
     if (type !== "tag" && type !== "url") {
       throw new Error(
         `config: ${filePath} surface "type" must be "tag" or "url", got ${JSON.stringify(type)}`,
       );
     }
     if (typeof surfaceValue !== "string" || surfaceValue.trim().length === 0) {
-      throw new Error(
-        `config: ${filePath} surface "value" must be a non-empty string`,
-      );
+      throw new Error(`config: ${filePath} surface "value" must be a non-empty string`);
     }
     if (type === "url") {
       let parsedUrl: URL;
@@ -171,17 +153,13 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
 
 function readRecencyHours(value: unknown, filePath: string): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    throw new Error(
-      `config: ${filePath} "recencyHours" must be a positive number`,
-    );
+    throw new Error(`config: ${filePath} "recencyHours" must be a positive number`);
   }
   return Math.floor(value);
 }
 
 /** Resolve configured surfaces to the URLs Playwright loads. */
-export function resolveSurfaces(
-  surfaces: readonly Surface[],
-): ResolvedSurface[] {
+export function resolveSurfaces(surfaces: readonly Surface[]): ResolvedSurface[] {
   return surfaces.map((surface) =>
     surface.type === "tag"
       ? { label: `tag/${surface.value}`, url: tagPageUrlFor(surface.value) }

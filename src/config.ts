@@ -27,9 +27,7 @@ export const ENV_NAMES = {
  * heartbeat fires on every zero-match run, which at the 10-minute cron
  * is 144 emails a day — this is the one-line valve when that is too many.
  */
-export function isHeartbeatEnabled(
-  env: Record<string, string | undefined>,
-): boolean {
+export function isHeartbeatEnabled(env: Record<string, string | undefined>): boolean {
   const raw: string | undefined = env[ENV_NAMES.heartbeat];
   if (raw === undefined) return true;
   return raw.trim().toLowerCase() !== "false";
@@ -39,12 +37,10 @@ export function isHeartbeatEnabled(
  * Build the Actions run URL from the ambient GITHUB_* variables, or
  * undefined when they are absent (a local run).
  */
-export function runUrlFromEnv(
-  env: Record<string, string | undefined>,
-): string | undefined {
-  const server: string | undefined = env["GITHUB_SERVER_URL"];
-  const repo: string | undefined = env["GITHUB_REPOSITORY"];
-  const runId: string | undefined = env["GITHUB_RUN_ID"];
+export function runUrlFromEnv(env: Record<string, string | undefined>): string | undefined {
+  const server: string | undefined = env.GITHUB_SERVER_URL;
+  const repo: string | undefined = env.GITHUB_REPOSITORY;
+  const runId: string | undefined = env.GITHUB_RUN_ID;
   if (server === undefined || repo === undefined || runId === undefined) {
     return undefined;
   }

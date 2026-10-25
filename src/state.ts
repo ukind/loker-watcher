@@ -47,20 +47,14 @@ export function migrateState(raw: unknown): AppState {
   }
 
   const record = raw as Record<string, unknown>;
-  const version = record["version"];
+  const version = record.version;
 
-  if (
-    typeof version !== "number" ||
-    !Number.isInteger(version) ||
-    version < 1
-  ) {
-    throw new Error(
-      `state: invalid or missing schema version: ${String(version)}`,
-    );
+  if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+    throw new Error(`state: invalid or missing schema version: ${String(version)}`);
   }
 
   if (version === 1) {
-    const rawIds = record["seenPostIds"];
+    const rawIds = record.seenPostIds;
     if (!Array.isArray(rawIds)) {
       throw new Error("state: seenPostIds must be an array");
     }
@@ -72,9 +66,7 @@ export function migrateState(raw: unknown): AppState {
       } else if (typeof item === "number" && Number.isSafeInteger(item)) {
         seenPostIds.push(String(item));
       } else {
-        throw new Error(
-          `state: invalid post ID in seenPostIds: ${String(item)}`,
-        );
+        throw new Error(`state: invalid post ID in seenPostIds: ${String(item)}`);
       }
     }
 
@@ -92,9 +84,7 @@ export function migrateState(raw: unknown): AppState {
  * Returns initial empty state when the file does not exist (ENOENT).
  * Throws when the file cannot be read or contains invalid JSON/schema.
  */
-export async function loadState(
-  filePath: string = STATE_PATH,
-): Promise<AppState> {
+export async function loadState(filePath: string = STATE_PATH): Promise<AppState> {
   try {
     const content = await readFile(filePath, "utf8");
     const parsed = JSON.parse(content) as unknown;
@@ -109,9 +99,7 @@ export async function loadState(
       return createInitialState();
     }
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `state: failed to load state from ${filePath}: ${message}`,
-    );
+    throw new Error(`state: failed to load state from ${filePath}: ${message}`);
   }
 }
 
@@ -129,10 +117,7 @@ export function diffNew(state: AppState, posts: readonly Post[]): Post[] {
  * Filter an array of post IDs, returning only those not yet in state.seenPostIds.
  * Maintains input order and dedupes new IDs.
  */
-export function diffNewIds(
-  state: AppState,
-  ids: readonly string[],
-): string[] {
+export function diffNewIds(state: AppState, ids: readonly string[]): string[] {
   if (ids.length === 0) return [];
   const seenSet = new Set(state.seenPostIds);
   const result: string[] = [];
@@ -158,11 +143,8 @@ export async function writeStateAtomic(
   const dir = dirname(filePath);
   await mkdir(dir, { recursive: true });
 
-  const tempPath = join(
-    dir,
-    `.\${Date.now()}.\${Math.random().toString(36).slice(2)}.tmp`,
-  );
-  const jsonContent = JSON.stringify(state, null, 2) + "\n";
+  const tempPath = join(dir, ".${Date.now()}.${Math.random().toString(36).slice(2)}.tmp");
+  const jsonContent = `${JSON.stringify(state, null, 2)}\n`;
 
   try {
     await writeFile(tempPath, jsonContent, "utf8");
@@ -174,9 +156,7 @@ export async function writeStateAtomic(
       // Best-effort cleanup of temp file
     }
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `state: atomic write failed for ${filePath}: ${message}`,
-    );
+    throw new Error(`state: atomic write failed for ${filePath}: ${message}`);
   }
 }
 

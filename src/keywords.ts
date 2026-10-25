@@ -13,10 +13,7 @@ import type { Post } from "./types.js";
  * Returns true if text contains at least one keyword from the list.
  * Performs case-insensitive substring matching.
  */
-export function matchesKeywords(
-  text: string,
-  keywords: readonly string[],
-): boolean {
+export function matchesKeywords(text: string, keywords: readonly string[]): boolean {
   if (text.length === 0 || keywords.length === 0) {
     return false;
   }
@@ -33,9 +30,6 @@ export function matchesKeywords(
 /**
  * Filters a list of posts, retaining only those matching the keywords.
  */
-export function filterPostsByKeywords(
-  posts: readonly Post[],
-  keywords: readonly string[],
-): Post[] {
+export function filterPostsByKeywords(posts: readonly Post[], keywords: readonly string[]): Post[] {
   return posts.filter((post) => matchesKeywords(post.text, keywords));
 }

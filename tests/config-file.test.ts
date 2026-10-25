@@ -3,10 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
-import {
-  loadWatcherConfig,
-  resolveSurfaces,
-} from "../src/config-file.js";
+import { loadWatcherConfig, resolveSurfaces } from "../src/config-file.js";
 
 const VALID = {
   keywords: ["react"],
@@ -93,10 +90,7 @@ describe("loadWatcherConfig — failures", () => {
       ...VALID,
       surfaces: [{ type: "url", value: "https://example.com/feed" }],
     });
-    await assert.rejects(
-      () => loadWatcherConfig(path),
-      /must be https:\/\/www\.threads\.com/,
-    );
+    await assert.rejects(() => loadWatcherConfig(path), /must be https:\/\/www\.threads\.com/);
   });
 
   it("rejects a relative URL", async () => {
