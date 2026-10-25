@@ -21,6 +21,7 @@ export const ENV_NAMES = {
   threadsTags: "THREADS_TAGS",
   threadsSession: "THREADS_SESSION_STATE",
   recencyHours: "RECENCY_HOURS",
+  heartbeat: "HEARTBEAT_ENABLED",
   llmBaseUrl: "LLM_BASE_URL",
   llmApiKey: "LLM_API_KEY",
   llmModel: "LLM_MODEL",
@@ -30,6 +31,36 @@ export const ENV_NAMES = {
 
 /** Default freshness window in hours (measured: 89/92 posts ≤72h). */
 export const DEFAULT_RECENCY_HOURS = 72;
+
+/**
+ * Resolve the heartbeat kill switch. Defaults to true; only an explicit
+ * "false" (any casing, surrounding whitespace ignored) disables it. The
+ * heartbeat fires on every zero-match run, which at the 10-minute cron
+ * is 144 emails a day — this is the one-line valve when that is too many.
+ */
+export function isHeartbeatEnabled(
+  env: Record<string, string | undefined>,
+): boolean {
+  const raw: string | undefined = env[ENV_NAMES.heartbeat];
+  if (raw === undefined) return true;
+  return raw.trim().toLowerCase() !== "false";
+}
+
+/**
+ * Build the Actions run URL from the ambient GITHUB_* variables, or
+ * undefined when they are absent (a local run).
+ */
+export function runUrlFromEnv(
+  env: Record<string, string | undefined>,
+): string | undefined {
+  const server: string | undefined = env["GITHUB_SERVER_URL"];
+  const repo: string | undefined = env["GITHUB_REPOSITORY"];
+  const runId: string | undefined = env["GITHUB_RUN_ID"];
+  if (server === undefined || repo === undefined || runId === undefined) {
+    return undefined;
+  }
+  return `${server}/${repo}/actions/runs/${runId}`;
+}
 
 /**
  * Resolve the recency window (hours) from the environment, falling back to

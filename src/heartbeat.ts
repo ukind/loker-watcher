@@ -1,0 +1,181 @@
+/**
+ * No-match heartbeat (Phase 9).
+ *
+ * The watcher sends no email when a run finds no match, so the operator has
+ * no signal that the pipeline is alive — and no way to see why a run found
+ * nothing without opening the Actions log. Measured 2026-10-25: the
+ * authenticated feed carries ~300 recent posts per run and 0-1 keyword
+ * maybes, so a zero-match run is the normal case. This module builds and
+ * sends a status email for those runs: the scan funnel plus the candidate
+ * posts that came closest, each with its permalink.
+ */
+import type { Post } from "./types.js";
+import { sendText, type EmailConfig } from "./email.js";
+import type { Transporter } from "nodemailer";
+
+/**
+ * Candidate net — deliberately broader than KEYWORDS. A post that names no
+ * frontend/fullstack keyword can still be worth a human look, so the
+ * heartbeat also surfaces posts mentioning an adjacent dev term, an
+ * Indonesian city, or remote work.
+ */
+const CANDIDATE_TERMS: readonly string[] = [
+  // adjacent dev terms
+  "developer", "programmer", "software", "engineer", "frontend", "front-end",
+  "fullstack", "full-stack", "react", "vue", "next.js", "nextjs", "typescript",
+  "javascript", "node.js", "nodejs", "web dev", "it support", "teknisi",
+  "coding", "coder",
+  // Indonesian locations
+  "indonesia", "jakarta", "jogja", "yogyakarta", "surabaya", "bandung",
+  "medan", "semarang", "bali", "denpasar", "makassar", "palembang", "bekasi",
+  "tangerang", "depok", "bogor", "malang", "solo",
+  // remote
+  "remote", "wfh", "work from home",
+];
+
+/** Maximum candidates listed in one heartbeat email. */
+export const MAX_CANDIDATES = 10;
+
+/** Funnel counts for one run, collected by src/index.ts. */
+export interface HeartbeatStats {
+  /** ISO 8601 UTC timestamp of the run start. */
+  ranAt: string;
+  /** Unique posts after cross-surface dedupe. */
+  unique: number;
+  /** Posts kept by the recency filter. */
+  recent: number;
+  /** Recency window in hours. */
+  recencyHours: number;
+  /** Posts that passed the keyword pre-filter. */
+  maybes: number;
+  /** Posts the judge marked relevant AND located. */
+  relevantLocated: number;
+  /** Posts the judge could not evaluate. */
+  skipped: number;
+  /** Actions run URL, when the workflow provides the ambient variables. */
+  runUrl?: string;
+}
+
+/** One candidate post plus why it is in the list. */
+export interface Candidate {
+  post: Post;
+  /** "maybe" passed the keyword filter; "near-miss" only the broader net. */
+  reason: "maybe" | "near-miss";
+}
+
+/** True when the text mentions any candidate term (case-insensitive). */
+export function matchesCandidateTerms(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return CANDIDATE_TERMS.some((term) => normalized.includes(term));
+}
+
+/**
+ * Pick the posts worth a human look: every keyword maybe first (strongest
+ * signal), then the newest near-misses, capped at `limit`.
+ */
+export function selectCandidates(
+  recent: readonly Post[],
+  maybes: readonly Post[],
+  limit: number = MAX_CANDIDATES,
+): Candidate[] {
+  const out: Candidate[] = maybes.map((post) => ({
+    post,
+    reason: "maybe" as const,
+  }));
+  if (out.length >= limit) return out.slice(0, limit);
+
+  const maybeIds = new Set(maybes.map((post) => post.id));
+  const nearMisses = recent
+    .filter(
+      (post) => !maybeIds.has(post.id) && matchesCandidateTerms(post.text),
+    )
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  for (const post of nearMisses) {
+    if (out.length >= limit) break;
+    out.push({ post, reason: "near-miss" });
+  }
+  return out;
+}
+
+/** One-line text preview: whitespace collapsed, truncated at `max` chars. */
+export function snippet(text: string, max = 160): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+
+/** Age of a post in whole hours relative to `now`; 0 when unparseable. */
+export function ageHours(timestamp: string, now: number): number {
+  const takenAt = new Date(timestamp).getTime();
+  if (!Number.isFinite(takenAt)) return 0;
+  return Math.max(0, Math.floor((now - takenAt) / 3_600_000));
+}
+
+/** Subject line for the heartbeat email. */
+export function buildHeartbeatSubject(stats: HeartbeatStats): string {
+  return `loker-watcher: 0 new matches — ${stats.recent} post(s) scanned`;
+}
+
+/** Plain-text body: the funnel, then the candidates with permalinks. */
+export function buildHeartbeatBody(
+  stats: HeartbeatStats,
+  candidates: readonly Candidate[],
+  now: number,
+): string {
+  const lines: string[] = [
+    `loker-watcher — ${stats.ranAt}`,
+    "",
+    "0 new job matches.",
+    "",
+    `  ${stats.unique} unique post(s)`,
+    `  ${stats.recent} within ${stats.recencyHours}h`,
+    `  ${stats.maybes} keyword maybe(s)`,
+    `  ${stats.relevantLocated} relevant + located`,
+    `  ${stats.skipped} skipped by the judge`,
+    "",
+  ];
+
+  if (candidates.length === 0) {
+    lines.push("No candidate posts in this run.");
+  } else {
+    lines.push(`Closest ${candidates.length} candidate(s), newest first:`);
+    lines.push("");
+    candidates.forEach((candidate, index) => {
+      const age = ageHours(candidate.post.timestamp, now);
+      const tag = candidate.reason === "maybe" ? " [keyword match]" : "";
+      lines.push(`${index + 1}. @${candidate.post.author} — ${age}h ago${tag}`);
+      lines.push(`   ${snippet(candidate.post.text)}`);
+      lines.push(`   ${candidate.post.permalink}`);
+      lines.push("");
+    });
+  }
+
+  if (stats.runUrl !== undefined) {
+    lines.push(`Run: ${stats.runUrl}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Send the heartbeat email. Reuses the digest transport path so both emails
+ * share one credential resolution and one fail-visible error shape.
+ * Accepts an optional Transporter for unit testing, exactly as sendDigest
+ * does — without it the function would open a real Gmail connection.
+ */
+export async function sendHeartbeat(
+  stats: HeartbeatStats,
+  candidates: readonly Candidate[],
+  config: EmailConfig,
+  now: number = Date.now(),
+  transport?: Transporter,
+): Promise<void> {
+  await sendText(
+    buildHeartbeatSubject(stats),
+    buildHeartbeatBody(stats, candidates, now),
+    config,
+    transport,
+  );
+  console.log(
+    `heartbeat: sent status email — ${stats.recent} post(s) scanned, ${candidates.length} candidate(s)`,
+  );
+}

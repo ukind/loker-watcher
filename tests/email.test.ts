@@ -259,7 +259,7 @@ describe("sendDigest", () => {
 
     await assert.rejects(
       () => sendDigest(samplePosts, sampleConfig, mockTransport),
-      /email: failed to send digest: SMTP connection timeout/,
+      /email: failed to send: SMTP connection timeout/,
     );
   });
 });

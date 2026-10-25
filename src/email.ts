@@ -77,6 +77,44 @@ export function buildDigest(posts: readonly Post[]): string | null {
 }
 
 /**
+ * Send one plain-text email through the Gmail transport.
+ *
+ * Shared by the digest (Phase 6) and the heartbeat (Phase 9) so both paths
+ * resolve credentials once and fail the same way. Returns the message id
+ * when the transport reports one.
+ */
+export async function sendText(
+  subject: string,
+  text: string,
+  config: EmailConfig,
+  transport?: Transporter,
+): Promise<string | undefined> {
+  const recipient = config.to ?? config.user;
+  const mailer =
+    transport ??
+    nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: config.user,
+        pass: config.pass,
+      },
+    });
+
+  try {
+    const info = await mailer.sendMail({
+      from: `Loker Watcher <${config.user}>`,
+      to: recipient,
+      subject,
+      text,
+    });
+    return typeof info?.messageId === "string" ? info.messageId : undefined;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`email: failed to send: ${message}`);
+  }
+}
+
+/**
  * Send a digest email for new matched posts via nodemailer (FRD #7, #8).
  *
  * Gated: returns { sent: false, postCount: 0 } immediately when posts is empty.
@@ -104,37 +142,14 @@ export async function sendDigest(
     };
   }
 
+  const messageId = await sendText(subject, text, config, transport);
   const recipient = config.to ?? config.user;
-  const mailer =
-    transport ??
-    nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: config.user,
-        pass: config.pass,
-      },
-    });
+  console.log(`email: sent digest with ${posts.length} post(s) to ${recipient}`);
 
-  try {
-    const info = await mailer.sendMail({
-      from: `Loker Watcher <${config.user}>`,
-      to: recipient,
-      subject,
-      text,
-    });
-
-    console.log(
-      `email: sent digest with ${posts.length} post(s) to ${recipient}`,
-    );
-
-    return {
-      sent: true,
-      messageId: typeof info?.messageId === "string" ? info.messageId : undefined,
-      recipient,
-      postCount: posts.length,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`email: failed to send digest: ${message}`);
-  }
+  return {
+    sent: true,
+    ...(messageId !== undefined ? { messageId } : {}),
+    recipient,
+    postCount: posts.length,
+  };
 }

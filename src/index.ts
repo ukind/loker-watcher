@@ -11,16 +11,48 @@ import {
   fetchTagPages,
   fetchTagPostsAuthenticated,
 } from "./fetch-threads.js";
-import { resolveRecencyHours, resolveTags } from "./config.js";
+import { isHeartbeatEnabled, resolveRecencyHours, resolveTags, runUrlFromEnv } from "./config.js";
 import { filterPostsByKeywords } from "./keywords.js";
 import { judgePosts, resolveJudgeConfig } from "./judge.js";
 import { diffNew, loadState, saveState } from "./state.js";
 import { resolveEmailConfig, sendDigest } from "./email.js";
 import { resolveSession } from "./threads-session.js";
 import { filterRecent } from "./recency.js";
+import {
+  selectCandidates,
+  sendHeartbeat,
+  type HeartbeatStats,
+} from "./heartbeat.js";
 import type { Post } from "./types.js";
 
+/**
+ * Best-effort status email for a zero-match run.
+ *
+ * Unlike the digest, a heartbeat that cannot be sent must not fail the run:
+ * the pipeline did its job, only the notification failed. Logged loudly so a
+ * broken GMAIL_* configuration is visible in the run log.
+ */
+async function heartbeat(
+  stats: HeartbeatStats,
+  recent: readonly Post[],
+  maybes: readonly Post[],
+): Promise<void> {
+  if (!isHeartbeatEnabled(process.env)) {
+    console.log("heartbeat: disabled by HEARTBEAT_ENABLED");
+    return;
+  }
+  try {
+    const config = resolveEmailConfig(process.env);
+    const candidates = selectCandidates(recent, maybes);
+    await sendHeartbeat(stats, candidates, config);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`heartbeat: not sent — ${message}`);
+  }
+}
+
 async function main(): Promise<void> {
+  const startedAt = new Date();
   const tags = resolveTags(process.env);
   console.log(`watch: surfaces: ${tags.join(", ")}`);
 
@@ -38,16 +70,34 @@ async function main(): Promise<void> {
   const recent = filterRecent(posts, recencyHours);
   console.log(`recency: ${recent.length} post(s) within ${recencyHours}h`);
 
+  // exactOptionalPropertyTypes: attach runUrl only when the ambient
+  // GITHUB_* variables are present (a local run has none).
+  const runUrl = runUrlFromEnv(process.env);
+
+  const stats: HeartbeatStats = {
+    ranAt: startedAt.toISOString(),
+    unique: posts.length,
+    recent: recent.length,
+    recencyHours,
+    maybes: 0,
+    relevantLocated: 0,
+    skipped: 0,
+    ...(runUrl !== undefined ? { runUrl } : {}),
+  };
+
   const state = await loadState();
   const newPosts = diffNew(state, recent);
   if (newPosts.length === 0) {
+    await heartbeat(stats, recent, []);
     console.log("no new matches");
     return;
   }
   console.log(`state: ${newPosts.length} unseen post(s)`);
 
   const maybes = filterPostsByKeywords(newPosts);
+  stats.maybes = maybes.length;
   if (maybes.length === 0) {
+    await heartbeat(stats, recent, maybes);
     console.log("keywords: 0 maybes");
     console.log("no new matches");
     return;
@@ -60,11 +110,14 @@ async function main(): Promise<void> {
   const matches = judged
     .filter((j) => j.verdict.relevant && j.verdict.locationOk)
     .map((j) => j.post);
+  stats.relevantLocated = matches.length;
+  stats.skipped = skippedPostIds.length;
   console.log(
     `keywords: ${maybes.length} maybes, judge: ${matches.length} relevant+located, skipped: ${skippedPostIds.length}`,
   );
 
   if (matches.length === 0) {
+    await heartbeat(stats, recent, maybes);
     console.log("no new matches");
     return;
   }
