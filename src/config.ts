@@ -19,12 +19,31 @@ export const KEYWORDS: readonly string[] = [
 /** Environment variable names; values never appear in the repo. */
 export const ENV_NAMES = {
   threadsTags: "THREADS_TAGS",
+  threadsSession: "THREADS_SESSION_STATE",
+  recencyHours: "RECENCY_HOURS",
   llmBaseUrl: "LLM_BASE_URL",
   llmApiKey: "LLM_API_KEY",
   llmModel: "LLM_MODEL",
   gmailUser: "GMAIL_USER",
   gmailAppPassword: "GMAIL_APP_PASSWORD",
 } as const;
+
+/** Default freshness window in hours (measured: 89/92 posts ≤72h). */
+export const DEFAULT_RECENCY_HOURS = 72;
+
+/**
+ * Resolve the recency window (hours) from the environment, falling back to
+ * DEFAULT_RECENCY_HOURS when unset, blank, or not a positive number.
+ */
+export function resolveRecencyHours(
+  env: Record<string, string | undefined>,
+): number {
+  const raw: string | undefined = env[ENV_NAMES.recencyHours];
+  if (raw === undefined || raw.trim() === "") return DEFAULT_RECENCY_HOURS;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_RECENCY_HOURS;
+  return Math.floor(parsed);
+}
 
 /** Tag surfaces sampled when THREADS_TAGS is unset (live-probed 2026-10-24: 19/17/18 posts). */
 export const DEFAULT_TAGS: readonly string[] = ["hiring", "lowker", "infokerja"];

@@ -7,37 +7,39 @@
  * the email send, so a failed run never marks posts seen).
  */
 import { extractPosts } from "./extract.js";
-import { fetchTagPages } from "./fetch-threads.js";
-import { resolveTags } from "./config.js";
+import {
+  fetchTagPages,
+  fetchTagPostsAuthenticated,
+} from "./fetch-threads.js";
+import { resolveRecencyHours, resolveTags } from "./config.js";
 import { filterPostsByKeywords } from "./keywords.js";
 import { judgePosts, resolveJudgeConfig } from "./judge.js";
 import { diffNew, loadState, saveState } from "./state.js";
 import { resolveEmailConfig, sendDigest } from "./email.js";
+import { resolveSession } from "./threads-session.js";
+import { filterRecent } from "./recency.js";
 import type { Post } from "./types.js";
 
 async function main(): Promise<void> {
   const tags = resolveTags(process.env);
   console.log(`watch: surfaces: ${tags.join(", ")}`);
 
-  const surfaces = await fetchTagPages(tags);
-
-  const seen = new Set<string>();
-  const posts: Post[] = [];
-  for (const surface of surfaces) {
-    const extracted = extractPosts(surface.html);
-    console.log(`extract: tag/${surface.tag}: ${extracted.length} post(s)`);
-    for (const post of extracted) {
-      if (seen.has(post.id)) continue;
-      seen.add(post.id);
-      posts.push(post);
-    }
-  }
+  const sessionPath = await resolveSession(process.env);
+  const collected: Post[] =
+    sessionPath !== null
+      ? await fetchTagPostsAuthenticated(tags, sessionPath)
+      : await fetchLoggedOutPosts(tags);
+  const posts = dedupePosts(collected);
   console.log(
-    `extract: ${posts.length} unique post(s) across ${surfaces.length} surface(s)`,
+    `extract: ${posts.length} unique post(s) across ${tags.length} surface(s)`,
   );
 
+  const recencyHours = resolveRecencyHours(process.env);
+  const recent = filterRecent(posts, recencyHours);
+  console.log(`recency: ${recent.length} post(s) within ${recencyHours}h`);
+
   const state = await loadState();
-  const newPosts = diffNew(state, posts);
+  const newPosts = diffNew(state, recent);
   if (newPosts.length === 0) {
     console.log("no new matches");
     return;
@@ -78,6 +80,30 @@ async function main(): Promise<void> {
   const judgedIds = judged.map((j) => j.post.id);
   const result = await saveState(state, judgedIds);
   console.log(`state: ${result.addedCount} new seen post id(s)`);
+}
+
+/** Logged-out path (Phase 3): blob extraction per surface, in input order. */
+async function fetchLoggedOutPosts(tags: readonly string[]): Promise<Post[]> {
+  const surfaces = await fetchTagPages(tags);
+  const posts: Post[] = [];
+  for (const surface of surfaces) {
+    const extracted = extractPosts(surface.html);
+    console.log(`extract: tag/${surface.tag}: ${extracted.length} post(s)`);
+    posts.push(...extracted);
+  }
+  return posts;
+}
+
+/** Dedupe posts by id, keeping first-seen order. */
+function dedupePosts(posts: readonly Post[]): Post[] {
+  const seen = new Set<string>();
+  const unique: Post[] = [];
+  for (const post of posts) {
+    if (seen.has(post.id)) continue;
+    seen.add(post.id);
+    unique.push(post);
+  }
+  return unique;
 }
 
 main().catch((error: unknown) => {

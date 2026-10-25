@@ -45,14 +45,14 @@ export function extractPosts(html: string): Post[] {
     } catch {
       continue; // not every data-sjs blob is JSON; skip it
     }
-    walkForThreadItems(parsed, rawItems);
+    collectThreadItems(parsed, rawItems);
   }
 
   const seen = new Set<string>();
   const posts: Post[] = [];
   let dropped = 0;
   for (const item of rawItems) {
-    const post = normalize(item);
+    const post = normalizeThreadItem(item);
     if (post === null) {
       dropped += 1;
       continue;
@@ -68,9 +68,9 @@ export function extractPosts(html: string): Post[] {
 }
 
 /** Depth-first walk collecting every array stored under "thread_items". */
-function walkForThreadItems(node: unknown, out: unknown[]): void {
+export function collectThreadItems(node: unknown, out: unknown[]): void {
   if (Array.isArray(node)) {
-    for (const child of node) walkForThreadItems(child, out);
+    for (const child of node) collectThreadItems(child, out);
     return;
   }
   if (node === null || typeof node !== "object") return;
@@ -80,12 +80,12 @@ function walkForThreadItems(node: unknown, out: unknown[]): void {
     if (key === "thread_items" && Array.isArray(value)) {
       out.push(...value);
     }
-    walkForThreadItems(value, out);
+    collectThreadItems(value, out);
   }
 }
 
 /** Map one raw thread item to a Post, or null when it lacks required fields. */
-function normalize(item: unknown): Post | null {
+export function normalizeThreadItem(item: unknown): Post | null {
   const post = readPost(item);
   if (post === null) return null;
   const pk = readPk(post.pk);

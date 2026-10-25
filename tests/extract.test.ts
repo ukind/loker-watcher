@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { codeFromPk, extractPosts } from "../src/extract.js";
+import { codeFromPk, collectThreadItems, extractPosts, normalizeThreadItem } from "../src/extract.js";
+import type { Post } from "../src/types.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = readFileSync(join(here, "fixture", "tag-page.html"), "utf8");
@@ -76,6 +77,28 @@ describe("codeFromPk", () => {
     assert.equal(codeFromPk("3998973357877860537"), "Dd_NRTej5i5");
     assert.equal(codeFromPk("3993862290835326832"), "DdtDJfXEUdw");
     assert.equal(codeFromPk("3982574977840405311"), "DdE8td9iVs_");
+  });
+});
+
+describe("graphql XHR body extraction", () => {
+  it("walks a real captured graphql response into posts", () => {
+    const body = readFileSync(
+      join(here, "fixture", "graphql-response.json"),
+      "utf8",
+    );
+    const items: unknown[] = [];
+    collectThreadItems(JSON.parse(body), items);
+    const posts = items
+      .map(normalizeThreadItem)
+      .filter((p): p is Post => p !== null);
+    assert.equal(posts.length, 3);
+    assert.deepEqual(posts[0], {
+      id: "4014250536231619721",
+      text: "We're Hiring warga threads !! [ URGENT ]\n\nKantor aku lagi urgently hiring cari kandidat sebagai Staf Admin Entry di Start Dinamics \nSistem kerja: Full Remote\nEst. Salary: UMK \nTerbuka untuk semua kalangan yang berpengalaman dan non pengalaman ya !!",
+      author: "hamimakania40",
+      permalink: "https://www.threads.com/@hamimakania40/post/De1e5gjgcyJ",
+      timestamp: new Date(1792755976 * 1000).toISOString(),
+    });
   });
 });
 
