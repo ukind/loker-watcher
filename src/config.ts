@@ -6,7 +6,10 @@
  * live probes.
  */
 
-/** Case-insensitive keyword pre-filter: frontend / fullstack + adjacent (FRD #3). */
+/** Case-insensitive keyword pre-filter: frontend / fullstack + adjacent (FRD #3).
+ * TEMPORARY (2026-10-25): the last five entries are a test widening to seed a
+ * match for the Phase 7 smoke gate. Revert before merge.
+ */
 export const KEYWORDS: readonly string[] = [
   "frontend", "front-end", "front end",
   "fullstack", "full-stack", "full stack",
@@ -14,6 +17,7 @@ export const KEYWORDS: readonly string[] = [
   "react", "vue", "next.js", "nextjs", "nuxt",
   "angular", "svelte", "typescript", "javascript",
   "node.js", "nodejs",
+  "developer", "programmer", "engineer", "software", "it support",
 ];
 
 /** Environment variable names; values never appear in the repo. */
