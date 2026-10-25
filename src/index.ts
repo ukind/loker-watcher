@@ -5,13 +5,21 @@
  * state commit. Every stage logs its counts; any thrown error exits non-zero
  * and leaves state untouched (D8: the write is match-gated and ordered after
  * the email send, so a failed run never marks posts seen).
+ *
+ * What to watch and how to filter comes from watcher.config.json (Phase 10),
+ * loaded once at startup. A missing or malformed file fails the run.
  */
 import { extractPosts } from "./extract.js";
 import {
-  fetchTagPages,
-  fetchTagPostsAuthenticated,
+  fetchSurfaces,
+  fetchSurfacesAuthenticated,
 } from "./fetch-threads.js";
-import { isHeartbeatEnabled, resolveRecencyHours, resolveTags, runUrlFromEnv } from "./config.js";
+import {
+  loadWatcherConfig,
+  resolveSurfaces,
+  type ResolvedSurface,
+} from "./config-file.js";
+import { isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
 import { filterPostsByKeywords } from "./keywords.js";
 import { judgePosts, resolveJudgeConfig } from "./judge.js";
 import { diffNew, loadState, saveState } from "./state.js";
@@ -36,6 +44,7 @@ async function heartbeat(
   stats: HeartbeatStats,
   recent: readonly Post[],
   maybes: readonly Post[],
+  candidateTerms: readonly string[],
 ): Promise<void> {
   if (!isHeartbeatEnabled(process.env)) {
     console.log("heartbeat: disabled by HEARTBEAT_ENABLED");
@@ -43,7 +52,7 @@ async function heartbeat(
   }
   try {
     const config = resolveEmailConfig(process.env);
-    const candidates = selectCandidates(recent, maybes);
+    const candidates = selectCandidates(recent, maybes, candidateTerms);
     await sendHeartbeat(stats, candidates, config);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -53,20 +62,21 @@ async function heartbeat(
 
 async function main(): Promise<void> {
   const startedAt = new Date();
-  const tags = resolveTags(process.env);
-  console.log(`watch: surfaces: ${tags.join(", ")}`);
+  const config = await loadWatcherConfig();
+  const surfaces = resolveSurfaces(config.surfaces);
+  console.log(`watch: surfaces: ${surfaces.map((s) => s.label).join(", ")}`);
 
   const sessionPath = await resolveSession(process.env);
   const collected: Post[] =
     sessionPath !== null
-      ? await fetchTagPostsAuthenticated(tags, sessionPath)
-      : await fetchLoggedOutPosts(tags);
+      ? await fetchSurfacesAuthenticated(surfaces, sessionPath)
+      : await fetchLoggedOutPosts(surfaces);
   const posts = dedupePosts(collected);
   console.log(
-    `extract: ${posts.length} unique post(s) across ${tags.length} surface(s)`,
+    `extract: ${posts.length} unique post(s) across ${surfaces.length} surface(s)`,
   );
 
-  const recencyHours = resolveRecencyHours(process.env);
+  const recencyHours = config.recencyHours;
   const recent = filterRecent(posts, recencyHours);
   console.log(`recency: ${recent.length} post(s) within ${recencyHours}h`);
 
@@ -88,16 +98,16 @@ async function main(): Promise<void> {
   const state = await loadState();
   const newPosts = diffNew(state, recent);
   if (newPosts.length === 0) {
-    await heartbeat(stats, recent, []);
+    await heartbeat(stats, recent, [], config.candidateTerms);
     console.log("no new matches");
     return;
   }
   console.log(`state: ${newPosts.length} unseen post(s)`);
 
-  const maybes = filterPostsByKeywords(newPosts);
+  const maybes = filterPostsByKeywords(newPosts, config.keywords);
   stats.maybes = maybes.length;
   if (maybes.length === 0) {
-    await heartbeat(stats, recent, maybes);
+    await heartbeat(stats, recent, maybes, config.candidateTerms);
     console.log("keywords: 0 maybes");
     console.log("no new matches");
     return;
@@ -117,7 +127,7 @@ async function main(): Promise<void> {
   );
 
   if (matches.length === 0) {
-    await heartbeat(stats, recent, maybes);
+    await heartbeat(stats, recent, maybes, config.candidateTerms);
     console.log("no new matches");
     return;
   }
@@ -135,13 +145,15 @@ async function main(): Promise<void> {
   console.log(`state: ${result.addedCount} new seen post id(s)`);
 }
 
-/** Logged-out path (Phase 3): blob extraction per surface, in input order. */
-async function fetchLoggedOutPosts(tags: readonly string[]): Promise<Post[]> {
-  const surfaces = await fetchTagPages(tags);
+/** Logged-out path: blob extraction per surface, in input order. */
+async function fetchLoggedOutPosts(
+  surfaces: readonly ResolvedSurface[],
+): Promise<Post[]> {
+  const fetched = await fetchSurfaces(surfaces);
   const posts: Post[] = [];
-  for (const surface of surfaces) {
+  for (const surface of fetched) {
     const extracted = extractPosts(surface.html);
-    console.log(`extract: tag/${surface.tag}: ${extracted.length} post(s)`);
+    console.log(`extract: ${surface.label}: ${extracted.length} post(s)`);
     posts.push(...extracted);
   }
   return posts;

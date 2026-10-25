@@ -1,12 +1,12 @@
 /**
  * Keyword pre-filter for Threads posts (FRD #3).
  *
- * Checks post captions against a curated list of frontend and fullstack
- * keywords. Normalizes text and keywords to lowercase for case-insensitive
- * matching. Substring matching allows catching variants like "ReactJS" or
- * punctuated forms like "React/Vue".
+ * Checks post captions against the keyword list from watcher.config.json.
+ * Normalizes text and keywords to lowercase for case-insensitive matching.
+ * Substring matching allows catching variants like "ReactJS" or punctuated
+ * forms like "React/Vue". The list is a required parameter: the JSON file is
+ * the only source, so there is no built-in default to fall back to.
  */
-import { KEYWORDS } from "./config.js";
 import type { Post } from "./types.js";
 
 /**
@@ -15,7 +15,7 @@ import type { Post } from "./types.js";
  */
 export function matchesKeywords(
   text: string,
-  keywords: readonly string[] = KEYWORDS,
+  keywords: readonly string[],
 ): boolean {
   if (text.length === 0 || keywords.length === 0) {
     return false;
@@ -35,8 +35,7 @@ export function matchesKeywords(
  */
 export function filterPostsByKeywords(
   posts: readonly Post[],
-  keywords: readonly string[] = KEYWORDS,
+  keywords: readonly string[],
 ): Post[] {
   return posts.filter((post) => matchesKeywords(post.text, keywords));
 }
-

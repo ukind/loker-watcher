@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { filterPostsByKeywords, matchesKeywords } from "../src/keywords.js";
+import { loadWatcherConfig } from "../src/config-file.js";
 import {
   judgePost,
   judgePosts,
@@ -10,46 +11,50 @@ import {
 } from "../src/judge.js";
 import type { Post } from "../src/types.js";
 
+// The keyword list is a required parameter (Phase 10): watcher.config.json is
+// the only source, so every case below passes the shipped list explicitly.
+const CONFIG = await loadWatcherConfig("watcher.config.json");
+
 describe("matchesKeywords", () => {
   it("matches common frontend and fullstack keywords", () => {
-    assert.equal(matchesKeywords("We are hiring a Frontend Developer!"), true);
-    assert.equal(matchesKeywords("Looking for a full-stack engineer"), true);
-    assert.equal(matchesKeywords("Full Stack Developer needed immediately"), true);
-    assert.equal(matchesKeywords("Senior React dev wanted"), true);
-    assert.equal(matchesKeywords("Vue and Nuxt specialist needed"), true);
-    assert.equal(matchesKeywords("Next.js project open for contract"), true);
-    assert.equal(matchesKeywords("TypeScript / Node.js backend/frontend"), true);
+    assert.equal(matchesKeywords("We are hiring a Frontend Developer!", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Looking for a full-stack engineer", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Full Stack Developer needed immediately", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Senior React dev wanted", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Vue and Nuxt specialist needed", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Next.js project open for contract", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("TypeScript / Node.js backend/frontend", CONFIG.keywords), true);
   });
 
   it("performs case-insensitive matching", () => {
-    assert.equal(matchesKeywords("HIRING REACT DEVELOPER"), true);
-    assert.equal(matchesKeywords("vue.js programmer"), true);
-    assert.equal(matchesKeywords("Typescript Enthusiast"), true);
-    assert.equal(matchesKeywords("FRONT-END LEAD"), true);
+    assert.equal(matchesKeywords("HIRING REACT DEVELOPER", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("vue.js programmer", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Typescript Enthusiast", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("FRONT-END LEAD", CONFIG.keywords), true);
   });
 
   it("matches keywords embedded with punctuation or slashes", () => {
-    assert.equal(matchesKeywords("Stack: React/Vue/Svelte"), true);
-    assert.equal(matchesKeywords("#frontend #reactjs"), true);
-    assert.equal(matchesKeywords("Web Dev (remote)"), true);
+    assert.equal(matchesKeywords("Stack: React/Vue/Svelte", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("#frontend #reactjs", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Web Dev (remote)", CONFIG.keywords), true);
   });
 
   it("handles compound variants such as reactjs and nodejs", () => {
-    assert.equal(matchesKeywords("Looking for ReactJS engineer"), true);
-    assert.equal(matchesKeywords("Backend in NodeJS"), true);
-    assert.equal(matchesKeywords("NextJS fullstack"), true);
+    assert.equal(matchesKeywords("Looking for ReactJS engineer", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("Backend in NodeJS", CONFIG.keywords), true);
+    assert.equal(matchesKeywords("NextJS fullstack", CONFIG.keywords), true);
   });
 
   it("rejects non-tech and non-matching job posts", () => {
-    assert.equal(matchesKeywords("HIRING ‼️ Barista Waiter"), false);
-    assert.equal(matchesKeywords("HIRING!! CHATTER VA"), false);
-    assert.equal(matchesKeywords("Safety, Health and Environmental Officer Site Supervisor"), false);
-    assert.equal(matchesKeywords("Marketing manager needed in Bali"), false);
-    assert.equal(matchesKeywords("Graphic designer for clothing brand"), false);
+    assert.equal(matchesKeywords("HIRING ‼️ Barista Waiter", CONFIG.keywords), false);
+    assert.equal(matchesKeywords("HIRING!! CHATTER VA", CONFIG.keywords), false);
+    assert.equal(matchesKeywords("Safety, Health and Environmental Officer Site Supervisor", CONFIG.keywords), false);
+    assert.equal(matchesKeywords("Marketing manager needed in Bali", CONFIG.keywords), false);
+    assert.equal(matchesKeywords("Graphic designer for clothing brand", CONFIG.keywords), false);
   });
 
   it("returns false for empty text or empty keywords", () => {
-    assert.equal(matchesKeywords(""), false);
+    assert.equal(matchesKeywords("", CONFIG.keywords), false);
     assert.equal(matchesKeywords("React developer", []), false);
   });
 
@@ -85,10 +90,28 @@ describe("filterPostsByKeywords", () => {
       },
     ];
 
-    const filtered = filterPostsByKeywords(posts);
+    const filtered = filterPostsByKeywords(posts, CONFIG.keywords);
     assert.equal(filtered.length, 2);
     assert.equal(filtered[0]?.id, "1");
     assert.equal(filtered[1]?.id, "3");
+  });
+});
+
+describe("matchesKeywords with the shipped config", () => {
+  it("rejects the non-tech hiring posts in the tag-page fixture", () => {
+    assert.equal(matchesKeywords("HIRING ‼️ Barista Waiter", CONFIG.keywords), false);
+    assert.equal(matchesKeywords("HIRING!! CHATTER VA", CONFIG.keywords), false);
+    assert.equal(
+      matchesKeywords("Safety, Health and Environmental Officer", CONFIG.keywords),
+      false,
+    );
+  });
+
+  it("accepts a frontend posting", () => {
+    assert.equal(
+      matchesKeywords("Hiring React developer in Jakarta", CONFIG.keywords),
+      true,
+    );
   });
 });
 
@@ -110,8 +133,8 @@ describe("parseVerdict", () => {
 
   it("returns null for malformed or non-boolean JSON", () => {
     assert.equal(parseVerdict("not json"), null);
-    assert.equal(parseVerdict('{\"relevant\": \"yes\", \"locationOk\": true}'), null);
-    assert.equal(parseVerdict('{\"relevant\": true}'), null);
+    assert.equal(parseVerdict('{"relevant": "yes", "locationOk": true}'), null);
+    assert.equal(parseVerdict('{"relevant": true}'), null);
     assert.equal(parseVerdict(""), null);
   });
 });

@@ -16,6 +16,10 @@ import type { Transporter } from "nodemailer";
 
 const NOW = Date.UTC(2026, 9, 25, 12, 0, 0);
 
+// The candidate net is a required parameter (Phase 10): it comes from
+// watcher.config.json, so every case below passes an explicit list.
+const TERMS = ["developer", "software", "engineer", "jakarta", "remote"];
+
 function post(id: string, text: string, hoursAgo: number, author = "tester"): Post {
   return {
     id,
@@ -38,18 +42,18 @@ const STATS: HeartbeatStats = {
 
 describe("matchesCandidateTerms", () => {
   it("matches adjacent dev terms", () => {
-    assert.equal(matchesCandidateTerms("Hiring a software engineer"), true);
-    assert.equal(matchesCandidateTerms("WE ARE HIRING developers"), true);
+    assert.equal(matchesCandidateTerms("Hiring a software engineer", TERMS), true);
+    assert.equal(matchesCandidateTerms("WE ARE HIRING developers", TERMS), true);
   });
 
   it("matches Indonesian cities and remote", () => {
-    assert.equal(matchesCandidateTerms("Lowongan di Jakarta"), true);
-    assert.equal(matchesCandidateTerms("100% remote role"), true);
+    assert.equal(matchesCandidateTerms("Lowongan di Jakarta", TERMS), true);
+    assert.equal(matchesCandidateTerms("100% remote role", TERMS), true);
   });
 
   it("rejects unrelated posts", () => {
-    assert.equal(matchesCandidateTerms("HIRING Barista Waiter"), false);
-    assert.equal(matchesCandidateTerms("Kitchen crew Johor Bahru"), false);
+    assert.equal(matchesCandidateTerms("HIRING Barista Waiter", TERMS), false);
+    assert.equal(matchesCandidateTerms("Kitchen crew Johor Bahru", TERMS), false);
   });
 });
 
@@ -57,7 +61,7 @@ describe("selectCandidates", () => {
   it("puts keyword maybes first", () => {
     const maybe = post("m1", "Hiring React dev", 5);
     const near = post("n1", "Software engineer Jakarta", 1);
-    const result = selectCandidates([maybe, near], [maybe], 10);
+    const result = selectCandidates([maybe, near], [maybe], TERMS, 10);
     assert.equal(result[0]?.reason, "maybe");
     assert.equal(result[0]?.post.id, "m1");
     assert.equal(result[1]?.reason, "near-miss");
@@ -66,7 +70,7 @@ describe("selectCandidates", () => {
   it("orders near-misses newest first", () => {
     const older = post("a", "Software engineer", 40);
     const newer = post("b", "Software engineer", 2);
-    const result = selectCandidates([older, newer], [], 10);
+    const result = selectCandidates([older, newer], [], TERMS, 10);
     assert.deepEqual(
       result.map((c) => c.post.id),
       ["b", "a"],
@@ -75,7 +79,7 @@ describe("selectCandidates", () => {
 
   it("does not repeat a maybe as a near-miss", () => {
     const maybe = post("m1", "Hiring React dev", 5);
-    const result = selectCandidates([maybe], [maybe], 10);
+    const result = selectCandidates([maybe], [maybe], TERMS, 10);
     assert.equal(result.length, 1);
   });
 
@@ -83,12 +87,12 @@ describe("selectCandidates", () => {
     const posts = Array.from({ length: 30 }, (_, i) =>
       post(`p${i}`, "Software engineer", i),
     );
-    assert.equal(selectCandidates(posts, [], 10).length, 10);
-    assert.equal(selectCandidates(posts, [], 3).length, 3);
+    assert.equal(selectCandidates(posts, [], TERMS, 10).length, 10);
+    assert.equal(selectCandidates(posts, [], TERMS, 3).length, 3);
   });
 
   it("returns an empty list when nothing qualifies", () => {
-    assert.deepEqual(selectCandidates([post("x", "Barista", 1)], [], 10), []);
+    assert.deepEqual(selectCandidates([post("x", "Barista", 1)], [], TERMS, 10), []);
   });
 });
 

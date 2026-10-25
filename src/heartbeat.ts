@@ -8,30 +8,14 @@
  * maybes, so a zero-match run is the normal case. This module builds and
  * sends a status email for those runs: the scan funnel plus the candidate
  * posts that came closest, each with its permalink.
+ *
+ * The candidate net comes from watcher.config.json ("candidateTerms") and is
+ * deliberately broader than the keyword list: a post that names no
+ * frontend/fullstack keyword can still be worth a human look.
  */
 import type { Post } from "./types.js";
 import { sendText, type EmailConfig } from "./email.js";
 import type { Transporter } from "nodemailer";
-
-/**
- * Candidate net — deliberately broader than KEYWORDS. A post that names no
- * frontend/fullstack keyword can still be worth a human look, so the
- * heartbeat also surfaces posts mentioning an adjacent dev term, an
- * Indonesian city, or remote work.
- */
-const CANDIDATE_TERMS: readonly string[] = [
-  // adjacent dev terms
-  "developer", "programmer", "software", "engineer", "frontend", "front-end",
-  "fullstack", "full-stack", "react", "vue", "next.js", "nextjs", "typescript",
-  "javascript", "node.js", "nodejs", "web dev", "it support", "teknisi",
-  "coding", "coder",
-  // Indonesian locations
-  "indonesia", "jakarta", "jogja", "yogyakarta", "surabaya", "bandung",
-  "medan", "semarang", "bali", "denpasar", "makassar", "palembang", "bekasi",
-  "tangerang", "depok", "bogor", "malang", "solo",
-  // remote
-  "remote", "wfh", "work from home",
-];
 
 /** Maximum candidates listed in one heartbeat email. */
 export const MAX_CANDIDATES = 10;
@@ -64,9 +48,12 @@ export interface Candidate {
 }
 
 /** True when the text mentions any candidate term (case-insensitive). */
-export function matchesCandidateTerms(text: string): boolean {
+export function matchesCandidateTerms(
+  text: string,
+  terms: readonly string[],
+): boolean {
   const normalized = text.toLowerCase();
-  return CANDIDATE_TERMS.some((term) => normalized.includes(term));
+  return terms.some((term) => normalized.includes(term));
 }
 
 /**
@@ -76,6 +63,7 @@ export function matchesCandidateTerms(text: string): boolean {
 export function selectCandidates(
   recent: readonly Post[],
   maybes: readonly Post[],
+  terms: readonly string[],
   limit: number = MAX_CANDIDATES,
 ): Candidate[] {
   const out: Candidate[] = maybes.map((post) => ({
@@ -87,7 +75,8 @@ export function selectCandidates(
   const maybeIds = new Set(maybes.map((post) => post.id));
   const nearMisses = recent
     .filter(
-      (post) => !maybeIds.has(post.id) && matchesCandidateTerms(post.text),
+      (post) =>
+        !maybeIds.has(post.id) && matchesCandidateTerms(post.text, terms),
     )
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 

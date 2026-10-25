@@ -1,22 +1,24 @@
 /**
- * Fetch rendered HTML for Threads tag pages with Playwright.
+ * Fetch rendered HTML for Threads surfaces with Playwright.
  *
- * Tag pages hydrate post data into <script type="application/json"
- * data-sjs> blobs; extraction (src/extract.ts) parses those blobs from the
- * HTML, so this module only has to deliver hydrated page HTML per surface.
- * Hydration gate: wait until some data-sjs blob actually contains
- * "thread_items" (raw page HTML has NO post data — probes confirmed).
+ * Every surface — a tag page, a profile page or a search URL — hydrates post
+ * data into <script type="application/json" data-sjs> blobs; extraction
+ * (src/extract.ts) parses those blobs from the HTML, so this module only has
+ * to deliver hydrated page HTML per surface. Hydration gate: wait until some
+ * data-sjs blob actually contains "thread_items" (raw page HTML has NO post
+ * data — probes confirmed).
  *
  * Hardening is minimal (D2): patch navigator.webdriver and set a realistic
  * UA/viewport/locale. Vanilla headless Chromium worked on threads.com in
  * the 2026-10-24 logged-out probes; if GitHub Actions runner IPs get
  * blocked, hardening escalates here (see Verification Notes smoke gate).
  *
- * Surface policy (D11): every tag is attempted with retries; a failed
- * surface is tolerated while at least one succeeds; all-fail throws.
+ * Surface policy (D11): every surface is attempted with retries; a failed
+ * surface is tolerated while at least one succeeds; all-fail throws. The
+ * surface list itself lives in watcher.config.json (Phase 10).
  */
 import { chromium, type BrowserContext } from "playwright";
-import { tagPageUrl } from "./config.js";
+import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
 import type { Post } from "./types.js";
 
@@ -54,18 +56,28 @@ const HAS_THREAD_ITEMS = `() =>
     document.querySelectorAll('script[type="application/json"][data-sjs]'),
   ).some((el) => (el.textContent || '').includes('thread_items'))`;
 
-/** Rendered HTML for one tag surface, ready for extractPosts(). */
+/**
+ * A `tag` surface logs as `tag/<value>`; a `url` surface logs as its full
+ * URL. resolveSurfaces (src/config-file.ts) builds the labels, so the prefix
+ * is the only discriminator available here — and it is unambiguous, because
+ * a `url` surface is always an absolute https://www.threads.com/... URL.
+ */
+function isTagSurface(surface: ResolvedSurface): boolean {
+  return surface.label.startsWith("tag/");
+}
+
+/** Rendered HTML for one surface, ready for extractPosts(). */
 export interface SurfaceFetch {
-  tag: string;
+  label: string;
   html: string;
 }
 
 /**
- * Fetch every tag page and return the successes in input order.
+ * Fetch every configured surface and return the successes in input order.
  * Throws when every surface fails (message lists per-surface errors).
  */
-export async function fetchTagPages(
-  tags: readonly string[],
+export async function fetchSurfaces(
+  surfaces: readonly ResolvedSurface[],
 ): Promise<SurfaceFetch[]> {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -80,20 +92,20 @@ export async function fetchTagPages(
 
     const results: SurfaceFetch[] = [];
     const failures: string[] = [];
-    for (const tag of tags) {
+    for (const surface of surfaces) {
       try {
-        results.push({ tag, html: await fetchOne(context, tag) });
-        console.log(`fetch: /tag/${tag} OK`);
+        results.push({ label: surface.label, html: await fetchOne(context, surface) });
+        console.log(`fetch: ${surface.label} OK`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        failures.push(`/tag/${tag}: ${message}`);
-        console.warn(`fetch: /tag/${tag} FAILED — ${message}`);
+        failures.push(`${surface.label}: ${message}`);
+        console.warn(`fetch: ${surface.label} FAILED — ${message}`);
       }
     }
 
     if (results.length === 0) {
       throw new Error(
-        `fetch: all ${tags.length} surface(s) failed:\n${failures.join("\n")}`,
+        `fetch: all ${surfaces.length} surface(s) failed:\n${failures.join("\n")}`,
       );
     }
     return results;
@@ -102,17 +114,16 @@ export async function fetchTagPages(
   }
 }
 
-/** Fetch one tag page: up to MAX_ATTEMPTS tries with linear backoff. */
+/** Fetch one surface: up to MAX_ATTEMPTS tries with linear backoff. */
 async function fetchOne(
   context: BrowserContext,
-  tag: string,
+  surface: ResolvedSurface,
 ): Promise<string> {
-  const url = tagPageUrl(tag);
   let lastError: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const page = await context.newPage();
     try {
-      await page.goto(url, {
+      await page.goto(surface.url, {
         waitUntil: "domcontentloaded",
         timeout: NAV_TIMEOUT_MS,
       });
@@ -124,7 +135,7 @@ async function fetchOne(
     } catch (error) {
       lastError = error;
       console.warn(
-        `fetch: /tag/${tag} attempt ${attempt}/${MAX_ATTEMPTS} failed`,
+        `fetch: ${surface.label} attempt ${attempt}/${MAX_ATTEMPTS} failed`,
       );
       if (attempt < MAX_ATTEMPTS) {
         await sleep(RETRY_BASE_DELAY_MS * attempt);
@@ -139,7 +150,7 @@ async function fetchOne(
 }
 
 /**
- * Fetch posts from the tag pages with an authenticated session.
+ * Fetch posts from the configured surfaces with an authenticated session.
  *
  * The logged-in tag page defaults to the Top view (old, popular posts) and
  * hydrates post data through graphql XHR responses instead of the initial
@@ -148,10 +159,14 @@ async function fetchOne(
  * walks them for thread_items arrays with the same helpers extractPosts
  * uses, and scrolls until the feed stops yielding new posts.
  *
+ * The Recent-tab click is best-effort for every surface: profile pages and
+ * search URLs have no such tab, and a `filter=recent` search URL is recent
+ * by construction.
+ *
  * Throws when every surface fails (message lists per-surface errors).
  */
-export async function fetchTagPostsAuthenticated(
-  tags: readonly string[],
+export async function fetchSurfacesAuthenticated(
+  surfaces: readonly ResolvedSurface[],
   storageStatePath: string,
 ): Promise<Post[]> {
   const browser = await chromium.launch({ headless: true });
@@ -169,19 +184,19 @@ export async function fetchTagPostsAuthenticated(
     const results: Post[] = [];
     const failures: string[] = [];
     const empty: string[] = [];
-    for (const tag of tags) {
+    for (const surface of surfaces) {
       try {
-        const posts = await fetchOneAuthenticated(context, tag);
-        console.log(`extract: tag/${tag}: ${posts.length} post(s) (authenticated)`);
+        const posts = await fetchOneAuthenticated(context, surface);
+        console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
         // A surface that yields 0 posts is NOT a thrown failure, so it never
         // reaches `failures`. Track it separately or the all-fail error below
         // lists nothing and the run dies with no diagnostic.
-        if (posts.length === 0) empty.push(`/tag/${tag}`);
+        if (posts.length === 0) empty.push(surface.label);
         results.push(...posts);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        failures.push(`/tag/${tag}: ${message}`);
-        console.warn(`fetch: /tag/${tag} FAILED — ${message}`);
+        failures.push(`${surface.label}: ${message}`);
+        console.warn(`fetch: ${surface.label} FAILED — ${message}`);
       }
     }
 
@@ -193,7 +208,7 @@ export async function fetchTagPostsAuthenticated(
         );
       }
       throw new Error(
-        `fetch: all ${tags.length} authenticated surface(s) failed:\n${detail.join("\n")}`,
+        `fetch: all ${surfaces.length} authenticated surface(s) failed:\n${detail.join("\n")}`,
       );
     }
     return results;
@@ -205,7 +220,7 @@ export async function fetchTagPostsAuthenticated(
 /** One authenticated surface: Recent tab, XHR capture, scroll to accumulate. */
 async function fetchOneAuthenticated(
   context: BrowserContext,
-  tag: string,
+  surface: ResolvedSurface,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
@@ -234,7 +249,7 @@ async function fetchOneAuthenticated(
   });
 
   try {
-    await page.goto(tagPageUrl(tag), {
+    await page.goto(surface.url, {
       waitUntil: "domcontentloaded",
       timeout: NAV_TIMEOUT_MS,
     });
@@ -261,8 +276,12 @@ async function fetchOneAuthenticated(
     if (recentVisible) {
       await recentTab.click();
       await page.waitForTimeout(RECENT_SETTLE_MS);
+    } else if (isTagSurface(surface)) {
+      // A tag page should carry a Recent tab; its absence is unexpected.
+      console.warn(`fetch: ${surface.label} has no Recent tab — using the default view`);
     } else {
-      console.warn(`fetch: /tag/${tag} has no Recent tab — using the default view`);
+      // A profile or search URL selects its own view; no tab is expected.
+      console.log(`fetch: ${surface.label} has no Recent tab — the URL selects its own view`);
     }
 
     // `posts` is filled by ASYNC response handlers, so a single settle window
@@ -278,12 +297,12 @@ async function fetchOneAuthenticated(
       if (gained < SCROLL_MIN_GAIN) {
         dryRounds += 1;
         console.log(
-          `fetch: /tag/${tag} scroll ${round}: +${gained} (dry ${dryRounds}/${MAX_DRY_SCROLL_ROUNDS})`,
+          `fetch: ${surface.label} scroll ${round}: +${gained} (dry ${dryRounds}/${MAX_DRY_SCROLL_ROUNDS})`,
         );
         if (dryRounds >= MAX_DRY_SCROLL_ROUNDS) break;
       } else {
         dryRounds = 0;
-        console.log(`fetch: /tag/${tag} scroll ${round}: +${gained}`);
+        console.log(`fetch: ${surface.label} scroll ${round}: +${gained}`);
       }
       if (posts.size >= MAX_POSTS_PER_SURFACE) break;
     }
@@ -291,7 +310,7 @@ async function fetchOneAuthenticated(
     // Let in-flight response handlers settle before the page goes away.
     await page.waitForTimeout(XHR_DRAIN_MS);
     console.log(
-      `fetch: /tag/${tag} OK — ${posts.size} post(s) from ${xhrBodies} XHR response(s)`,
+      `fetch: ${surface.label} OK — ${posts.size} post(s) from ${xhrBodies} XHR response(s)`,
     );
     return [...posts.values()];
   } finally {
@@ -302,4 +321,3 @@ async function fetchOneAuthenticated(
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-

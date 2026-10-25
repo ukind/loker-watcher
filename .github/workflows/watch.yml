@@ -31,9 +31,7 @@ jobs:
 
       - name: Run watcher
         env:
-          THREADS_TAGS: ${{ vars.THREADS_TAGS }}
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
-          RECENCY_HOURS: ${{ vars.RECENCY_HOURS }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
