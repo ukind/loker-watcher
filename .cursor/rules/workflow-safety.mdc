@@ -1,0 +1,13 @@
+---
+description: Safety rules for the GitHub Actions workflows - secrets handling, state commit discipline, schedule changes.
+globs: .github/workflows/*.yml
+alwaysApply: false
+---
+
+# Workflow safety rules
+
+- Credentials come from the `secrets` context only. Never echo them.
+- Only `state/seen-posts.json` is committed back, as `github-actions[bot]`.
+- The commit step must skip cleanly when the state file is unchanged.
+- Do not widen the cron schedule without saying so in the PR.
+- Keep `permissions` minimal; `contents: write` exists for state commits only.

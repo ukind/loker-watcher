@@ -1,0 +1,16 @@
+---
+description: Non-negotiables for loker-watcher TypeScript source - fail-visible errors, atomic state writes, strict TS, Node 22 ESM.
+globs: src/**/*.ts, tests/**/*.ts
+alwaysApply: false
+---
+
+# TypeScript source rules
+
+- Errors must fail visible: exit nonzero with a message that names the fault.
+- Never catch an error and continue silently.
+- Never fall back to built-in defaults when config is missing or invalid.
+- Keep state writes atomic: write a temp file, then rename.
+- Keep strict TS flags on; do not weaken tsconfig.json.
+- Import Node builtins with the `node:` prefix.
+- No new runtime dependency without a stated need.
+- Tests stay offline: mock transports, temp state files, committed fixtures.
