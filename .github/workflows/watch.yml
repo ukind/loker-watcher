@@ -29,9 +29,7 @@ jobs:
 
       - name: Probe judge latency
         env:
-          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
         run: npx tsx scripts/probe-judge.ts
 
   watch:
@@ -55,9 +53,7 @@ jobs:
       - name: Run watcher
         env:
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
-          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: npx tsx src/index.ts

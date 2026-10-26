@@ -34,11 +34,13 @@ against the configured keywords, email digest, commit state.
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)
 - `src/judge.ts` - ~10-post bulk chat-completions calls judged against the
-  keywords in `watcher.config.json`; up to `JUDGE_CONCURRENCY` batches run
-  at once (floor 4, ceiling read by the probe's ramp), a retryable status
-  (429/5xx) is retried with backoff, bulk misses fall back to single-post
-  calls, and a batch the endpoint does not answer is deferred whole;
-  returns `{relevant, locationOk}` per post
+  keywords in `watcher.config.json`; accounts come from the `LLM_ACCOUNTS`
+  pool (the first HTTP 429 rotates to the next account with no backoff,
+  run-sticky; 5xx retries the same account with backoff; an exhausted pool
+  throws a typed error that sends one alarm email and exits 1), up to
+  `JUDGE_CONCURRENCY` batches run at once, bulk misses fall back to
+  single-post calls, and a batch the endpoint does not answer is deferred
+  whole; returns `{relevant, locationOk}` per post
 - `src/email.ts` - nodemailer transport for the digest
 - `src/heartbeat.ts` - zero-match status email so quiet runs stay legible
 - `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation

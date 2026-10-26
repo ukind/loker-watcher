@@ -4,11 +4,13 @@ import type { Transporter } from "nodemailer";
 import {
   type EmailConfig,
   buildDigest,
+  buildExhaustionText,
   buildSubject,
   resolveEmailConfig,
   sendDigest,
+  sendExhaustionEmail,
 } from "../src/email.js";
-import type { Post } from "../src/types.js";
+import type { AccountFailure, Post } from "../src/types.js";
 
 describe("buildSubject", () => {
   it("returns null for empty post array", () => {
@@ -263,6 +265,76 @@ describe("sendDigest", () => {
 
     await assert.rejects(
       () => sendDigest(samplePosts, sampleConfig, mockTransport),
+      /email: failed to send: SMTP connection timeout/,
+    );
+  });
+});
+
+describe("buildExhaustionText", () => {
+  it("returns null for an empty failure list", () => {
+    assert.equal(buildExhaustionText([]), null);
+  });
+
+  it("lists every account with its reason in pool order", () => {
+    const text = buildExhaustionText([
+      { account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 429" },
+      { account: 2, baseUrl: "https://api.b.com/v1", reason: "socket hang up" },
+    ]);
+    assert.ok(text?.includes("account 1 (https://api.a.com/v1) — HTTP 429"));
+    assert.ok(text?.includes("account 2 (https://api.b.com/v1) — socket hang up"));
+    assert.ok(text?.includes("LLM_ACCOUNTS"));
+  });
+});
+
+describe("sendExhaustionEmail", () => {
+  const sampleConfig: EmailConfig = {
+    user: "alerts@gmail.com",
+    pass: "app-password",
+    to: "alerts@gmail.com",
+  };
+  const failures: AccountFailure[] = [
+    { account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 429" },
+  ];
+
+  it("sends one alarm naming every failed account", async () => {
+    let captured: unknown = null;
+    const mockTransport = {
+      sendMail: async (options: unknown) => {
+        captured = options;
+        return { messageId: "msg-exh" };
+      },
+    } as unknown as Transporter;
+
+    const messageId = await sendExhaustionEmail(failures, sampleConfig, mockTransport);
+    assert.equal(messageId, "msg-exh");
+    const mail = captured as { subject: string; text: string };
+    assert.match(mail.subject, /judge pool exhausted/);
+    assert.ok(mail.text.includes("account 1 (https://api.a.com/v1) — HTTP 429"));
+  });
+
+  it("sends nothing when the failure list is empty", async () => {
+    let called = false;
+    const mockTransport = {
+      sendMail: async () => {
+        called = true;
+        return { messageId: "msg-x" };
+      },
+    } as unknown as Transporter;
+
+    const messageId = await sendExhaustionEmail([], sampleConfig, mockTransport);
+    assert.equal(messageId, undefined);
+    assert.equal(called, false);
+  });
+
+  it("throws fail-visible when the transport fails", async () => {
+    const mockTransport = {
+      sendMail: async () => {
+        throw new Error("SMTP connection timeout");
+      },
+    } as unknown as Transporter;
+
+    await assert.rejects(
+      () => sendExhaustionEmail(failures, sampleConfig, mockTransport),
       /email: failed to send: SMTP connection timeout/,
     );
   });

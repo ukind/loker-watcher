@@ -15,11 +15,11 @@
  * ceiling is read by escalating 2 -> 4 -> 8 -> 16.
  *
  * Usage:
- *   LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... npx tsx scripts/probe-judge.ts
+ *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
  * Exits 1 when any call fails, so a dead endpoint fails the step loudly.
  */
 import { loadWatcherConfig } from "../src/config-file.js";
-import { ENV_NAMES } from "../src/config.js";
+import { type LlmAccount, resolveJudgeConfig } from "../src/judge.js";
 import type { Post } from "../src/types.js";
 
 // Read once at startup; a missing or malformed file fails the probe loudly.
@@ -84,17 +84,15 @@ type ProbeOutcome =
  * is a broken endpoint. The ramp needs the difference: a level where every
  * call is refused is a ceiling, a level with failed calls fails the probe.
  */
-async function timed(
-  label: string,
-  payload: unknown,
-  baseUrl: string,
-  apiKey: string,
-): Promise<ProbeOutcome> {
+async function timed(label: string, payload: unknown, account: LlmAccount): Promise<ProbeOutcome> {
   const started = Date.now();
   try {
-    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+    const response = await fetch(`${account.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${account.apiKey}`,
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(120_000),
     });
@@ -121,12 +119,11 @@ async function timed(
 async function rampLevel(
   count: number,
   payload: unknown,
-  baseUrl: string,
-  apiKey: string,
+  account: LlmAccount,
 ): Promise<{ ok: number; refused: number; failed: number; ms: number }> {
   const started = Date.now();
   const results = await Promise.all(
-    Array.from({ length: count }, () => timed("ramp", payload, baseUrl, apiKey)),
+    Array.from({ length: count }, () => timed("ramp", payload, account)),
   );
   return {
     ok: results.filter((result) => result.kind === "ok").length,
@@ -142,13 +139,9 @@ async function rampLevel(
  * ceiling costs one refused round rather than four. A level with failed
  * calls is a broken endpoint: return 0 so the probe exits nonzero.
  */
-async function findConcurrencyCeiling(
-  payload: unknown,
-  baseUrl: string,
-  apiKey: string,
-): Promise<number> {
+async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Promise<number> {
   for (const level of [2, 4, 8, 16]) {
-    const result = await rampLevel(level, payload, baseUrl, apiKey);
+    const result = await rampLevel(level, payload, account);
     console.log(
       `probe: concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
     );
@@ -165,48 +158,40 @@ async function findConcurrencyCeiling(
 }
 
 async function main(): Promise<void> {
-  const baseUrl = process.env[ENV_NAMES.llmBaseUrl]?.trim();
-  const apiKey = process.env[ENV_NAMES.llmApiKey]?.trim();
-  const model = process.env[ENV_NAMES.llmModel]?.trim();
-  if (!baseUrl || !apiKey || !model) {
-    console.error(
-      `probe: missing ${ENV_NAMES.llmBaseUrl}, ${ENV_NAMES.llmApiKey}, or ${ENV_NAMES.llmModel}`,
-    );
+  let account: LlmAccount;
+  try {
+    const first = resolveJudgeConfig(process.env)[0];
+    if (first === undefined) {
+      throw new Error("judge: LLM_ACCOUNTS must not be empty");
+    }
+    account = first;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`probe: ${message}`);
     process.exit(1);
   }
 
   const minimal = await timed(
     "minimal call (one short message)",
     {
-      model,
+      model: account.model,
       messages: [{ role: "user", content: "Reply with the single word: ok" }],
       temperature: 0,
     },
-    baseUrl,
-    apiKey,
+    account,
   );
 
   const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
   const bulkPayload = {
-    model,
+    model: account.model,
     messages: bulkMessages(ten),
     temperature: 0,
     response_format: { type: "json_object" },
   };
-  const bulk = await timed(
-    "bulk call (10 posts, production prompt shape)",
-    bulkPayload,
-    baseUrl,
-    apiKey,
-  );
-  const again = await timed(
-    "bulk call again (10 posts, variance check)",
-    bulkPayload,
-    baseUrl,
-    apiKey,
-  );
+  const bulk = await timed("bulk call (10 posts, production prompt shape)", bulkPayload, account);
+  const again = await timed("bulk call again (10 posts, variance check)", bulkPayload, account);
 
-  const ceiling = await findConcurrencyCeiling(bulkPayload, baseUrl, apiKey);
+  const ceiling = await findConcurrencyCeiling(bulkPayload, account);
   console.log(`probe: recommended JUDGE_CONCURRENCY = ${Math.max(4, ceiling)}`);
 
   console.log(

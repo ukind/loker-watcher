@@ -14,9 +14,7 @@
 export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
   heartbeat: "HEARTBEAT_ENABLED",
-  llmBaseUrl: "LLM_BASE_URL",
-  llmApiKey: "LLM_API_KEY",
-  llmModel: "LLM_MODEL",
+  llmAccounts: "LLM_ACCOUNTS",
   gmailUser: "GMAIL_USER",
   gmailAppPassword: "GMAIL_APP_PASSWORD",
 } as const;

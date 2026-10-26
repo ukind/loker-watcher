@@ -20,8 +20,11 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
    `keywords` list is sent as the relevance criterion; a post the bulk
    response misses falls back to a single-post call. A batch the endpoint
    does not answer is deferred whole — those posts stay unseen and retry
-   on the next run. Up to `JUDGE_CONCURRENCY` batches run at once, so a
-   280-post backlog judges in about 3 minutes instead of 13.
+   on the next run. Accounts come from the `LLM_ACCOUNTS` pool: the first
+   HTTP 429 rotates to the next account with no wait, and an exhausted pool
+   sends one alarm email and fails the run. Up to `JUDGE_CONCURRENCY`
+   batches run at once, so a 280-post backlog judges in about 3 minutes
+   instead of 13.
 6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
    fails is skipped — the post stays unseen and retries on the next run.
 7. New relevant + located posts are emailed as the job digest.
@@ -37,7 +40,8 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
   paid minutes per month.
 - A Gmail account with an
   [app password](https://myaccount.google.com/apppasswords) (2FA required).
-- An OpenAI-compatible chat endpoint (base URL, API key, model name).
+- One or more OpenAI-compatible chat endpoints, configured as the `LLM_ACCOUNTS`
+  pool (see Setup). The judge rotates to the next account on the first HTTP 429.
 
 ## Setup
 
@@ -46,9 +50,7 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
 
    | Name | Example value | Purpose |
    |---|---|---|
-   | `LLM_BASE_URL` | `https://api.openai.com/v1` | Chat completions endpoint |
-   | `LLM_API_KEY` | your-key-here | Endpoint credentials |
-   | `LLM_MODEL` | `gpt-4o-mini` | Judge model |
+   | `LLM_ACCOUNTS` | `[{"baseUrl":"https://api.openai.com/v1","apiKey":"your-key","model":"gpt-4o-mini"}]` | Judge accounts as a JSON array, tried in order; the first 429 rotates to the next, and an exhausted pool emails an alarm and fails the run |
    | `GMAIL_USER` | `you@gmail.com` | Sender and recipient |
    | `GMAIL_APP_PASSWORD` | your-app-password | Gmail SMTP credentials |
    | `THREADS_SESSION_STATE` | base64 storageState | Threads login session (see below) |
@@ -207,7 +209,7 @@ back to the logged-out fetch and still runs.
 ```bash
 npm install
 npx playwright install chromium
-export LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=...
+export LLM_ACCOUNTS='[{"baseUrl":"https://api.openai.com/v1","apiKey":"your-key","model":"gpt-4o-mini"}]'
 export GMAIL_USER=... GMAIL_APP_PASSWORD=...
 npm start
 ```
