@@ -25,7 +25,7 @@
     { "type": "url", "value": "https://www.threads.com/search?q=hiring&serp_type=deeplink&filter=recent" },
     { "type": "url", "value": "https://www.threads.com/search?q=Loker%20jakarta&serp_type=deeplink&filter=recent" },
     { "type": "url", "value": "https://www.threads.com/search?q=Loker%20IT&serp_type=default&filter=recent" },
-    { "type": "url", "value": "https://www.threads.com/search?q=Loker%20IT%20Jakarta&serp_type=tags&filter=recent" },
+    { "type": "url", "value": "https://www.threads.com/search?q=Loker%20IT%20Jakarta&serp_type=tags&filter=recent" }
   ],
   "recencyHours": 72
 }
