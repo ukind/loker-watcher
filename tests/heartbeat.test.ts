@@ -35,7 +35,7 @@ const STATS: HeartbeatStats = {
   unique: 337,
   recent: 303,
   recencyHours: 72,
-  maybes: 1,
+  judged: 1,
   relevantLocated: 0,
   skipped: 0,
 };
@@ -58,11 +58,11 @@ describe("matchesCandidateTerms", () => {
 });
 
 describe("selectCandidates", () => {
-  it("puts keyword maybes first", () => {
-    const maybe = post("m1", "Hiring React dev", 5);
+  it("puts judged candidates first", () => {
+    const lead = post("m1", "Hiring React dev", 5);
     const near = post("n1", "Software engineer Jakarta", 1);
-    const result = selectCandidates([maybe, near], [maybe], TERMS, 10);
-    assert.equal(result[0]?.reason, "maybe");
+    const result = selectCandidates([lead, near], [lead], TERMS, 10);
+    assert.equal(result[0]?.reason, "judged");
     assert.equal(result[0]?.post.id, "m1");
     assert.equal(result[1]?.reason, "near-miss");
   });
@@ -77,9 +77,9 @@ describe("selectCandidates", () => {
     );
   });
 
-  it("does not repeat a maybe as a near-miss", () => {
-    const maybe = post("m1", "Hiring React dev", 5);
-    const result = selectCandidates([maybe], [maybe], TERMS, 10);
+  it("does not repeat a judged candidate as a near-miss", () => {
+    const lead = post("m1", "Hiring React dev", 5);
+    const result = selectCandidates([lead], [lead], TERMS, 10);
     assert.equal(result.length, 1);
   });
 
@@ -135,16 +135,16 @@ describe("buildHeartbeatBody", () => {
     const body = buildHeartbeatBody(STATS, [], NOW);
     assert.ok(body.includes("337 unique post(s)"));
     assert.ok(body.includes("303 within 72h"));
-    assert.ok(body.includes("1 keyword maybe(s)"));
+    assert.ok(body.includes("1 judged candidate(s)"));
     assert.ok(body.includes("0 relevant + located"));
   });
 
   it("lists candidates with permalinks", () => {
     const candidates: Candidate[] = [
-      { post: post("c1", "Hiring React dev in Jakarta", 2, "techco"), reason: "maybe" },
+      { post: post("c1", "Hiring React dev in Jakarta", 2, "techco"), reason: "judged" },
     ];
     const body = buildHeartbeatBody(STATS, candidates, NOW);
-    assert.ok(body.includes("1. @techco — 2h ago [keyword match]"));
+    assert.ok(body.includes("1. @techco — 2h ago [judged]"));
     assert.ok(body.includes("https://www.threads.com/@techco/post/c1"));
   });
 

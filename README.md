@@ -1,9 +1,9 @@
 # loker-watcher
 
 Threads #hiring Indonesia job alerts. A GitHub Actions workflow loads the
-Threads surfaces listed in `watcher.config.json` every 10 minutes, filters
-posts for frontend / fullstack roles in Indonesia (or remote), and emails new
-matches as a plain-text digest. No web UI; the only persistence is
+Threads surfaces listed in `watcher.config.json` every 10 minutes, has an LLM
+judge posts against the configured keywords (Indonesia or remote roles), and
+emails new matches as a plain-text digest. No web UI; the only persistence is
 `state/seen-posts.json`.
 
 ## Pipeline
@@ -16,8 +16,11 @@ matches as a plain-text digest. No web UI; the only persistence is
 2. Posts are deduplicated across surfaces.
 3. Posts older than `recencyHours` (default 72) are dropped.
 4. Posts already in `state/seen-posts.json` are dropped.
-5. A keyword pre-filter keeps frontend / fullstack candidates.
-6. One LLM call per candidate returns `{relevant, locationOk}`.
+5. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
+   `keywords` list is sent as the relevance criterion; a post the bulk
+   response misses falls back to a single-post call.
+6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
+   fails is skipped — the post stays unseen and retries on the next run.
 7. New relevant + located posts are emailed as the job digest.
 8. On match runs the state file is committed back as `github-actions[bot]`.
 9. **Zero-match runs email a status digest instead** — the scan funnel plus
@@ -65,7 +68,7 @@ no code change and no Actions variable is involved.
 | Key | What it does |
 |---|---|
 | `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }` or `{ "type": "url", "value": "https://www.threads.com/@someone" }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`. |
-| `keywords` | Pre-filter. A post must contain one of these to reach the judge. |
+| `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
 | `recencyHours` | How far back a post can be and still count. Default `72`. |
 

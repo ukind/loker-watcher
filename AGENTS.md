@@ -6,8 +6,8 @@ Guidance for AI coding agents working in this repository.
 
 loker-watcher watches Indonesian job-hunting surfaces on Threads. A scheduled
 GitHub Actions workflow loads the surfaces listed in `watcher.config.json`,
-filters posts for frontend / fullstack roles, asks an OpenAI-compatible LLM
-judge about each candidate, and emails new matches as a plain-text digest.
+asks an OpenAI-compatible LLM judge to keep posts matching the configured
+keywords, and emails new matches as a plain-text digest.
 The only persistence is `state/seen-posts.json`, which the workflow commits
 back after match runs.
 
@@ -23,17 +23,18 @@ back after match runs.
 ## Architecture
 
 Pipeline entry point is `src/index.ts`:
-fetch surfaces, dedupe posts, drop stale posts, drop seen posts, keyword
-pre-filter, LLM judge, email digest, commit state.
+fetch surfaces, dedupe posts, drop stale posts, drop seen posts, LLM judge
+against the configured keywords, email digest, commit state.
 
 - `src/fetch-threads.ts`, `src/threads-session.ts` - Playwright loading of tag,
   profile, and search surfaces; signed-in via `THREADS_SESSION_STATE` with a
   logged-out fallback
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
-- `src/keywords.ts`, `src/recency.ts` - the pre-judge filter chain
+- `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)
-- `src/judge.ts` - one chat-completions call per candidate, returns
-  `{relevant, locationOk}`
+- `src/judge.ts` - ~10-post bulk chat-completions calls judged against the
+  keywords in `watcher.config.json`; bulk misses fall back to single-post
+  calls; returns `{relevant, locationOk}` per post
 - `src/email.ts` - nodemailer transport for the digest
 - `src/heartbeat.ts` - zero-match status email so quiet runs stay legible
 - `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation

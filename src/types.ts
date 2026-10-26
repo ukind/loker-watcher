@@ -22,7 +22,7 @@ export interface Post {
 
 /** LLM verdict for one candidate post (judge, Slice 4). */
 export interface JudgeVerdict {
-  /** The post is a genuine frontend/fullstack-adjacent job posting. */
+  /** The post is a genuine job opening related to the configured keywords. */
   relevant: boolean;
   /** The role is in Indonesia or remote. */
   locationOk: boolean;

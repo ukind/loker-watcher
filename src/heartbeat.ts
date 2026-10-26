@@ -6,14 +6,14 @@ import { type EmailConfig, sendText } from "./email.js";
  * The watcher sends no email when a run finds no match, so the operator has
  * no signal that the pipeline is alive — and no way to see why a run found
  * nothing without opening the Actions log. Measured 2026-10-25: the
- * authenticated feed carries ~300 recent posts per run and 0-1 keyword
- * maybes, so a zero-match run is the normal case. This module builds and
- * sends a status email for those runs: the scan funnel plus the candidate
- * posts that came closest, each with its permalink.
+ * authenticated feed carries ~300 recent posts per run, and zero-match runs
+ * are the normal case. This module builds and sends a status email for
+ * those runs: the scan funnel plus the candidate posts that came closest,
+ * each with its permalink.
  *
  * The candidate net comes from watcher.config.json ("candidateTerms") and is
- * deliberately broader than the keyword list: a post that names no
- * frontend/fullstack keyword can still be worth a human look.
+ * deliberately broader than the keyword list the judge uses: a post that
+ * names no configured keyword can still be worth a human look.
  */
 import type { Post } from "./types.js";
 
@@ -30,8 +30,8 @@ export interface HeartbeatStats {
   recent: number;
   /** Recency window in hours. */
   recencyHours: number;
-  /** Posts that passed the keyword pre-filter. */
-  maybes: number;
+  /** Posts sent to the LLM judge (all recency+seen survivors). */
+  judged: number;
   /** Posts the judge marked relevant AND located. */
   relevantLocated: number;
   /** Posts the judge could not evaluate. */
@@ -43,8 +43,8 @@ export interface HeartbeatStats {
 /** One candidate post plus why it is in the list. */
 export interface Candidate {
   post: Post;
-  /** "maybe" passed the keyword filter; "near-miss" only the broader net. */
-  reason: "maybe" | "near-miss";
+  /** "judged" went to the LLM judge; "near-miss" only the broader net. */
+  reason: "judged" | "near-miss";
 }
 
 /** True when the text mentions any candidate term (case-insensitive). */
@@ -54,24 +54,24 @@ export function matchesCandidateTerms(text: string, terms: readonly string[]): b
 }
 
 /**
- * Pick the posts worth a human look: every keyword maybe first (strongest
- * signal), then the newest near-misses, capped at `limit`.
+ * Pick the posts worth a human look: every judged candidate first (the
+ * strongest signal), then the newest near-misses, capped at `limit`.
  */
 export function selectCandidates(
   recent: readonly Post[],
-  maybes: readonly Post[],
+  judged: readonly Post[],
   terms: readonly string[],
   limit: number = MAX_CANDIDATES,
 ): Candidate[] {
-  const out: Candidate[] = maybes.map((post) => ({
+  const out: Candidate[] = judged.map((post) => ({
     post,
-    reason: "maybe" as const,
+    reason: "judged" as const,
   }));
   if (out.length >= limit) return out.slice(0, limit);
 
-  const maybeIds = new Set(maybes.map((post) => post.id));
+  const judgedIds = new Set(judged.map((post) => post.id));
   const nearMisses = recent
-    .filter((post) => !maybeIds.has(post.id) && matchesCandidateTerms(post.text, terms))
+    .filter((post) => !judgedIds.has(post.id) && matchesCandidateTerms(post.text, terms))
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   for (const post of nearMisses) {
@@ -112,7 +112,7 @@ export function buildHeartbeatBody(
     "",
     `  ${stats.unique} unique post(s)`,
     `  ${stats.recent} within ${stats.recencyHours}h`,
-    `  ${stats.maybes} keyword maybe(s)`,
+    `  ${stats.judged} judged candidate(s)`,
     `  ${stats.relevantLocated} relevant + located`,
     `  ${stats.skipped} skipped by the judge`,
     "",
@@ -125,7 +125,7 @@ export function buildHeartbeatBody(
     lines.push("");
     candidates.forEach((candidate, index) => {
       const age = ageHours(candidate.post.timestamp, now);
-      const tag = candidate.reason === "maybe" ? " [keyword match]" : "";
+      const tag = candidate.reason === "judged" ? " [judged]" : "";
       lines.push(`${index + 1}. @${candidate.post.author} — ${age}h ago${tag}`);
       lines.push(`   ${snippet(candidate.post.text)}`);
       lines.push(`   ${candidate.post.permalink}`);

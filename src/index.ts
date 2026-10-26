@@ -4,10 +4,10 @@ import { resolveEmailConfig, sendDigest } from "./email.js";
 /**
  * CLI entry point: the full v1 pipeline (FRD #1-#9).
  *
- * fetch → extract → dedupe vs state → keywords → judge → filter → email →
- * state commit. Every stage logs its counts; any thrown error exits non-zero
- * and leaves state untouched (D8: the write is match-gated and ordered after
- * the email send, so a failed run never marks posts seen).
+ * fetch → extract → dedupe vs state → judge → email → state commit. Every
+ * stage logs its counts; any thrown error exits non-zero and leaves state
+ * untouched (D8: the write is match-gated and ordered after the email send,
+ * so a failed run never marks posts seen).
  *
  * What to watch and how to filter comes from watcher.config.json (Phase 10),
  * loaded once at startup. A missing or malformed file fails the run.
@@ -16,7 +16,6 @@ import { extractPosts } from "./extract.js";
 import { fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { judgePosts, resolveJudgeConfig } from "./judge.js";
-import { filterPostsByKeywords } from "./keywords.js";
 import { filterRecent } from "./recency.js";
 import { diffNew, loadState, saveState } from "./state.js";
 import { resolveSession } from "./threads-session.js";
@@ -32,7 +31,7 @@ import type { Post } from "./types.js";
 async function heartbeat(
   stats: HeartbeatStats,
   recent: readonly Post[],
-  maybes: readonly Post[],
+  judged: readonly Post[],
   candidateTerms: readonly string[],
 ): Promise<void> {
   if (!isHeartbeatEnabled(process.env)) {
@@ -41,7 +40,7 @@ async function heartbeat(
   }
   try {
     const config = resolveEmailConfig(process.env);
-    const candidates = selectCandidates(recent, maybes, candidateTerms);
+    const candidates = selectCandidates(recent, judged, candidateTerms);
     await sendHeartbeat(stats, candidates, config);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -76,7 +75,7 @@ async function main(): Promise<void> {
     unique: posts.length,
     recent: recent.length,
     recencyHours,
-    maybes: 0,
+    judged: 0,
     relevantLocated: 0,
     skipped: 0,
     ...(runUrl !== undefined ? { runUrl } : {}),
@@ -84,34 +83,30 @@ async function main(): Promise<void> {
 
   const state = await loadState();
   const newPosts = diffNew(state, recent);
+  stats.judged = newPosts.length;
   if (newPosts.length === 0) {
-    await heartbeat(stats, recent, [], config.candidateTerms);
+    await heartbeat(stats, recent, newPosts, config.candidateTerms);
     console.log("no new matches");
     return;
   }
   console.log(`state: ${newPosts.length} unseen post(s)`);
 
-  const maybes = filterPostsByKeywords(newPosts, config.keywords);
-  stats.maybes = maybes.length;
-  if (maybes.length === 0) {
-    await heartbeat(stats, recent, maybes, config.candidateTerms);
-    console.log("keywords: 0 maybes");
-    console.log("no new matches");
-    return;
-  }
-
-  const { judged, skippedPostIds } = await judgePosts(maybes, resolveJudgeConfig(process.env));
+  const { judged, skippedPostIds } = await judgePosts(
+    newPosts,
+    resolveJudgeConfig(process.env),
+    config.keywords,
+  );
   const matches = judged
     .filter((j) => j.verdict.relevant && j.verdict.locationOk)
     .map((j) => j.post);
   stats.relevantLocated = matches.length;
   stats.skipped = skippedPostIds.length;
   console.log(
-    `keywords: ${maybes.length} maybes, judge: ${matches.length} relevant+located, skipped: ${skippedPostIds.length}`,
+    `judge: ${newPosts.length} candidate(s) judged, ${matches.length} relevant+located, skipped: ${skippedPostIds.length}`,
   );
 
   if (matches.length === 0) {
-    await heartbeat(stats, recent, maybes, config.candidateTerms);
+    await heartbeat(stats, recent, newPosts, config.candidateTerms);
     console.log("no new matches");
     return;
   }
