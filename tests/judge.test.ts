@@ -319,15 +319,12 @@ describe("judgePosts", () => {
     assert.deepEqual(result.skippedPostIds, [bad.id]);
   });
 
-  it("routes a wholly failed batch through the fallback without a batch retry", async () => {
+  it("defers a wholly unanswered batch without firing fallback calls", async () => {
     const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
     let calls = 0;
     const mockFetch = async () => {
       calls += 1;
-      if (calls === 1) {
-        return new Response("Bad Gateway", { status: 502 }); // the one batch attempt
-      }
-      return ok('{"relevant": true, "locationOk": true}');
+      return new Response("Bad Gateway", { status: 502 }); // every batch attempt fails
     };
 
     const result = await judgePosts(
@@ -336,8 +333,52 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
-    assert.equal(calls, 3); // 1 batch + 2 fallbacks — no second batch call
-    assert.equal(result.judged.length, 2);
+    assert.equal(calls, 1); // one batch attempt, zero fallback calls
+    assert.equal(result.judged.length, 0);
+    assert.deepEqual(
+      result.skippedPostIds,
+      posts.map((p) => p.id),
+    );
+  });
+
+  it("defers a batch whose request times out", async () => {
+    const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
+    const mockFetch = async () => {
+      throw new Error("The operation was aborted due to timeout");
+    };
+
+    const result = await judgePosts(
+      posts,
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(result.judged.length, 0);
+    assert.deepEqual(
+      result.skippedPostIds,
+      posts.map((p) => p.id),
+    );
+  });
+
+  it("still falls back per item when the batch answers with unparseable text", async () => {
+    const a = bulkPost(id19(1));
+    let calls = 0;
+    const mockFetch = async () => {
+      calls += 1;
+      if (calls === 1) {
+        return ok("I cannot judge these posts."); // answered, but not JSON
+      }
+      return ok('{"relevant": true, "locationOk": true}');
+    };
+
+    const result = await judgePosts(
+      [a],
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(calls, 2); // one batch + one fallback — a parse miss is not a transport failure
+    assert.equal(result.judged.length, 1);
     assert.deepEqual(result.skippedPostIds, []);
   });
 

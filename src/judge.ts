@@ -12,16 +12,23 @@
  *
  * Every bulk verdict is validated per item. Items missing or malformed in
  * the bulk response fall back to the single-post judgePost (2 attempts).
- * The batch call itself gets no retry — judgePost's loop stays the only
- * retry mechanism, so the worst case is deterministic:
- * ceil(N/BATCH_SIZE) + 2N calls. A post that fails both stages is skipped
- * for this run, logged visibly, and omitted from state (D3: it stays
- * unseen and retries next run).
+ * The batch call itself gets no retry, and a batch the endpoint does not
+ * answer is deferred whole — a transport failure predicts fallback failure,
+ * so the worst case is ceil(N/BATCH_SIZE) calls, not ceil(N/BATCH_SIZE)
+ * + 2N. A post that fails both stages is skipped for this run, logged
+ * visibly, and omitted from state (D3: it stays unseen and retries next
+ * run).
  */
 import { ENV_NAMES } from "./config.js";
 import type { JudgeVerdict, Post } from "./types.js";
 
-const REQUEST_TIMEOUT_MS = 15_000;
+/**
+ * Per-request timeout. 15s was never validated from a GitHub runner: run
+ * 40264368939 timed out every batch and every fallback call at exactly
+ * 15.0s. Phase 0 measures the real latency from the runner and confirms
+ * this value.
+ */
+const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Posts per bulk judge call. Module constant by design — no config key. */
 const BATCH_SIZE = 10;
@@ -212,19 +219,33 @@ export function parseBulkVerdicts(content: string): Map<string, JudgeVerdict> | 
   }
 }
 
+/** Result of one bulk call: a parsed container, or no usable answer. */
+type BatchOutcome =
+  | { status: "answered"; verdicts: Map<string, JudgeVerdict> }
+  | { status: "unanswered" };
+
 /**
- * One bulk call for up to BATCH_SIZE posts. No retry: any failure degrades
- * the whole batch to per-item fallback (judgePost's loop stays the only
- * retry mechanism, keeping worst-case call counts deterministic).
- * Returns null when the response is unrecoverable (HTTP failure, missing
- * content, or a container-level parse failure).
+ * One bulk call for up to BATCH_SIZE posts. No retry.
+ *
+ * Returns "unanswered" when the endpoint did not produce a usable response
+ * (HTTP failure, request error, or missing message content). A transport
+ * failure predicts fallback failure — the same endpoint answers the
+ * per-item calls no faster — so the caller defers the whole batch instead
+ * of firing up to 2*BATCH_SIZE more doomed calls. Measured on run
+ * 40264368939: one 15s batch timeout cascaded into 20 more timeouts and
+ * burned 6.5 of the job's 10 minutes for ~10 posts.
+ *
+ * Returns "answered" with whatever the container parsed into, including an
+ * empty Map when the model answered with unparseable text. A parse-level
+ * miss is a model failure, not a transport failure: the simpler single-post
+ * prompt has a real chance, so the caller falls back per item.
  */
 async function judgeBatch(
   batch: readonly Post[],
   config: JudgeConfig,
   keywords: readonly string[],
   fetchFn: typeof fetch,
-): Promise<Map<string, JudgeVerdict> | null> {
+): Promise<BatchOutcome> {
   const payload = {
     model: config.model,
     messages: buildBulkMessages(batch, keywords),
@@ -247,9 +268,9 @@ async function judgeBatch(
 
     if (!response.ok) {
       console.warn(
-        `judge: batch (${batch.length} posts) HTTP ${response.status} ${response.statusText} — falling back to single-post calls (up to 2 attempts per post)`,
+        `judge: batch (${batch.length} posts) HTTP ${response.status} ${response.statusText} — skipping batch (posts stay unseen and retry next run)`,
       );
-      return null;
+      return { status: "unanswered" };
     }
 
     const data = (await response.json()) as {
@@ -258,9 +279,9 @@ async function judgeBatch(
     const rawContent = data.choices?.[0]?.message?.content;
     if (typeof rawContent !== "string") {
       console.warn(
-        `judge: batch (${batch.length} posts) missing message content — falling back to single-post calls (up to 2 attempts per post)`,
+        `judge: batch (${batch.length} posts) missing message content — skipping batch (posts stay unseen and retry next run)`,
       );
-      return null;
+      return { status: "unanswered" };
     }
 
     const verdicts = parseBulkVerdicts(rawContent);
@@ -268,14 +289,15 @@ async function judgeBatch(
       console.warn(
         `judge: batch (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
       );
+      return { status: "answered", verdicts: new Map() };
     }
-    return verdicts;
+    return { status: "answered", verdicts };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(
-      `judge: batch (${batch.length} posts) request error: ${message} — falling back to single-post calls (up to 2 attempts per post)`,
+      `judge: batch (${batch.length} posts) request error: ${message} — skipping batch (posts stay unseen and retry next run)`,
     );
-    return null;
+    return { status: "unanswered" };
   }
 }
 
@@ -350,6 +372,10 @@ export async function judgePost(
  * Collects successful verdicts and tracks skipped IDs (D3). Never throws:
  * every LLM failure lands in skippedPostIds, so a bad endpoint cannot kill
  * the run before the digest and state stages.
+ *
+ * A batch the endpoint did not answer is deferred whole (see judgeBatch):
+ * its posts stay unseen and retry on the next run. The worst case is
+ * therefore ceil(N/BATCH_SIZE) calls, not ceil(N/BATCH_SIZE) + 2N.
  */
 export async function judgePosts(
   candidates: readonly Post[],
@@ -362,10 +388,20 @@ export async function judgePosts(
 
   for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
     const batch = candidates.slice(i, i + BATCH_SIZE);
-    const verdicts = await judgeBatch(batch, config, keywords, fetchFn);
+    const outcome = await judgeBatch(batch, config, keywords, fetchFn);
+
+    if (outcome.status === "unanswered") {
+      for (const post of batch) {
+        skippedPostIds.push(post.id);
+      }
+      console.warn(
+        `judge: skipped batch of ${batch.length} post(s) after an unanswered bulk call; they stay unseen and retry next run`,
+      );
+      continue;
+    }
 
     for (const post of batch) {
-      const fromBulk = verdicts?.get(post.id);
+      const fromBulk = outcome.verdicts.get(post.id);
       const verdict = fromBulk ?? (await judgePost(post, config, keywords, fetchFn));
       if (verdict !== null) {
         judged.push({ post, verdict });

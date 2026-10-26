@@ -18,7 +18,9 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
 4. Posts already in `state/seen-posts.json` are dropped.
 5. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
    `keywords` list is sent as the relevance criterion; a post the bulk
-   response misses falls back to a single-post call.
+   response misses falls back to a single-post call. A batch the endpoint
+   does not answer is deferred whole — those posts stay unseen and retry
+   on the next run.
 6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
    fails is skipped — the post stays unseen and retries on the next run.
 7. New relevant + located posts are emailed as the job digest.
