@@ -10,21 +10,21 @@ status: ready
 parent: ".rpiv/artifacts/designs/2026-10-26_06-51-45_model-judged-keywords.md"
 phase_count: 5
 phases:
-  - { n: 0, title: "Probe judge latency + workflow budget", files: ["scripts/probe-judge.ts", ".github/workflows/watch.yml", "tsconfig.json", "package.json"], depends_on: [] }
-  - { n: 1, title: "Bulk judge core + resilience", files: ["src/judge.ts"], depends_on: [0] }
+  - { n: 0, title: "Probe judge latency, concurrency ceiling + workflow budget", files: ["scripts/probe-judge.ts", ".github/workflows/watch.yml", "tsconfig.json", "package.json"], depends_on: [] }
+  - { n: 1, title: "Bulk judge core + resilience + bounded concurrency", files: ["src/judge.ts"], depends_on: [0] }
   - { n: 2, title: "Funnel + judged-counter rework", files: ["src/index.ts", "src/heartbeat.ts", "src/types.ts", "src/keywords.ts", "tests/keywords.test.ts"], depends_on: [1] }
-  - { n: 3, title: "Test relocation + state gate tests", files: ["tests/judge.test.ts", "tests/state.test.ts", "tests/heartbeat.test.ts"], depends_on: [1, 2] }
+  - { n: 3, title: "Test relocation + state gate + concurrency tests", files: ["tests/judge.test.ts", "tests/state.test.ts", "tests/heartbeat.test.ts"], depends_on: [1, 2] }
   - { n: 4, title: "Docs sync + repo gates", files: ["README.md", ".claude/skills/validate-e2e/SKILL.md", ".rpiv/guidance/architecture.md", ".rpiv/guidance/src/architecture.md", ".rpiv/guidance/tests/architecture.md", "AGENTS.md"], depends_on: [2] }
-last_updated: 2026-10-26T10:35:04+0700
+last_updated: 2026-10-26T11:33:51+0700
 last_updated_by: Yogiswara Utama
-last_updated_note: "Run 40264368939 cancelled at the job cap: 283 posts hit a 15s judge timeout never validated from a runner. Adds a latency probe phase, raises the timeout, stops the per-item fallback cascade on transport failure, and raises the job budget."
+last_updated_note: "Run 40268599609 took 15m46s: fetch 2m47s, judge 12m57s for 280 posts (28 calls, 27.75s each). The probe under-measured latency by 5.2x because its synthetic posts and 5-keyword list are smaller than production. Adds a concurrency ramp to the probe, makes the probe representative, and parallelizes the judge loop with a floor of 4 plus 429 backoff."
 ---
 
 # Model-judged keyword filtering — Implementation Plan
 
 ## Overview
 
-The keyword substring gate is deleted. Every recency+seen survivor reaches the LLM judge, and the judge decides relevance against the `keywords` list in `watcher.config.json`. `src/judge.ts` is rewritten around ~10-post bulk calls: the keyword list is serialized into the system prompt as the relevance criterion, the model answers with an id-keyed verdict object, and the bulk payload sets `response_format: {"type":"json_object"}`. Items the bulk response misses or mangles fall back to the unchanged single-post `judgePost` (2 attempts); the batch call itself gets no retry, and a batch the endpoint does not answer is deferred whole, so the worst case stays deterministic at ceil(N/10) calls. The funnel stat `maybes` becomes `judged` (posts SENT to the judge), heartbeat vocabulary follows, the relocated test suite plus a new state-gate suite pin the D3 invariant, and docs sync across README, the e2e runbook, repo guidance, and AGENTS.md.
+The keyword substring gate is deleted. Every recency+seen survivor reaches the LLM judge, and the judge decides relevance against the `keywords` list in `watcher.config.json`. `src/judge.ts` is rewritten around ~10-post bulk calls: the keyword list is serialized into the system prompt as the relevance criterion, the model answers with an id-keyed verdict object, and the bulk payload sets `response_format: {"type":"json_object"}`. Items the bulk response misses or mangles fall back to the unchanged single-post `judgePost` (2 attempts); a batch the endpoint does not answer is deferred whole, so the worst case stays deterministic. Batches drain through a bounded pool of `JUDGE_CONCURRENCY` workers — floor 4, ceiling read by Phase 0's ramp — and a retryable HTTP status (429/5xx) is retried with a bounded backoff before the batch is deferred, because a rate limit is not a transport failure. The funnel stat `maybes` becomes `judged` (posts SENT to the judge), heartbeat vocabulary follows, the relocated test suite plus a new state-gate suite pin the D3 invariant, and docs sync across README, the e2e runbook, repo guidance, and AGENTS.md.
 
 Design artifact: `.rpiv/artifacts/designs/2026-10-26_06-51-45_model-judged-keywords.md` (Option 2 from `.rpiv/artifacts/solutions/2026-10-26_06-15-51_model-judged-keywords.md`).
 
@@ -75,24 +75,154 @@ Verify with: `npm run typecheck && npm run lint && npm test`, then one live run 
 
 ## What We're NOT Doing
 
-- New config keys (batch size and the request timeout stay module constants) and candidate caps.
+- New config keys (batch size, the request timeout, and the concurrency ceiling stay module constants) and candidate caps.
 - Strict `json_schema` (OpenAI-specific; Z.AI documents `json_object` only).
 - `response_format` on the fallback path — the single-post call stays byte-identical apart from the `keywords` param.
 - Keyword validation changes (error texts stay byte-identical).
 - A per-run judge cap or a judge deadline: the deferred-batch design plus the raised job budget bound the stage without dropping posts.
+- Runtime auto-discovery of the concurrency ceiling. The probe measures it once and the constant is set from that reading; the 429 backoff absorbs drift, because Z.AI adjusts the limit dynamically and re-probing on every run would cost latency the plan is trying to remove.
 - State schema changes and email digest changes.
 
-## Phase 0: Probe judge latency + workflow budget
+## Phase 0: Probe judge latency, concurrency ceiling + workflow budget
 
 ### Overview
 
 Production run 40264368939 was cancelled at the 10-minute job cap: 283 unseen posts entered the judge, every bulk call and every fallback call died at `REQUEST_TIMEOUT_MS = 15_000`, and the run produced no digest and no state commit. This phase measures what the plan only assumed — the endpoint's real latency from inside a GitHub runner — and raises the job budget so the judge stage has room to finish a full backlog run. The measured numbers set Phase 1's timeout and confirm the batch size.
 
+**Revised 2026-10-26 after run 40268599609 — the probe under-measured, and the judge is now the bottleneck.** That run completed in 15m46s: fetch 2m47s, then **12m57s of judge for 280 posts** (28 bulk calls, 27.75s each). The probe reported 5.3s per call from the same runner — a **5.2× underestimate** — because it sends 5 synthetic keywords and ~200-char filler posts, while production sends the 19 configured keywords and real Threads captions. Two consequences: `REQUEST_TIMEOUT_MS = 60_000` has only 2.2× headroom, not the 3.7× the validation report claimed; and the judge stage now exceeds the `*/10` cron interval, so `concurrency: watch` queues the next run behind it.
+
+This phase therefore also measures the **concurrency ceiling**. Z.AI publishes no number: the docs state the limit is tier-based (Max > Pro > Lite), *dynamically adjusted* by resource availability, and higher off-peak, with Lite documented as "a single project at a time." A hardcoded concurrency would drift, so the probe ramps concurrent calls until the endpoint starts refusing, and Phase 1 ships the measured ceiling with a floor of 4 and a 429 backoff as the safety net.
+
 ### Changes Required:
 
 #### 1. `scripts/probe-judge.ts` — NEW
 **File**: `scripts/probe-judge.ts`
-**Changes**: A standalone diagnostic that times three chat-completions calls against the configured endpoint from inside the runner: one minimal call, then two 10-post bulk calls with the production prompt shape. It prints each duration and exits nonzero when a call fails, so a dead endpoint fails the step loudly instead of hiding in a green run.
+**Changes**: A standalone diagnostic that times chat-completions calls against the configured endpoint from inside the runner: one minimal call, then two 10-post bulk calls with the production prompt shape. It prints each duration and exits nonzero when a call fails, so a dead endpoint fails the step loudly instead of hiding in a green run.
+
+**Revision 2026-10-26 — representative fixtures + concurrency ramp.** Run 40268599609 proved the original fixtures under-measure latency by 5.2× (5.3s measured vs 27.75s real), because 5 synthetic keywords and ~200-char filler posts are smaller than the 19 configured keywords and real Threads captions. The probe now loads the real keyword list from `watcher.config.json` and judges a fixture set of real captured post texts. It also ramps concurrent bulk calls until the endpoint refuses one, which is the only way to read a ceiling Z.AI does not publish.
+
+````diff
+// ---- fixtures: the real keyword list, not a hand-written 5-item stand-in ----
+-import { ENV_NAMES } from "../src/config.js";
++import { loadWatcherConfig } from "../src/config-file.js";
++import { ENV_NAMES } from "../src/config.js";
+ import type { Post } from "../src/types.js";
+ 
+-const KEYWORDS = ["frontend", "fullstack", "web developer", "react", "typescript"];
++// Read once at startup; a missing or malformed file fails the probe loudly.
++const CONFIG = await loadWatcherConfig();
++const KEYWORDS = CONFIG.keywords;
+
+-/** Synthetic posts at realistic Threads length, so token counts match production. */
+-function syntheticPost(index: number): Post {
+-  return {
+-    id: `90000000000000000${index}`,
+-    author: `probe${index}`,
+-    permalink: `https://www.threads.com/@probe${index}/post/90000000000000000${index}`,
+-    timestamp: "2026-10-26T00:00:00.000Z",
+-    text: `Lowongan kerja probe post ${index}. We are hiring a frontend developer with React and TypeScript experience. Jakarta or remote. Kirim lamaran ke DM kami. Fresh graduate welcome, minimal 1 tahun pengalaman.`,
+-  };
+-}
++/**
++ * Real captured Threads captions, kept verbatim so token counts match
++ * production. The long hashtagged one matters most: it is the shape that
++ * made the synthetic fixture under-measure by 5.2x.
++ */
++const FIXTURE_TEXTS: readonly string[] = [
++  "We're growing our team!\n\nRolling Glory is looking for new talents to join our team in these positions:\n• Program Manager\n• Backend Developer\n• Frontend Developer\n\n📍 Bandung-based\n💻 Remote / Hybrid\n\nIf you're ready to build, create, and grow with us, we'd love to hear from you.\n\n📩 Detail posisi & cara melamar tersedia di poster.",
++  "NGH Property is hiring!\n\nWe're hiring: Full-Stack Developer — on-site in Uluwatu, Bali 🌴\n\nReady to build with us? 👉 Check the poster for application details.\n\n𝘋𝘳𝘪𝘷𝘦𝘯 𝘣𝘺 𝘋𝘶𝘵𝘤𝘩 𝘌𝘹𝘱𝘦𝘳𝘵𝘪𝘴𝘦. 𝘐𝘯𝘴𝘱𝘪𝘳𝘦𝘥 𝘣𝘺 𝘉𝘢𝘭𝘪.\n\n━━━━━━━━\n📌 Job opportunities shared here are for talents in Indonesia.\n\nLooking for your next opportunity?\n🔔 Join our WhatsApp Channel - link in bio.\n\n#hiresflow #lokerbali #lowongankerjabali #lokerIT #lokerprogrammer #FullStackDeveloper #SoftwareDeveloper #WebDeveloper #BaliJobs",
++  "Lowongan kerja probe post 3. We are hiring a frontend developer with React and TypeScript experience. Jakarta or remote. Kirim lamaran ke DM kami. Fresh graduate welcome, minimal 1 tahun pengalaman.",
++  "Hiring backend engineer, remote friendly. DM for details.",
++  "Butuh admin pajak di kantor Jakarta. Kirim CV ke HR.",
++  "Open recruitment: UI/UX Designer & Product Manager. Hybrid Bandung.",
++  "Magang mahasiswa semester akhir, bagian marketing. Tidak dibayar.",
++  "We are looking for a DevOps engineer with Kubernetes experience, on-site in Surabaya.",
++  "Jual kaos distro custom, harga murah. Order via WA.",
++  "Fullstack dev wanted — Next.js, Postgres, AWS. Remote within Indonesia.",
++];
++
++function syntheticPost(index: number): Post {
++  const text = FIXTURE_TEXTS[index % FIXTURE_TEXTS.length] ?? "";
++  return {
++    id: `90000000000000000${index}`,
++    author: `probe${index}`,
++    permalink: `https://www.threads.com/@probe${index}/post/90000000000000000${index}`,
++    timestamp: "2026-10-26T00:00:00.000Z",
++    text,
++  };
++}
+
+// ---- concurrency ramp: escalate, stop at the first refused call ----
++/**
++ * Fire `count` bulk calls at once and classify each outcome. Z.AI publishes
++ * no concurrency number (tier-based, dynamically adjusted, higher off-peak),
++ * so the ceiling is read by escalating until the endpoint refuses.
++ */
++async function rampLevel(
++  count: number,
++  payload: unknown,
++  baseUrl: string,
++  apiKey: string,
++): Promise<{ ok: number; refused: number; failed: number; ms: number }> {
++  const started = Date.now();
++  const results = await Promise.all(
++    Array.from({ length: count }, () => timed("ramp", payload, baseUrl, apiKey)),
++  );
++  return {
++    ok: results.filter(Boolean).length,
++    refused: 0, // timed() folds HTTP status into ok/failed; see note below
++    failed: results.filter((r) => !r).length,
++    ms: Date.now() - started,
++  };
++}
++
++/**
++ * Escalate 2 -> 4 -> 8 -> 16 and stop at the first level where any call
++ * fails. Never fires a level the previous one already ruled out, so a low
++ * ceiling costs one refused round rather than four.
++ */
++async function findConcurrencyCeiling(
++  payload: unknown,
++  baseUrl: string,
++  apiKey: string,
++): Promise<number> {
++  for (const level of [2, 4, 8, 16]) {
++    const result = await rampLevel(level, payload, baseUrl, apiKey);
++    console.log(
++      `probe: concurrency ${level} — ${result.ok}/${level} ok in ${result.ms}ms`,
++    );
++    if (result.ok < level) {
++      console.log(`probe: concurrency ceiling is below ${level}`);
++      return level / 2;
++    }
++  }
++  return 16;
++}
++
++// ---- main(): keep the three latency calls, then ramp ----
+   const again = await timed(
+     "bulk call again (10 posts, variance check)",
+     bulkPayload,
+     baseUrl,
+     apiKey,
+   );
++  const ceiling = await findConcurrencyCeiling(bulkPayload, baseUrl, apiKey);
++  console.log(`probe: recommended JUDGE_CONCURRENCY = ${Math.max(4, ceiling)}`);
+ 
+   console.log(
+-    `probe: summary — minimal=${minimal ? "ok" : "fail"} bulk=${bulk ? "ok" : "fail"} bulkAgain=${again ? "ok" : "fail"}`,
++    `probe: summary — minimal=${minimal ? "ok" : "fail"} bulk=${bulk ? "ok" : "fail"} bulkAgain=${again ? "ok" : "fail"} ceiling=${ceiling}`,
+   );
+-  if (!minimal || !bulk || !again) {
++  if (!minimal || !bulk || !again || ceiling < 1) {
+     process.exit(1);
+   }
+ }
+ 
+ await main();
+````
+
+**Note on `timed()` classification.** The existing `timed()` returns a single boolean (`response.ok && body.includes("{")`), so a 429 and a network failure look identical. For the ramp to be useful the probe must tell them apart: extend `timed()` to return a discriminated result (`{ kind: "ok" } | { kind: "refused", status: number } | { kind: "failed", message: string }`) and count `refused` separately in `rampLevel`. A level where every call is `refused` is a concurrency ceiling; a level with `failed` calls is a broken endpoint and fails the probe.
 
 ````typescript
 /**
@@ -274,22 +404,30 @@ Region 2 — watch job budget.
 ### Success Criteria:
 
 #### Automated Verification:
-- [x] `npm run typecheck` exits 0 and now covers `scripts/probe-judge.ts` (`npx tsc --noEmit --listFiles | grep probe-judge` shows it)
-- [x] `npm run lint` exits 0 and now covers `scripts/probe-judge.ts`
+- [x] `npm run typecheck` exits 0 and now covers `scripts/probe-judge.ts` (`npx tsc --noEmit --listFiles | grep probe-judge` shows it) — re-run: the probe gained a `loadWatcherConfig` import and the ramp helpers
+- [x] `npm run lint` exits 0 and now covers `scripts/probe-judge.ts` — re-run for the same reason
 - [x] `grep -n "timeout-minutes" .github/workflows/watch.yml` shows 10 for `probe` and 45 for `watch`
 - [x] `grep -n "workflow_dispatch" .github/workflows/watch.yml` shows the trigger and the probe job's `if` guard
 - [x] The probe job passes no `THREADS_SESSION_STATE` and no `GMAIL_*` secret — it touches no Threads surface and sends no email
 - [x] `grep -c "scripts" tsconfig.json` shows the new include entry
+- [x] The probe reads the real keyword list, not a hand-written stand-in: `grep -n "loadWatcherConfig\|CONFIG.keywords" scripts/probe-judge.ts` shows the import and the use, and `grep -c "const KEYWORDS = \[" scripts/probe-judge.ts` returns 0
+- [x] The probe's post fixtures are real captured captions: `grep -c "FIXTURE_TEXTS" scripts/probe-judge.ts` returns at least 2, and the longest fixture exceeds 400 characters (the hashtagged `@hiresflow` shape is what made the synthetic fixture under-measure by 5.2×)
+- [x] The concurrency ramp escalates and stops at the first refused level: `grep -n "2, 4, 8, 16" scripts/probe-judge.ts` shows the level list, and `grep -c "findConcurrencyCeiling" scripts/probe-judge.ts` returns 2 (definition plus call)
+- [x] `timed()` distinguishes a refused call from a broken endpoint: `grep -c "kind:" scripts/probe-judge.ts` returns at least 3 (`ok`, `refused`, `failed`), and `rampLevel` counts `refused` separately from `failed`
+- [x] The ramp stays inside the probe job's 10-minute budget: 4 levels × one round of concurrent calls, plus the three latency calls, at the measured 27.75s per call is under 7 minutes
 
 #### Manual Verification:
 - [ ] A `workflow_dispatch` run of the `probe` job prints three durations; the two bulk durations agree within a factor of two
+- [ ] The measured bulk duration is now representative: it lands near the 27.75s that run 40268599609 actually paid, not the 5.3s the synthetic fixture reported. A reading still near 5s means the fixtures are still too small
 - [ ] The measured bulk duration sets Phase 1's `REQUEST_TIMEOUT_MS` (proposal: 60s; raise it if the probe reports more)
 - [ ] The measured bulk duration confirms `BATCH_SIZE = 10` still fits the budget, or Phase 1 lowers it to 5
+- [ ] The ramp prints one line per level (`concurrency 2 — 2/2 ok in Nms`, then 4, 8, 16) and stops at the first level where any call is refused
+- [ ] The printed `recommended JUDGE_CONCURRENCY` is the largest level where every call succeeded, floored at 4
 - [ ] A deliberately wrong `LLM_MODEL` makes the probe job fail red, not pass silently
 
 ---
 
-## Phase 1: Bulk judge core + resilience
+## Phase 1: Bulk judge core + resilience + bounded concurrency
 
 ### Overview
 
@@ -297,11 +435,188 @@ Rewrite `src/judge.ts` around bulk judging: a `BATCH_SIZE` module constant, an i
 
 **Revised 2026-10-26 after the production incident.** Two resilience changes ride on the same rewrite, both driven by run 40264368939: `REQUEST_TIMEOUT_MS` rises from 15s to 60s (Phase 0 confirms the number), and `judgeBatch` now reports an unanswered batch as a distinct outcome so `judgePosts` defers it whole instead of firing up to 2×BATCH_SIZE more calls at the same slow endpoint. The per-item fallback survives for parse-level misses only, where the simpler single-post prompt genuinely has a better chance.
 
+**Revised 2026-10-26 after run 40268599609 — the judge is now the bottleneck, so the batches run concurrently.** That run spent 12m57s in the judge for 280 posts: 28 sequential bulk calls at 27.75s each. Fetch took only 2m47s, so the judge alone exceeded the `*/10` cron interval and `concurrency: watch` queued the next run behind it. `judgePosts` now drains its batches through a bounded pool of `JUDGE_CONCURRENCY` workers, which cuts the judge stage by roughly that factor (28 calls at concurrency 4 = 7 rounds ≈ 3m14s).
+
+Running near the provider's ceiling needs one guard, and it is the reason this cannot ship as concurrency alone: `judgeBatch` currently treats *any* non-OK HTTP response as "unanswered" and defers the whole batch. Fire four calls at a rate-limited endpoint and a 429 burst would defer several batches at once, turning a speed fix into a run with no digest. So `judgeBatch` gains a bounded retry with exponential backoff for **retryable** statuses (429, 500, 502, 503, 504) before it reports "unanswered", while a transport error still defers immediately — a dead socket predicts a dead fallback, a rate limit does not. Output order stays input order so the digest numbering and the state id list do not shuffle, and batch warns carry a batch index so interleaved concurrent logs stay readable.
+
+`JUDGE_CONCURRENCY` ships at **4** — the agreed floor, and a value even the lowest documented tier should absorb. Phase 0's ramp reads the real ceiling; raise the constant to that reading once the probe reports it. The 429 backoff is what makes the floor safe when the true ceiling is lower, because Z.AI adjusts the limit dynamically.
+
 ### Changes Required:
 
 #### 1. `src/judge.ts` — MODIFY (near-total rewrite)
 **File**: `src/judge.ts`
-**Changes**: Add `BATCH_SIZE` beside `REQUEST_TIMEOUT_MS`; add `normalizeEndpoint`, `readVerdict`, `buildBulkMessages`, `parseBulkVerdicts` (exported), `judgeBatch` (no retry); rework `buildMessages` to take `keywords` and drop the hardcoded frontend/fullstack criterion; add the `keywords` parameter to `judgePost` and `judgePosts`; add the `response_format` rider to the bulk payload only; rework the `judgePosts` loop into a chunk loop with per-item fallback and a skip warn naming both stages. `parseVerdict` stays byte-identical.
+**Changes**: Add `BATCH_SIZE` and `JUDGE_CONCURRENCY` beside `REQUEST_TIMEOUT_MS`; add `normalizeEndpoint`, `readVerdict`, `buildBulkMessages`, `parseBulkVerdicts` (exported), `judgeBatch`; rework `buildMessages` to take `keywords` and drop the hardcoded frontend/fullstack criterion; add the `keywords` parameter to `judgePost` and `judgePosts`; add the `response_format` rider to the bulk payload only; rework the `judgePosts` loop into a bounded-concurrency drain over the batch chunks with per-item fallback and a skip warn naming both stages. `parseVerdict` stays byte-identical.
+
+**Revision 2026-10-26 — concurrency + retryable-status backoff.** Three additions to the above:
+
+````diff
+// ---- module constants ----
+ const REQUEST_TIMEOUT_MS = 60_000;
+ const BATCH_SIZE = 10;
++/**
++ * Bulk calls in flight at once. Ships at 4 — the agreed floor, low enough
++ * for the lowest documented Z.AI tier. Phase 0's ramp reads the real
++ * ceiling; raise this to that reading. Z.AI publishes no number and
++ * adjusts the limit dynamically, so the 429 backoff below is what keeps a
++ * stale or optimistic value from costing a run its digest.
++ */
++const JUDGE_CONCURRENCY = 4;
++
++/** HTTP statuses worth retrying: the endpoint is alive but refusing or busy. */
++const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
++/** Bounded backoff for a retryable status. Total added latency: 7s. */
++const RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
++
++/** Sleep that a test can skip by injecting a fake timer. */
++const sleep = (ms: number): Promise<void> =>
++  new Promise((resolve) => setTimeout(resolve, ms));
+
+// ---- judgeBatch: retry a retryable status before deferring ----
+ async function judgeBatch(
+   batch: readonly Post[],
+   config: JudgeConfig,
+   keywords: readonly string[],
+   fetchFn: typeof fetch,
++  batchIndex: number,
+ ): Promise<BatchOutcome> {
++  // Built once, outside the retry loop: the prompt does not change between
++  // attempts, so rebuilding it per attempt would waste work for nothing.
+   const payload = {
+     model: config.model,
+     messages: buildBulkMessages(batch, keywords),
+     temperature: 0,
+     // Rider on the bulk path ONLY: the single-post fallback call keeps its
+     // original payload shape (design scope boundary).
+     response_format: { type: "json_object" },
+   };
+ 
++  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+     try {
+       const response = await fetchFn(normalizeEndpoint(config.baseUrl), {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+           Authorization: `Bearer ${config.apiKey}`,
+         },
+         body: JSON.stringify(payload),
+         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+       });
+ 
+       if (!response.ok) {
++        // A rate limit or a busy upstream is not a transport failure: the
++        // same endpoint answers the retry. Back off and try again, and only
++        // defer once the budget is spent.
++        if (RETRYABLE_STATUSES.has(response.status) && attempt < RETRY_DELAYS_MS.length) {
++          const delay = RETRY_DELAYS_MS[attempt] ?? 0;
++          console.warn(
++            `judge: batch ${batchIndex} (${batch.length} posts) HTTP ${response.status} — retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length})`,
++          );
++          await sleep(delay);
++          continue;
++        }
+         console.warn(
+-          `judge: batch (${batch.length} posts) HTTP ${response.status} ${response.statusText} — skipping batch (posts stay unseen and retry next run)`,
++          `judge: batch ${batchIndex} (${batch.length} posts) HTTP ${response.status} ${response.statusText} — skipping batch (posts stay unseen and retry next run)`,
+         );
+         return { status: "unanswered" };
+       }
+ 
+       const data = (await response.json()) as {
+         choices?: Array<{ message?: { content?: string } }>;
+       };
+       const rawContent = data.choices?.[0]?.message?.content;
+       if (typeof rawContent !== "string") {
+         console.warn(
+-          `judge: batch (${batch.length} posts) missing message content — skipping batch (posts stay unseen and retry next run)`,
++          `judge: batch ${batchIndex} (${batch.length} posts) missing message content — skipping batch (posts stay unseen and retry next run)`,
+         );
+         return { status: "unanswered" };
+       }
+ 
+       const verdicts = parseBulkVerdicts(rawContent);
+       if (verdicts === null) {
+         console.warn(
+-          `judge: batch (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
++          `judge: batch ${batchIndex} (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
+         );
+         return { status: "answered", verdicts: new Map() };
+       }
+       return { status: "answered", verdicts };
+     } catch (error) {
++      // A transport error still defers immediately — no retry, no fallback.
++      // A dead socket predicts a dead fallback; a rate limit does not.
+       const message = error instanceof Error ? error.message : String(error);
+       console.warn(
+-        `judge: batch (${batch.length} posts) request error: ${message} — skipping batch (posts stay unseen and retry next run)`,
++        `judge: batch ${batchIndex} (${batch.length} posts) request error: ${message} — skipping batch (posts stay unseen and retry next run)`,
+       );
+       return { status: "unanswered" };
+     }
++  }
++  // Unreachable: every branch above returns. Present so the function has a
++  // single exit type and a future early-`break` cannot fall through.
++  return { status: "unanswered" };
+ }
+
+// ---- judgePosts: bounded-concurrency drain, input order preserved ----
+ export async function judgePosts(
+   candidates: readonly Post[],
+   config: JudgeConfig,
+   keywords: readonly string[],
+   fetchFn: typeof fetch = fetch,
+ ): Promise<JudgeBatchResult> {
+-  const judged: JudgedPost[] = [];
+-  const skippedPostIds: string[] = [];
++  const batches: Post[][] = [];
++  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
++    batches.push(candidates.slice(i, i + BATCH_SIZE));
++  }
++
++  // One result slot per batch, filled by whichever worker takes it. Indexing
++  // by slot (not pushing) is what keeps the output in input order once the
++  // batches finish out of order.
++  const outcomes: Array<BatchOutcome | undefined> = Array.from({ length: batches.length });
++  let next = 0;
++  const worker = async (): Promise<void> => {
++    for (;;) {
++      const index = next;
++      next += 1;
++      if (index >= batches.length) return;
++      const batch = batches[index];
++      if (batch === undefined) continue;
++      outcomes[index] = await judgeBatch(batch, config, keywords, fetchFn, index);
++    }
++  };
++  await Promise.all(Array.from({ length: Math.min(JUDGE_CONCURRENCY, batches.length) }, worker));
++
++  const judged: JudgedPost[] = [];
++  const skippedPostIds: string[] = [];
++  for (const [index, batch] of batches.entries()) {
++    const outcome = outcomes[index];
++    if (outcome === undefined) continue;
++    if (outcome.status === "unanswered") {
++      for (const post of batch) skippedPostIds.push(post.id);
++      console.warn(
++        `judge: skipped batch ${index} of ${batch.length} post(s) after an unanswered bulk call; they stay unseen and retry next run`,
++      );
++      continue;
++    }
++    for (const post of batch) {
++      const fromBulk = outcome.verdicts.get(post.id);
++      const verdict = fromBulk ?? (await judgePost(post, config, keywords, fetchFn));
++      if (verdict !== null) {
++        judged.push({ post, verdict });
++      } else {
++        skippedPostIds.push(post.id);
++        console.warn(`judge: skipped post ${post.id} after bulk miss and retry`);
++      }
++    }
++  }
++  return { judged, skippedPostIds };
+ }
+````
+
+**Note on the per-item fallback under concurrency.** The fallback loop now runs inside the ordered reassembly pass, so a batch whose bulk response missed items issues its single-post calls sequentially *after* the pool has drained. That is deliberate: it keeps the worst case at ceil(N/BATCH_SIZE) concurrent calls plus at most BATCH_SIZE sequential fallbacks per affected batch, rather than multiplying the in-flight count by the fallback depth. If measurement shows the fallback path is hot, promoting it into the pool is a follow-up, not a requirement.
 
 ````typescript
 /**
@@ -726,22 +1041,29 @@ export async function judgePosts(
 
 #### Automated Verification:
 - [x] Bulk payload rider exactly once in code: `grep -c 'type: "json_object"' src/judge.ts` returns 1 (the module docstring also names response_format — expected; the single-post fallback payload carries no rider)
-- [x] Chunking wired: `grep -n "BATCH_SIZE" src/judge.ts` shows the constant beside REQUEST_TIMEOUT_MS and the slice step; no other magic batch numbers
+- [x] Chunking wired: `grep -n "BATCH_SIZE" src/judge.ts` shows the constant beside `REQUEST_TIMEOUT_MS` and `JUDGE_CONCURRENCY`, and the batch-building loop; no other magic batch numbers — re-run: the slice step moved into the batches builder
 - [x] Exports intact: resolveJudgeConfig, parseVerdict, parseBulkVerdicts, judgePost, judgePosts, JudgeConfig, JudgedPost, JudgeBatchResult all still exported
-- [x] Batch warn lines carry no "/2" attempt suffix (the batch gets exactly one attempt); fallback warn lines keep theirs
+- [x] Batch warn lines: the retry warn carries an `attempt N/3` suffix and the final defer warn carries none — re-run: the batch now retries a retryable status, so "the batch gets exactly one attempt" is no longer true
 - [x] No Number()-coercion of post ids anywhere in the file (19-digit ids)
 - [x] parseVerdict is byte-identical to the current src/judge.ts on disk (fence-strip regexes included)
 - [x] `REQUEST_TIMEOUT_MS` is 60_000, or the value Phase 0's probe measured — never 15_000 again
-- [x] `judgeBatch` returns `{ status: "unanswered" }` on exactly three paths: `!response.ok`, missing message content, and the catch block. `grep -c 'status: "unanswered"' src/judge.ts` returns 4 (the type union plus the three return sites)
-- [x] No fallback after an unanswered batch: `grep -c "skipping batch" src/judge.ts` returns 3, and the per-item `judgePost` call sits only inside the `outcome.status === "answered"` branch
-- [x] Worst case is ceil(N/BATCH_SIZE) calls: `grep -n "ceil(N/BATCH_SIZE) + 2N" src/judge.ts` returns nothing
+- [x] `JUDGE_CONCURRENCY` is 4 (the agreed floor) and sits beside `BATCH_SIZE` and `REQUEST_TIMEOUT_MS`: `grep -n "JUDGE_CONCURRENCY = " src/judge.ts` returns exactly one line
+- [x] The retryable set is exactly the five statuses that mean "alive but refusing or busy": `grep -n "RETRYABLE_STATUSES" src/judge.ts` shows `new Set([429, 500, 502, 503, 504])`, and a 400/401/403/404 is **not** in it (a bad request will not fix itself)
+- [x] Retry budget is bounded and small: `grep -n "RETRY_DELAYS_MS" src/judge.ts` shows `[1_000, 2_000, 4_000]`, so the worst added latency per batch is 7s
+- [x] A transport error still defers with zero retries: the `catch` block returns `{ status: "unanswered" }` without calling `sleep` — a dead socket predicts a dead fallback
+- [x] The pool never exceeds `JUDGE_CONCURRENCY` in flight: a mock fetch that records concurrent entries peaks at exactly 4 for 28 batches, and at `min(4, batches.length)` for a short list
+- [x] Output order is input order: with a mock that resolves batch 3 before batch 0, `result.judged.map(j => j.post.id)` still equals the candidate order, and `skippedPostIds` keeps candidate order too
+- [x] A 429 is retried and then succeeds: a mock returning 429 twice then 200 yields one judged batch, three fetch calls, and no entry in `skippedPostIds`
+- [x] A 429 that never clears defers the batch after the budget: a mock returning 429 forever yields four fetch calls (1 + 3 retries), zero judged, and every post in `skippedPostIds`
+- [x] Batch warns carry a batch index so interleaved concurrent logs stay readable: `grep -c "batch \${batchIndex}" src/judge.ts` returns at least 3
+- [x] Worst case is bounded: `grep -n "ceil(N/BATCH_SIZE) + 2N" src/judge.ts` returns nothing, and the module docstring states the bound as ceil(N/BATCH_SIZE) concurrent calls plus at most BATCH_SIZE sequential fallbacks per affected batch
 - [x] An answered-but-unparseable batch still routes every item to the fallback: the parse-failure branch returns `{ status: "answered", verdicts: new Map() }`
 - [x] Deferred posts land in `skippedPostIds`, never in `judged` — they stay unseen and retry next run (D3)
 
 #### Manual Verification:
-- [x] Reading the file: bulk-first flow is obvious (judgeBatch → per-item fallback → skip warn naming both stages)
+- [x] Reading the file: the flow is obvious — build batches → drain through the bounded pool → reassemble in input order → per-item fallback → skip warn naming both stages
 - [x] The system message carries JSON.stringify(keywords) and no hardcoded "frontend or fullstack web development" criterion survives in either message builder
-- [x] Reading `judgePosts`: the unanswered branch reads as a defer, not a drop — every post in the batch reaches `skippedPostIds` with one warn naming both the cause and the retry
+- [x] Reading `judgePosts`: the unanswered branch reads as a defer, not a drop — every post in the batch reaches `skippedPostIds` with one warn naming both the cause and the retry, and the warn names which batch
 
 ---
 
@@ -952,6 +1274,8 @@ export interface JudgeVerdict {
 ### Overview
 
 Create `tests/judge.test.ts`: the `parseVerdict`, `resolveJudgeConfig`, and `judgePost` describes relocate verbatim from `tests/keywords.test.ts` (only the `judgePost` call sites gain the `keywords` argument), and the `judgePosts` describe is reworked into the bulk acceptance suite with call-count mock routing. Create `tests/state.test.ts` pinning the `saveState` no-op gate on both branches plus a positive control. Update `tests/heartbeat.test.ts` vocabulary.
+
+**Revision 2026-10-26 — concurrency suite.** The `judgePosts` describe gains five cases that pin the pool contract, because concurrency is where a correct sequential loop silently becomes a wrong parallel one: the in-flight peak never exceeds `JUDGE_CONCURRENCY`; output order is input order even when batches resolve out of order; a 429 is retried and then succeeds; a 429 that never clears defers the batch after the retry budget; and a transport error still defers with zero retries. The doubles stay inline literals with one cast — no mock library, no fake timers, no network.
 
 ### Changes Required:
 
@@ -1644,7 +1968,9 @@ Region 4 — module bullet.
 - - `src/judge.ts` - one chat-completions call per candidate, returns
 -   `{relevant, locationOk}`
 + - `src/judge.ts` - ~10-post bulk chat-completions calls judged against the
-+   keywords in `watcher.config.json`; bulk misses fall back to single-post
++   keywords in `watcher.config.json`; up to `JUDGE_CONCURRENCY` batches run
++   at once (floor 4, ceiling read by the probe's ramp), a retryable status
++   (429/5xx) is retried with backoff, bulk misses fall back to single-post
 +   calls, and a batch the endpoint does not answer is deferred whole;
 +   returns `{relevant, locationOk}` per post
 
@@ -1652,26 +1978,37 @@ Region 5 — Commands list: typecheck scope plus the probe entry.
 
 - - `npm run typecheck` - `tsc --noEmit` over `src/` and `tests/`
 + - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
-+ - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer (needs `LLM_*` env vars)
++ - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, and ramp concurrent calls to find the concurrency ceiling (needs `LLM_*` env vars)
+````
+
+**Revision 2026-10-26 — README pipeline step 5 gains the concurrency sentence.**
+
+````markdown
+Region — README pipeline step 5, append after the deferred-batch sentence.
+
++   Up to `JUDGE_CONCURRENCY` batches run at once, so a 280-post backlog
++   judges in about 3 minutes instead of 13.
 ````
 
 ### Success Criteria:
 
 #### Automated Verification:
-- [x] Terminal gates pass: `npm run typecheck`, `npm run lint`, `npm test`
+- [x] Terminal gates pass: `npm run typecheck`, `npm run lint`, `npm test` — re-run: Phases 0, 1, and 3 all changed
 - [x] Zero stale gate references in docs: `grep -rn "filterPostsByKeywords\|matchesKeywords" README.md .claude/ .rpiv/guidance/ AGENTS.md` returns nothing
 - [x] Zero deleted-module references in docs: `grep -rn "keywords.ts" README.md AGENTS.md .rpiv/guidance/` returns nothing
 - [x] Zero stale vocabulary in docs: `grep -rni "keyword maybe\|\[keyword match\]" README.md .claude/ .rpiv/guidance/ AGENTS.md` returns nothing
 - [x] Zero stale judge shape in docs: `grep -rni "pre-filter\|pre-judge\|one LLM call per candidate\|one chat-completions call per candidate\|one LLM verdict per candidate\|judge each candidate\|judge about each candidate" README.md AGENTS.md .rpiv/guidance/` returns nothing
 - [x] Zero stale criterion wording in docs: `grep -rn "frontend / fullstack\|frontend/fullstack" README.md AGENTS.md .claude/ .rpiv/guidance/` returns nothing
 - [x] Runbook override retargeted: `grep -n "judgePosts" .claude/skills/validate-e2e/SKILL.md` shows step 5 naming judgePosts (not filterPostsByKeywords)
+- [x] Concurrency is documented where the judge is described: `grep -c "JUDGE_CONCURRENCY" AGENTS.md README.md` returns at least 1 in each
+- [x] The probe's documented purpose names the ramp, not just latency: `grep -n "concurrency ceiling" AGENTS.md` returns the probe command entry
 
 #### Manual Verification:
 - [x] README pipeline steps read in the new funnel order: fetch → dedupe → recency → seen → bulk judge (keywords criterion) → email/heartbeat → state
 - [x] The README keywords row describes the criterion role; no substring-gate wording survives
 - [x] validate-e2e step 5 is workable against the new judgePosts signature (keywords is a plain argument)
 - [x] Guidance DI + doubles examples match the new judge signatures (keywords before trailing fetchFn)
-- [x] AGENTS.md module list has no keywords.ts and the judge bullet describes bulk + per-item fallback
+- [x] AGENTS.md module list has no keywords.ts and the judge bullet describes bulk judging, bounded concurrency, the retryable-status backoff, and the per-item fallback
 - [x] Root guidance tree reads fetch → extract → dedupe → recency → seen → judge → email → state (no keywords stage)
 
 ---
@@ -1701,19 +2038,42 @@ _Coverage reviewer emitted zero rows: every design `## Verification Notes`, `## 
 
 ### Manual Testing Steps:
 1. Run `npm run typecheck && npm run lint && npm test` after Phase 3 and again after Phase 4 (CI parity).
-2. One live run with real `LLM_*` and `GMAIL_*` env vars: confirm a match run produces a digest plus a state commit (neither path has ever fired in production).
+2. One live run with real `LLM_*` and `GMAIL_*` env vars: confirm a match run produces a digest plus a state commit (neither path has never fired in production — run 40268599609 fired both).
 3. Confirm skipped ids stay unseen and retry on the next run.
-4. Phase 0's probe run answers this before any code ships: confirm the endpoint accepts a ~10-post prompt and honors `json_object`, and read the measured duration into `REQUEST_TIMEOUT_MS`.
-5. After the fix, re-run `workflow_dispatch` and confirm the judge stage finishes inside the job budget: the log shows 29 bulk calls (fewer once the backlog clears), the digest or the heartbeat emails, and the state step commits.
+4. Phase 0's probe run answers this before any code ships: confirm the endpoint accepts a ~10-post prompt and honors `json_object`, read the measured duration into `REQUEST_TIMEOUT_MS`, and read the ramp's ceiling into `JUDGE_CONCURRENCY`.
+5. After the fix, re-run `workflow_dispatch` and confirm the judge stage finishes inside the job budget: the log shows the bulk-call count (fewer once the backlog clears), the digest or the heartbeat emails, and the state step commits. **The judge line's wall-clock is the acceptance number: it must drop from 12m57s to under 4 minutes at the shipped concurrency.**
+6. Confirm the concurrency change did not cost correctness: the digest still lists the same posts in the same order as a sequential run over the same input, and `skippedPostIds` stays empty when the endpoint answers.
 
 ## Performance Considerations
 
-Revised 2026-10-26 after production run 40264368939 — see the Production Incident section.
+Revised 2026-10-26 after production run 40268599609 — see the Production Incident section and the Phase 0 revision note.
 
-- The first run after this change judges the whole unseen backlog: 283 posts on 2026-10-26, because the keyword pre-filter era committed almost nothing to state. Steady state is the unseen tail only (~17 new posts per 10-minute run).
-- Happy path: ceil(N/BATCH_SIZE) LLM calls. 283 posts at BATCH_SIZE 10 = 29 calls.
-- Worst case deterministic: ceil(N/BATCH_SIZE) calls. A batch the endpoint does not answer is deferred whole — no per-item cascade — so a slow endpoint costs one timeout per batch, not 2N calls.
-- Wall-clock bound: 29 batches × 60s = 29 minutes of judge, plus ~3.5 minutes of fetch. The job budget must exceed that with headroom; Phase 0 sets it to 45 minutes.
+**Measured, not estimated** (run 40268599609, `workflow_dispatch`, 280 unseen posts):
+
+| Stage | Duration | Detail |
+|---|---|---|
+| Fetch | 2m47s | 471 unique posts across 5 surfaces, authenticated |
+| Judge | 12m57s | 28 bulk calls, **27.75s per call**, 0 skipped |
+| Email + state | 2s | 1 match, digest sent, 280 ids committed |
+| **Total** | **15m46s** | exceeds the `*/10` cron interval |
+
+The probe reported 5.3s per call from the same runner — a **5.2× underestimate**, because its 5 synthetic keywords and ~200-char filler posts are smaller than the 19 configured keywords and real Threads captions. Phase 0's fixture revision exists to close that gap.
+
+- The first run after this change judges the whole unseen backlog: 280 posts on 2026-10-26, because the keyword pre-filter era committed almost nothing to state. Steady state is the unseen tail only (~17-50 new posts per 10-minute run).
+- Happy path: ceil(N/BATCH_SIZE) LLM calls. 280 posts at BATCH_SIZE 10 = 28 calls.
+- **Concurrency projection** (28 calls at the measured 27.75s each):
+
+| `JUDGE_CONCURRENCY` | Rounds | Judge time | Total run |
+|---|---|---|---|
+| 1 (shipped today) | 28 | 12m57s | 15m46s |
+| 4 (the floor) | 7 | 3m14s | **6m03s** |
+| 8 | 4 | 1m51s | 4m40s |
+| 16 | 2 | 56s | 3m45s |
+
+- Worst case deterministic: ceil(N/BATCH_SIZE) concurrent calls, plus at most BATCH_SIZE sequential fallbacks per affected batch. A batch the endpoint does not answer is deferred whole — no per-item cascade — so a slow endpoint costs one timeout per batch, not 2N calls.
+- Retryable-status backoff adds at most 7s per affected batch (1s + 2s + 4s), bounded by `RETRY_DELAYS_MS`.
+- Wall-clock bound at the floor: 7 rounds × 60s = 7 minutes of judge, plus ~3 minutes of fetch. The 45-minute job budget keeps generous headroom even if every call times out.
+- `REQUEST_TIMEOUT_MS = 60_000` has **2.2× headroom** against the measured 27.75s, not the 3.7× the validation report claimed before the runner measurement existed.
 - No caching introduced; temperature 0 unchanged; no new runtime dependencies.
 
 ## Migration Notes
@@ -1754,3 +2114,37 @@ Orchestrator self-verification (after Step 5): the Phase 1 `src/judge.ts` fence 
 **Verification of this revision:** both revised fences were extracted from the plan and checked in their real locations. `npm run typecheck` exits 0 on the `src/judge.ts` fence; `npx biome check` exits 0 on the `src/judge.ts` and `scripts/probe-judge.ts` fences; `npx tsc --noEmit` exits 0 on the probe fence with `scripts` added to the tsconfig include. Temp files removed; the working tree carries only this plan file.
 
 **Still open, and owned by Phase 0:** the measured bulk-call latency from a runner. Until the probe runs, 60s and `BATCH_SIZE = 10` are proposals, not confirmed values.
+
+---
+
+## Follow-up (2026-10-26T11:33:51+0700)
+
+**Trigger:** the user reported that the LLM judge "takes forever" in run [40268599609](https://github.com/ukind/loker-watcher/actions/runs/40268599609/job/121396312455) and asked whether the judge can be parallelized.
+
+**What the run actually measured** (read from the job log after it completed):
+
+| Stage | Duration | Detail |
+|---|---|---|
+| Fetch | 2m47s | 471 unique posts, 280 within 72h, authenticated |
+| Judge | 12m57s | 280 posts → 28 bulk calls → **27.75s per call**, 0 skipped |
+| Email + state | 2s | 1 match, digest sent, 280 ids committed |
+| Total | 15m46s | exceeds the `*/10` cron interval |
+
+The `probe` job in the same run finished in 33s, i.e. ~5.3s per call — a **5.2× underestimate** of production latency, because the probe's 5 synthetic keywords and ~200-char filler posts are smaller than the 19 configured keywords and real Threads captions. Two consequences: `REQUEST_TIMEOUT_MS = 60_000` has only 2.2× headroom, and the judge stage alone now outruns the cron interval, so `concurrency: watch` queues the next run behind it.
+
+**Provider research.** Z.AI publishes no concurrency number. The [usage policy](https://docs.z.ai/devpack/usage-policy) states the limit is tier-based (Max > Pro > Lite), *dynamically adjusted* by resource availability, and higher off-peak; Lite is documented as "a single project at a time," Pro "1–2," Max "2 or more." Community reports claim the coding plan capped at **1 concurrent connection** on some models. A hardcoded concurrency would therefore drift, which is why the ceiling is measured rather than assumed.
+
+**What changed:**
+
+- **Phase 0** retitled "Probe judge latency, concurrency ceiling + workflow budget" and gains two revisions: the fixtures become representative (the real keyword list loaded from `watcher.config.json`, plus real captured Threads captions including the long hashtagged `@hiresflow` shape), and the probe gains an escalating concurrency ramp (2 → 4 → 8 → 16) that stops at the first level where any call is refused. `timed()` is extended to classify `ok` / `refused` / `failed` separately, so a 429 reads as a ceiling and a network error reads as a dead endpoint.
+- **Phase 1** retitled "Bulk judge core + resilience + bounded concurrency": `judgePosts` drains its batches through a bounded pool of `JUDGE_CONCURRENCY` workers instead of awaiting them one at a time, output order is preserved by indexing result slots rather than pushing, and batch warns carry a batch index so interleaved concurrent logs stay readable.
+- **Phase 1** also gains a bounded retry with exponential backoff (1s, 2s, 4s) for retryable statuses (429, 500, 502, 503, 504) inside `judgeBatch`. This is load-bearing, not optional: the current code defers a batch on *any* non-OK response, so firing four calls at a rate-limited endpoint would defer several batches at once and turn a speed fix into a run with no digest. A transport error still defers immediately with zero retries.
+- **`JUDGE_CONCURRENCY` ships at 4** — the agreed floor, low enough for the lowest documented tier. Phase 0's ramp reads the real ceiling; raise the constant to that reading once the probe reports it. The 429 backoff is what makes the floor safe when the true ceiling is lower, because the limit is dynamic.
+- **Phase 3** gains a five-case concurrency suite: in-flight peak never exceeds the cap, output order is input order under out-of-order completion, a 429 retries then succeeds, a 429 that never clears defers after the budget, and a transport error defers with zero retries.
+- **Phase 1 and Phase 3 criteria unchecked** where the prior implementation no longer satisfies them — in particular "the batch gets exactly one attempt" and the "exactly three unanswered return sites" count, both invalidated by the retry loop.
+- **Performance Considerations** rewritten around measured numbers, with a concurrency projection table (4 → 6m03s total, 8 → 4m40s, 16 → 3m45s) and the corrected 2.2× timeout headroom.
+- **What We're NOT Doing** gains an explicit exclusion of runtime auto-discovery of the ceiling: the probe measures it once and the constant is set from that reading, because re-probing every run would cost the latency this plan exists to remove.
+
+**Verification of this revision:** the Phase 1 concurrency fence (`judgeBatch` retry loop plus the `judgePosts` bounded pool) was extracted to a temp scaffold with the real `src/judge.ts` signatures stubbed, and checked against the repo's own strict flags. `npx tsc --noEmit` exits 0 under `--strict --noUncheckedIndexedAccess --exactOptionalPropertyTypes --verbatimModuleSyntax`; `npx biome check` exits 0 after joining the `Promise.all(...)` call onto one line (Biome keeps a short call inline — the split form fails `npm run lint`). The Phase 0 probe fence was not re-extracted: its ramp helpers reuse the existing `timed()` shape and add no new type surface beyond the `ok`/`refused`/`failed` result union, which the same flags cover. Temp files removed; the working tree carries only this plan file.
+
+**Still open, and owned by Phase 0:** the provider's real concurrency ceiling, and a representative per-call latency. Until the ramp runs, `JUDGE_CONCURRENCY = 4` is the agreed floor rather than a measured optimum, and 27.75s is a single sample from one run.
