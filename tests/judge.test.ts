@@ -226,6 +226,27 @@ describe("judgePosts", () => {
     );
   }
 
+  /**
+   * Bulk-answering fetch that records the in-flight call peak in `state`.
+   * Answers every batch by echoing the ids it finds in the request prompt,
+   * so no post falls back and the call count stays at one per batch.
+   */
+  function measuredFetch(state: { inFlight: number; peak: number }) {
+    return async (_url: unknown, options?: unknown): Promise<Response> => {
+      state.inFlight += 1;
+      state.peak = Math.max(state.peak, state.inFlight);
+      await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
+      state.inFlight -= 1;
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
+        (match) => match[1] ?? "",
+      );
+      return ok(bulkContent(ids));
+    };
+  }
+
   it("judges ten posts with a single bulk call", async () => {
     const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1)));
     let calls = 0;
@@ -324,7 +345,10 @@ describe("judgePosts", () => {
     let calls = 0;
     const mockFetch = async () => {
       calls += 1;
-      return new Response("Bad Gateway", { status: 502 }); // every batch attempt fails
+      // A non-retryable status defers on the first attempt — a bad request
+      // will not fix itself. The retryable 429/5xx paths have their own
+      // tests below.
+      return new Response("Forbidden", { status: 403 });
     };
 
     const result = await judgePosts(
@@ -333,7 +357,7 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
-    assert.equal(calls, 1); // one batch attempt, zero fallback calls
+    assert.equal(calls, 1); // one batch attempt, zero retries, zero fallback calls
     assert.equal(result.judged.length, 0);
     assert.deepEqual(
       result.skippedPostIds,
@@ -343,7 +367,9 @@ describe("judgePosts", () => {
 
   it("defers a batch whose request times out", async () => {
     const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
+    let calls = 0;
     const mockFetch = async () => {
+      calls += 1;
       throw new Error("The operation was aborted due to timeout");
     };
 
@@ -353,6 +379,7 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
+    assert.equal(calls, 1); // a transport error defers with zero retries
     assert.equal(result.judged.length, 0);
     assert.deepEqual(
       result.skippedPostIds,
@@ -401,5 +428,118 @@ describe("judgePosts", () => {
     assert.ok(bodies[0]?.includes("next.js"));
     assert.ok(!bodies[1]?.includes('"response_format"')); // fallback payload carries no rider
     assert.ok(bodies[1]?.includes("next.js")); // and the fallback system message
+  });
+
+  it("peaks at exactly four in-flight bulk calls for a 280-post backlog", async () => {
+    const posts = Array.from({ length: 280 }, (_, i) => bulkPost(id19(i + 1))); // 28 batches
+    const state = { inFlight: 0, peak: 0 };
+    const mockFetch = measuredFetch(state);
+
+    const result = await judgePosts(
+      posts,
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(state.peak, 4); // exactly JUDGE_CONCURRENCY, never more
+    assert.equal(result.judged.length, 280);
+    assert.deepEqual(result.skippedPostIds, []);
+  });
+
+  it("peaks at min(concurrency, batches) in-flight calls for a short list", async () => {
+    const posts = Array.from({ length: 25 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
+    const state = { inFlight: 0, peak: 0 };
+    const mockFetch = measuredFetch(state);
+
+    const result = await judgePosts(
+      posts,
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(state.peak, 3); // min(JUDGE_CONCURRENCY, batches.length)
+    assert.equal(result.judged.length, 25);
+  });
+
+  it("keeps candidate order when batches resolve out of order", async () => {
+    const posts = Array.from({ length: 40 }, (_, i) => bulkPost(id19(i + 1))); // 4 batches
+    const resolvers: Array<(response: Response) => void> = [];
+    const mockFetch = async (): Promise<Response> =>
+      new Promise((resolve) => {
+        resolvers.push(resolve);
+      });
+    const pending = judgePosts(posts, sampleConfig, KEYWORDS, mockFetch as unknown as typeof fetch);
+    // Wait until all four workers have parked their batch call.
+    await new Promise<void>((resolveQueued) => {
+      const wait = (): void => {
+        if (resolvers.length === 4) resolveQueued();
+        else setTimeout(wait, 1);
+      };
+      wait();
+    });
+    // Resolve the last batch first; batch 1 defers on a non-retryable status.
+    for (let i = resolvers.length - 1; i >= 0; i -= 1) {
+      if (i === 1) {
+        resolvers[i]?.(new Response("Forbidden", { status: 403 }));
+        continue;
+      }
+      const batchIds = posts.slice(i * 10, (i + 1) * 10).map((p) => p.id);
+      resolvers[i]?.(ok(bulkContent(batchIds)));
+    }
+    const result = await pending;
+
+    const expectedJudged = [...posts.slice(0, 10), ...posts.slice(20)].map((p) => p.id);
+    assert.deepEqual(
+      result.judged.map((j) => j.post.id),
+      expectedJudged,
+    );
+    assert.deepEqual(
+      result.skippedPostIds,
+      posts.slice(10, 20).map((p) => p.id),
+    );
+  });
+
+  it("retries a 429 and succeeds within the backoff budget", async () => {
+    const posts = [bulkPost(id19(1))];
+    let calls = 0;
+    const mockFetch = async () => {
+      calls += 1;
+      if (calls <= 2) {
+        return new Response("Too Many Requests", { status: 429 });
+      }
+      return ok(bulkContent(posts.map((p) => p.id)));
+    };
+
+    const result = await judgePosts(
+      posts,
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(calls, 3); // 1 + 2 retries
+    assert.equal(result.judged.length, 1);
+    assert.deepEqual(result.skippedPostIds, []);
+  });
+
+  it("retries a 429 until the budget is spent, then skips the batch", async () => {
+    const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
+    let calls = 0;
+    const mockFetch = async () => {
+      calls += 1;
+      return new Response("Too Many Requests", { status: 429 });
+    };
+
+    const result = await judgePosts(
+      posts,
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(calls, 4); // 1 + 3 retries (1s, 2s, 4s), then defer
+    assert.equal(result.judged.length, 0);
+    assert.deepEqual(
+      result.skippedPostIds,
+      posts.map((p) => p.id),
+    );
   });
 });

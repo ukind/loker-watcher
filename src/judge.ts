@@ -12,12 +12,14 @@
  *
  * Every bulk verdict is validated per item. Items missing or malformed in
  * the bulk response fall back to the single-post judgePost (2 attempts).
- * The batch call itself gets no retry, and a batch the endpoint does not
- * answer is deferred whole — a transport failure predicts fallback failure,
- * so the worst case is ceil(N/BATCH_SIZE) calls, not ceil(N/BATCH_SIZE)
- * + 2N. A post that fails both stages is skipped for this run, logged
- * visibly, and omitted from state (D3: it stays unseen and retries next
- * run).
+ * A retryable HTTP status (429, 5xx) is retried with bounded backoff before
+ * the batch is deferred; a transport error defers immediately — a rate
+ * limit is not a transport failure. Batches drain through a bounded pool
+ * of JUDGE_CONCURRENCY workers and reassemble in input order, so the worst
+ * case is ceil(N/BATCH_SIZE) concurrent calls plus at most BATCH_SIZE
+ * sequential fallbacks per affected batch. A post that fails both stages
+ * is skipped for this run, logged visibly, and omitted from state (D3: it
+ * stays unseen and retries next run).
  */
 import { ENV_NAMES } from "./config.js";
 import type { JudgeVerdict, Post } from "./types.js";
@@ -32,6 +34,23 @@ const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Posts per bulk judge call. Module constant by design — no config key. */
 const BATCH_SIZE = 10;
+
+/**
+ * Bulk calls in flight at once. Ships at 4 — the agreed floor, low enough
+ * for the lowest documented Z.AI tier. Phase 0's ramp reads the real
+ * ceiling; raise this to that reading. Z.AI publishes no number and
+ * adjusts the limit dynamically, so the 429 backoff below is what keeps a
+ * stale or optimistic value from costing a run its digest.
+ */
+const JUDGE_CONCURRENCY = 4;
+
+/** HTTP statuses worth retrying: the endpoint is alive but refusing or busy. */
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+/** Bounded backoff for a retryable status. Total added latency: 7s. */
+const RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
+
+/** Sleep that a test can skip by injecting a fake timer. */
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface JudgeConfig {
   baseUrl: string;
@@ -225,15 +244,20 @@ type BatchOutcome =
   | { status: "unanswered" };
 
 /**
- * One bulk call for up to BATCH_SIZE posts. No retry.
+ * One bulk call for up to BATCH_SIZE posts, with a bounded retry for
+ * retryable statuses (429, 500, 502, 503, 504): the endpoint is alive but
+ * refusing or busy, so seconds of backoff cost less than a deferred batch
+ * at concurrency. Budget: RETRY_DELAYS_MS — 1s, 2s, 4s; once it is spent
+ * the batch reports "unanswered".
  *
  * Returns "unanswered" when the endpoint did not produce a usable response
- * (HTTP failure, request error, or missing message content). A transport
- * failure predicts fallback failure — the same endpoint answers the
- * per-item calls no faster — so the caller defers the whole batch instead
- * of firing up to 2*BATCH_SIZE more doomed calls. Measured on run
- * 40264368939: one 15s batch timeout cascaded into 20 more timeouts and
- * burned 6.5 of the job's 10 minutes for ~10 posts.
+ * (a spent retry budget, a non-retryable HTTP failure, a request error, or
+ * missing message content). A transport error gets zero retries: it
+ * predicts fallback failure — the same endpoint answers the per-item calls
+ * no faster — so the caller defers the whole batch instead of firing up to
+ * 2*BATCH_SIZE more doomed calls. Measured on run 40264368939: one 15s
+ * batch timeout cascaded into 20 more timeouts and burned 6.5 of the job's
+ * 10 minutes for ~10 posts.
  *
  * Returns "answered" with whatever the container parsed into, including an
  * empty Map when the model answered with unparseable text. A parse-level
@@ -245,7 +269,10 @@ async function judgeBatch(
   config: JudgeConfig,
   keywords: readonly string[],
   fetchFn: typeof fetch,
+  batchIndex: number,
 ): Promise<BatchOutcome> {
+  // Built once, outside the retry loop: the prompt does not change between
+  // attempts, so rebuilding it per attempt would waste work for nothing.
   const payload = {
     model: config.model,
     messages: buildBulkMessages(batch, keywords),
@@ -255,50 +282,68 @@ async function judgeBatch(
     response_format: { type: "json_object" },
   };
 
-  try {
-    const response = await fetchFn(normalizeEndpoint(config.baseUrl), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const response = await fetchFn(normalizeEndpoint(config.baseUrl), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        // A rate limit or a busy upstream is not a transport failure: the
+        // same endpoint answers the retry. Back off and try again, and
+        // defer only once the budget is spent.
+        if (RETRYABLE_STATUSES.has(response.status) && attempt < RETRY_DELAYS_MS.length) {
+          const delay = RETRY_DELAYS_MS[attempt] ?? 0;
+          console.warn(
+            `judge: batch ${batchIndex} (${batch.length} posts) HTTP ${response.status} — retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length})`,
+          );
+          await sleep(delay);
+          continue;
+        }
+        console.warn(
+          `judge: batch ${batchIndex} (${batch.length} posts) HTTP ${response.status} ${response.statusText} — skipping batch (posts stay unseen and retry next run)`,
+        );
+        return { status: "unanswered" };
+      }
+
+      const data = (await response.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const rawContent = data.choices?.[0]?.message?.content;
+      if (typeof rawContent !== "string") {
+        console.warn(
+          `judge: batch ${batchIndex} (${batch.length} posts) missing message content — skipping batch (posts stay unseen and retry next run)`,
+        );
+        return { status: "unanswered" };
+      }
+
+      const verdicts = parseBulkVerdicts(rawContent);
+      if (verdicts === null) {
+        console.warn(
+          `judge: batch ${batchIndex} (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
+        );
+        return { status: "answered", verdicts: new Map() };
+      }
+      return { status: "answered", verdicts };
+    } catch (error) {
+      // A transport error still defers immediately — no retry, no fallback.
+      // A dead socket predicts a dead fallback; a rate limit does not.
+      const message = error instanceof Error ? error.message : String(error);
       console.warn(
-        `judge: batch (${batch.length} posts) HTTP ${response.status} ${response.statusText} — skipping batch (posts stay unseen and retry next run)`,
+        `judge: batch ${batchIndex} (${batch.length} posts) request error: ${message} — skipping batch (posts stay unseen and retry next run)`,
       );
       return { status: "unanswered" };
     }
-
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const rawContent = data.choices?.[0]?.message?.content;
-    if (typeof rawContent !== "string") {
-      console.warn(
-        `judge: batch (${batch.length} posts) missing message content — skipping batch (posts stay unseen and retry next run)`,
-      );
-      return { status: "unanswered" };
-    }
-
-    const verdicts = parseBulkVerdicts(rawContent);
-    if (verdicts === null) {
-      console.warn(
-        `judge: batch (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
-      );
-      return { status: "answered", verdicts: new Map() };
-    }
-    return { status: "answered", verdicts };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(
-      `judge: batch (${batch.length} posts) request error: ${message} — skipping batch (posts stay unseen and retry next run)`,
-    );
-    return { status: "unanswered" };
   }
+  // Unreachable: every branch above returns. Present so the function has a
+  // single exit type and a future early-break cannot fall through.
+  return { status: "unanswered" };
 }
 
 /**
@@ -373,9 +418,13 @@ export async function judgePost(
  * every LLM failure lands in skippedPostIds, so a bad endpoint cannot kill
  * the run before the digest and state stages.
  *
- * A batch the endpoint did not answer is deferred whole (see judgeBatch):
- * its posts stay unseen and retry on the next run. The worst case is
- * therefore ceil(N/BATCH_SIZE) calls, not ceil(N/BATCH_SIZE) + 2N.
+ * Batches drain through a bounded pool of JUDGE_CONCURRENCY workers, and
+ * each result slot is indexed by batch number so the output reassembles in
+ * input order even when batches finish out of order. A batch the endpoint
+ * did not answer is deferred whole (see judgeBatch): its posts stay unseen
+ * and retry on the next run. The worst case is therefore ceil(N/BATCH_SIZE)
+ * concurrent calls plus at most BATCH_SIZE sequential fallbacks per
+ * affected batch.
  */
 export async function judgePosts(
   candidates: readonly Post[],
@@ -383,23 +432,40 @@ export async function judgePosts(
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
 ): Promise<JudgeBatchResult> {
+  const batches: Post[][] = [];
+  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+    batches.push(candidates.slice(i, i + BATCH_SIZE));
+  }
+
+  // One result slot per batch, filled by whichever worker takes it. Indexing
+  // by slot (not pushing) is what keeps the output in input order once the
+  // batches finish out of order.
+  const outcomes: Array<BatchOutcome | undefined> = Array.from({ length: batches.length });
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const index = next;
+      next += 1;
+      if (index >= batches.length) return;
+      const batch = batches[index];
+      if (batch === undefined) continue;
+      outcomes[index] = await judgeBatch(batch, config, keywords, fetchFn, index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(JUDGE_CONCURRENCY, batches.length) }, worker));
+
   const judged: JudgedPost[] = [];
   const skippedPostIds: string[] = [];
-
-  for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
-    const batch = candidates.slice(i, i + BATCH_SIZE);
-    const outcome = await judgeBatch(batch, config, keywords, fetchFn);
-
+  for (const [index, batch] of batches.entries()) {
+    const outcome = outcomes[index];
+    if (outcome === undefined) continue;
     if (outcome.status === "unanswered") {
-      for (const post of batch) {
-        skippedPostIds.push(post.id);
-      }
+      for (const post of batch) skippedPostIds.push(post.id);
       console.warn(
-        `judge: skipped batch of ${batch.length} post(s) after an unanswered bulk call; they stay unseen and retry next run`,
+        `judge: skipped batch ${index} of ${batch.length} post(s) after an unanswered bulk call; they stay unseen and retry next run`,
       );
       continue;
     }
-
     for (const post of batch) {
       const fromBulk = outcome.verdicts.get(post.id);
       const verdict = fromBulk ?? (await judgePost(post, config, keywords, fetchFn));
@@ -411,6 +477,5 @@ export async function judgePosts(
       }
     }
   }
-
   return { judged, skippedPostIds };
 }
