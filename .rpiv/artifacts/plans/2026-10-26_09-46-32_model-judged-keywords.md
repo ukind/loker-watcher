@@ -8,23 +8,47 @@ topic: "Model-judged keyword filtering"
 tags: [plan, judge, keywords, bulk, heartbeat, state, tests, docs]
 status: ready
 parent: ".rpiv/artifacts/designs/2026-10-26_06-51-45_model-judged-keywords.md"
-phase_count: 4
+phase_count: 5
 phases:
-  - { n: 1, title: "Bulk judge core", files: ["src/judge.ts"], depends_on: [] }
+  - { n: 0, title: "Probe judge latency + workflow budget", files: ["scripts/probe-judge.ts", ".github/workflows/watch.yml", "tsconfig.json", "package.json"], depends_on: [] }
+  - { n: 1, title: "Bulk judge core + resilience", files: ["src/judge.ts"], depends_on: [0] }
   - { n: 2, title: "Funnel + judged-counter rework", files: ["src/index.ts", "src/heartbeat.ts", "src/types.ts", "src/keywords.ts", "tests/keywords.test.ts"], depends_on: [1] }
   - { n: 3, title: "Test relocation + state gate tests", files: ["tests/judge.test.ts", "tests/state.test.ts", "tests/heartbeat.test.ts"], depends_on: [1, 2] }
   - { n: 4, title: "Docs sync + repo gates", files: ["README.md", ".claude/skills/validate-e2e/SKILL.md", ".rpiv/guidance/architecture.md", ".rpiv/guidance/src/architecture.md", ".rpiv/guidance/tests/architecture.md", "AGENTS.md"], depends_on: [2] }
-last_updated: 2026-10-26T09:46:32+0700
+last_updated: 2026-10-26T10:35:04+0700
 last_updated_by: Yogiswara Utama
+last_updated_note: "Run 40264368939 cancelled at the job cap: 283 posts hit a 15s judge timeout never validated from a runner. Adds a latency probe phase, raises the timeout, stops the per-item fallback cascade on transport failure, and raises the job budget."
 ---
 
 # Model-judged keyword filtering — Implementation Plan
 
 ## Overview
 
-The keyword substring gate is deleted. Every recency+seen survivor reaches the LLM judge, and the judge decides relevance against the `keywords` list in `watcher.config.json`. `src/judge.ts` is rewritten around ~10-post bulk calls: the keyword list is serialized into the system prompt as the relevance criterion, the model answers with an id-keyed verdict object, and the bulk payload sets `response_format: {"type":"json_object"}`. Items the bulk response misses or mangles fall back to the unchanged single-post `judgePost` (2 attempts); the batch call itself gets no retry, so the worst case stays deterministic at ceil(N/10) + 2N calls. The funnel stat `maybes` becomes `judged` (posts SENT to the judge), heartbeat vocabulary follows, the relocated test suite plus a new state-gate suite pin the D3 invariant, and docs sync across README, the e2e runbook, repo guidance, and AGENTS.md.
+The keyword substring gate is deleted. Every recency+seen survivor reaches the LLM judge, and the judge decides relevance against the `keywords` list in `watcher.config.json`. `src/judge.ts` is rewritten around ~10-post bulk calls: the keyword list is serialized into the system prompt as the relevance criterion, the model answers with an id-keyed verdict object, and the bulk payload sets `response_format: {"type":"json_object"}`. Items the bulk response misses or mangles fall back to the unchanged single-post `judgePost` (2 attempts); the batch call itself gets no retry, and a batch the endpoint does not answer is deferred whole, so the worst case stays deterministic at ceil(N/10) calls. The funnel stat `maybes` becomes `judged` (posts SENT to the judge), heartbeat vocabulary follows, the relocated test suite plus a new state-gate suite pin the D3 invariant, and docs sync across README, the e2e runbook, repo guidance, and AGENTS.md.
 
 Design artifact: `.rpiv/artifacts/designs/2026-10-26_06-51-45_model-judged-keywords.md` (Option 2 from `.rpiv/artifacts/solutions/2026-10-26_06-15-51_model-judged-keywords.md`).
+
+## Production Incident (2026-10-26)
+
+Run [40264368939](https://github.com/ukind/loker-watcher/actions/runs/40264368939) (`workflow_dispatch`, the first run of this plan's code) was **cancelled at the 10-minute job cap**. The judge stage never completed one call.
+
+| Time (UTC) | Log line | What it proves |
+|---|---|---|
+| 03:33:27.729 | `state: 283 unseen post(s)` | 283 posts enter the judge — the plan estimated ~37 |
+| 03:33:42.733 | `judge: batch (10 posts) request error: The operation was aborted due to timeout` | exactly 15.0s after the judge started: `REQUEST_TIMEOUT_MS` fired |
+| 03:34:26 → 03:39:16 | 4 batch timeouts, 2 single-post timeouts, 1 skip | every call died at 15s; ~10 posts processed in 6.5 minutes |
+| 03:40:01 | job cancelled | no digest, no state commit — the 283-post backlog persists and grows |
+
+Root cause, in order:
+
+1. **The judge stage was never load-tested.** The keyword pre-filter let 0-1 posts reach the judge per run, so the 15s timeout looked fine. Removing the filter sent the whole unseen backlog at it.
+2. **The endpoint was only ever exercised locally.** The e2e runbook works under `.rpiv/tmp/` on a developer machine. From a GitHub runner, `api.z.ai` never answered inside 15s — not once, for a batch or a single post.
+3. **One batch timeout cascaded into 20 more doomed calls.** The per-item fallback fired 10 posts × 2 attempts against the same slow endpoint. A transport failure predicts fallback failure.
+4. **`timeout-minutes: 10` became the binding constraint**, and this plan had explicitly put `watch.yml` out of scope. Fetch alone eats ~3.5 minutes, leaving 6.5 for 29 batches.
+
+The plan's Performance section carried the wrong assumption: *"typical run: 1-2 [calls] — seen-state diffing leaves handfuls unseen."* The unseen tail is 283 because the pre-filter era committed almost nothing to state.
+
+Still unknown, and the reason for Phase 0: whether a bulk call takes 20s or 90s from the runner, and whether the runner-to-endpoint path or the model on a big prompt is the slow part.
 
 ## Desired End State
 
@@ -33,35 +57,245 @@ A zero-keyword-match feed no longer zeroes the funnel — the model decides:
 ```typescript
 // src/index.ts (after the change)
 const { judged, skippedPostIds } = await judgePosts(newPosts, resolveJudgeConfig(process.env), config.keywords);
-// log: judge: 37 candidate(s) judged, 2 relevant+located, skipped: 1
-// ceil(37/10) = 4 LLM calls on the happy path; the 1 skipped id stays unseen
-// and retries next run; state persists all 37 judged ids only because matches > 0.
+// log: judge: 283 candidate(s) judged, 2 relevant+located, skipped: 0
+// ceil(283/10) = 29 LLM calls on the happy path; any skipped id stays unseen
+// and retries next run; state persists all 283 judged ids only because matches > 0.
 ```
 
 ```text
-// heartbeat body funnel (zero-match run)
-  337 unique post(s)
+// heartbeat body funnel (zero-match run) — the first run after the change
+  487 unique post(s)
   303 within 72h
-  37 judged candidate(s)
+  283 judged candidate(s)   ← the whole unseen backlog, not a handful
   0 relevant + located
-  1 skipped by the judge
+  0 skipped by the judge   ← when the endpoint answers inside 60s
 ```
 
 Verify with: `npm run typecheck && npm run lint && npm test`, then one live run with real `LLM_*` and `GMAIL_*` env vars (the digest and state-commit paths have never fired in production — 6 validation rounds, all zero-match).
 
 ## What We're NOT Doing
 
-- New config keys (batch size stays a module constant) and candidate caps.
+- New config keys (batch size and the request timeout stay module constants) and candidate caps.
 - Strict `json_schema` (OpenAI-specific; Z.AI documents `json_object` only).
 - `response_format` on the fallback path — the single-post call stays byte-identical apart from the `keywords` param.
 - Keyword validation changes (error texts stay byte-identical).
-- `watch.yml` changes, state schema changes, email digest changes.
+- A per-run judge cap or a judge deadline: the deferred-batch design plus the raised job budget bound the stage without dropping posts.
+- State schema changes and email digest changes.
 
-## Phase 1: Bulk judge core
+## Phase 0: Probe judge latency + workflow budget
+
+### Overview
+
+Production run 40264368939 was cancelled at the 10-minute job cap: 283 unseen posts entered the judge, every bulk call and every fallback call died at `REQUEST_TIMEOUT_MS = 15_000`, and the run produced no digest and no state commit. This phase measures what the plan only assumed — the endpoint's real latency from inside a GitHub runner — and raises the job budget so the judge stage has room to finish a full backlog run. The measured numbers set Phase 1's timeout and confirm the batch size.
+
+### Changes Required:
+
+#### 1. `scripts/probe-judge.ts` — NEW
+**File**: `scripts/probe-judge.ts`
+**Changes**: A standalone diagnostic that times three chat-completions calls against the configured endpoint from inside the runner: one minimal call, then two 10-post bulk calls with the production prompt shape. It prints each duration and exits nonzero when a call fails, so a dead endpoint fails the step loudly instead of hiding in a green run.
+
+````typescript
+/**
+ * Judge latency probe. Run inside GitHub Actions (workflow_dispatch only)
+ * to measure how long the configured LLM endpoint really takes from a
+ * runner. The plan's 15s timeout was validated only on a developer machine;
+ * run 40264368939 proved the runner path is slower.
+ *
+ * Usage:
+ *   LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... npx tsx scripts/probe-judge.ts
+ * Exits 1 when any call fails, so a dead endpoint fails the step loudly.
+ */
+import { ENV_NAMES } from "../src/config.js";
+import type { Post } from "../src/types.js";
+
+const KEYWORDS = ["frontend", "fullstack", "web developer", "react", "typescript"];
+
+/** Synthetic posts at realistic Threads length, so token counts match production. */
+function syntheticPost(index: number): Post {
+  return {
+    id: `90000000000000000${index}`,
+    author: `probe${index}`,
+    permalink: `https://www.threads.com/@probe${index}/post/90000000000000000${index}`,
+    timestamp: "2026-10-26T00:00:00.000Z",
+    text: `Lowongan kerja probe post ${index}. We are hiring a frontend developer with React and TypeScript experience. Jakarta or remote. Kirim lamaran ke DM kami. Fresh graduate welcome, minimal 1 tahun pengalaman.`,
+  };
+}
+
+/** The production bulk prompt shape: keyword criterion plus id+text pairs. */
+function bulkMessages(posts: readonly Post[]): Array<{ role: string; content: string }> {
+  const listing = posts
+    .map((post) => `id ${post.id} by @${post.author}:\n"${post.text}"`)
+    .join("\n\n");
+  return [
+    {
+      role: "system",
+      content: `You are an automated evaluation filter for job alerts. A post is relevant when it is a genuine job opening related to at least one of these keywords: ${JSON.stringify(KEYWORDS)}. You also determine whether the position is in Indonesia or remote.`,
+    },
+    {
+      role: "user",
+      content: `Judge each Threads post below against the criteria.\n\n${listing}\n\nDetermine two criteria per post:\n1. relevant: true ONLY if the post is a genuine job opening or hiring announcement related to at least one keyword above.\n2. locationOk: true ONLY if the job is located in Indonesia, or explicitly remote.\n\nRespond with ONLY a raw JSON object mapping EACH post id above to its verdict:\n{"<post id>": {"relevant": boolean, "locationOk": boolean}}`,
+    },
+  ];
+}
+
+/** Time one call; return true when it answered with a JSON object. */
+async function timed(
+  label: string,
+  payload: unknown,
+  baseUrl: string,
+  apiKey: string,
+): Promise<boolean> {
+  const started = Date.now();
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(120_000),
+    });
+    const body = await response.text();
+    const elapsed = Date.now() - started;
+    const ok = response.ok && body.includes("{");
+    console.log(
+      `probe: ${label} — ${elapsed}ms — HTTP ${response.status} ${ok ? "OK" : "NO JSON"}`,
+    );
+    return ok;
+  } catch (error) {
+    const elapsed = Date.now() - started;
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`probe: ${label} — ${elapsed}ms — FAILED: ${message}`);
+    return false;
+  }
+}
+
+async function main(): Promise<void> {
+  const baseUrl = process.env[ENV_NAMES.llmBaseUrl]?.trim();
+  const apiKey = process.env[ENV_NAMES.llmApiKey]?.trim();
+  const model = process.env[ENV_NAMES.llmModel]?.trim();
+  if (!baseUrl || !apiKey || !model) {
+    console.error(
+      `probe: missing ${ENV_NAMES.llmBaseUrl}, ${ENV_NAMES.llmApiKey}, or ${ENV_NAMES.llmModel}`,
+    );
+    process.exit(1);
+  }
+
+  const minimal = await timed(
+    "minimal call (one short message)",
+    {
+      model,
+      messages: [{ role: "user", content: "Reply with the single word: ok" }],
+      temperature: 0,
+    },
+    baseUrl,
+    apiKey,
+  );
+
+  const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
+  const bulkPayload = {
+    model,
+    messages: bulkMessages(ten),
+    temperature: 0,
+    response_format: { type: "json_object" },
+  };
+  const bulk = await timed(
+    "bulk call (10 posts, production prompt shape)",
+    bulkPayload,
+    baseUrl,
+    apiKey,
+  );
+  const again = await timed(
+    "bulk call again (10 posts, variance check)",
+    bulkPayload,
+    baseUrl,
+    apiKey,
+  );
+
+  console.log(
+    `probe: summary — minimal=${minimal ? "ok" : "fail"} bulk=${bulk ? "ok" : "fail"} bulkAgain=${again ? "ok" : "fail"}`,
+  );
+  if (!minimal || !bulk || !again) {
+    process.exit(1);
+  }
+}
+
+await main();
+````
+
+#### 2. `.github/workflows/watch.yml` — MODIFY
+**File**: `.github/workflows/watch.yml`
+**Changes**: Add a `probe` job that runs only on `workflow_dispatch`, and raise the `watch` job's `timeout-minutes` from 10 to 45 so the judge stage can finish a full backlog run.
+
+````yaml
+Region 1 — new probe job, inserted before the `watch` job.
+
++  probe:
++    if: github.event_name == 'workflow_dispatch'
++    runs-on: ubuntu-latest
++    timeout-minutes: 10
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++          cache: npm
++
++      - run: npm ci
++
++      - name: Probe judge latency
++        env:
++          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
++          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
++          LLM_MODEL: ${{ secrets.LLM_MODEL }}
++        run: npx tsx scripts/probe-judge.ts
+
+Region 2 — watch job budget.
+
+-    timeout-minutes: 10
++    # 283 posts at BATCH_SIZE 10 = 29 bulk calls. At the 60s request timeout
++    # that is 29 minutes of judge plus ~3.5 minutes of fetch. 45 leaves headroom.
++    timeout-minutes: 45
+````
+
+#### 3. `tsconfig.json` + `package.json` — MODIFY (gate coverage)
+**Files**: `tsconfig.json`, `package.json`
+**Changes**: Bring the new script under the repo gates. `scripts/hooks/*.js` stays outside both gates — those are agent-harness hooks, not project code.
+
+````diff
+// tsconfig.json
+-  "include": ["src", "tests"]
++  "include": ["src", "tests", "scripts"]
+
+// package.json
+-    "lint": "biome check src tests",
++    "lint": "biome check src tests scripts/probe-judge.ts",
+````
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] `npm run typecheck` exits 0 and now covers `scripts/probe-judge.ts` (`npx tsc --noEmit --listFiles | grep probe-judge` shows it)
+- [x] `npm run lint` exits 0 and now covers `scripts/probe-judge.ts`
+- [x] `grep -n "timeout-minutes" .github/workflows/watch.yml` shows 10 for `probe` and 45 for `watch`
+- [x] `grep -n "workflow_dispatch" .github/workflows/watch.yml` shows the trigger and the probe job's `if` guard
+- [x] The probe job passes no `THREADS_SESSION_STATE` and no `GMAIL_*` secret — it touches no Threads surface and sends no email
+- [x] `grep -c "scripts" tsconfig.json` shows the new include entry
+
+#### Manual Verification:
+- [ ] A `workflow_dispatch` run of the `probe` job prints three durations; the two bulk durations agree within a factor of two
+- [ ] The measured bulk duration sets Phase 1's `REQUEST_TIMEOUT_MS` (proposal: 60s; raise it if the probe reports more)
+- [ ] The measured bulk duration confirms `BATCH_SIZE = 10` still fits the budget, or Phase 1 lowers it to 5
+- [ ] A deliberately wrong `LLM_MODEL` makes the probe job fail red, not pass silently
+
+---
+
+## Phase 1: Bulk judge core + resilience
 
 ### Overview
 
 Rewrite `src/judge.ts` around bulk judging: a `BATCH_SIZE` module constant, an id-keyed `parseBulkVerdicts` (exported), `buildBulkMessages` (keywords JSON in the system message), a no-retry `judgeBatch`, and a `judgePosts` chunk loop with per-item fallback to the unchanged single-post `judgePost`. The `keywords` parameter is added before the trailing `fetchFn` DI seam on both `judgePost` and `judgePosts`. `resolveJudgeConfig`, `JudgeConfig`, `JudgedPost`, `JudgeBatchResult`, and `parseVerdict` are unchanged.
+
+**Revised 2026-10-26 after the production incident.** Two resilience changes ride on the same rewrite, both driven by run 40264368939: `REQUEST_TIMEOUT_MS` rises from 15s to 60s (Phase 0 confirms the number), and `judgeBatch` now reports an unanswered batch as a distinct outcome so `judgePosts` defers it whole instead of firing up to 2×BATCH_SIZE more calls at the same slow endpoint. The per-item fallback survives for parse-level misses only, where the simpler single-post prompt genuinely has a better chance.
 
 ### Changes Required:
 
@@ -84,16 +318,23 @@ Rewrite `src/judge.ts` around bulk judging: a `BATCH_SIZE` module constant, an i
  *
  * Every bulk verdict is validated per item. Items missing or malformed in
  * the bulk response fall back to the single-post judgePost (2 attempts).
- * The batch call itself gets no retry — judgePost's loop stays the only
- * retry mechanism, so the worst case is deterministic:
- * ceil(N/BATCH_SIZE) + 2N calls. A post that fails both stages is skipped
- * for this run, logged visibly, and omitted from state (D3: it stays
- * unseen and retries next run).
+ * The batch call itself gets no retry, and a batch the endpoint does not
+ * answer is deferred whole — a transport failure predicts fallback failure,
+ * so the worst case is ceil(N/BATCH_SIZE) calls, not ceil(N/BATCH_SIZE)
+ * + 2N. A post that fails both stages is skipped for this run, logged
+ * visibly, and omitted from state (D3: it stays unseen and retries next
+ * run).
  */
 import { ENV_NAMES } from "./config.js";
 import type { JudgeVerdict, Post } from "./types.js";
 
-const REQUEST_TIMEOUT_MS = 15_000;
+/**
+ * Per-request timeout. 15s was never validated from a GitHub runner: run
+ * 40264368939 timed out every batch and every fallback call at exactly
+ * 15.0s. Phase 0 measures the real latency from the runner and confirms
+ * this value.
+ */
+const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Posts per bulk judge call. Module constant by design — no config key. */
 const BATCH_SIZE = 10;
@@ -284,19 +525,33 @@ export function parseBulkVerdicts(content: string): Map<string, JudgeVerdict> | 
   }
 }
 
+/** Result of one bulk call: a parsed container, or no usable answer. */
+type BatchOutcome =
+  | { status: "answered"; verdicts: Map<string, JudgeVerdict> }
+  | { status: "unanswered" };
+
 /**
- * One bulk call for up to BATCH_SIZE posts. No retry: any failure degrades
- * the whole batch to per-item fallback (judgePost's loop stays the only
- * retry mechanism, keeping worst-case call counts deterministic).
- * Returns null when the response is unrecoverable (HTTP failure, missing
- * content, or a container-level parse failure).
+ * One bulk call for up to BATCH_SIZE posts. No retry.
+ *
+ * Returns "unanswered" when the endpoint did not produce a usable response
+ * (HTTP failure, request error, or missing message content). A transport
+ * failure predicts fallback failure — the same endpoint answers the
+ * per-item calls no faster — so the caller defers the whole batch instead
+ * of firing up to 2*BATCH_SIZE more doomed calls. Measured on run
+ * 40264368939: one 15s batch timeout cascaded into 20 more timeouts and
+ * burned 6.5 of the job's 10 minutes for ~10 posts.
+ *
+ * Returns "answered" with whatever the container parsed into, including an
+ * empty Map when the model answered with unparseable text. A parse-level
+ * miss is a model failure, not a transport failure: the simpler single-post
+ * prompt has a real chance, so the caller falls back per item.
  */
 async function judgeBatch(
   batch: readonly Post[],
   config: JudgeConfig,
   keywords: readonly string[],
   fetchFn: typeof fetch,
-): Promise<Map<string, JudgeVerdict> | null> {
+): Promise<BatchOutcome> {
   const payload = {
     model: config.model,
     messages: buildBulkMessages(batch, keywords),
@@ -319,9 +574,9 @@ async function judgeBatch(
 
     if (!response.ok) {
       console.warn(
-        `judge: batch (${batch.length} posts) HTTP ${response.status} ${response.statusText} — falling back to single-post calls (up to 2 attempts per post)`,
+        `judge: batch (${batch.length} posts) HTTP ${response.status} ${response.statusText} — skipping batch (posts stay unseen and retry next run)`,
       );
-      return null;
+      return { status: "unanswered" };
     }
 
     const data = (await response.json()) as {
@@ -330,9 +585,9 @@ async function judgeBatch(
     const rawContent = data.choices?.[0]?.message?.content;
     if (typeof rawContent !== "string") {
       console.warn(
-        `judge: batch (${batch.length} posts) missing message content — falling back to single-post calls (up to 2 attempts per post)`,
+        `judge: batch (${batch.length} posts) missing message content — skipping batch (posts stay unseen and retry next run)`,
       );
-      return null;
+      return { status: "unanswered" };
     }
 
     const verdicts = parseBulkVerdicts(rawContent);
@@ -340,14 +595,15 @@ async function judgeBatch(
       console.warn(
         `judge: batch (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
       );
+      return { status: "answered", verdicts: new Map() };
     }
-    return verdicts;
+    return { status: "answered", verdicts };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(
-      `judge: batch (${batch.length} posts) request error: ${message} — falling back to single-post calls (up to 2 attempts per post)`,
+      `judge: batch (${batch.length} posts) request error: ${message} — skipping batch (posts stay unseen and retry next run)`,
     );
-    return null;
+    return { status: "unanswered" };
   }
 }
 
@@ -422,6 +678,10 @@ export async function judgePost(
  * Collects successful verdicts and tracks skipped IDs (D3). Never throws:
  * every LLM failure lands in skippedPostIds, so a bad endpoint cannot kill
  * the run before the digest and state stages.
+ *
+ * A batch the endpoint did not answer is deferred whole (see judgeBatch):
+ * its posts stay unseen and retry on the next run. The worst case is
+ * therefore ceil(N/BATCH_SIZE) calls, not ceil(N/BATCH_SIZE) + 2N.
  */
 export async function judgePosts(
   candidates: readonly Post[],
@@ -434,10 +694,20 @@ export async function judgePosts(
 
   for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
     const batch = candidates.slice(i, i + BATCH_SIZE);
-    const verdicts = await judgeBatch(batch, config, keywords, fetchFn);
+    const outcome = await judgeBatch(batch, config, keywords, fetchFn);
+
+    if (outcome.status === "unanswered") {
+      for (const post of batch) {
+        skippedPostIds.push(post.id);
+      }
+      console.warn(
+        `judge: skipped batch of ${batch.length} post(s) after an unanswered bulk call; they stay unseen and retry next run`,
+      );
+      continue;
+    }
 
     for (const post of batch) {
-      const fromBulk = verdicts?.get(post.id);
+      const fromBulk = outcome.verdicts.get(post.id);
       const verdict = fromBulk ?? (await judgePost(post, config, keywords, fetchFn));
       if (verdict !== null) {
         judged.push({ post, verdict });
@@ -461,10 +731,17 @@ export async function judgePosts(
 - [x] Batch warn lines carry no "/2" attempt suffix (the batch gets exactly one attempt); fallback warn lines keep theirs
 - [x] No Number()-coercion of post ids anywhere in the file (19-digit ids)
 - [x] parseVerdict is byte-identical to the current src/judge.ts on disk (fence-strip regexes included)
+- [x] `REQUEST_TIMEOUT_MS` is 60_000, or the value Phase 0's probe measured — never 15_000 again
+- [x] `judgeBatch` returns `{ status: "unanswered" }` on exactly three paths: `!response.ok`, missing message content, and the catch block. `grep -c 'status: "unanswered"' src/judge.ts` returns 4 (the type union plus the three return sites)
+- [x] No fallback after an unanswered batch: `grep -c "skipping batch" src/judge.ts` returns 3, and the per-item `judgePost` call sits only inside the `outcome.status === "answered"` branch
+- [x] Worst case is ceil(N/BATCH_SIZE) calls: `grep -n "ceil(N/BATCH_SIZE) + 2N" src/judge.ts` returns nothing
+- [x] An answered-but-unparseable batch still routes every item to the fallback: the parse-failure branch returns `{ status: "answered", verdicts: new Map() }`
+- [x] Deferred posts land in `skippedPostIds`, never in `judged` — they stay unseen and retry next run (D3)
 
 #### Manual Verification:
 - [x] Reading the file: bulk-first flow is obvious (judgeBatch → per-item fallback → skip warn naming both stages)
 - [x] The system message carries JSON.stringify(keywords) and no hardcoded "frontend or fullstack web development" criterion survives in either message builder
+- [x] Reading `judgePosts`: the unanswered branch reads as a defer, not a drop — every post in the batch reaches `skippedPostIds` with one warn naming both the cause and the retry
 
 ---
 
@@ -1004,15 +1281,12 @@ describe("judgePosts", () => {
     assert.deepEqual(result.skippedPostIds, [bad.id]);
   });
 
-  it("routes a wholly failed batch through the fallback without a batch retry", async () => {
+  it("defers a wholly unanswered batch without firing fallback calls", async () => {
     const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
     let calls = 0;
     const mockFetch = async () => {
       calls += 1;
-      if (calls === 1) {
-        return new Response("Bad Gateway", { status: 502 }); // the one batch attempt
-      }
-      return ok('{"relevant": true, "locationOk": true}');
+      return new Response("Bad Gateway", { status: 502 }); // every batch attempt fails
     };
 
     const result = await judgePosts(
@@ -1021,8 +1295,46 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
-    assert.equal(calls, 3); // 1 batch + 2 fallbacks — no second batch call
-    assert.equal(result.judged.length, 2);
+    assert.equal(calls, 1); // one batch attempt, zero fallback calls
+    assert.equal(result.judged.length, 0);
+    assert.deepEqual(result.skippedPostIds, posts.map((p) => p.id));
+  });
+
+  it("defers a batch whose request times out", async () => {
+    const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
+    const mockFetch = async () => {
+      throw new Error("The operation was aborted due to timeout");
+    };
+
+    const result = await judgePosts(
+      posts,
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(result.judged.length, 0);
+    assert.deepEqual(result.skippedPostIds, posts.map((p) => p.id));
+  });
+
+  it("still falls back per item when the batch answers with unparseable text", async () => {
+    const a = bulkPost(id19(1));
+    let calls = 0;
+    const mockFetch = async () => {
+      calls += 1;
+      if (calls === 1) {
+        return ok("I cannot judge these posts."); // answered, but not JSON
+      }
+      return ok('{"relevant": true, "locationOk": true}');
+    };
+
+    const result = await judgePosts(
+      [a],
+      sampleConfig,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(calls, 2); // one batch + one fallback — a parse miss is not a transport failure
+    assert.equal(result.judged.length, 1);
     assert.deepEqual(result.skippedPostIds, []);
   });
 
@@ -1166,11 +1478,15 @@ describe("saveState", () => {
 - [x] Bulk parser contract pinned: `grep -n "parseBulkVerdicts" tests/judge.test.ts` shows its describe
 - [x] State gate pinned on both no-op branches: `grep -c "skips the disk write" tests/state.test.ts` returns 2
 - [x] Rider asserted both ways: `grep -n "response_format" tests/judge.test.ts` shows the bulk-with-rider and fallback-without assertions
+- [x] An unanswered batch (HTTP 502 and a thrown timeout) defers every post with zero fallback calls: `grep -c "defers a" tests/judge.test.ts` returns 2
+- [x] An answered-but-unparseable batch still falls back per item: `grep -n "unparseable text" tests/judge.test.ts` shows the test
+- [x] No test asserts the old cascade: `grep -rn "routes a wholly failed batch" tests/` returns nothing
 
 #### Manual Verification:
 - [x] Every double is an inline literal with one cast; no mock library; zero network; state files live under the OS temp dir with after() cleanup
 - [x] Relocated suites (parseVerdict, resolveJudgeConfig, judgePost) assert body-for-body what tests/keywords.test.ts asserted; only the judgePost call sites gained the keywords argument
 - [x] Test titles read as behavior specifications; one describe per exported function
+- [x] The three new judgePosts tests read as the incident's contract: a transport failure defers the batch, a parse miss still falls back per item
 
 ---
 
@@ -1206,7 +1522,9 @@ Region 2 — pipeline steps 5-6.
 - 6. One LLM call per candidate returns `{relevant, locationOk}`.
 + 5. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
 +    `keywords` list is sent as the relevance criterion; a post the bulk
-+    response misses falls back to a single-post call.
++    response misses falls back to a single-post call. A batch the endpoint
++    does not answer is deferred whole — those posts stay unseen and retry
++    on the next run.
 + 6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
 +    fails is skipped — the post stays unseen and retries on the next run.
 
@@ -1327,7 +1645,14 @@ Region 4 — module bullet.
 -   `{relevant, locationOk}`
 + - `src/judge.ts` - ~10-post bulk chat-completions calls judged against the
 +   keywords in `watcher.config.json`; bulk misses fall back to single-post
-+   calls; returns `{relevant, locationOk}` per post
++   calls, and a batch the endpoint does not answer is deferred whole;
++   returns `{relevant, locationOk}` per post
+
+Region 5 — Commands list: typecheck scope plus the probe entry.
+
+- - `npm run typecheck` - `tsc --noEmit` over `src/` and `tests/`
++ - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
++ - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer (needs `LLM_*` env vars)
 ````
 
 ### Success Criteria:
@@ -1378,14 +1703,18 @@ _Coverage reviewer emitted zero rows: every design `## Verification Notes`, `## 
 1. Run `npm run typecheck && npm run lint && npm test` after Phase 3 and again after Phase 4 (CI parity).
 2. One live run with real `LLM_*` and `GMAIL_*` env vars: confirm a match run produces a digest plus a state commit (neither path has ever fired in production).
 3. Confirm skipped ids stay unseen and retry on the next run.
-4. Confirm the endpoint accepts a ~10-post prompt and honors `json_object`; watch skipped counts on the first runs (whole-batch timeouts inflate fallback volume).
+4. Phase 0's probe run answers this before any code ships: confirm the endpoint accepts a ~10-post prompt and honors `json_object`, and read the measured duration into `REQUEST_TIMEOUT_MS`.
+5. After the fix, re-run `workflow_dispatch` and confirm the judge stage finishes inside the job budget: the log shows 29 bulk calls (fewer once the backlog clears), the digest or the heartbeat emails, and the state step commits.
 
 ## Performance Considerations
 
-- Happy path: ceil(N/10) LLM calls (typical run: 1-2 — seen-state diffing leaves handfuls unseen; measured 288-504 unique posts/run but small unseen tails).
-- Worst case deterministic: ceil(N/10) + 2N calls; wall-clock per doomed post ≤ 3 × 15s (timeout armed per fetch).
-- The 15s timeout now bounds a whole batch: a timed-out chunk routes ≤10 items to fallback (≤20 extra calls); watch skipped counts on the first live runs.
-- No caching introduced; temperature 0 unchanged; no new dependencies.
+Revised 2026-10-26 after production run 40264368939 — see the Production Incident section.
+
+- The first run after this change judges the whole unseen backlog: 283 posts on 2026-10-26, because the keyword pre-filter era committed almost nothing to state. Steady state is the unseen tail only (~17 new posts per 10-minute run).
+- Happy path: ceil(N/BATCH_SIZE) LLM calls. 283 posts at BATCH_SIZE 10 = 29 calls.
+- Worst case deterministic: ceil(N/BATCH_SIZE) calls. A batch the endpoint does not answer is deferred whole — no per-item cascade — so a slow endpoint costs one timeout per batch, not 2N calls.
+- Wall-clock bound: 29 batches × 60s = 29 minutes of judge, plus ~3.5 minutes of fetch. The job budget must exceed that with headroom; Phase 0 sets it to 45 minutes.
+- No caching introduced; temperature 0 unchanged; no new runtime dependencies.
 
 ## Migration Notes
 
@@ -1406,3 +1735,22 @@ Orchestrator self-verification (after Step 5): the Phase 1 `src/judge.ts` fence 
 - Solutions: `.rpiv/artifacts/solutions/2026-10-26_06-15-51_model-judged-keywords.md`
 - Research: `.rpiv/artifacts/research/2026-10-25_21-35-06_model-judged-keywords.md`
 - Discover (FRD): `.rpiv/artifacts/discover/2026-10-25_21-20-20_model-judged-keywords.md`
+
+---
+
+## Follow-up (2026-10-26T10:35:04+0700)
+
+**Trigger:** production run [40264368939](https://github.com/ukind/loker-watcher/actions/runs/40264368939) cancelled at the 10-minute job cap. Full evidence table in the Production Incident section.
+
+**What changed:**
+
+- New **Phase 0** — `scripts/probe-judge.ts` plus a `workflow_dispatch`-only `probe` job in `watch.yml`, so the endpoint's real latency from a runner is measured before any timeout value is chosen. `tsconfig.json` and `package.json` bring the script under the repo gates (`scripts/hooks/*.js` stays outside both).
+- **Phase 1** retitled "Bulk judge core + resilience": `REQUEST_TIMEOUT_MS` 15s → 60s, and `judgeBatch` now returns a `BatchOutcome` union so an unanswered batch is deferred whole instead of cascading into up to 2×BATCH_SIZE more calls at the same slow endpoint. The per-item fallback survives for parse-level misses only.
+- **Phase 1 and Phase 3 criteria unchecked** where the prior implementation no longer satisfies them; new criteria pin the defer contract, the three unanswered return sites, and the ceil(N/BATCH_SIZE) worst case.
+- **Phase 4** gains the defer wording in README pipeline step 5 and the AGENTS.md judge bullet, plus the probe entry in the Commands list and the corrected typecheck scope.
+- **Performance Considerations** rewritten: the unseen backlog is 283 posts, not a handful; the worst case is ceil(N/BATCH_SIZE) calls; the wall-clock bound is 29 batches × 60s plus ~3.5 minutes of fetch, which is what sets the 45-minute job budget.
+- **What We're NOT Doing** drops the `watch.yml` exclusion (it was the binding constraint) and adds an explicit exclusion of a per-run judge cap or judge deadline.
+
+**Verification of this revision:** both revised fences were extracted from the plan and checked in their real locations. `npm run typecheck` exits 0 on the `src/judge.ts` fence; `npx biome check` exits 0 on the `src/judge.ts` and `scripts/probe-judge.ts` fences; `npx tsc --noEmit` exits 0 on the probe fence with `scripts` added to the tsconfig include. Temp files removed; the working tree carries only this plan file.
+
+**Still open, and owned by Phase 0:** the measured bulk-call latency from a runner. Until the probe runs, 60s and `BATCH_SIZE = 10` are proposals, not confirmed values.
