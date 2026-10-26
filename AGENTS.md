@@ -14,7 +14,8 @@ back after match runs.
 ## Commands
 
 - `npm test` - unit tests (node:test runner via tsx, offline and deterministic)
-- `npm run typecheck` - `tsc --noEmit` over `src/` and `tests/`
+- `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
+- `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer (needs `LLM_*` env vars)
 - `npm run lint` - Biome check over `src/` and `tests/`
 - `npm run format` - Biome format in place
 - `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars)

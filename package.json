@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check src tests",
+    "lint": "biome check src tests scripts/probe-judge.ts",
     "format": "biome format --write src tests",
     "prepare": "husky"
   },

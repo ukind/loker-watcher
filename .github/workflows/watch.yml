@@ -13,9 +13,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  watch:
+  probe:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Probe judge latency
+        env:
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: npx tsx scripts/probe-judge.ts
+
+  watch:
+    runs-on: ubuntu-latest
+    # 283 posts at BATCH_SIZE 10 = 29 bulk calls. At the 60s request timeout
+    # that is 29 minutes of judge plus ~3.5 minutes of fetch. 45 leaves headroom.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
