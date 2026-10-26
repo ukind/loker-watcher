@@ -20,7 +20,8 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
    `keywords` list is sent as the relevance criterion; a post the bulk
    response misses falls back to a single-post call. A batch the endpoint
    does not answer is deferred whole — those posts stay unseen and retry
-   on the next run.
+   on the next run. Up to `JUDGE_CONCURRENCY` batches run at once, so a
+   280-post backlog judges in about 3 minutes instead of 13.
 6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
    fails is skipped — the post stays unseen and retries on the next run.
 7. New relevant + located posts are emailed as the job digest.
