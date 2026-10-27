@@ -106,6 +106,28 @@ describe("loadWatcherConfig — failures", () => {
     await assert.rejects(() => loadWatcherConfig(path), /recencyHours.*positive/);
   });
 
+  it('defaults reasoningEffort to "medium" when absent', async () => {
+    const path = await writeConfig({ ...VALID });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.reasoningEffort, "medium");
+  });
+
+  it("normalizes reasoningEffort case-insensitively", async () => {
+    const path = await writeConfig({ ...VALID, reasoningEffort: "HIGH" });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.reasoningEffort, "high");
+  });
+
+  it("rejects an invalid reasoningEffort value", async () => {
+    const path = await writeConfig({ ...VALID, reasoningEffort: "extreme" });
+    await assert.rejects(() => loadWatcherConfig(path), /reasoningEffort/);
+  });
+
+  it("rejects a non-string reasoningEffort value", async () => {
+    const path = await writeConfig({ ...VALID, reasoningEffort: 123 });
+    await assert.rejects(() => loadWatcherConfig(path), /reasoningEffort/);
+  });
+
   it("allows an empty candidateTerms array", async () => {
     const path = await writeConfig({ ...VALID, candidateTerms: [] });
     const config = await loadWatcherConfig(path);

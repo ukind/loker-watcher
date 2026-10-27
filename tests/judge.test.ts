@@ -613,6 +613,7 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      "medium",
       width,
     );
     assert.equal(state.peak, width); // exactly the passed width, never more
@@ -632,6 +633,7 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      "medium",
       width,
     );
     assert.equal(state.peak, Math.min(width, batchCount));
@@ -649,6 +651,7 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      "medium",
       width,
     );
 
@@ -790,6 +793,7 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      "medium",
       width,
     );
 
@@ -971,5 +975,117 @@ describe("judgePosts", () => {
     const firstKey3 = auths.findIndex((auth) => auth.includes("key-3"));
     const lastKey2 = auths.map((auth) => auth.includes("key-2")).lastIndexOf(true);
     assert.ok(firstKey3 > lastKey2);
+  });
+});
+
+describe("judgePost payload carries reasoning_effort", () => {
+  it('defaults to "medium" in the single-post payload', async () => {
+    let sentBody: unknown;
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      sentBody = JSON.parse((options as { body: string }).body);
+      return ok('{"relevant": true, "locationOk": true}');
+    };
+
+    await judgePost(
+      bulkPost(id19(1)),
+      freshState(singleAccount),
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "medium");
+  });
+
+  it("sends an explicit reasoning_effort in the single-post payload", async () => {
+    let sentBody: unknown;
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      sentBody = JSON.parse((options as { body: string }).body);
+      return ok('{"relevant": true, "locationOk": true}');
+    };
+
+    await judgePost(
+      bulkPost(id19(1)),
+      freshState(singleAccount),
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+      "high",
+    );
+    assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "high");
+  });
+});
+
+describe("judgePosts payload carries reasoning_effort", () => {
+  it('defaults to "medium" in the bulk payload', async () => {
+    const id = id19(1);
+    const posts = [bulkPost(id)];
+    let sentBody: unknown;
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      sentBody = JSON.parse((options as { body: string }).body);
+      return ok(bulkContent([id]));
+    };
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+    assert.equal(result.judged.length, 1);
+    assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "medium");
+  });
+
+  it("sends an explicit reasoning_effort in the bulk payload", async () => {
+    const id = id19(1);
+    const posts = [bulkPost(id)];
+    let sentBody: unknown;
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      sentBody = JSON.parse((options as { body: string }).body);
+      return ok(bulkContent([id]));
+    };
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+      "low",
+    );
+    assert.equal(result.judged.length, 1);
+    assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "low");
+  });
+});
+
+describe("judgePosts forwards reasoning_effort through the single-post fallback", () => {
+  it("carries the explicit effort in the fallback payload after a bulk miss", async () => {
+    const id = id19(1);
+    const posts = [bulkPost(id)];
+    const fallbackBodies: string[] = [];
+    // The bulk path answers with valid JSON but zero verdicts, so the post
+    // falls through to judgePost. Only the bulk payload carries
+    // response_format (design scope boundary) — that is how the mock tells
+    // the two paths apart.
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        response_format?: unknown;
+      };
+      if (body.response_format !== undefined) {
+        return ok("{}");
+      }
+      fallbackBodies.push((options as { body: string }).body);
+      return ok('{"relevant": true, "locationOk": true}');
+    };
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+      "high",
+    );
+    assert.equal(result.judged.length, 1);
+    assert.equal(fallbackBodies.length, 1);
+    const fallback = JSON.parse(fallbackBodies[0] as string) as {
+      reasoning_effort?: string;
+    };
+    assert.equal(fallback.reasoning_effort, "high");
   });
 });

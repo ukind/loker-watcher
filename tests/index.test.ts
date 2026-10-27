@@ -37,6 +37,7 @@ const CONFIG: WatcherConfig = {
   candidateTerms: ["hiring", "loker"],
   surfaces: [{ type: "tag", value: "hiring" }],
   recencyHours: 72,
+  reasoningEffort: "medium",
 };
 
 const BASE_ENV: Record<string, string | undefined> = {

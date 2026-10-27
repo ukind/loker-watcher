@@ -195,6 +195,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       resolveJudgeConfig(env),
       config.keywords,
       deps.fetchFn,
+      config.reasoningEffort,
       parseJudgeConcurrency(env[ENV_NAMES.judgeConcurrency]),
     ),
   );

@@ -186,6 +186,7 @@ async function main(): Promise<void> {
     model: account.model,
     messages: bulkMessages(ten),
     temperature: 0,
+    reasoning_effort: CONFIG.reasoningEffort,
     response_format: { type: "json_object" },
   };
   const bulk = await timed("bulk call (10 posts, production prompt shape)", bulkPayload, account);
