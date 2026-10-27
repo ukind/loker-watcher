@@ -21,15 +21,25 @@ export interface ResolvedSurface {
   url: string;
 }
 
+/** Reasoning effort level for the LLM judge's chat-completions calls. */
+export type ReasoningEffort = "low" | "medium" | "high";
+
 /** Shape of watcher.config.json. */
 export interface WatcherConfig {
   keywords: string[];
   candidateTerms: string[];
   surfaces: Surface[];
   recencyHours: number;
+  reasoningEffort: ReasoningEffort;
 }
 
-const ALLOWED_KEYS = ["keywords", "candidateTerms", "surfaces", "recencyHours"] as const;
+const ALLOWED_KEYS = [
+  "keywords",
+  "candidateTerms",
+  "surfaces",
+  "recencyHours",
+  "reasoningEffort",
+] as const;
 
 const THREADS_HOST = "www.threads.com";
 
@@ -80,8 +90,9 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
   const candidateTerms = readStringArray(record.candidateTerms, "candidateTerms", filePath, false);
   const surfaces = readSurfaces(record.surfaces, filePath);
   const recencyHours = readRecencyHours(record.recencyHours, filePath);
+  const reasoningEffort = readReasoningEffort(record.reasoningEffort, filePath);
 
-  return { keywords, candidateTerms, surfaces, recencyHours };
+  return { keywords, candidateTerms, surfaces, recencyHours, reasoningEffort };
 }
 
 function readStringArray(
@@ -156,6 +167,24 @@ function readRecencyHours(value: unknown, filePath: string): number {
     throw new Error(`config: ${filePath} "recencyHours" must be a positive number`);
   }
   return Math.floor(value);
+}
+
+function readReasoningEffort(value: unknown, filePath: string): ReasoningEffort {
+  if (value === undefined) {
+    return "medium";
+  }
+  if (typeof value !== "string") {
+    throw new Error(
+      `config: ${filePath} "reasoningEffort" must be one of "low", "medium", "high", got ${JSON.stringify(value)}`,
+    );
+  }
+  const normalized = value.toLowerCase();
+  if (normalized !== "low" && normalized !== "medium" && normalized !== "high") {
+    throw new Error(
+      `config: ${filePath} "reasoningEffort" must be one of "low", "medium", "high", got ${JSON.stringify(value)}`,
+    );
+  }
+  return normalized;
 }
 
 /** Resolve configured surfaces to the URLs Playwright loads. */

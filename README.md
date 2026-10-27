@@ -76,6 +76,7 @@ no code change and no Actions variable is involved.
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
 | `recencyHours` | How far back a post can be and still count. Default `72`. |
+| `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
 
 Adding a profile or a search URL is the same edit as adding a tag:
 

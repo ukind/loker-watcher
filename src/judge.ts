@@ -24,6 +24,7 @@
  * is skipped for this run, logged visibly, and omitted from state (D3: it
  * stays unseen and retries next run).
  */
+import type { ReasoningEffort } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
 import type { AccountFailure, JudgeVerdict, Post } from "./types.js";
 
@@ -376,6 +377,7 @@ async function judgeBatch(
   keywords: readonly string[],
   fetchFn: typeof fetch,
   batchIndex: number,
+  reasoningEffort: ReasoningEffort = "medium",
 ): Promise<BatchOutcome> {
   // Built once, outside the retry loop: the prompt does not change between
   // attempts. The account (model + key + base URL) is read fresh per
@@ -398,8 +400,9 @@ async function judgeBatch(
       model: account.model,
       messages,
       temperature: 0,
-      // Rider on the bulk path ONLY: the single-post fallback call keeps its
-      // original payload shape (design scope boundary).
+      reasoning_effort: reasoningEffort,
+      // response_format is a rider on the bulk path ONLY: the single-post
+      // fallback payload does not send it (design scope boundary).
       response_format: { type: "json_object" },
     };
     try {
@@ -496,6 +499,7 @@ export async function judgePost(
   state: RotationState,
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
+  reasoningEffort: ReasoningEffort = "medium",
 ): Promise<JudgeVerdict | null> {
   const messages = buildMessages(post, keywords);
 
@@ -509,6 +513,7 @@ export async function judgePost(
       model: account.model,
       messages,
       temperature: 0,
+      reasoning_effort: reasoningEffort,
     };
     try {
       const response = await fetchFn(normalizeEndpoint(account.baseUrl), {
@@ -597,6 +602,7 @@ export async function judgePosts(
   accounts: readonly LlmAccount[],
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
+  reasoningEffort: ReasoningEffort = "medium",
 ): Promise<JudgeBatchResult> {
   const state: RotationState = { accounts, index: 0, failures: [] };
 
@@ -617,7 +623,7 @@ export async function judgePosts(
       if (index >= batches.length) return;
       const batch = batches[index];
       if (batch === undefined) continue;
-      outcomes[index] = await judgeBatch(batch, state, keywords, fetchFn, index);
+      outcomes[index] = await judgeBatch(batch, state, keywords, fetchFn, index, reasoningEffort);
     }
   };
   await Promise.all(Array.from({ length: Math.min(JUDGE_CONCURRENCY, batches.length) }, worker));
@@ -647,7 +653,8 @@ export async function judgePosts(
     }
     for (const post of batch) {
       const fromBulk = outcome.verdicts.get(post.id);
-      const verdict = fromBulk ?? (await judgePost(post, state, keywords, fetchFn));
+      const verdict =
+        fromBulk ?? (await judgePost(post, state, keywords, fetchFn, reasoningEffort));
       if (verdict !== null) {
         judged.push({ post, verdict });
       } else {

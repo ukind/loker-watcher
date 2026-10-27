@@ -95,6 +95,8 @@ async function main(): Promise<void> {
     newPosts,
     resolveJudgeConfig(process.env),
     config.keywords,
+    fetch,
+    config.reasoningEffort,
   );
   const matches = judged
     .filter((j) => j.verdict.relevant && j.verdict.locationOk)
