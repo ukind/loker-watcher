@@ -16,8 +16,16 @@
  * Surface policy (D11): every surface is attempted with retries; a failed
  * surface is tolerated while at least one succeeds; all-fail throws. The
  * surface list itself lives in watcher.config.json (Phase 10).
+ *
+ * Concurrency (D4): each walk drains its surfaces through a bounded
+ * slot-array pool capped at FETCH_CONCURRENCY, so results reassemble in
+ * input order and the in-flight page peak never exceeds the cap.
+ *
+ * Testability (D5): both walks take a trailing ContextFactory — the ONLY
+ * Playwright import site is the dynamic await import inside the default
+ * chromiumContextFactory, so importing this module never loads Playwright
+ * and offline suites inject structural doubles.
  */
-import { type BrowserContext, chromium } from "playwright";
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
 import type { Post } from "./types.js";
@@ -25,6 +33,9 @@ import type { Post } from "./types.js";
 const NAV_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 2_000;
+
+/** Surfaces walked at once by either fetch loop (D4). */
+export const FETCH_CONCURRENCY = 4;
 
 // Authenticated fetch tuning (Phase 8, measured 2026-10-25).
 const RECENT_TAB_LABEL = "Recent";
@@ -56,6 +67,108 @@ const HAS_THREAD_ITEMS = `() =>
     document.querySelectorAll('script[type="application/json"][data-sjs]'),
   ).some((el) => (el.textContent || '').includes('thread_items'))`;
 
+const WEBDRIVER_PATCH = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
+
+/** One graphql/HTTP response the authenticated walk may read. */
+export interface ResponseLike {
+  url(): string;
+  status(): number;
+  text(): Promise<string>;
+}
+
+/** One feed tab locator (the Recent tab is the only one the walk touches). */
+export interface LocatorLike {
+  first(): LocatorLike;
+  waitFor(options: { state: "visible"; timeout: number }): Promise<void>;
+  click(): Promise<void>;
+}
+
+/** One browser page, narrowed to the surface the walks actually drive. */
+export interface PageLike {
+  goto(url: string, options?: { waitUntil: "domcontentloaded"; timeout: number }): Promise<unknown>;
+  waitForFunction(
+    pageFunction: string,
+    arg?: unknown,
+    options?: { timeout?: number; polling?: number },
+  ): Promise<void>;
+  content(): Promise<string>;
+  on(event: "response", listener: (response: ResponseLike) => void): void;
+  locator(selector: string): LocatorLike;
+  evaluate(script: string): Promise<unknown>;
+  waitForTimeout(ms: number): Promise<void>;
+  close(): Promise<void>;
+}
+
+/** One browser context, narrowed to the surface the walks actually use. */
+export interface ContextLike {
+  newPage(): Promise<PageLike>;
+  addInitScript(script: string): Promise<void>;
+  close(): Promise<void>;
+}
+
+/**
+ * Build one browser context for a walk. The optional path is the session
+ * storage state file: the authenticated walk passes it so the default
+ * factory attaches the logged-in cookies, while zero-arg test doubles stay
+ * assignable and the logged-out walk simply never passes one.
+ */
+export type ContextFactory = (storageStatePath?: string) => Promise<ContextLike>;
+
+/**
+ * The production factory, and the ONLY Playwright import site: the dynamic
+ * await import below keeps module import side-effect free (importing this
+ * file never loads Playwright — the offline suites rely on that). The
+ * factory owns the browser and closes it when the context closes.
+ */
+export const chromiumContextFactory: ContextFactory = async (
+  storageStatePath?: string,
+): Promise<ContextLike> => {
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({
+    ...(storageStatePath === undefined ? {} : { storageState: storageStatePath }),
+    userAgent: USER_AGENT,
+    viewport: { width: 1366, height: 768 },
+    locale: "en-US",
+  });
+  await context.addInitScript(WEBDRIVER_PATCH);
+  return {
+    newPage: async (): Promise<PageLike> => {
+      const page = await context.newPage();
+      return {
+        goto: (url, options) => page.goto(url, options),
+        waitForFunction: async (pageFunction, arg, options) => {
+          await page.waitForFunction(pageFunction, arg, options);
+        },
+        content: () => page.content(),
+        on: (event, listener) => {
+          page.on(event, (response) => listener(response));
+          return undefined;
+        },
+        locator: (selector) => {
+          const chain = page.locator(selector).first();
+          const adapted: LocatorLike = {
+            first: () => adapted,
+            waitFor: (options) => chain.waitFor(options),
+            click: () => chain.click(),
+          };
+          return adapted;
+        },
+        evaluate: (script) => page.evaluate(script),
+        waitForTimeout: (ms) => page.waitForTimeout(ms),
+        close: () => page.close(),
+      };
+    },
+    addInitScript: async (script) => {
+      await context.addInitScript(script);
+    },
+    close: async () => {
+      await context.close();
+      await browser.close();
+    },
+  };
+};
+
 /**
  * A `tag` surface logs as `tag/<value>`; a `url` surface logs as its full
  * URL. resolveSurfaces (src/config-file.ts) builds the labels, so the prefix
@@ -74,44 +187,52 @@ export interface SurfaceFetch {
 
 /**
  * Fetch every configured surface and return the successes in input order.
+ * Surfaces drain through a bounded slot-array pool (D4), so the in-flight
+ * page peak never exceeds FETCH_CONCURRENCY while the output stays ordered.
  * Throws when every surface fails (message lists per-surface errors).
  */
-export async function fetchSurfaces(surfaces: readonly ResolvedSurface[]): Promise<SurfaceFetch[]> {
-  const browser = await chromium.launch({ headless: true });
+export async function fetchSurfaces(
+  surfaces: readonly ResolvedSurface[],
+  contextFactory: ContextFactory = chromiumContextFactory,
+): Promise<SurfaceFetch[]> {
+  const context = await contextFactory();
   try {
-    const context = await browser.newContext({
-      userAgent: USER_AGENT,
-      viewport: { width: 1366, height: 768 },
-      locale: "en-US",
-    });
-    await context.addInitScript(
-      "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });",
-    );
-
-    const results: SurfaceFetch[] = [];
-    const failures: string[] = [];
-    for (const surface of surfaces) {
-      try {
-        results.push({ label: surface.label, html: await fetchOne(context, surface) });
-        console.log(`fetch: ${surface.label} OK`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        failures.push(`${surface.label}: ${message}`);
-        console.warn(`fetch: ${surface.label} FAILED — ${message}`);
+    const results: Array<SurfaceFetch | undefined> = Array.from({ length: surfaces.length });
+    const failures: Array<string | undefined> = Array.from({ length: surfaces.length });
+    let next = 0;
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const index = next;
+        next += 1;
+        if (index >= surfaces.length) return;
+        const surface = surfaces[index];
+        if (surface === undefined) continue;
+        try {
+          const html = await fetchOne(context, surface);
+          results[index] = { label: surface.label, html };
+          console.log(`fetch: ${surface.label} OK`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          failures[index] = `${surface.label}: ${message}`;
+          console.warn(`fetch: ${surface.label} FAILED — ${message}`);
+        }
       }
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, surfaces.length) }, worker));
 
-    if (results.length === 0) {
-      throw new Error(`fetch: all ${surfaces.length} surface(s) failed:\n${failures.join("\n")}`);
+    const successes = results.filter((entry): entry is SurfaceFetch => entry !== undefined);
+    if (successes.length === 0) {
+      const listed = failures.filter((entry): entry is string => entry !== undefined);
+      throw new Error(`fetch: all ${surfaces.length} surface(s) failed:\n${listed.join("\n")}`);
     }
-    return results;
+    return successes;
   } finally {
-    await browser.close();
+    await context.close();
   }
 }
 
 /** Fetch one surface: up to MAX_ATTEMPTS tries with linear backoff. */
-async function fetchOne(context: BrowserContext, surface: ResolvedSurface): Promise<string> {
+async function fetchOne(context: ContextLike, surface: ResolvedSurface): Promise<string> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const page = await context.newPage();
@@ -144,56 +265,60 @@ async function fetchOne(context: BrowserContext, surface: ResolvedSurface): Prom
  * The logged-in tag page defaults to the Top view (old, popular posts) and
  * hydrates post data through graphql XHR responses instead of the initial
  * data-sjs blobs (measured 2026-10-25: 1 post in the blobs vs 92 via XHR).
- * This function clicks the Recent tab, captures graphql response bodies,
- * walks them for thread_items arrays with the same helpers extractPosts
- * uses, and scrolls until the feed stops yielding new posts.
+ * This walk clicks the Recent tab, captures graphql response bodies, walks
+ * them for thread_items arrays with the same helpers extractPosts uses, and
+ * scrolls until the feed stops yielding new posts.
  *
  * The Recent-tab click is best-effort for every surface: profile pages and
  * search URLs have no such tab, and a `filter=recent` search URL is recent
  * by construction.
  *
+ * Surfaces drain through the same bounded slot-array pool as the logged-out
+ * walk (D4): results reassemble in input order, peak <= FETCH_CONCURRENCY.
  * Throws when every surface fails (message lists per-surface errors).
  */
 export async function fetchSurfacesAuthenticated(
   surfaces: readonly ResolvedSurface[],
   storageStatePath: string,
+  contextFactory: ContextFactory = chromiumContextFactory,
 ): Promise<Post[]> {
-  const browser = await chromium.launch({ headless: true });
+  const context = await contextFactory(storageStatePath);
   try {
-    const context = await browser.newContext({
-      storageState: storageStatePath,
-      userAgent: USER_AGENT,
-      viewport: { width: 1366, height: 768 },
-      locale: "en-US",
-    });
-    await context.addInitScript(
-      "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });",
-    );
-
-    const results: Post[] = [];
-    const failures: string[] = [];
-    const empty: string[] = [];
-    for (const surface of surfaces) {
-      try {
-        const posts = await fetchOneAuthenticated(context, surface);
-        console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
-        // A surface that yields 0 posts is NOT a thrown failure, so it never
-        // reaches `failures`. Track it separately or the all-fail error below
-        // lists nothing and the run dies with no diagnostic.
-        if (posts.length === 0) empty.push(surface.label);
-        results.push(...posts);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        failures.push(`${surface.label}: ${message}`);
-        console.warn(`fetch: ${surface.label} FAILED — ${message}`);
+    const perSurface: Array<Post[] | undefined> = Array.from({ length: surfaces.length });
+    const failures: Array<string | undefined> = Array.from({ length: surfaces.length });
+    const emptyLabels: Array<string | undefined> = Array.from({ length: surfaces.length });
+    let next = 0;
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const index = next;
+        next += 1;
+        if (index >= surfaces.length) return;
+        const surface = surfaces[index];
+        if (surface === undefined) continue;
+        try {
+          const posts = await fetchOneAuthenticated(context, surface);
+          console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
+          // A surface that yields 0 posts is NOT a thrown failure, so it never
+          // reaches `failures`. Track it separately or the all-fail error below
+          // lists nothing and the run dies with no diagnostic.
+          if (posts.length === 0) emptyLabels[index] = surface.label;
+          perSurface[index] = posts;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          failures[index] = `${surface.label}: ${message}`;
+          console.warn(`fetch: ${surface.label} FAILED — ${message}`);
+        }
       }
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, surfaces.length) }, worker));
 
+    const results = perSurface.filter((posts): posts is Post[] => posts !== undefined).flat();
     if (results.length === 0) {
-      const detail: string[] = [...failures];
-      if (empty.length > 0) {
+      const detail: string[] = failures.filter((entry): entry is string => entry !== undefined);
+      const empties = emptyLabels.filter((label): label is string => label !== undefined);
+      if (empties.length > 0) {
         detail.push(
-          `${empty.join(", ")}: 0 post(s) extracted — the Recent tab or the graphql XHR capture yielded nothing`,
+          `${empties.join(", ")}: 0 post(s) extracted — the Recent tab or the graphql XHR capture yielded nothing`,
         );
       }
       throw new Error(
@@ -202,13 +327,13 @@ export async function fetchSurfacesAuthenticated(
     }
     return results;
   } finally {
-    await browser.close();
+    await context.close();
   }
 }
 
 /** One authenticated surface: Recent tab, XHR capture, scroll to accumulate. */
 async function fetchOneAuthenticated(
-  context: BrowserContext,
+  context: ContextLike,
   surface: ResolvedSurface,
 ): Promise<Post[]> {
   const page = await context.newPage();
@@ -252,7 +377,7 @@ async function fetchOneAuthenticated(
     // count() === 0 at gate time, === 1 ~6s later), so WAIT for it instead of
     // probing once. A one-shot count() silently keeps the Top view, which
     // emits no thread_items XHR bodies at all.
-    const recentTab = page.locator(`[aria-label="${RECENT_TAB_LABEL}"]`).first();
+    const recentTab = page.locator(`[aria-label="${RECENT_TAB_LABEL}"]`);
     let recentVisible = true;
     try {
       await recentTab.waitFor({

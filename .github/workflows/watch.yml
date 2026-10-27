@@ -34,9 +34,11 @@ jobs:
 
   watch:
     runs-on: ubuntu-latest
-    # 283 posts at BATCH_SIZE 10 = 29 bulk calls. At the 60s request timeout
-    # that is 29 minutes of judge plus ~3.5 minutes of fetch. 45 leaves headroom.
-    timeout-minutes: 45
+    # Width-8 judge: 29 bulk calls clear in ~4 waves, width-4 surface pools
+    # cut the ~3.5-min serial fetch to ~1 min, and the 40-call fallback
+    # budget adds about a minute. The 8-minute cap keeps a hung run under
+    # the 10-minute cron interval — it dies before the next tick queues.
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
 
@@ -48,10 +50,13 @@ jobs:
       - run: npm ci
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        # The watcher is headless-only; the full browser build adds install
+        # minutes to every run for nothing the pipeline drives.
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: Run watcher
         env:
+          JUDGE_CONCURRENCY: "8"   # probe run 40268599609 successor — paste the measuring run's reading
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}

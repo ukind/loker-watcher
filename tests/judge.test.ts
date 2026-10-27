@@ -8,6 +8,7 @@ import {
   judgePost,
   judgePosts,
   parseBulkVerdicts,
+  parseJudgeConcurrency,
   parseLlmAccounts,
   parseVerdict,
   resolveJudgeConfig,
@@ -184,6 +185,28 @@ describe("parseLlmAccounts", () => {
     assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: missing }), /LLM_ACCOUNTS\[0\]\.model/);
     const blank = JSON.stringify([{ baseUrl: "https://a", apiKey: "  ", model: "m" }]);
     assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: blank }), /LLM_ACCOUNTS\[0\]\.apiKey/);
+  });
+});
+
+describe("parseJudgeConcurrency", () => {
+  it("defaults to 4 when the variable is absent", () => {
+    assert.equal(parseJudgeConcurrency(undefined), 4);
+  });
+
+  it("defaults to 4 when the variable is blank", () => {
+    assert.equal(parseJudgeConcurrency(""), 4);
+    assert.equal(parseJudgeConcurrency("   "), 4);
+  });
+
+  it("parses a positive integer with surrounding whitespace", () => {
+    assert.equal(parseJudgeConcurrency("8"), 8);
+    assert.equal(parseJudgeConcurrency(" 16 "), 16);
+  });
+
+  it("throws naming the variable for zero, negative, fractional, or non-numeric values", () => {
+    for (const bad of ["0", "-2", "2.5", "abc", "4px"]) {
+      assert.throws(() => parseJudgeConcurrency(bad), /JUDGE_CONCURRENCY/);
+    }
   });
 });
 
@@ -371,6 +394,31 @@ describe("judgePosts", () => {
     };
   }
 
+  /**
+   * Bulk calls answer unparseable text (every post falls back); single-post
+   * calls answer a valid verdict. Discriminates by the bulk prompt's
+   * distinctive opening. Records call count and the in-flight peak, so the
+   * fallback pool's width is observable. Uses the singleAccount pool, so
+   * rotation never fires and every call carries key "test-key".
+   */
+  function bulkMissThenAnswer(state: { inFlight: number; peak: number; calls: number }) {
+    return async (_url: unknown, options?: unknown): Promise<Response> => {
+      state.calls += 1;
+      state.inFlight += 1;
+      state.peak = Math.max(state.peak, state.inFlight);
+      await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
+      state.inFlight -= 1;
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      if (content.includes("Judge each Threads post below")) {
+        return ok("I cannot judge these posts."); // answered-but-unparseable: every post falls back
+      }
+      return ok('{"relevant": true, "locationOk": false}');
+    };
+  }
+
   it("judges ten posts with a single bulk call", async () => {
     const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1)));
     let calls = 0;
@@ -554,8 +602,9 @@ describe("judgePosts", () => {
     assert.ok(bodies[1]?.includes("next.js")); // and the fallback system message
   });
 
-  it("peaks at exactly four in-flight bulk calls for a 280-post backlog", async () => {
+  it("peaks at exactly the configured concurrency for a 280-post backlog", async () => {
     const posts = Array.from({ length: 280 }, (_, i) => bulkPost(id19(i + 1))); // 28 batches
+    const width = 4;
     const state = { inFlight: 0, peak: 0 };
     const mockFetch = measuredFetch(state);
 
@@ -564,14 +613,17 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      width,
     );
-    assert.equal(state.peak, 4); // exactly JUDGE_CONCURRENCY, never more
+    assert.equal(state.peak, width); // exactly the passed width, never more
     assert.equal(result.judged.length, 280);
     assert.deepEqual(result.skippedPostIds, []);
   });
 
   it("peaks at min(concurrency, batches) in-flight calls for a short list", async () => {
     const posts = Array.from({ length: 25 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
+    const width = 2;
+    const batchCount = Math.ceil(posts.length / 10); // BATCH_SIZE mirror
     const state = { inFlight: 0, peak: 0 };
     const mockFetch = measuredFetch(state);
 
@@ -580,9 +632,180 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      width,
     );
-    assert.equal(state.peak, 3); // min(JUDGE_CONCURRENCY, batches.length)
+    assert.equal(state.peak, Math.min(width, batchCount));
     assert.equal(result.judged.length, 25);
+  });
+
+  it("drains fallback-needed posts through a pool at the configured width, in input order", async () => {
+    const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches
+    const width = 3;
+    const state = { inFlight: 0, peak: 0, calls: 0 };
+    const mockFetch = bulkMissThenAnswer(state);
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+      width,
+    );
+
+    // The bulk phase peaks at 2 (two batches) — only the fallback pool can
+    // reach the configured width.
+    assert.equal(state.peak, width);
+    assert.equal(state.calls, 2 + 20); // 2 bulk + 20 single-post calls
+    assert.equal(result.judged.length, 20);
+    assert.deepEqual(
+      result.judged.map((j) => j.post.id),
+      posts.map((p) => p.id),
+    );
+    // every verdict carries the fallback shape, not a bulk echo
+    assert.ok(result.judged.every((j) => j.verdict.relevant && !j.verdict.locationOk));
+    assert.deepEqual(result.skippedPostIds, []);
+  });
+
+  it("spends the 40-call fallback budget, then leaves the surplus unseen in input order", async () => {
+    const posts = Array.from({ length: 50 }, (_, i) => bulkPost(id19(i + 1))); // 5 batches
+    const state = { inFlight: 0, peak: 0, calls: 0 };
+    const mockFetch = bulkMissThenAnswer(state);
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+
+    assert.equal(state.calls, 5 + 40); // 5 bulk + the 40-call budget, never more
+    assert.equal(result.judged.length, 40); // FALLBACK_CALL_BUDGET posts judged
+    assert.deepEqual(
+      result.judged.map((j) => j.post.id),
+      posts
+        .slice(0, 40)
+        .map((p) => p.id), // the budget feeds the head of the input order
+    );
+    assert.deepEqual(
+      result.skippedPostIds,
+      posts
+        .slice(40)
+        .map((p) => p.id), // the tail starves, in order
+    );
+  });
+
+  it("keeps input order when one parallel fallback fails among successes", async () => {
+    const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      if (content.includes("Judge each Threads post below")) {
+        return ok("I cannot judge these posts.");
+      }
+      if (content.includes(id19(5))) {
+        return new Response("Internal Server Error", { status: 500 }); // both attempts fail
+      }
+      return ok('{"relevant": true, "locationOk": false}');
+    };
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
+
+    assert.equal(result.judged.length, 9);
+    assert.deepEqual(
+      result.judged.map((j) => j.post.id),
+      posts.filter((p) => p.id !== id19(5)).map((p) => p.id),
+    );
+    assert.deepEqual(result.skippedPostIds, [id19(5)]);
+  });
+
+  it("drain-then-throw: a pool exhausted mid-fallback rejects judgePosts with the complete record", async () => {
+    const posts = Array.from({ length: 3 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
+    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      if (content.includes("Judge each Threads post below")) {
+        return ok("{}"); // answered, zero verdicts — every post falls back
+      }
+      return new Response("Too Many Requests", { status: 429 }); // rotation burns both accounts
+    }) as unknown as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch);
+    } catch (error) {
+      caught = error;
+    }
+
+    assert.ok(isRotationExhausted(caught));
+    assert.deepEqual(
+      (caught as RotationExhausted).failures.map((f) => f.account),
+      [1, 2],
+    );
+  });
+
+  it("defers K in-flight batches whole when a burst demotes the first wave at width > 1 (1d4faed)", async () => {
+    const posts = Array.from({ length: 30 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
+    const width = 2;
+    const state = { inFlight: 0, peak: 0 };
+    // Mirror of the suite's spent-backoff defer pin: bulk calls for the
+    // first wave's batches always fail retryable, so both batches exhaust
+    // backoff and defer whole at the same time; the third batch answers
+    // on its first try.
+    const burstIds = new Set([id19(1), id19(11)]); // one id per demoted batch
+    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      if (!content.includes("Judge each Threads post below")) {
+        return ok('{"relevant": true, "locationOk": false}');
+      }
+      state.inFlight += 1;
+      state.peak = Math.max(state.peak, state.inFlight);
+      await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
+      state.inFlight -= 1;
+      if ([...burstIds].some((id) => content.includes(id))) {
+        return new Response("Internal Server Error", { status: 500 });
+      }
+      // Real bulk shape: an id->verdict map for exactly the listed ids, so
+      // the surviving batch is judged through the bulk path, never the fallback.
+      const answer: Record<string, { relevant: boolean; locationOk: boolean }> = {};
+      for (const id of content.match(/\b\d{16,}\b/g) ?? []) {
+        answer[id] = { relevant: true, locationOk: false };
+      }
+      return ok(JSON.stringify(answer));
+    };
+
+    const result = await judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+      width,
+    );
+
+    // The burst defers BOTH first-wave batches whole: their 20 posts are
+    // skipped in input order, none is judged, and the surviving batch
+    // reassembles in input order.
+    assert.ok(state.peak <= width);
+    assert.equal(result.judged.length, 10);
+    assert.deepEqual(
+      result.judged.map((j) => j.post.id),
+      posts.slice(20).map((p) => p.id),
+    );
+    assert.deepEqual(
+      result.skippedPostIds,
+      posts.slice(0, 20).map((p) => p.id),
+    );
   });
 
   it("keeps candidate order when batches resolve out of order", async () => {
