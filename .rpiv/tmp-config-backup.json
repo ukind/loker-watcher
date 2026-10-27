@@ -1,0 +1,28 @@
+{
+  "keywords": [
+    "frontend", "front-end", "front end",
+    "fullstack", "full-stack", "full stack",
+    "web developer", "web dev",
+    "react", "vue", "next.js", "nextjs", "nuxt",
+    "angular", "svelte", "typescript", "javascript",
+    "node.js", "nodejs"
+  ],
+  "candidateTerms": [
+    "developer", "programmer", "software", "engineer", "frontend", "front-end",
+    "fullstack", "full-stack", "react", "vue", "next.js", "nextjs", "typescript",
+    "javascript", "node.js", "nodejs", "web dev", "it support", "teknisi",
+    "coding", "coder",
+    "indonesia", "jakarta", "jogja", "yogyakarta", "surabaya", "bandung",
+    "medan", "semarang", "bali", "denpasar", "makassar", "palembang", "bekasi",
+    "tangerang", "depok", "bogor", "malang", "solo",
+    "remote", "wfh", "work from home"
+  ],
+  "surfaces": [
+    { "type": "tag", "value": "hiring" },
+    { "type": "tag", "value": "loker" },
+    { "type": "tag", "value": "infokerja" },
+    { "type": "url", "value": "https://www.threads.com/@hiresflow" },
+    { "type": "url", "value": "https://www.threads.com/search?q=hiring&serp_type=deeplink&filter=recent" }
+  ],
+  "recencyHours": 72
+}
