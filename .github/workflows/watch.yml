@@ -34,10 +34,12 @@ jobs:
 
   watch:
     runs-on: ubuntu-latest
-    # Width-8 judge: 29 bulk calls clear in ~4 waves, width-4 surface pools
-    # cut the ~3.5-min serial fetch to ~1 min, and the 40-call fallback
-    # budget adds about a minute. The 8-minute cap keeps a hung run under
-    # the 10-minute cron interval — it dies before the next tick queues.
+    # Width-4 judge (the probe job's reading): 30 bulk calls clear in ~8
+    # waves, width-4 surface pools cut the serial fetch to ~1 min (71s
+    # measured), and the 40-call fallback budget adds about a minute. The
+    # 8-minute cap keeps a hung run under the 10-minute cron interval — it
+    # dies before the next tick queues. Measured 2026-10-27: 8-wide bursts
+    # drew HTTP 429s from the endpoint, 4-wide ran clean.
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +58,7 @@ jobs:
 
       - name: Run watcher
         env:
-          JUDGE_CONCURRENCY: "8"   # probe run 40268599609 successor — paste the measuring run's reading
+          JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
