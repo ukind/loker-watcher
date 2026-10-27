@@ -15,6 +15,10 @@ concurrency:
 jobs:
   probe:
     if: github.event_name == 'workflow_dispatch'
+    # A refused measurement is data, not a gate: the probe reads only
+    # accounts[0], so a primary-account daily cap (openrouter resets at
+    # 00:00 UTC) must not mark the whole run failed while watch is green.
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,9 +38,13 @@ jobs:
 
   watch:
     runs-on: ubuntu-latest
-    # 283 posts at BATCH_SIZE 10 = 29 bulk calls. At the 60s request timeout
-    # that is 29 minutes of judge plus ~3.5 minutes of fetch. 45 leaves headroom.
-    timeout-minutes: 45
+    # Width-4 judge (the probe job's reading): 30 bulk calls clear in ~8
+    # waves, width-4 surface pools cut the serial fetch to ~1 min (71s
+    # measured), and the 40-call fallback budget adds about a minute. The
+    # 8-minute cap keeps a hung run under the 10-minute cron interval — it
+    # dies before the next tick queues. Measured 2026-10-27: 8-wide bursts
+    # drew HTTP 429s from the endpoint, 4-wide ran clean.
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
 
@@ -48,10 +56,16 @@ jobs:
       - run: npm ci
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        # The watcher is headless-only; the full browser build adds install
+        # minutes to every run for nothing the pipeline drives. The runner
+        # image carries the chromium shared libraries, so --with-deps (an
+        # apt-get pass measured at ~2-4 minutes per run on 2026-10-27 —
+        # most of the 8-minute budget) is not needed for the headless shell.
+        run: npx playwright install --only-shell chromium
 
       - name: Run watcher
         env:
+          JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}

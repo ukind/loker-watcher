@@ -15,6 +15,7 @@ export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
+  judgeConcurrency: "JUDGE_CONCURRENCY",
   gmailUser: "GMAIL_USER",
   gmailAppPassword: "GMAIL_APP_PASSWORD",
 } as const;

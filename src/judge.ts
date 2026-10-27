@@ -17,11 +17,13 @@
  * bounded backoff before the batch is deferred; a transport error defers
  * immediately without rotating. When every account is exhausted the run
  * throws the tagged RotationExhausted error (one exhaustion email, exit 1 —
- * surfaced by index.ts). Batches drain through a bounded pool of
- * JUDGE_CONCURRENCY workers and reassemble in input order, so the worst
- * case is ceil(N/BATCH_SIZE) concurrent calls plus at most BATCH_SIZE
- * sequential fallbacks per affected batch. A post that fails both stages
- * is skipped for this run, logged visibly, and omitted from state (D3: it
+ * surfaced by index.ts). Batches drain through a bounded pool of workers
+ * sized by the concurrency argument (JUDGE_CONCURRENCY, absent 4) and
+ * reassemble in input order. Posts the bulk response misses fall back to
+ * the single-post judgePost through a second pool at the same width, under
+ * a per-run FALLBACK_CALL_BUDGET on single-post calls. A post that fails
+ * both stages, or never reaches the fallback once the budget is spent, is
+ * skipped for this run, logged visibly, and omitted from state (D3: it
  * stays unseen and retries next run).
  */
 import type { ReasoningEffort } from "./config-file.js";
@@ -40,13 +42,28 @@ const REQUEST_TIMEOUT_MS = 60_000;
 const BATCH_SIZE = 10;
 
 /**
- * Bulk calls in flight at once. Ships at 4 — the agreed floor, low enough
- * for the lowest documented Z.AI tier. Phase 0's ramp reads the real
- * ceiling; raise this to that reading. Z.AI publishes no number and
- * adjusts the limit dynamically, so the account rotation on 429 below is
- * what keeps a stale or optimistic value from costing a run its digest.
+ * Bulk calls in flight at once when the caller passes no width. Ships at
+ * 4 - the agreed floor, low enough for the lowest documented Z.AI tier.
+ * The probe's ramp reads the real ceiling; paste that reading into
+ * JUDGE_CONCURRENCY in .github/workflows/watch.yml. Z.AI publishes no
+ * number and adjusts the limit dynamically, so the 429 account rotation
+ * below is what keeps a stale or optimistic value from costing a run its
+ * digest.
  */
-const JUDGE_CONCURRENCY = 4;
+const DEFAULT_JUDGE_CONCURRENCY = 4;
+
+/**
+ * Single-post fallback calls one run may spend. Advisor-fixed: the
+ * historical cascade (run 40264368939) burned 6.5 job-minutes walking
+ * degraded batches serially, and an unbounded parallel fallback would bill
+ * unboundedly instead. The pool bounds wall-clock; this constant bounds
+ * total spend. The budget counts single-post CALLS, not HTTP requests:
+ * rotation can turn one call into up to M requests (M = pool size — a 429
+ * spends no attempt), so worst-case requests are 40×M while billed calls
+ * stay <= 40. Unmeasured values stay constants — raise it only with a
+ * probe- or runner-measured reason.
+ */
+const FALLBACK_CALL_BUDGET = 40;
 
 /**
  * HTTP statuses worth retrying on the SAME account: the endpoint is alive
@@ -162,6 +179,28 @@ export interface JudgedPost {
 export interface JudgeBatchResult {
   judged: JudgedPost[];
   skippedPostIds: string[];
+}
+
+/**
+ * Parse JUDGE_CONCURRENCY (the repo's first numeric env read).
+ *
+ * Absent or blank -> DEFAULT_JUDGE_CONCURRENCY: local runs and the probe
+ * job never set the variable, and watch.yml carries the probe-measured
+ * value for production. Present but not a positive integer -> throw naming
+ * the variable: a typo must not silently run at the default width
+ * (fail-visible - same rule as parseLlmAccounts below).
+ */
+export function parseJudgeConcurrency(raw: string | undefined): number {
+  if (raw === undefined || raw.trim().length === 0) {
+    return DEFAULT_JUDGE_CONCURRENCY;
+  }
+  const value = Number(raw.trim());
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(
+      `judge: ${ENV_NAMES.judgeConcurrency} must be a positive integer, got "${raw}"`,
+    );
+  }
+  return value;
 }
 
 /**
@@ -490,9 +529,10 @@ async function judgeBatch(
  *
  * HTTP 429 rotates the pool pointer exactly like judgeBatch (no backoff);
  * the rotation does not spend a fallback attempt. Running out of accounts
- * throws the tagged RotationExhausted error — judgePost runs sequentially
- * in judgePosts' reassembly loop (after the join), so the throw surfaces
- * directly. Other failures keep the original status-agnostic retry.
+ * throws the tagged RotationExhausted error — judgePost runs in judgePosts'
+ * parallel fallback pool, whose workers catch the throw, stop claiming
+ * work, and re-throw after the join (drain-then-throw, same as the bulk
+ * phase). Other failures keep the original status-agnostic retry.
  */
 export async function judgePost(
   post: Post,
@@ -585,11 +625,13 @@ export async function judgePost(
  * so the carried failure record is complete). Every other LLM failure still
  * lands in skippedPostIds, so a flaky endpoint cannot kill the run.
  *
- * Batches drain through a bounded pool of JUDGE_CONCURRENCY workers, and
- * each result slot is indexed by batch number so the output reassembles in
- * input order even when batches finish out of order. A batch the endpoint
- * did not answer is deferred whole (see judgeBatch): its posts stay unseen
- * and retry on the next run.
+ * Batches drain through a bounded pool of `concurrency` workers, and each
+ * result slot is indexed by batch number so the output reassembles in
+ * input order even when batches finish out of order. Bulk misses drain
+ * through a second `concurrency`-wide fallback pool under a per-run
+ * FALLBACK_CALL_BUDGET; the cursor claims work in input order, so budget
+ * exhaustion starves the tail. Both result lists come out in candidate
+ * input order.
  *
  * Rotation state lives in this frame (run-sticky): after a failover every
  * later call in the run uses the new account, and the next run starts on
@@ -603,6 +645,7 @@ export async function judgePosts(
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
   reasoningEffort: ReasoningEffort = "medium",
+  concurrency: number = DEFAULT_JUDGE_CONCURRENCY,
 ): Promise<JudgeBatchResult> {
   const state: RotationState = { accounts, index: 0, failures: [] };
 
@@ -626,7 +669,7 @@ export async function judgePosts(
       outcomes[index] = await judgeBatch(batch, state, keywords, fetchFn, index, reasoningEffort);
     }
   };
-  await Promise.all(Array.from({ length: Math.min(JUDGE_CONCURRENCY, batches.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(concurrency, batches.length) }, worker));
 
   // Drain-then-throw: the join above let every in-flight batch finish, so
   // the failure record is complete. Throwing here (not inside a worker)
@@ -637,30 +680,100 @@ export async function judgePosts(
     throw rotationExhausted(state.failures);
   }
 
-  const judged: JudgedPost[] = [];
-  const skippedPostIds: string[] = [];
+  // Reassembly walk (input order): bulk verdicts fill their slots at once;
+  // bulk misses queue for the parallel fallback pool below. A batch the
+  // endpoint did not answer is deferred whole — its slots stay undefined
+  // (skipped), and it consumes no fallback budget.
+  const slots: Array<JudgeVerdict | undefined> = Array.from({ length: candidates.length });
+  const fallbackWork: Array<{ post: Post; slot: number }> = [];
+  let candidateIndex = 0;
   for (const [index, batch] of batches.entries()) {
+    const batchStart = candidateIndex;
+    candidateIndex += batch.length;
     const outcome = outcomes[index];
     if (outcome === undefined) continue;
     if (outcome.status !== "answered") {
-      // unanswered (normal defer) or exhausted (already thrown above — kept
-      // for type safety): the batch's posts stay unseen.
-      for (const post of batch) skippedPostIds.push(post.id);
+      // unanswered (deferred: spent backoff, non-retryable status, or
+      // transport error). The exhausted arm cannot appear here — it is
+      // thrown after the bulk join above — but the union keeps it typed.
       console.warn(
         `judge: skipped batch ${index} of ${batch.length} post(s) after an unanswered bulk call; they stay unseen and retry next run`,
       );
       continue;
     }
-    for (const post of batch) {
+    for (const [i, post] of batch.entries()) {
       const fromBulk = outcome.verdicts.get(post.id);
-      const verdict =
-        fromBulk ?? (await judgePost(post, state, keywords, fetchFn, reasoningEffort));
-      if (verdict !== null) {
-        judged.push({ post, verdict });
+      const slot = batchStart + i;
+      if (fromBulk !== undefined) {
+        slots[slot] = fromBulk;
       } else {
-        skippedPostIds.push(post.id);
-        console.warn(`judge: skipped post ${post.id} after bulk miss and retry`);
+        fallbackWork.push({ post, slot });
       }
+    }
+  }
+
+  // Parallel capped fallback: the slot-array + shared-cursor pool idiom,
+  // `concurrency` wide, under a per-run FALLBACK_CALL_BUDGET. The cursor
+  // claims work in input order, so a spent budget starves the tail —
+  // never a random middle. A RotationExhausted throw from judgePost stops
+  // the workers (drain-then-throw): the join below re-throws the tagged
+  // error with the complete failure record, and unjudged posts stay
+  // unseen — index.ts turns it into the exhaustion email and exit 1.
+  if (fallbackWork.length > 0) {
+    let next = 0;
+    let budget = FALLBACK_CALL_BUDGET;
+    let exhausted = false;
+    const fallbackWorker = async (): Promise<void> => {
+      for (;;) {
+        const workIndex = next;
+        next += 1;
+        if (workIndex >= fallbackWork.length || exhausted) return;
+        if (budget <= 0) return; // budget spent — surplus posts stay unseen (D3)
+        budget -= 1;
+        const item = fallbackWork[workIndex];
+        if (item === undefined) continue;
+        try {
+          const verdict = await judgePost(item.post, state, keywords, fetchFn, reasoningEffort);
+          if (verdict !== null) {
+            slots[item.slot] = verdict;
+          } else {
+            console.warn(`judge: skipped post ${item.post.id} after bulk miss and retry`);
+          }
+        } catch (error) {
+          if (isRotationExhausted(error)) {
+            exhausted = true; // stop claiming; the join re-throws below
+            return;
+          }
+          throw error;
+        }
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, fallbackWork.length) }, fallbackWorker),
+    );
+    if (exhausted) {
+      throw rotationExhausted(state.failures);
+    }
+    const starved = Math.max(0, fallbackWork.length - FALLBACK_CALL_BUDGET);
+    if (starved > 0) {
+      console.warn(
+        `judge: fallback call budget ${FALLBACK_CALL_BUDGET} spent — ${starved} post(s) never fell back; they stay unseen and retry next run`,
+      );
+    }
+  }
+
+  // Assembly (input order): filled slots are the judged posts, undefined
+  // slots (deferred batches, fallback failures, starved tail) are the
+  // skipped ids.
+  const judged: JudgedPost[] = [];
+  const skippedPostIds: string[] = [];
+  for (const [index, verdict] of slots.entries()) {
+    const post = candidates[index];
+    if (post === undefined) continue;
+    if (verdict !== undefined) {
+      judged.push({ post, verdict });
+    } else {
+      skippedPostIds.push(post.id);
     }
   }
   return { judged, skippedPostIds };
