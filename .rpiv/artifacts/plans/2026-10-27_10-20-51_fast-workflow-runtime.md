@@ -281,7 +281,7 @@ describe("parseJudgeConcurrency", () => {
 - [x] `grep -n "resolveJudgeConfig" scripts/probe-judge.ts` still matches `resolveJudgeConfig(process.env)[0]` (probe untouched — the width never reaches the probe)
 
 #### Manual Verification:
-- [ ] Deferred to Slice 7's dispatch run: a real run with JUDGE_CONCURRENCY set honors the width (no observable width output locally at this slice)
+- [x] Deferred to Slice 7's dispatch run: a real run with JUDGE_CONCURRENCY set honors the width (no observable width output locally at this slice) — dispatch 40458600377: batches 0-7 fired concurrently at width 8; the width-4 dispatch shows 4-wide waves
 
 ---
 
@@ -909,7 +909,7 @@ describe("fetchSurfacesAuthenticated", () => {
 - [x] `grep -n "sequential" src/fetch-threads.ts` returns nothing (stale-doc check)
 
 #### Manual Verification:
-- [ ] Deferred to Slice 7's dispatch run: 8-surface concurrent wall-clock vs the serial baseline, and no Threads rate-limit blowup at width 4 (D4's untested assumption)
+- [ ] Deferred to Slice 7's dispatch run: 8-surface concurrent wall-clock vs the serial baseline, and no Threads rate-limit blowup at width 4 (D4's untested assumption) — partial: dispatches 40455686221 + 40459936509 fetched 8 surfaces concurrently in ~71-72s vs the ~150s serial baseline (40455686221 05:33-05:35Z), all surfaces OK, zero Threads-side 429s; width-4-only wall-clock re-measure pending a green run
 
 ---
 
@@ -2053,9 +2053,9 @@ The workflow budget lands last: watch job timeout 45 → 8 with the pooled-math 
 
 #### Manual Verification:
 - [ ] A dispatch run at the probe-measured width completes inside 8 minutes
-- [ ] `npx playwright install --with-deps --only-shell chromium` satisfies a real run on the runner
+- [x] `npx playwright install --with-deps --only-shell chromium` satisfies a real run on the runner — dispatches 40458600377 + 40459936509 drove 8 real surfaces on the shell build
 - [ ] A zero-match run commits judged ids; the next run logs them already seen (no re-judge)
-- [ ] The README probe instructions match the actual probe job (Actions → watch → Run workflow prints a recommended width)
+- [x] The README probe instructions match the actual probe job (Actions → watch → Run workflow prints a recommended width) — probe run 40455686221 printed "recommended JUDGE_CONCURRENCY = 4"
 - [ ] The same consolidated dispatch ticks the manual boxes Slices 1-6 deferred to it: the configured width is honored; the 40-call fallback budget holds against a degraded endpoint; pooled fetch wall-clock drops with no Threads rate-limit blowup; `jq '.version' state/seen-posts.json` prints 2 and `jq '.seenPostIds | length'` the entry count; `git status --short state/` shows no `.tmp` files; the log carries `timing:` lines in stage order
 
 ---

@@ -15,6 +15,10 @@ concurrency:
 jobs:
   probe:
     if: github.event_name == 'workflow_dispatch'
+    # A refused measurement is data, not a gate: the probe reads only
+    # accounts[0], so a primary-account daily cap (openrouter resets at
+    # 00:00 UTC) must not mark the whole run failed while watch is green.
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -53,8 +57,11 @@ jobs:
 
       - name: Install Playwright browser
         # The watcher is headless-only; the full browser build adds install
-        # minutes to every run for nothing the pipeline drives.
-        run: npx playwright install --with-deps --only-shell chromium
+        # minutes to every run for nothing the pipeline drives. The runner
+        # image carries the chromium shared libraries, so --with-deps (an
+        # apt-get pass measured at ~2-4 minutes per run on 2026-10-27 —
+        # most of the 8-minute budget) is not needed for the headless shell.
+        run: npx playwright install --only-shell chromium
 
       - name: Run watcher
         env:
