@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  type JudgeConfig,
+  type LlmAccount,
+  type RotationExhausted,
+  type RotationState,
+  isRotationExhausted,
   judgePost,
   judgePosts,
   parseBulkVerdicts,
+  parseLlmAccounts,
   parseVerdict,
   resolveJudgeConfig,
 } from "../src/judge.js";
@@ -14,12 +18,82 @@ import type { Post } from "../src/types.js";
 // an explicit list, mirroring how index.ts feeds config.keywords to the judge.
 const KEYWORDS = ["frontend", "fullstack", "react", "next.js"];
 
+/** A healthy one-account pool for tests that never touch rotation. */
+const singleAccount: LlmAccount[] = [
+  { baseUrl: "https://mock.api/v1", apiKey: "test-key", model: "test-model" },
+];
+
+/** Two-account pool with distinct hosts — tests branch on URL, never call order. */
+function twoAccounts(): LlmAccount[] {
+  return [
+    { baseUrl: "https://account-one.api/v1", apiKey: "key-1", model: "model-1" },
+    { baseUrl: "https://account-two.api/v1", apiKey: "key-2", model: "model-2" },
+  ];
+}
+
+/** Three-account pool — the CAS test needs a third rung so a vacuous
+ * guard (which cascades the pool through one worker) is exposed. */
+function threeAccounts(): LlmAccount[] {
+  return [
+    { baseUrl: "https://account-one.api/v1", apiKey: "key-1", model: "model-1" },
+    { baseUrl: "https://account-two.api/v1", apiKey: "key-2", model: "model-2" },
+    { baseUrl: "https://account-three.api/v1", apiKey: "key-3", model: "model-3" },
+  ];
+}
+
+/** Fresh run-level state for direct judgePost calls. */
+function freshState(accounts: LlmAccount[]): RotationState {
+  return { accounts, index: 0, failures: [] };
+}
+
+/**
+ * Fetch that records "host Authorization" per call, always 429s account-one
+ * and bulk-answers account-two by echoing the ids in the prompt. Tests
+ * branch on the URL (distinct host per account), never on call order.
+ */
+function accountTwoAnswering(auths: string[]): typeof fetch {
+  return (async (url: unknown, options?: unknown): Promise<Response> => {
+    const headers = (options as { headers: Record<string, string> }).headers;
+    auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+    if (String(url).includes("account-one")) {
+      return new Response("Too Many Requests", { status: 429 });
+    }
+    const body = JSON.parse((options as { body: string }).body) as {
+      messages: Array<{ content: string }>;
+    };
+    const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
+      (match) => match[1] ?? "",
+    );
+    return ok(bulkContent(ids));
+  }) as unknown as typeof fetch;
+}
+
 /** Chat-completions success body carrying one message content string. */
 function ok(content: string): Response {
   return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+/** Post ids are 19-digit numeric strings — never Number-coerced. */
+const id19 = (n: number): string => `722463891274392${String(n).padStart(4, "0")}`;
+
+function bulkPost(id: string): Post {
+  return {
+    id,
+    text: `Hiring a frontend developer — post ${id}`,
+    author: "techco",
+    permalink: `https://www.threads.com/@techco/post/${id}`,
+    timestamp: "2026-10-24T00:00:00.000Z",
+  };
+}
+
+/** Bulk verdict body covering exactly the given ids. */
+function bulkContent(ids: readonly string[]): string {
+  return JSON.stringify(
+    Object.fromEntries(ids.map((id) => [id, { relevant: true, locationOk: true }])),
+  );
 }
 
 describe("parseVerdict", () => {
@@ -47,22 +121,69 @@ describe("parseVerdict", () => {
 });
 
 describe("resolveJudgeConfig", () => {
-  it("extracts config from valid env", () => {
-    const env = {
-      LLM_BASE_URL: "https://api.openai.com/v1",
-      LLM_API_KEY: "secret-key",
-      LLM_MODEL: "gpt-4o-mini",
-    };
-    const config = resolveJudgeConfig(env);
-    assert.deepEqual(config, {
-      baseUrl: "https://api.openai.com/v1",
-      apiKey: "secret-key",
-      model: "gpt-4o-mini",
+  it("returns the parsed account pool from LLM_ACCOUNTS", () => {
+    const accounts = resolveJudgeConfig({
+      LLM_ACCOUNTS: JSON.stringify([
+        { baseUrl: "https://api.openai.com/v1", apiKey: "secret-key", model: "gpt-4o-mini" },
+      ]),
     });
+    assert.deepEqual(accounts, [
+      { baseUrl: "https://api.openai.com/v1", apiKey: "secret-key", model: "gpt-4o-mini" },
+    ]);
   });
 
-  it("throws when required env variables are missing", () => {
-    assert.throws(() => resolveJudgeConfig({}), /missing required environment variables/);
+  it("throws naming LLM_ACCOUNTS when the variable is missing", () => {
+    assert.throws(() => resolveJudgeConfig({}), /LLM_ACCOUNTS/);
+  });
+});
+
+describe("parseLlmAccounts", () => {
+  it("parses a valid pool in order, trimming fields", () => {
+    const accounts = parseLlmAccounts({
+      LLM_ACCOUNTS: JSON.stringify([
+        { baseUrl: " https://api.a.com/v1 ", apiKey: " key-a ", model: " model-a " },
+      ]),
+    });
+    assert.deepEqual(accounts, [
+      { baseUrl: "https://api.a.com/v1", apiKey: "key-a", model: "model-a" },
+    ]);
+  });
+
+  it("throws naming LLM_ACCOUNTS when the variable is missing or blank", () => {
+    assert.throws(() => parseLlmAccounts({}), /LLM_ACCOUNTS/);
+    assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: "   " }), /LLM_ACCOUNTS/);
+  });
+
+  it("throws with the parser message when the JSON is malformed", () => {
+    assert.throws(
+      () => parseLlmAccounts({ LLM_ACCOUNTS: "{not json" }),
+      /LLM_ACCOUNTS.*not valid JSON/s,
+    );
+  });
+
+  it("throws naming LLM_ACCOUNTS when the value is not an array or is empty", () => {
+    assert.throws(
+      () => parseLlmAccounts({ LLM_ACCOUNTS: JSON.stringify({ baseUrl: "x" }) }),
+      /LLM_ACCOUNTS.*must be a JSON array/s,
+    );
+    assert.throws(
+      () => parseLlmAccounts({ LLM_ACCOUNTS: "[]" }),
+      /LLM_ACCOUNTS.*must not be empty/s,
+    );
+  });
+
+  it("throws naming the index for a non-object item", () => {
+    assert.throws(
+      () => parseLlmAccounts({ LLM_ACCOUNTS: JSON.stringify(["nope"]) }),
+      /LLM_ACCOUNTS\[0\]/,
+    );
+  });
+
+  it("throws naming the index and field for a missing or blank field", () => {
+    const missing = JSON.stringify([{ baseUrl: "https://a", apiKey: "k" }]);
+    assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: missing }), /LLM_ACCOUNTS\[0\]\.model/);
+    const blank = JSON.stringify([{ baseUrl: "https://a", apiKey: "  ", model: "m" }]);
+    assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: blank }), /LLM_ACCOUNTS\[0\]\.apiKey/);
   });
 });
 
@@ -73,12 +194,6 @@ describe("judgePost", () => {
     author: "techco",
     permalink: "https://www.threads.com/@techco/post/100",
     timestamp: "2026-10-24T00:00:00.000Z",
-  };
-
-  const sampleConfig: JudgeConfig = {
-    baseUrl: "https://mock.api/v1",
-    apiKey: "test-key",
-    model: "test-model",
   };
 
   it("returns parsed verdict on successful API response", async () => {
@@ -92,7 +207,7 @@ describe("judgePost", () => {
 
     const verdict = await judgePost(
       samplePost,
-      sampleConfig,
+      freshState(singleAccount),
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -116,7 +231,7 @@ describe("judgePost", () => {
 
     const verdict = await judgePost(
       samplePost,
-      sampleConfig,
+      freshState(singleAccount),
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -133,12 +248,47 @@ describe("judgePost", () => {
 
     const verdict = await judgePost(
       samplePost,
-      sampleConfig,
+      freshState(singleAccount),
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
     assert.equal(callCount, 2);
     assert.equal(verdict, null);
+  });
+
+  it("judgePost rotates on a 429 without spending a fallback attempt", async () => {
+    const state = freshState(twoAccounts());
+    const auths: string[] = [];
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      if (String(url).includes("account-one")) {
+        return new Response("Too Many Requests", { status: 429 });
+      }
+      return ok('{"relevant": true, "locationOk": true}');
+    }) as unknown as typeof fetch;
+    const verdict = await judgePost(samplePost, state, KEYWORDS, mockFetch);
+    assert.deepEqual(verdict, { relevant: true, locationOk: true });
+    assert.deepEqual(
+      state.failures.map((f) => f.account),
+      [1],
+    );
+    assert.equal(state.index, 1);
+    assert.equal(auths.length, 2);
+  });
+
+  it("judgePost throws the tagged error when rotation runs out mid-fallback", async () => {
+    const state = freshState(twoAccounts());
+    const mockFetch = (async (): Promise<Response> =>
+      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    await assert.rejects(
+      () => judgePost(samplePost, state, KEYWORDS, mockFetch),
+      (error: unknown) => isRotationExhausted(error),
+    );
+    assert.deepEqual(
+      state.failures.map((f) => f.account),
+      [1, 2],
+    );
   });
 });
 
@@ -200,32 +350,6 @@ describe("parseBulkVerdicts", () => {
 });
 
 describe("judgePosts", () => {
-  const sampleConfig: JudgeConfig = {
-    baseUrl: "https://mock.api/v1",
-    apiKey: "test-key",
-    model: "test-model",
-  };
-
-  /** Post ids are 19-digit numeric strings — never Number-coerced. */
-  const id19 = (n: number): string => `722463891274392${String(n).padStart(4, "0")}`;
-
-  function bulkPost(id: string): Post {
-    return {
-      id,
-      text: `Hiring a frontend developer — post ${id}`,
-      author: "techco",
-      permalink: `https://www.threads.com/@techco/post/${id}`,
-      timestamp: "2026-10-24T00:00:00.000Z",
-    };
-  }
-
-  /** Bulk verdict body covering exactly the given ids. */
-  function bulkContent(ids: readonly string[]): string {
-    return JSON.stringify(
-      Object.fromEntries(ids.map((id) => [id, { relevant: true, locationOk: true }])),
-    );
-  }
-
   /**
    * Bulk-answering fetch that records the in-flight call peak in `state`.
    * Answers every batch by echoing the ids it finds in the request prompt,
@@ -257,7 +381,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       posts,
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -280,7 +404,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       posts,
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -303,7 +427,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       [a, b],
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -330,7 +454,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       [good, bad],
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -353,7 +477,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       posts,
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -375,7 +499,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       posts,
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -400,7 +524,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       [a],
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -421,7 +545,7 @@ describe("judgePosts", () => {
       return ok('{"relevant": true, "locationOk": true}');
     };
 
-    await judgePosts([a, b], sampleConfig, KEYWORDS, mockFetch as unknown as typeof fetch);
+    await judgePosts([a, b], singleAccount, KEYWORDS, mockFetch as unknown as typeof fetch);
     assert.equal(bodies.length, 2);
     assert.ok(bodies[0]?.includes('"response_format":{"type":"json_object"}'));
     // "next.js" occurs only in the serialized keyword list — a discriminating token.
@@ -437,7 +561,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       posts,
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -453,7 +577,7 @@ describe("judgePosts", () => {
 
     const result = await judgePosts(
       posts,
-      sampleConfig,
+      singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
     );
@@ -468,7 +592,12 @@ describe("judgePosts", () => {
       new Promise((resolve) => {
         resolvers.push(resolve);
       });
-    const pending = judgePosts(posts, sampleConfig, KEYWORDS, mockFetch as unknown as typeof fetch);
+    const pending = judgePosts(
+      posts,
+      singleAccount,
+      KEYWORDS,
+      mockFetch as unknown as typeof fetch,
+    );
     // Wait until all four workers have parked their batch call.
     await new Promise<void>((resolveQueued) => {
       const wait = (): void => {
@@ -499,47 +628,125 @@ describe("judgePosts", () => {
     );
   });
 
-  it("retries a 429 and succeeds within the backoff budget", async () => {
+  it("rotates to account 2 on the first 429 with no backoff wait", async () => {
     const posts = [bulkPost(id19(1))];
-    let calls = 0;
-    const mockFetch = async () => {
-      calls += 1;
-      if (calls <= 2) {
-        return new Response("Too Many Requests", { status: 429 });
-      }
-      return ok(bulkContent(posts.map((p) => p.id)));
-    };
-
-    const result = await judgePosts(
-      posts,
-      sampleConfig,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
-    assert.equal(calls, 3); // 1 + 2 retries
+    const auths: string[] = [];
+    const started = Date.now();
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, accountTwoAnswering(auths));
+    const elapsed = Date.now() - started;
     assert.equal(result.judged.length, 1);
-    assert.deepEqual(result.skippedPostIds, []);
+    assert.match(auths[0] ?? "", /account-one\.api .*key-1$/);
+    assert.match(auths[1] ?? "", /account-two\.api .*key-2$/);
+    assert.ok(elapsed < 500, `rotation must not sleep — took ${elapsed}ms`);
   });
 
-  it("retries a 429 until the budget is spent, then skips the batch", async () => {
-    const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
-    let calls = 0;
-    const mockFetch = async () => {
-      calls += 1;
-      return new Response("Too Many Requests", { status: 429 });
-    };
+  it("keeps the sticky pointer across the fallback phase", async () => {
+    const a = bulkPost(id19(1));
+    const b = { ...bulkPost(id19(2)), text: "Second post text" };
+    const auths: string[] = [];
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      if (String(url).includes("account-one")) {
+        return new Response("Too Many Requests", { status: 429 });
+      }
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+        response_format?: unknown;
+      };
+      // Bulk calls answer the FIRST listed id only, so the second post falls
+      // back; a single-post call (no response_format rider) answers itself.
+      if (body.response_format === undefined) {
+        return ok('{"relevant": true, "locationOk": true}');
+      }
+      const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
+        (match) => match[1] ?? "",
+      );
+      return ok(bulkContent(ids.slice(0, 1)));
+    }) as unknown as typeof fetch;
+    const result = await judgePosts([a, b], twoAccounts(), KEYWORDS, mockFetch);
+    assert.equal(result.judged.length, 2);
+    assert.equal(auths.length, 3); // 429 call, bulk call, fallback call
+    assert.match(auths[0] ?? "", /key-1$/);
+    assert.ok(auths.slice(1).every((auth) => auth.includes("key-2")));
+  });
 
-    const result = await judgePosts(
-      posts,
-      sampleConfig,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
-    assert.equal(calls, 4); // 1 + 3 retries (1s, 2s, 4s), then defer
+  it("retries a 5xx on the same account with backoff, never rotating", async () => {
+    const posts = [bulkPost(id19(1))];
+    const auths: string[] = [];
+    let calls = 0;
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      calls += 1;
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      if (calls === 1) {
+        return new Response("Bad Gateway", { status: 502 });
+      }
+      return ok(bulkContent(posts.map((p) => p.id)));
+    }) as unknown as typeof fetch;
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch);
+    assert.equal(calls, 2); // one 502 + one same-account retry (~1s real sleep)
+    assert.equal(result.judged.length, 1);
+    assert.ok(auths.every((auth) => auth.includes("key-1"))); // a 5xx never rotates
+  });
+
+  it("defers a batch on a transport error without rotating", async () => {
+    const posts = [bulkPost(id19(1))];
+    const auths: string[] = [];
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      throw new Error("socket hang up");
+    }) as unknown as typeof fetch;
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch);
     assert.equal(result.judged.length, 0);
     assert.deepEqual(
       result.skippedPostIds,
       posts.map((p) => p.id),
     );
+    assert.equal(auths.length, 1); // zero retries
+    assert.match(auths[0] ?? "", /key-1$/); // the pointer never moved
+  });
+
+  it("advances the pointer exactly once per account under concurrent 429s", async () => {
+    const posts = Array.from({ length: 40 }, (_, i) => bulkPost(id19(i + 1))); // 4 batches
+    const auths: string[] = [];
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      return new Response("Too Many Requests", { status: 429 });
+    }) as unknown as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await judgePosts(posts, threeAccounts(), KEYWORDS, mockFetch);
+    } catch (error) {
+      caught = error;
+    }
+
+    assert.ok(isRotationExhausted(caught));
+    const failures = (caught as RotationExhausted).failures;
+    // The compare-and-set proof: exactly one failure per account, in pool
+    // order.
+    assert.deepEqual(
+      failures.map((f) => f.account),
+      [1, 2, 3],
+    );
+    assert.ok(failures.every((f) => f.reason === "HTTP 429"));
+    // Every account was tried by MORE THAN ONE worker: a vacuous guard
+    // (fresh index read beside the compare) lets the first completer
+    // cascade the whole pool alone — one key-2 and one key-3 call — while
+    // a true compare-and-set sends every parked worker forward together.
+    const count = (key: string): number => auths.filter((auth) => auth.includes(key)).length;
+    assert.ok(count("key-2") >= 2, `account 2 dispatched ${count("key-2")} time(s)`);
+    assert.ok(count("key-3") >= 2, `account 3 dispatched ${count("key-3")} time(s)`);
+    // Pointer monotonicity: no call on a lower account's key after the
+    // first call on a higher one.
+    const firstKey2 = auths.findIndex((auth) => auth.includes("key-2"));
+    const lastKey1 = auths.map((auth) => auth.includes("key-1")).lastIndexOf(true);
+    assert.ok(firstKey2 > lastKey1);
+    const firstKey3 = auths.findIndex((auth) => auth.includes("key-3"));
+    const lastKey2 = auths.map((auth) => auth.includes("key-2")).lastIndexOf(true);
+    assert.ok(firstKey3 > lastKey2);
   });
 });

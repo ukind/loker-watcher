@@ -10,7 +10,7 @@ Work under a scratch directory (`.rpiv/tmp/`). Never touch `state/seen-posts.jso
 1. Replicate the `src/index.ts` flow in a scratch harness.
 2. Inject a mock nodemailer transport that captures the digest in memory.
 3. Point state at a temp file, not `state/seen-posts.json`.
-4. Pass real credentials via `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` so
+4. Pass real credentials via `LLM_ACCOUNTS` (the JSON account pool) so
    the judge uses the real endpoint.
 5. When the live feed has zero keyword matches, pass a widened keyword list
    to `judgePosts` so the judge and email stages still run.

@@ -1,6 +1,6 @@
 import { type ResolvedSurface, loadWatcherConfig, resolveSurfaces } from "./config-file.js";
 import { isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
-import { resolveEmailConfig, sendDigest } from "./email.js";
+import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js";
 /**
  * CLI entry point: the full v1 pipeline (FRD #1-#9).
  *
@@ -15,7 +15,7 @@ import { resolveEmailConfig, sendDigest } from "./email.js";
 import { extractPosts } from "./extract.js";
 import { fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
-import { judgePosts, resolveJudgeConfig } from "./judge.js";
+import { isRotationExhausted, judgePosts, resolveJudgeConfig } from "./judge.js";
 import { filterRecent } from "./recency.js";
 import { diffNew, loadState, saveState } from "./state.js";
 import { resolveSession } from "./threads-session.js";
@@ -148,7 +148,21 @@ function dedupePosts(posts: readonly Post[]): Post[] {
   return unique;
 }
 
-main().catch((error: unknown) => {
+main().catch(async (error: unknown) => {
+  // Pool exhausted: one alarm email, then the standard failed-run exit.
+  // The email is best-effort — a broken GMAIL_* configuration must not mask
+  // the exit code the run already earned. State was never reached (the
+  // throw happened in the judge stage), so no post is marked seen (D3, D8).
+  if (isRotationExhausted(error)) {
+    console.error(`watch: FAILED — ${error.message}`);
+    try {
+      await sendExhaustionEmail(error.failures, resolveEmailConfig(process.env));
+    } catch (emailError) {
+      const message = emailError instanceof Error ? emailError.message : String(emailError);
+      console.warn(`email: exhaustion alarm not sent — ${message}`);
+    }
+    process.exit(1);
+  }
   const message = error instanceof Error ? error.message : String(error);
   console.error(`watch: FAILED — ${message}`);
   process.exit(1);

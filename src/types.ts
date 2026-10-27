@@ -27,3 +27,13 @@ export interface JudgeVerdict {
   /** The role is in Indonesia or remote. */
   locationOk: boolean;
 }
+
+/** One LLM account's failure, recorded when rotation moves off it. */
+export interface AccountFailure {
+  /** 1-based position in the LLM_ACCOUNTS pool. */
+  account: number;
+  /** The account's chat-completions base URL. */
+  baseUrl: string;
+  /** Human-readable cause: "HTTP 429" or the transport error message. */
+  reason: string;
+}

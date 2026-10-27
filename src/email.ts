@@ -7,7 +7,7 @@
  */
 import nodemailer, { type Transporter } from "nodemailer";
 import { ENV_NAMES } from "./config.js";
-import type { Post } from "./types.js";
+import type { AccountFailure, Post } from "./types.js";
 
 export interface EmailConfig {
   user: string;
@@ -150,4 +150,45 @@ export async function sendDigest(
     recipient,
     postCount: posts.length,
   };
+}
+
+/**
+ * Build the plain-text body for the judge-pool exhaustion alarm.
+ * Lists every account with its recorded failure, in pool order. Returns
+ * null when the failure list is empty (no alarm to send).
+ */
+export function buildExhaustionText(failures: readonly AccountFailure[]): string | null {
+  if (failures.length === 0) return null;
+  const lines = failures.map(
+    (failure, index) =>
+      `${index + 1}. account ${failure.account} (${failure.baseUrl}) — ${failure.reason}`,
+  );
+  return [
+    "The LLM judge pool is exhausted — every LLM_ACCOUNTS account failed.",
+    "",
+    ...lines,
+    "",
+    "No digest was sent and no posts were marked seen; they retry next run.",
+    "Add a working account to the LLM_ACCOUNTS secret and re-run.",
+  ].join("\n");
+}
+
+/**
+ * Send the judge-pool exhaustion alarm through the same Gmail transport as
+ * the digest. Returns the message id when the transport reports one, or
+ * undefined when there is nothing to send. Throws fail-visible when
+ * nodemailer fails to deliver (sendText wraps the transport error).
+ */
+export async function sendExhaustionEmail(
+  failures: readonly AccountFailure[],
+  config: EmailConfig,
+  transport?: Transporter,
+): Promise<string | undefined> {
+  const text = buildExhaustionText(failures);
+  if (text === null) return undefined;
+  const plural = failures.length === 1 ? "" : "s";
+  const subject = `LLM judge pool exhausted (${failures.length} account${plural} failed)`;
+  const messageId = await sendText(subject, text, config, transport);
+  console.log(`email: sent exhaustion alarm for ${failures.length} account(s)`);
+  return messageId;
 }
