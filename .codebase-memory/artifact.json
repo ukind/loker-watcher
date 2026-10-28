@@ -1,12 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "399181b9b619ecb963ca1d9ae8ec60ca45c3233a",
-    "indexed_at": "2026-10-26T07:19:48Z",
+    "commit": "6b9dae47a3892419af9b84f7f6171aee086d6f58",
+    "indexed_at": "2026-10-27T09:42:15Z",
     "project": "H-fork-loker-watcher",
-    "nodes": 913,
-    "edges": 2208,
-    "original_size": 5636096,
-    "compressed_size": 880830,
-    "compression_level": 3,
-    "reconcile_basis": "git-clean-head"
+    "nodes": 1452,
+    "edges": 3960,
+    "original_size": 5832704,
+    "compressed_size": 961792,
+    "compression_level": 9
 }

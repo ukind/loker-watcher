@@ -1,130 +1,135 @@
 # src/ — the watcher pipeline
 
 ## Responsibility
-The entire application: a single-shot CLI pipeline that fetches Threads posts, filters them, asks an LLM to judge the candidates in bulk against the configured keywords, emails matches, and persists judged post IDs. Orchestrated top-to-bottom in `index.ts` — no server, no daemon.
+The entire application: a single-shot CLI pipeline that fetches Threads posts, filters them, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM, emails matches, and persists judged post ids. One exported unit seam — `runWatcher(deps)` — no server, no daemon.
 
-## Dependencies
-- **playwright**: browser I/O, quarantined in `fetch-threads.ts`
-- **nodemailer**: SMTP, quarantined in `email.ts`; `heartbeat.ts` reuses its `sendText`
-- **Node built-ins** (`node:fs/promises`, `node:path`, global `fetch`): no LLM SDK — `judge.ts` calls chat completions with `fetch` + `AbortSignal.timeout`
+## Dependencies and consumers
+- **playwright**: quarantined behind the single dynamic-import site, `chromiumContextFactory` in fetch-threads.ts
+- **nodemailer**: quarantined to the single creation site in email.ts; heartbeat and the exhaustion alarm ride its `sendText`
+- **raw `fetch` + `AbortSignal.timeout`**: the LLM client — no SDK
+- **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports its parsers
 
-## Consumers
-- **.github/workflows/watch.yml**: runs `npx tsx src/index.ts` on a */10 cron and commits `state/seen-posts.json` back
-- **tests/**: targets every module that has an injectable seam
-
-## Module Structure
+## Module Structure (role groups; imports point downward only)
 ```
-index.ts                                          # entry: main() sequences all stages; owns dedupe, funnel stats, exit discipline
-types.ts                                          # the only shared types: Post, JudgeVerdict — every module imports these
-config.ts, config-file.ts                         # configuration: env NAMES + paths + kill switches | watcher.config.json loader/validator
-threads-session.ts, fetch-threads.ts, extract.ts  # acquisition: secret→session | Playwright→HTML/XHR | parse→Post[]
-recency.ts, judge.ts                              # funnel narrowing: recency window filter + bulk LLM verdicts (keywords = the relevance criterion)
-email.ts, heartbeat.ts                            # notification: job digest (fail-visible) | zero-match status (best-effort)
-state.ts                                          # the only disk writes: versioned schema, atomic temp+rename, match-gated save
+index.ts                                  # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
+types.ts, config.ts, config-file.ts       # LEAVES + FILE CONFIG: shared contracts, ENV_NAMES, paths | watcher.config.json validation
+threads-session.ts, fetch-threads.ts,     # ACQUISITION: session secret → temp storageState (null ⇒ logged-out);
+extract.ts                                #   logged-out data-sjs walk + authenticated graphql-XHR walk; parse → Post[]
+recency.ts, judge.ts                      # FUNNEL: recency window filter (pure) | bulk judge, rotation, bounded pools
+email.ts, heartbeat.ts, state.ts          # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 state, atomic save
 ```
 
-## Linear funnel orchestration (stages log counts; empty funnel = early return)
+## Funnel gates fix the ordering (the correctness invariant)
 ```typescript
-async function main(): Promise<void> {
-  const config = await loadWatcherConfig();          // config errors fail the run — no defaults
-  const collected = await fetchAll(surfaces);        // I/O stage
-  const posts = dedupePosts(collected);
-  console.log(`extract: ${posts.length} unique post(s)`);  // every stage logs `stage: N ...`
-  const recent = filterRecent(posts, config.recencyHours);
-  if (recent.length === 0) {                         // funnel-empty: heartbeat, then RETURN —
-    await heartbeat(stats);                          // never an exception, never a state write
-    console.log("no new matches");
-    return;
+// src/index.ts runWatcher — the ORDER is the argument:
+if (newPosts.length === 0) {                    // Gate 1: nothing unseen — heartbeat, return
+  await heartbeat(stats);                       // best-effort: warn, never throw
+  return { judged: 0, matches: 0, skipped: 0, saved: false };   // NO disk write
+}
+// ...judge...
+if (matches.length === 0) {                     // Gate 2: judged, zero matches — heartbeat, THEN persist
+  await heartbeat(stats);
+  await persistJudged(state, judged, statePath, now());
+  return { judged, matches: 0, skipped, saved: true };
+}
+await sendDigest(matches, resolveEmailConfig(env), transport);   // notify BEFORE persist — a failed send exits 1
+await persistJudged(state, judged, statePath, now());   // with state untouched: next run re-judges + re-sends
+```
+Every stage is wrapped in `timeStage` and logs one stable pair: `timing: <stage> <N>ms` then `<stage>: <counts>`.
+
+## Dependency injection: WatcherDeps is the unit seam
+```typescript
+export interface WatcherDeps {
+  readonly env?: Record<string, string | undefined>;   // default process.env
+  readonly config?: WatcherConfig;                     // default loadWatcherConfig() — fail-visible
+  readonly contextFactory?: ContextFactory;            // default chromiumContextFactory (sole Playwright import)
+  readonly fetchFn?: typeof fetch;                     // default global fetch
+  readonly transport?: Transporter;                    // default nodemailer, built inside sendText
+  readonly statePath?: string;                         // default STATE_PATH
+  readonly now?: () => number;                         // default Date.now
+}
+```
+Function-level idiom: I/O is an optional trailing param with the production default — judgePost, sendText, saveState, filterRecent.
+
+## Trust boundaries: fail-visible validation; parse, don't validate
+```typescript
+// Config side: closed key set, path + key in every error — a typo must kill the run.
+// Error formula: `<module>: <file-or-var> <offending key> <fault> — <allowed values>`
+throw new Error(`config: ${filePath} has unknown key "${key}" — allowed: ${ALLOWED_KEYS.join(", ")}`);
+// Env resolvers: required → throw naming the var; optional-with-default → default when absent, THROW when
+// malformed; degradable → warn + null. Payload side: unknown → T | null at every edge.
+const pk = readPk(post?.pk);                       // 19-digit ids stay strings, never Number-coerced
+if (pk === null || text === null) return null;     // null = drop + count, never throw; verdicts use Map (proto-safe)
+```
+
+## Judge rotation: 429 CAS, 5xx backoff same account, drain-then-throw
+```typescript
+const state: RotationState = { accounts, index: 0, failures: [] };   // run-sticky, shared by reference
+function rotateOnRateLimit(state: RotationState, failedIndex: number): boolean {
+  if (state.index === failedIndex) {       // CAS on the dispatch-time index: N workers that all 429'd
+    state.failures.push(/* AccountFailure */);   // on account 1 advance the pointer exactly once
+    state.index += 1;
   }
+  return state.index < state.accounts.length;
 }
-main().catch((error: unknown) => {
-  console.error(`watch: FAILED — ${error instanceof Error ? error.message : String(error)}`);
-  process.exit(1);                                   // the ONLY process.exit — the Actions run goes red
-});
+// Retry loop: 429 → rotate and `attempt -= 1; continue` (rotation replaces the wait, spends no budget);
+// {500,502,503,504} → SAME account, RETRY_DELAYS_MS [1s, 2s, 4s]; transport error → batch "unanswered" (deferred whole);
+// bulk-parse misses fall back to single-post calls. Exhaustion never throws mid-pool: the join throws
+// rotationExhausted(failures) AFTER Promise.all — the entry guard sends ONE best-effort alarm email, then exit(1).
 ```
 
-## Email-before-state ordering (the correctness invariant)
+## State: load → migrate → prune → gated atomic save
 ```typescript
-// src/index.ts — the ORDER is the argument, named in a comment:
-await sendDigest(matches, resolveEmailConfig(process.env)); // throws → exit 1 → state untouched
-const judgedIds = judged.map((j) => j.post.id);   // ALL judged ids persist, relevant or not;
-await saveState(state, judgedIds);                // skipped ids stay unseen and retry next run
-```
-`saveState` re-gates internally: zero new ids ⇒ `{ saved: false }`, file byte-identical. The workflow's `git diff --cached --quiet` completes the contract (unchanged state ⇒ no commit).
-
-## Fail-visible config validation (closed key set; path + key in every error)
-```typescript
-function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
-  for (const key of Object.keys(record)) {
-    if (!(ALLOWED_KEYS as readonly string[]).includes(key)) {
-      throw new Error(`config: ${filePath} has unknown key "${key}" — allowed: ${ALLOWED_KEYS.join(", ")}`);
-    }
-  }
-  const keywords = readStringArray(record.keywords, "keywords", filePath, /*requireNonEmpty*/ true);
-  // per-key reader functions own one key each; unknown schema FAILS — never a silent fallback
+return pruneState(migrateState(parsed, nowMs), recencyHours, nowMs);  // ENOENT ⇒ fresh; anything else throws
+// migrateState: v1 id[] → v2 Record<id, ISO firstSeenAt>, stamped from the INJECTED clock; unsupported version throws.
+// pruneState: keeps firstSeenAt >= now - window; undefined/non-positive window keeps everything.
+function stateTempPath(dir: string, nowMs = Date.now()): string {
+  return join(dir, `.${nowMs}.${random}.tmp`);   // unique sibling temp — never a shared literal name, never os.tmpdir
 }
-```
-
-## Parse-don't-validate (unknown → T | null at every edge)
-```typescript
-// Untrusted JSON (page blobs, graphql bodies, LLM output) crosses into the typed world once:
-export function normalizeThreadItem(item: unknown): Post | null {
-  const pk = readPk(post?.pk); const text = readText(post?.caption); const author = readUsername(post?.user);
-  if (pk === null || text === null || author === null) return null;  // caller counts drops, never throws
-  return { id: pk, text, author, permalink: buildPermalink(author, pk), timestamp: iso(takenAt) };
-}
-// null = malformed data (count and continue); throw = broken environment (fail the run)
-```
-
-## Dependency injection at every I/O seam (optional trailing param, production default)
-```typescript
-export async function judgePost(post: Post, config: JudgeConfig, keywords: readonly string[],
-    fetchFn: typeof fetch = fetch): Promise<JudgeVerdict | null> { /* ... */ }
-export async function sendDigest(posts: readonly Post[], config: EmailConfig,
-    transport?: Transporter): Promise<SendDigestResult> { /* ... */ }
-export async function saveState(state: AppState, newIds: readonly string[],
-    filePath: string = STATE_PATH): Promise<SaveStateResult> { /* ... */ }
-// resolveX(env = process.env) resolvers trim values, collect ALL missing var names, throw once listing them
+// writeStateAtomic: mkdir → write temp → rename; any failure unlinks the temp and rejects
+// `state: atomic write failed for <target>`. saveState gate: zero new ids ⇒ {saved: false}, file byte-identical.
 ```
 
 ## Architectural Boundaries
-- **No silent fallbacks** for config or state: missing/corrupt input exits non-zero naming the problem
+- **No silent fallbacks**: config/state/optional-env faults exit non-zero naming the problem; the only sanctioned best-effort calls are heartbeat, the exhaustion alarm, and temp cleanup
 - **Filters and stages never import each other** — the pipeline shape lives only in `index.ts`
-- **Only `state.ts` writes to disk**, always via `writeStateAtomic` (sibling temp file + rename, never `os.tmpdir()`)
-- **Secrets are env-only**: names in `ENV_NAMES` (config.ts); values resolved at use time, never at import
-- **No DOM lib** (tsconfig) — the in-page hydration probe is a string evaluated by Playwright
+- **Only `state.ts` writes repo-side disk** (always `writeStateAtomic`); threads-session.ts writes OS temp only; the workflow, not the code, is the git committer
+- **Secrets are env-only**: names in `ENV_NAMES`; `process.env` is read only at the entry guard (exhaustion alarm)
+- **No classes**: tagged errors = name constant + factory + type guard (`rotationExhausted` / `isRotationExhausted`)
 
 <important if="you are adding a new pipeline stage">
 ## Adding a New Pipeline Stage
-1. Create `src/<stage-name>.ts`; the header comment names the FRD/decision ID
-2. Write pure functions: `readonly Post[]` in → new array out; never mutate, never throw on data
-3. Wire into `main()` at the right funnel position; add the `stage: N post(s)` count log
-4. If the stage can zero the funnel, add the `if (kept.length === 0) { await heartbeat(...); return; }` block
-5. Update `HeartbeatStats` (field + init + renderer) if the funnel shape changed
-6. Tests in `tests/<stage-name>.test.ts` — see `.rpiv/guidance/tests/architecture.md`
+1. Create `src/<stage>.ts`: pure functions, `readonly Post[]` in → new array out; never mutate, never throw on data; inject I/O as optional trailing params with production defaults
+2. Wire into `runWatcher` inside `timeStage`; destructure `{ value, durationMs }`
+3. Log the pair in order: `timing: <stage> ${durationMs}ms`, then one `<stage>: <counts>` line
+4. Decide gate semantics: zero output short-circuits like Gate 1 (`saved: false`, heartbeat still fires) or like Gate 2 (persist judged ids, then return) — never persist before notification
+5. Update `HeartbeatStats` / `WatcherRun` if the funnel counts or summary shape changed
+6. Tests in `tests/<stage>.test.ts` — see `.rpiv/guidance/tests/architecture.md`
 7. Gates: `npm run typecheck && npm run lint && npm test`
 </important if>
 
 <important if="you are adding a new surface type or config key">
 ## Adding a New Surface Type or Config Key
-1. Surface type: extend the `Surface` union in `config-file.ts`, then `readSurfaces` validation and the `resolveSurfaces` mapping
-2. Config key: add to `WatcherConfig` AND `ALLOWED_KEYS` (closed key set — forgetting this fails every valid file)
-3. Write a `read<Key>` validator (reuse `readStringArray`); the error message must contain the file path + key
-4. Decide the emptiness policy up front (keywords: non-empty; candidateTerms: may be [])
+1. Add the key to `ALLOWED_KEYS` in `config-file.ts` AND to the `WatcherConfig` type — forgetting the closed set fails every valid file
+2. Write a `read<Key>(value, key, filePath)` validator; the error must contain the file path + key
+3. Decide the emptiness policy up front (keywords: non-empty; candidateTerms: may be [])
+4. New surface type: extend the `Surface` union, `readSurfaces` validation, and the `resolveSurfaces` mapping
 5. Set the value in `watcher.config.json`; add valid + rejection tests in `tests/config-file.test.ts`
 </important if>
 
 <important if="you are adding a new environment variable or external service client">
 ## Adding a New Env Var or Service Client
 1. Add the name to `ENV_NAMES` in `config.ts` (names only, never values)
-2. Write `resolve<Service>Config(env = process.env)` — trim, collect all missing names, one throw listing them
-3. Inject the I/O seam as an optional trailing default parameter
-4. Decide failure semantics explicitly and comment it: fail-visible (like `sendDigest`) or best-effort wrapper (like `heartbeat()`)
-5. Anything ordered BEFORE `saveState` in `main()` joins the retry-on-failure contract — re-read the email-before-state section
-6. Map the secret in `.github/workflows/watch.yml` — see `.rpiv/guidance/.github/workflows/architecture.md`
+2. Write a resolver with one of the three contracts (required / optional-with-default / degradable) — see the trust-boundaries pattern
+3. Inject the I/O seam as an optional trailing default parameter; no SDK unless unavoidable (the LLM client is raw `fetch`)
+4. Anything ordered BEFORE `persistJudged` in `runWatcher` joins the notify-before-persist contract — re-read the funnel-gates section
+5. Map the secret in `.github/workflows/watch.yml` — see `.rpiv/guidance/.github/workflows/architecture.md`
 </important if>
 
-<important if="you are modifying state.ts, fetch-threads.ts, index.ts, or config.ts">
-## Untested-module backlog (developer-confirmed)
-`fetch-threads.ts` and `index.ts` have no test files — known backlog, not a deliberate skip. New work in them starts with tests, and both need a seam added first. `state.ts` is covered by `tests/state.test.ts` (the saveState gate).
+<important if="you are adding an LLM account to the judge pool">
+## Adding an LLM Account
+1. Edit the `LLM_ACCOUNTS` GitHub secret: JSON array of `{baseUrl, apiKey, model}` — array order IS failover order, most reliable first
+2. No code change: `parseLlmAccounts` validates shape fail-visibly (`LLM_ACCOUNTS[i].<field>` in the error); rotation picks the pool up automatically; each run starts at account 1
+3. Optionally re-measure: run the probe — see `.rpiv/guidance/scripts/architecture.md` — and paste the reading into `JUDGE_CONCURRENCY` in watch.yml
+4. Failure signature: the exhaustion alarm lists a dead account as `account N (<baseUrl>) — HTTP 429` (1-based position)
 </important if>

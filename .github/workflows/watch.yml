@@ -15,10 +15,11 @@ concurrency:
 jobs:
   probe:
     if: github.event_name == 'workflow_dispatch'
-    # A refused measurement is data, not a gate: the probe reads only
-    # accounts[0], so a primary-account daily cap (openrouter resets at
-    # 00:00 UTC) must not mark the whole run failed while watch is green.
-    continue-on-error: true
+    # The probe walks EVERY LLM_ACCOUNTS account (stop-once-4 ramp, ~6
+    # calls each): an auth-dead key or a failed leg fails this job, so a
+    # rotten key in the pool reddens the dispatch run instead of passing
+    # unseen. 429-refused legs are reported as busy, not dead — throttling
+    # is data; the watch job is the real gate for it.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -44,6 +45,9 @@ jobs:
     # 8-minute cap keeps a hung run under the 10-minute cron interval — it
     # dies before the next tick queues. Measured 2026-10-27: 8-wide bursts
     # drew HTTP 429s from the endpoint, 4-wide ran clean.
+    # Envelope race, documented not solved: 300s cooldown budget + 60s
+    # abort tail + fetch worst case can exceed this timeout — raise it if
+    # exhaustion alarms cluster.
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4

@@ -9,14 +9,17 @@
  * because 5 synthetic keywords and ~200-char filler posts are smaller than
  * the 19 configured keywords and real Threads captions. The probe now
  * loads the real keyword list from watcher.config.json and judges a
- * fixture set of real captured post texts. It also ramps concurrent bulk
- * calls until the endpoint refuses one: Z.AI publishes no concurrency
- * number (tier-based, dynamically adjusted, higher off-peak), so the
- * ceiling is read by escalating 2 -> 4 -> 8 -> 16.
+ * fixture set of real captured post texts. It ramps concurrent bulk calls
+ * per account, stopping once 4 are verified: Z.AI publishes no concurrency
+ * number (tier-based, dynamically adjusted, higher off-peak), and gating
+ * every account keeps quota burn low — the shipped JUDGE_CONCURRENCY is 4.
  *
  * Usage:
  *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
- * Exits 1 when any call fails, so a dead endpoint fails the step loudly.
+ * Exits 1 when any account is auth-dead (401/403) or has a failed leg,
+ * so a rotten key in the pool fails the gating probe job loudly. A 429-
+ * refused leg is data (the account is busy), not a gate failure — the
+ * watch job itself is the real gate for throttling.
  */
 import { loadWatcherConfig } from "../src/config-file.js";
 import { type LlmAccount, resolveJudgeConfig } from "../src/judge.js";
@@ -78,6 +81,16 @@ type ProbeOutcome =
   | { kind: "refused"; status: number }
   | { kind: "failed"; message: string };
 
+/** One account's full probe record. */
+interface AccountProbe {
+  position: number; // 1-based, matches the alarm record's account numbering
+  label: string;
+  minimal: ProbeOutcome;
+  bulk: ProbeOutcome;
+  bulkAgain: ProbeOutcome;
+  ceiling: number;
+}
+
 /**
  * Time one call and classify the outcome. A refused call (non-2xx) is a
  * concurrency signal; a failed call (network error, or a 2xx without JSON)
@@ -134,13 +147,15 @@ async function rampLevel(
 }
 
 /**
- * Escalate 2 -> 4 -> 8 -> 16 and stop at the first level where any call
- * fails. Never fires a level the previous one already ruled out, so a low
- * ceiling costs one refused round rather than four. A level with failed
- * calls is a broken endpoint: return 0 so the probe exits nonzero.
+ * Ramp 2 -> 4 and stop: the shipped JUDGE_CONCURRENCY is 4, so four
+ * concurrent verified calls are enough to confirm the width per account.
+ * A refused level reads the ceiling below it; a failed call means a
+ * broken endpoint, not a ceiling (return 0). The old 2->4->8->16 walk
+ * measured one account for tuning; this probe gates every account, and
+ * ~6 calls/account keeps quota burn low.
  */
 async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Promise<number> {
-  for (const level of [2, 4, 8, 16]) {
+  for (const level of [2, 4]) {
     const result = await rampLevel(level, payload, account);
     console.log(
       `probe: concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
@@ -154,53 +169,97 @@ async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Pr
       return level / 2;
     }
   }
-  return 16;
+  return 4;
+}
+
+/**
+ * Classify one account's record. An auth rejection (401/403 anywhere) or
+ * a failed leg (network error, 2xx without JSON) makes the account DEAD —
+ * the probe exits 1 naming it. A broken ramp (ceiling 0) is dead too.
+ * Refused legs that are not auth failures mean the account is busy:
+ * reported, distinct from dead.
+ */
+function classifyDead(probe: AccountProbe): string | null {
+  for (const leg of [probe.minimal, probe.bulk, probe.bulkAgain]) {
+    if (leg.kind === "failed") {
+      return `failed leg: ${leg.message}`;
+    }
+    if (leg.kind === "refused" && (leg.status === 401 || leg.status === 403)) {
+      return `auth-dead: HTTP ${leg.status}`;
+    }
+  }
+  if (probe.ceiling < 1) {
+    return `broken concurrency ramp (ceiling ${probe.ceiling})`;
+  }
+  return null;
 }
 
 async function main(): Promise<void> {
-  let account: LlmAccount;
+  let accounts: LlmAccount[];
   try {
-    const first = resolveJudgeConfig(process.env)[0];
-    if (first === undefined) {
-      throw new Error("judge: LLM_ACCOUNTS must not be empty");
-    }
-    account = first;
+    accounts = [...resolveJudgeConfig(process.env)];
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`probe: ${message}`);
     process.exit(1);
   }
 
-  const minimal = await timed(
-    "minimal call (one short message)",
-    {
+  const dead: string[] = [];
+  for (const [index, account] of accounts.entries()) {
+    const label = `account ${index + 1} (${account.baseUrl})`;
+    console.log(`probe: === ${label} ===`);
+
+    const minimal = await timed(
+      `${label} minimal call`,
+      {
+        model: account.model,
+        messages: [{ role: "user", content: "Reply with the single word: ok" }],
+        temperature: 0,
+      },
+      account,
+    );
+
+    const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
+    const bulkPayload = {
       model: account.model,
-      messages: [{ role: "user", content: "Reply with the single word: ok" }],
+      messages: bulkMessages(ten),
       temperature: 0,
-    },
-    account,
-  );
+      reasoning_effort: CONFIG.reasoningEffort,
+      response_format: { type: "json_object" },
+    };
+    const bulk = await timed(
+      `${label} bulk call (10 posts, production prompt shape)`,
+      bulkPayload,
+      account,
+    );
+    const again = await timed(`${label} bulk call again (variance check)`, bulkPayload, account);
 
-  const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
-  const bulkPayload = {
-    model: account.model,
-    messages: bulkMessages(ten),
-    temperature: 0,
-    reasoning_effort: CONFIG.reasoningEffort,
-    response_format: { type: "json_object" },
-  };
-  const bulk = await timed("bulk call (10 posts, production prompt shape)", bulkPayload, account);
-  const again = await timed("bulk call again (10 posts, variance check)", bulkPayload, account);
+    const ceiling = await findConcurrencyCeiling(bulkPayload, account);
+    const probe: AccountProbe = {
+      position: index + 1,
+      label,
+      minimal,
+      bulk,
+      bulkAgain: again,
+      ceiling,
+    };
+    const cause = classifyDead(probe);
+    if (cause !== null) {
+      dead.push(`${label} — ${cause}`);
+    }
+    console.log(
+      `probe: ${label} — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
+    );
+  }
 
-  const ceiling = await findConcurrencyCeiling(bulkPayload, account);
-  console.log(`probe: recommended JUDGE_CONCURRENCY = ${Math.max(4, ceiling)}`);
-
-  console.log(
-    `probe: summary — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
-  );
-  if (minimal.kind !== "ok" || bulk.kind !== "ok" || again.kind !== "ok" || ceiling < 1) {
+  if (dead.length > 0) {
+    console.error("probe: DEAD account(s) — failing the gating probe:");
+    for (const line of dead) {
+      console.error(`probe:   ${line}`);
+    }
     process.exit(1);
   }
+  console.log("probe: all accounts verified — gating probe passed");
 }
 
 await main();

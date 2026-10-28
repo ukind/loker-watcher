@@ -1,114 +1,119 @@
 # tests/ — offline unit test suite
 
 ## Responsibility
-Unit tests for the pure and seam-bearing stages of the pipeline. Zero network, zero browser, zero writes inside the repo. Run by `npm test` and by CI as the final gate.
+Full-pipeline offline verification of src/ via `node:test` + `tsx` (`tsx --test tests/*.test.ts`). Zero network, zero browser, zero writes inside the repo, zero mocking libraries — every double is a hand-written literal.
 
 ## Dependencies
-- **node:test + node:assert/strict** (run via tsx): the only runner/assertion stack — nodemailer contributes types only, for fake transports
+- **node:test + node:assert/strict**, run via tsx — the only runner/assertion stack
+- nodemailer contributes types only (fake transports); Playwright is never imported at test time
 
 ## Consumers
-- `npm test` (`tsx --test tests/*.test.ts`) — the glob picks up new files automatically; CI runs it as the last gate
+- `npm test` — the `tests/*.test.ts` glob picks up new files automatically; CI runs it as the final gate
+- watch.yml does NOT run tests — the suite is a merge gate, not a production check
 
-## Module Structure
+## Coverage map (the 1:1 mirror rule, today)
 ```
-tests/<module>.test.ts   # canonical rule: one test file per src module, mirroring the name
-tests/fixture/           # trimmed REAL captures (HTML/JSON) with documented injected edge cases
+config.ts          — no test (names/paths/kill switch; the "false" branch is covered via index.test.ts)
+config-file.ts     → config-file.test.ts
+email.ts           → email.test.ts
+extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/tag-page.html, graphql-response.json
+fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
+heartbeat.ts       → heartbeat.test.ts
+index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
+judge.ts           → judge.test.ts           # largest suite: rotation, pools, parsing
+recency.ts         → recency.test.ts
+state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
+threads-session.ts → session.test.ts         # GRANDFATHERED name drift — new files mirror <module>.test.ts
+types.ts           — no test (pure types)
 ```
-Grandfathered exception: `session.test.ts` → `threads-session.ts`. `judge.ts` and `state.ts` are covered by their own `judge.test.ts` / `state.test.ts`. Going forward: mirror 1:1 — a new src module gets its own test file.
 
-## Minimal node:test skeleton
+## File skeleton (strict assert; .js specifiers; titles are behavior specs)
 ```typescript
-import assert from "node:assert/strict";            // ALWAYS strict — never bare node:assert
-import { describe, it } from "node:test";
-import { filterRecent } from "../src/recency.js";   // .js extension on relative imports (NodeNext)
+import assert from "node:assert/strict";          // ALWAYS strict — never bare node:assert
+import { after, describe, it } from "node:test";  // after only when files are written
+import { filterRecent } from "../src/recency.js"; // .js extension REQUIRED (NodeNext)
 describe("filterRecent", () => {
-  it("keeps posts inside the window and drops older ones", () => {
-    assert.deepEqual(filterRecent(posts, 72, NOW).map((p) => p.id), ["1", "2"]);
-  });
+  it("keeps posts inside the window and drops older ones", () => { /* ... */ });
 });
 ```
-One describe per exported function; it titles read as behavior specifications.
 
-## Doubles are literals with one double-cast (no mock libraries)
+## Doubles are literals; BOTH idioms are acceptable (developer-confirmed)
 ```typescript
+// Idiom A — inline literal, capture in a closure (email/heartbeat suites):
 let captured: unknown = null;
-const mockTransport = {
-  sendMail: async (options: unknown) => { captured = options; return { messageId: "msg-456" }; },
-} as unknown as Transporter;
-let calls = 0;
-const mockFetch = async () => {
-  calls += 1;
-  return calls === 1 ? new Response("Bad Gateway", { status: 502 })
-    : new Response(JSON.stringify({ choices: [{ message: { content: '{"relevant":true,"locationOk":true}' } }] }), { status: 200 });
-};
-await judgePost(post, config, ["frontend"], mockFetch as unknown as typeof fetch);
-assert.equal(calls, 2);   // assert the RETRY happened, not just the outcome
-```
-
-## Env and time are parameters, never globals
-```typescript
-// src takes `env: Record<string, string | undefined> = process.env` — pass a literal:
-assert.throws(() => resolveEmailConfig({}),
-  /email: missing required environment variables: GMAIL_USER, GMAIL_APP_PASSWORD/);
-// Clock: a fixed UTC instant + a relative factory; never Date.now(), never timer stubs
-const NOW = Date.UTC(2026, 9, 25, 12, 0, 0);
-const post = (id: string, hoursAgo: number): Post => ({
-  id, text: `post ${id}`, author: "tester", permalink: `https://www.threads.com/@tester/post/${id}`,
-  timestamp: new Date(NOW - hoursAgo * 3_600_000).toISOString(),
-});
-```
-
-## Temp files live in OS temp (lazy creation, after() cleanup)
-```typescript
-let dir: string | undefined;
-after(async () => { if (dir !== undefined) await rm(dir, { recursive: true, force: true }); });
-async function writeConfig(value: unknown): Promise<string> {
-  dir ??= await mkdtemp(join(tmpdir(), "lw-config-"));   // one shared dir per suite, created lazily
-  const path = join(dir, "watcher.config.json");
-  await writeFile(path, JSON.stringify(value), "utf8");
-  return path;
+const mockTransport = { sendMail: async (o: unknown) => { captured = o; return { messageId: "m1" }; },
+} as unknown as Transporter;                        // exactly ONE double-cast, at construction
+// Idiom B — named factory returning double + capture list (index/fetch-threads suites):
+function recordingTransport() {
+  const subjects: string[] = [];                    // the closure IS the test oracle
+  const transport = { sendMail: async (o: { subject: string }) => { subjects.push(o.subject); return { messageId: "x" }; },
+  } as unknown as Transporter;
+  return { transport, subjects };
 }
-// When src itself mkdtemps (resolveSession), the test just reads back the returned path — no after()
+// mockFetch returns real Response objects; branch on request CONTENT (prompt token, URL host),
+// never on call order — pool workers claim work at microtask boundaries, so order is nondeterministic.
 ```
 
-## Error messages are API (assert.rejects/throws with a thunk + regex)
+## Clock and env are parameters — pinned, never ambient
 ```typescript
-await assert.rejects(() => loadWatcherConfig(path), /unknown key "keyword"/);  // async: THUNK, not a bare promise
-assert.throws(() => resolveJudgeConfig({}), /missing required environment variables/);
+const NOW = Date.UTC(2026, 9, 26, 9, 14, 0);        // month is 0-based; never Date.now()
+await runWatcher({ env: BASE_ENV, now: () => NOW, /* ... */ });   // env literal, not process.env
+// Structured env values inline: LLM_ACCOUNTS: JSON.stringify([...]); secrets as Buffer base64 literals.
+// The one Date.now() exception: a deliberate elapsed-time assertion with a message (rotation "no backoff" test).
 ```
-The regex matches the namespaced prefix + decisive phrase — messages may evolve, contracts don't.
 
-## Fixtures are trimmed real captures with documented edges
+## Temp files: lazy mkdtemp, one after() cleanup, byte-identity assertions
 ```typescript
-// tests/fixture/tag-page.html header comment: origin, capture date, what was dropped,
-// and every injected defect — "Edge 4 = duplicate of edge 1 (dedupe test)"
-const here = dirname(fileURLToPath(import.meta.url));
-const fixture = readFileSync(join(here, "fixture", "tag-page.html"), "utf8");
-// Variants: mutate the loaded string in-test instead of shipping a second file
+let dir: string | undefined;                        // undefined = no test needed a dir yet
+after(async () => { if (dir !== undefined) await rm(dir, { recursive: true, force: true }); });
+async function tempStatePath(name: string, seed?: AppState): Promise<string> {
+  dir ??= await mkdtemp(join(tmpdir(), "lw-index-"));   // prefix per suite: lw-config-, lw-state-, lw-index-
+  return join(dir, name);                               // optional seed written by the caller
+}
+// Absence: await assert.rejects(() => readFile(path, "utf8"), /ENOENT/) — proves no write happened.
+// Gate 1 contract: read before, save, read after — byte-identical IS the assertion.
+```
+
+## Error messages are API (thunk + regex; validator form; domain predicates)
+```typescript
+await assert.rejects(() => loadWatcherConfig(p), /unknown key "keyword"/);   // async: THUNK, not a bare promise
+await assert.rejects(() => writeStateAtomic(STATE, dirTarget), (error: unknown) => {
+  assert.match((error as Error).message, /^state: atomic write failed for /); return true;   // multi-part: return true
+});
+await assert.rejects(() => judgePost(/* pool 429s out */), (e: unknown) => isRotationExhausted(e));   // tagged errors
+// Regexes pin the discriminating fragment (/LLM_ACCOUNTS[0].model/), never whole sentences.
+```
+
+## Fixtures: trimmed real captures, numbered edges, mutation variants
+```typescript
+// tests/fixture/tag-page.html header: origin, date, trim policy, every planted edge —
+// "Edge 4 = duplicate of edge 1 (dedupe); Edge 5 missing code (pk→shortcode); Edge 6 missing caption (drop)."
+const fixture = readFileSync(join(here, "fixture", "tag-page.html"), "utf8");   // via import.meta.url, never cwd
 const noisy = fixture.replace("</head>", '<script type="application/json" data-sjs="">{"broken": </script></head>');
-assert.deepEqual(extractPosts(noisy), extractPosts(fixture));
+assert.deepEqual(extractPosts(noisy), extractPosts(fixture));   // variants by MUTATION; tolerance = equivalence
 ```
 
 ## Architectural Boundaries
-- **Offline-only**: SMTP, LLM, and browser boundaries are faked via injection — never patched globals, never real endpoints
-- **Never touch `process.env` or repo files**: writes go to OS temp only
-- **No console stubbing**: warn-path stderr noise is tolerated; assert return values and captured mail
-- **Secrets are synthesized** (`value: "x"`), never real
+- **Offline only**: browser/SMTP/LLM faked via injection; importing src never loads Playwright (dynamic import)
+- **Never touch `process.env` or repo files** — writes go to OS temp only; no console stubbing
+- **No mock libraries, no shared helpers module** — `id19()` etc. duplicated on purpose, with mirroring comments; full-pipeline oracles are layered: `WatcherRun` → disk state → captured subjects
 
 <important if="you are adding a test for a new src module">
 ## Adding a Test for a New src Module
 1. File: `tests/<module>.test.ts` (mirror the name); skeleton imports as above
-2. Find the injection seam in src — if the boundary is not injectable, add the optional parameter to src first
-3. Build doubles per boundary: env literal, Response-based fetch, capture-closure transport, pinned NOW, mkdtemp files
-4. Per exported function: happy path (deepEqual), gate/no-op case (`called` flag), failure case (thunk + message regex)
-5. Gates in order: `npm run typecheck` → `npm run lint` → `npm test`
+2. Find the injection seam in src — if the boundary is not injectable, add the optional trailing parameter to src FIRST
+3. Build doubles per boundary: env literal, Response-based mockFetch, capture-closure transport, pinned NOW, mkdtemp files
+4. Per exported function: happy path (deepEqual), gate/no-op case (called flag or ENOENT), failure case (thunk + message regex)
+5. Concurrency behavior: measure with an inFlight/peak counter double; out-of-order completion with parked resolvers resolved last-first
+6. Gates in order: `npm run typecheck` → `npm run lint` → `npm test`
 </important if>
 
 <important if="you are adding a fixture">
 ## Adding a Fixture
-1. Prefer a trimmed REAL capture; the header comment states origin, date, drops, and every numbered edge
-2. Locate edges by id/pk in assertions, not by position
+1. Trim a REAL capture; the header comment states origin, date, drops, and every numbered edge
+2. Locate edges by id/pk in assertions, not by position; each numbered edge named in at least one it() title
 3. Load via `import.meta.url` + `readFileSync` at module scope
 4. Assert byte-real values; recompute derived expectations explicitly (`new Date(1792755976 * 1000).toISOString()`)
-5. If the fixture contains post texts, make sure they still agree with the shipped `watcher.config.json`
+5. Prefer in-test mutation for variants; a second FILE only when shape, not content, differs
+6. Post texts must still agree with the shipped `watcher.config.json` keywords
 </important if>

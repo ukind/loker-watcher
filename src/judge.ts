@@ -12,12 +12,16 @@
  *
  * Every bulk verdict is validated per item. Items missing or malformed in
  * the bulk response fall back to the single-post judgePost (2 attempts).
- * HTTP 429 is account-local: the judge rotates to the next LLM_ACCOUNTS
- * account with no backoff wait. A 5xx is retried on the same account with
- * bounded backoff before the batch is deferred; a transport error defers
- * immediately without rotating. When every account is exhausted the run
- * throws the tagged RotationExhausted error (one exhaustion email, exit 1 —
- * surfaced by index.ts). Batches drain through a bounded pool of workers
+ * HTTP 429 is account-local: the account cools for a flat 60 seconds
+ * (first-write-wins — a 429 costs 60 seconds, not more) and every dispatch
+ * scans the pool from account 1, skipping accounts that are still cooling.
+ * A 5xx is retried on the same account with bounded backoff before the
+ * batch is deferred; a transport error defers immediately without cooling
+ * anything. When every account is cooling the run parks in-loop (a shared
+ * 5-minute wait budget — ride out rate limits per batch) and, when the
+ * budget is spent, throws the tagged RotationExhausted error with a
+ * pool-ordered record (one exhaustion email, exit 1 — surfaced by
+ * index.ts). Batches drain through a bounded pool of workers
  * sized by the concurrency argument (JUDGE_CONCURRENCY, absent 4) and
  * reassemble in input order. Posts the bulk response misses fall back to
  * the single-post judgePost through a second pool at the same width, under
@@ -74,8 +78,35 @@ const RETRYABLE_STATUSES = new Set([500, 502, 503, 504]);
 /** Bounded backoff for a retryable status. Total added latency: 7s. */
 const RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
 
-/** Sleep that a test can skip by injecting a fake timer. */
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Flat cooldown for a rate-limited account. First-write-wins: while an
+ * account is cooling, a second 429 never extends the window — a 429 costs
+ * 60 seconds, not more. Unmeasured values stay constants.
+ */
+const COOLDOWN_MS = 60_000;
+
+/**
+ * Shared in-run park budget: the total time both judge phases may spend
+ * parked on cooling accounts before the run converts to the exhaustion
+ * alarm. Drawn down charge-before-sleep, re-charged with the actual
+ * elapsed after wake. Unmeasured value stays a constant.
+ */
+const WAIT_BUDGET_MS = 300_000;
+
+/**
+ * Wake-time jitter. Workers parked on the same earliest expiry would wake
+ * and re-dispatch in a thundering herd; a small constant spread smooths
+ * that. Unmeasured value stays a constant.
+ */
+const WAKE_JITTER_MS = 500;
+
+/** Sleep that a test can skip by injecting a fake timer. Exported as the
+ *  production default for the WatcherDeps.sleepFn seam (src/index.ts). */
+export const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Injectable wait seam: production is the module sleep; tests pass an inert recorder. */
+type SleepFn = (ms: number) => Promise<void>;
 
 /** One LLM account from the LLM_ACCOUNTS pool (ordered; index 0 is tried first). */
 export interface LlmAccount {
@@ -87,13 +118,18 @@ export interface LlmAccount {
 /**
  * Run-level rotation state, owned by judgePosts and shared by reference with
  * every worker — the same closure-shared mutable pattern as the `next` batch
- * cursor (read and advance with no await between). `index` only moves
- * forward; `failures` records every account rotation left behind.
+ * cursor (read and advance with no await between). There is no sticky
+ * pointer: every dispatch scans the pool from account 1 and skips accounts
+ * that are still cooling, so a batch that starts after an account's cooldown
+ * expires lands back on account 1.
  */
 export interface RotationState {
   readonly accounts: readonly LlmAccount[];
-  index: number;
-  readonly failures: AccountFailure[];
+  /** 0-based account index -> expiry reading from the injected `now`. */
+  readonly cooldownUntil: Map<number, number>;
+  /** Shared park budget: the total wait both judge phases may draw before
+   *  the run converts to the exhaustion alarm. */
+  waitBudgetRemainingMs: number;
 }
 
 /** Name tag for the pool-exhausted error; test with isRotationExhausted. */
@@ -367,37 +403,105 @@ type BatchOutcome =
   | { status: "exhausted" };
 
 /**
- * Advance the pool pointer past a rate-limited account. Compare-and-set:
- * the caller passes the DISPATCH-TIME index (the account its call actually
- * hit), so four workers that all 429'd on account 1 produce exactly one
- * advance and one failure record — the later completers no-op because the
- * pointer already moved. Without this guard the pointer would advance once
- * per 429 and skip accounts nobody has tried. Returns true when an account
- * remains to try.
+ * First dispatchable account, scanning the pool in order from account 1 —
+ * the batch-local cursor. A missing or expired entry makes an account
+ * dispatchable; an active cooldown (expiry > now) skips it. Synchronous and
+ * pre-await: the caller dispatches inside the same sync window as the old
+ * pointer read.
  */
-function rotateOnRateLimit(state: RotationState, failedIndex: number): boolean {
-  if (state.index === failedIndex) {
-    const failed = state.accounts[failedIndex];
-    if (failed !== undefined) {
-      state.failures.push({
-        account: failedIndex + 1,
-        baseUrl: failed.baseUrl,
-        reason: "HTTP 429",
-      });
+function pickEligibleAccount(
+  state: RotationState,
+  nowMs: number,
+): { index: number; account: LlmAccount } | undefined {
+  for (const [index, account] of state.accounts.entries()) {
+    const expiry = state.cooldownUntil.get(index);
+    if (expiry === undefined || expiry <= nowMs) {
+      return { index, account };
     }
-    state.index += 1;
   }
-  return state.index < state.accounts.length;
+  return undefined;
 }
 
 /**
- * One bulk call for up to BATCH_SIZE posts against the current account.
+ * Stamp a rate-limited account as cooling until now + COOLDOWN_MS.
+ * First-write-wins: an account that is ALREADY cooling keeps its earlier
+ * expiry, so a burst of concurrent 429s dedups to one window and cannot
+ * extend it. An expired entry re-stamps cleanly (it is no longer cooling).
+ */
+function coolAccount(state: RotationState, accountIndex: number, nowMs: number): void {
+  const existing = state.cooldownUntil.get(accountIndex);
+  if (existing === undefined || existing <= nowMs) {
+    state.cooldownUntil.set(accountIndex, nowMs + COOLDOWN_MS);
+  }
+}
+
+/**
+ * Build the exhaustion record from the cooldown map, in pool order — one
+ * AccountFailure per cooldown-map entry, 1-based `account` per src/types.ts.
+ * Entry existence (not current expiry) is the criterion: a map entry proves
+ * the account was rate-limited THIS run, and drain-then-throw can outlive a
+ * 60s window, so a freshness filter could shrink or empty the record and
+ * revive the empty-record email-silent path in src/email.ts. Throw sites
+ * fire only when the pick found nothing — every account carries an entry —
+ * so the record is non-empty by construction.
+ */
+function failuresFromCooldowns(state: RotationState): AccountFailure[] {
+  const failures: AccountFailure[] = [];
+  for (const [index, account] of state.accounts.entries()) {
+    if (state.cooldownUntil.has(index)) {
+      failures.push({ account: index + 1, baseUrl: account.baseUrl, reason: "HTTP 429" });
+    }
+  }
+  return failures;
+}
+
+/**
+ * Wait until the earliest cooldown expiry (plus jitter), charging the
+ * shared wait budget. Returns true when the park ran and the caller may
+ * re-pick; false when the budget is already spent — the caller converts
+ * to its terminal outcome. Never throws: the park runs at the loop top,
+ * OUTSIDE the try, so a wait can never be misrouted through a catch.
  *
- * HTTP 429 is account-local: the failure is recorded, the pool pointer
- * rotates to the next account (compare-and-set — concurrent 429s advance
- * once), and the same call retries there with NO backoff wait. When the
- * pool is empty the batch reports "exhausted" and judgePosts throws after
- * the join.
+ * Charge-before-sleep: the full pessimistic wait comes off the budget
+ * up front, so peers parking concurrently see the remaining budget, not
+ * a stale one. After the wake only the OVERSHOOT (actual elapsed beyond
+ * the charge — scheduling delay) is deducted further; an undershoot is
+ * not refunded. The cell clamps at zero and the next park refuses.
+ */
+async function parkUntilEligible(
+  state: RotationState,
+  now: () => number,
+  sleepFn: SleepFn,
+): Promise<boolean> {
+  if (state.waitBudgetRemainingMs <= 0) {
+    return false;
+  }
+  const startedAt = now();
+  // Called only when the pick found nothing, so the map is non-empty.
+  let earliest = Number.POSITIVE_INFINITY;
+  for (const expiry of state.cooldownUntil.values()) {
+    if (expiry < earliest) {
+      earliest = expiry;
+    }
+  }
+  const waitMs = Math.max(0, earliest + WAKE_JITTER_MS - startedAt);
+  const charge = Math.min(waitMs, state.waitBudgetRemainingMs);
+  state.waitBudgetRemainingMs -= charge;
+  await sleepFn(charge);
+  const elapsed = now() - startedAt;
+  const overspend = Math.max(0, elapsed - charge);
+  state.waitBudgetRemainingMs = Math.max(0, state.waitBudgetRemainingMs - overspend);
+  return true;
+}
+
+/**
+ * One bulk call for up to BATCH_SIZE posts against the first dispatchable
+ * account.
+ *
+ * HTTP 429 is account-local: the account cools for COOLDOWN_MS
+ * (first-write-wins) and the same call re-picks past every cooling account
+ * with NO backoff wait. When every account is cooling the batch reports
+ * "exhausted" and judgePosts throws after the join.
  *
  * A 5xx keeps the existing bounded same-account backoff (1s, 2s, 4s): the
  * endpoint is alive but busy, so seconds cost less than a deferred batch.
@@ -416,6 +520,8 @@ async function judgeBatch(
   keywords: readonly string[],
   fetchFn: typeof fetch,
   batchIndex: number,
+  now: () => number,
+  sleepFn: SleepFn,
   reasoningEffort: ReasoningEffort = "medium",
 ): Promise<BatchOutcome> {
   // Built once, outside the retry loop: the prompt does not change between
@@ -424,17 +530,25 @@ async function judgeBatch(
   const messages = buildBulkMessages(batch, keywords);
 
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
-    // Pointer read at the top of every attempt, BEFORE the first await:
-    // rotation advances synchronously inside the 429 branch, so nothing can
-    // interleave between this read and the fetch dispatch (same discipline
-    // as the next cursor in judgePosts). attemptIndex is the dispatch-time
-    // observation — the account this call actually hit — and is what the
-    // compare-and-set consumes when the 429 comes back.
-    const attemptIndex = state.index;
-    const account = state.accounts[attemptIndex];
-    if (account === undefined) {
-      return { status: "exhausted" };
+    // Pool scan at the top of every attempt, BEFORE the first await — the
+    // same sync window as the old pointer read: nothing can interleave
+    // between the pick and the fetch dispatch. attemptIndex is the
+    // dispatch-time observation — the account this call actually hit — and
+    // is what the cool guard stamps when the 429 comes back.
+    const picked = pickEligibleAccount(state, now());
+    if (picked === undefined) {
+      // Every account is cooling: park until the earliest expiry (charging
+      // the shared wait budget) and re-pick; a spent budget converts to the
+      // terminal outcome here at the loop top, OUTSIDE the try below — a
+      // throw from the 429 arm would be swallowed by the catch and misread
+      // as a transport error.
+      if (!(await parkUntilEligible(state, now, sleepFn))) {
+        return { status: "exhausted" };
+      }
+      attempt -= 1; // the park is a wait, not a retry — do not spend an attempt
+      continue;
     }
+    const { index: attemptIndex, account } = picked;
     const payload = {
       model: account.model,
       messages,
@@ -456,20 +570,14 @@ async function judgeBatch(
       });
 
       if (!response.ok) {
-        // Account spent: record, rotate, retry the same call on the next
-        // account immediately. The CAS consumes attemptIndex — the account
-        // this call actually hit — so a worker whose account was already
-        // rotated away by a peer is a no-op, not a second advance. The
-        // rotation does not spend the backoff budget (attempt is rewound),
-        // because rotation replaces the wait.
         if (response.status === 429) {
-          const rotated = rotateOnRateLimit(state, attemptIndex);
-          console.warn(
-            `judge: batch ${batchIndex} account ${attemptIndex + 1} HTTP 429 — ${rotated ? `rotating to account ${state.index + 1}` : "no account left"}`,
-          );
-          if (!rotated) {
-            return { status: "exhausted" };
-          }
+          coolAccount(state, attemptIndex, now());
+          console.warn(`judge: batch ${batchIndex} account ${attemptIndex + 1} HTTP 429 — cooling`);
+          // Rewind: the retry re-picks past every cooling account. The pick
+          // cannot return a cooling account, so each 429 iteration cools a
+          // distinct account and the loop stays bounded by the pool size
+          // (re-arming an expired entry mid-call needs a full 60s stall,
+          // which the request timeout bounds per attempt).
           attempt -= 1;
           continue;
         }
@@ -479,7 +587,7 @@ async function judgeBatch(
           console.warn(
             `judge: batch ${batchIndex} account ${attemptIndex + 1} (${batch.length} posts) HTTP ${response.status} — retrying in ${delay}ms (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length})`,
           );
-          await sleep(delay);
+          await sleepFn(delay);
           continue;
         }
         console.warn(
@@ -527,12 +635,13 @@ async function judgeBatch(
  * Judge a single post with up to 1 retry on HTTP or parsing failure.
  * Returns the verdict on success, or null if both attempts fail.
  *
- * HTTP 429 rotates the pool pointer exactly like judgeBatch (no backoff);
- * the rotation does not spend a fallback attempt. Running out of accounts
- * throws the tagged RotationExhausted error — judgePost runs in judgePosts'
- * parallel fallback pool, whose workers catch the throw, stop claiming
- * work, and re-throw after the join (drain-then-throw, same as the bulk
- * phase). Other failures keep the original status-agnostic retry.
+ * HTTP 429 cools the account exactly like judgeBatch (no backoff); the
+ * cooldown does not spend a fallback attempt. When every account is
+ * cooling, the loop-top guard throws the tagged RotationExhausted error —
+ * judgePost runs in judgePosts' parallel fallback pool, whose workers
+ * catch the throw, stop claiming work, and re-throw after the join
+ * (drain-then-throw, same as the bulk phase). Other failures keep the
+ * original status-agnostic retry.
  */
 export async function judgePost(
   post: Post,
@@ -540,15 +649,25 @@ export async function judgePost(
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
   reasoningEffort: ReasoningEffort = "medium",
+  now: () => number = Date.now,
+  sleepFn: SleepFn = sleep,
 ): Promise<JudgeVerdict | null> {
   const messages = buildMessages(post, keywords);
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const attemptIndex = state.index;
-    const account = state.accounts[attemptIndex];
-    if (account === undefined) {
-      throw rotationExhausted(state.failures);
+    const picked = pickEligibleAccount(state, now());
+    if (picked === undefined) {
+      // Every account is cooling: park until the earliest expiry (charging
+      // the shared wait budget) and re-pick; a spent budget converts to the
+      // terminal throw here at the loop top, OUTSIDE the try below — the
+      // catch converts anything thrown to a logged transport outcome.
+      if (!(await parkUntilEligible(state, now, sleepFn))) {
+        throw rotationExhausted(failuresFromCooldowns(state));
+      }
+      attempt -= 1; // the park is a wait, not a retry — do not spend an attempt
+      continue;
     }
+    const { index: attemptIndex, account } = picked;
     const payload = {
       model: account.model,
       messages,
@@ -568,13 +687,11 @@ export async function judgePost(
 
       if (!response.ok) {
         if (response.status === 429) {
-          const rotated = rotateOnRateLimit(state, attemptIndex);
-          console.warn(
-            `judge: post ${post.id} account ${attemptIndex + 1} HTTP 429 — ${rotated ? `rotating to account ${state.index + 1}` : "no account left"}`,
-          );
-          if (!rotated) {
-            throw rotationExhausted(state.failures);
-          }
+          coolAccount(state, attemptIndex, now());
+          console.warn(`judge: post ${post.id} account ${attemptIndex + 1} HTTP 429 — cooling`);
+          // Rewind: the retry re-picks past every cooling account; the
+          // loop-top guard throws when the pick finds none (never here —
+          // a throw inside this try would be swallowed by the catch).
           attempt -= 1;
           continue;
         }
@@ -633,11 +750,12 @@ export async function judgePost(
  * exhaustion starves the tail. Both result lists come out in candidate
  * input order.
  *
- * Rotation state lives in this frame (run-sticky): after a failover every
- * later call in the run uses the new account, and the next run starts on
- * account 1 again. The pointer and failure list are shared by reference
- * with every worker exactly like the next cursor below — all reads and
- * advances are synchronous, so four workers stay coherent without locks.
+ * Rotation state lives in this frame: a cooldown map plus the shared park
+ * budget, shared by reference with every worker exactly like the next
+ * cursor below — all reads and writes are synchronous, so four workers
+ * stay coherent without locks. There is no sticky pointer: every dispatch
+ * scans from account 1 and skips cooling accounts, so a batch that starts
+ * after an account's cooldown expires lands back on account 1.
  */
 export async function judgePosts(
   candidates: readonly Post[],
@@ -646,8 +764,14 @@ export async function judgePosts(
   fetchFn: typeof fetch = fetch,
   reasoningEffort: ReasoningEffort = "medium",
   concurrency: number = DEFAULT_JUDGE_CONCURRENCY,
+  now: () => number = Date.now,
+  sleepFn: SleepFn = sleep,
 ): Promise<JudgeBatchResult> {
-  const state: RotationState = { accounts, index: 0, failures: [] };
+  const state: RotationState = {
+    accounts,
+    cooldownUntil: new Map(),
+    waitBudgetRemainingMs: WAIT_BUDGET_MS,
+  };
 
   const batches: Post[][] = [];
   for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
@@ -666,7 +790,16 @@ export async function judgePosts(
       if (index >= batches.length) return;
       const batch = batches[index];
       if (batch === undefined) continue;
-      outcomes[index] = await judgeBatch(batch, state, keywords, fetchFn, index, reasoningEffort);
+      outcomes[index] = await judgeBatch(
+        batch,
+        state,
+        keywords,
+        fetchFn,
+        index,
+        now,
+        sleepFn,
+        reasoningEffort,
+      );
     }
   };
   await Promise.all(Array.from({ length: Math.min(concurrency, batches.length) }, worker));
@@ -677,7 +810,7 @@ export async function judgePosts(
   // leaves the unjudged posts unseen — index.ts turns the error into the
   // exhaustion email and exit 1; state is never reached.
   if (outcomes.some((outcome) => outcome?.status === "exhausted")) {
-    throw rotationExhausted(state.failures);
+    throw rotationExhausted(failuresFromCooldowns(state));
   }
 
   // Reassembly walk (input order): bulk verdicts fill their slots at once;
@@ -733,7 +866,15 @@ export async function judgePosts(
         const item = fallbackWork[workIndex];
         if (item === undefined) continue;
         try {
-          const verdict = await judgePost(item.post, state, keywords, fetchFn, reasoningEffort);
+          const verdict = await judgePost(
+            item.post,
+            state,
+            keywords,
+            fetchFn,
+            reasoningEffort,
+            now,
+            sleepFn,
+          );
           if (verdict !== null) {
             slots[item.slot] = verdict;
           } else {
@@ -752,7 +893,7 @@ export async function judgePosts(
       Array.from({ length: Math.min(concurrency, fallbackWork.length) }, fallbackWorker),
     );
     if (exhausted) {
-      throw rotationExhausted(state.failures);
+      throw rotationExhausted(failuresFromCooldowns(state));
     }
     const starved = Math.max(0, fallbackWork.length - FALLBACK_CALL_BUDGET);
     if (starved > 0) {

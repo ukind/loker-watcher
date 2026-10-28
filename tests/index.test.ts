@@ -23,6 +23,7 @@ import type {
   ResponseLike,
 } from "../src/fetch-threads.js";
 import { runWatcher, timeStage } from "../src/index.js";
+import { isRotationExhausted } from "../src/judge.js";
 import type { AppState } from "../src/state.js";
 import type { JudgeVerdict } from "../src/types.js";
 
@@ -326,6 +327,50 @@ describe("runWatcher", () => {
     assert.deepEqual(Object.keys(stored.seenPostIds), [id19(8)]); // the skipped id stays unseen
     assert.equal(subjects.length, 1);
     assert.match(subjects[0] ?? "", /1 new job post/);
+  });
+
+  it("rejects with the complete pool-ordered exhaustion record and never touches state at budget death", async () => {
+    const posts = [{ id: id19(10), text: "Hiring: rust engineer, remote" }];
+    const statePath = await tempStatePath("budget-death.json");
+    const { transport, subjects } = recordingTransport();
+    // Hand-stepped clock + inert park: five cooldown parks drain the
+    // 5-minute budget instantly.
+    let tick = 0;
+    const now = (): number => tick;
+    const sleepFn = (ms: number): Promise<void> => {
+      tick += ms;
+      return Promise.resolve();
+    };
+    const all429 = (async (): Promise<Response> =>
+      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await runWatcher({
+        env: BASE_ENV,
+        config: CONFIG,
+        contextFactory: singlePageContextFactory(graphqlBody(posts)),
+        fetchFn: all429,
+        transport,
+        statePath,
+        now,
+        sleepFn,
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    // The entry guard's contract: the tagged error with the complete
+    // record — it turns that into exactly one exhaustion email + exit 1.
+    assert.ok(isRotationExhausted(caught));
+    assert.deepEqual(
+      (caught as { failures: Array<{ account: number }> }).failures.map((f) => f.account),
+      [1],
+    );
+    // The judge throw happened before any notification or persistence:
+    // no email fired, and the state file was never written.
+    assert.deepEqual(subjects, []);
+    await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/);
   });
 });
 

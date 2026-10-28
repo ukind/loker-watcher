@@ -35,6 +35,7 @@ import {
   judgePosts,
   parseJudgeConcurrency,
   resolveJudgeConfig,
+  sleep,
 } from "./judge.js";
 import { filterRecent } from "./recency.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
@@ -111,6 +112,8 @@ export interface WatcherDeps {
   readonly statePath?: string;
   /** Clock for recency, prune, state stamps, and heartbeat ages. Default: Date.now. */
   readonly now?: () => number;
+  /** Park wait for the judge's cooldown parking. Default: the judge module's sleep. */
+  readonly sleepFn?: (ms: number) => Promise<void>;
 }
 
 /** Funnel outcome of one run: the summary handle tests assert on. */
@@ -135,6 +138,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const env = deps.env ?? process.env;
   const config = deps.config ?? (await loadWatcherConfig());
   const now = deps.now ?? Date.now;
+  const sleepFn = deps.sleepFn ?? sleep;
   const statePath = deps.statePath ?? STATE_PATH;
   const startedAt = now();
   const surfaces = resolveSurfaces(config.surfaces);
@@ -197,6 +201,8 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       deps.fetchFn,
       config.reasoningEffort,
       parseJudgeConcurrency(env[ENV_NAMES.judgeConcurrency]),
+      now,
+      sleepFn,
     ),
   );
   console.log(`timing: judge ${judgeMs}ms`);
