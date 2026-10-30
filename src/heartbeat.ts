@@ -47,10 +47,12 @@ export interface Candidate {
   reason: "judged" | "near-miss";
 }
 
-/** True when the text mentions any candidate term (case-insensitive). */
+/**
+ * True when the text mentions any candidate term (case-insensitive).
+ */
 export function matchesCandidateTerms(text: string, terms: readonly string[]): boolean {
   const normalized = text.toLowerCase();
-  return terms.some((term) => normalized.includes(term));
+  return terms.some((term) => normalized.includes(term.trim().toLowerCase()));
 }
 
 /**

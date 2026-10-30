@@ -44,6 +44,23 @@ const graphqlBody = (id: string): string =>
     },
   });
 
+/** Multi-item graphql capture body: N thread_items carrying N posts
+ * (F014: the post-cap and scroll-gain fixtures need bulk captures; the
+ * thread_item shape mirrors the single-id graphqlBody helper exactly). */
+const graphqlBodyMany = (ids: readonly string[]): string =>
+  JSON.stringify({
+    data: {
+      thread_items: ids.map((id) => ({
+        post: {
+          pk: id,
+          caption: { text: `Hiring frontend developer ${id}` },
+          user: { username: `author-${id.slice(-2)}` },
+          taken_at: 1_792_755_976,
+        },
+      })),
+    },
+  });
+
 /** Response double the walk's graphql filter accepts (url + status + body). */
 const graphqlResponse = (body: string): ResponseLike => ({
   url: () => "https://www.threads.com/api/graphql",
@@ -55,20 +72,35 @@ const graphqlResponse = (body: string): ResponseLike => ({
  * Context factory double. Pages decide success/failure at goto time by URL
  * substring (pool workers claim surface indexes at microtask boundaries, so
  * pages cannot be mapped to labels at creation time). When the URL matches
- * an xhr entry, the double fires the walk's response listener with a
- * graphql body — the same async shape as a real capture. The Recent-tab
- * locator never becomes visible (both walks tolerate its absence), and
- * waits resolve immediately. Tracks open pages for the concurrency peak
- * and flags context teardown.
+ * an xhr entry, the double fires the response listener with a graphql body
+ * — the same async shape as a real capture. The Recent-tab locator never
+ * becomes visible unless recentTabVisible is set (both walks tolerate its
+ * absence), and waits resolve immediately. Each evaluate call (one scroll
+ * round of the authenticated walk) bumps the evaluate counter and fires the
+ * response listener with the round's staged scroll body, so the dry-round
+ * counter, the scroll ceiling, and the post cap are all observable offline.
+ * Tracks open pages for the concurrency peak, records Recent-tab clicks and
+ * settle waits, and flags context teardown.
  */
 function fakeContextFactory(options: {
   concurrency: { inFlight: number; peak: number };
   failUrls?: ReadonlySet<string>;
   xhrBySubstring?: ReadonlyMap<string, string>;
   closed?: { value: boolean };
+  /** One graphql body per scroll round; evaluate round N fires element N-1. */
+  scrollBodies?: readonly string[];
+  /** Per-round counter — the dry-round, scroll-ceiling, and cap oracle. */
+  evaluate?: { calls: number };
+  /** When true the Recent tab resolves; default keeps the missing-tab path. */
+  recentTabVisible?: boolean;
+  /** Click spy for the visible-tab path. */
+  recentTabClicks?: number[];
+  /** waitForTimeout durations in call order (the settle-window oracle). */
+  settleWaits?: number[];
 }): ContextFactory {
   const failUrls = options.failUrls ?? new Set<string>();
   const xhrBySubstring = options.xhrBySubstring ?? new Map<string, string>();
+  const scrollBodies = options.scrollBodies ?? [];
   return async () => {
     const context: ContextLike = {
       newPage: async (): Promise<PageLike> => {
@@ -76,6 +108,10 @@ function fakeContextFactory(options: {
         options.concurrency.peak = Math.max(options.concurrency.peak, options.concurrency.inFlight);
         let open = true;
         const listeners: Array<(response: ResponseLike) => void> = [];
+        const fire = (body: string): void => {
+          const response = graphqlResponse(body);
+          for (const listener of listeners) listener(response);
+        };
         const page: PageLike = {
           goto: async (url: string) => {
             if ([...failUrls].some((fragment) => url.includes(fragment))) {
@@ -84,10 +120,7 @@ function fakeContextFactory(options: {
             const entry = [...xhrBySubstring.entries()].find(([fragment]) =>
               url.includes(fragment),
             );
-            if (entry !== undefined) {
-              const response = graphqlResponse(entry[1]);
-              for (const listener of listeners) listener(response);
-            }
+            if (entry !== undefined) fire(entry[1]);
             return undefined;
           },
           waitForFunction: async () => undefined,
@@ -97,6 +130,16 @@ function fakeContextFactory(options: {
             return undefined;
           },
           locator: () => {
+            if (options.recentTabVisible === true) {
+              const visibleTab: LocatorLike = {
+                first: () => visibleTab,
+                waitFor: async () => undefined,
+                click: async () => {
+                  options.recentTabClicks?.push(1);
+                },
+              };
+              return visibleTab;
+            }
             const missingTab: LocatorLike = {
               first: () => missingTab,
               waitFor: async () => {
@@ -106,8 +149,17 @@ function fakeContextFactory(options: {
             };
             return missingTab;
           },
-          evaluate: async () => undefined,
-          waitForTimeout: async () => undefined,
+          evaluate: async () => {
+            const round = (options.evaluate?.calls ?? 0) + 1;
+            if (options.evaluate !== undefined) options.evaluate.calls = round;
+            const body = scrollBodies[round - 1];
+            if (body !== undefined) fire(body);
+            return undefined;
+          },
+          waitForTimeout: async (ms: number) => {
+            options.settleWaits?.push(ms);
+            return undefined;
+          },
           close: async () => {
             if (!open) return;
             open = false;
@@ -242,5 +294,187 @@ describe("fetchSurfacesAuthenticated", () => {
         return true;
       },
     );
+  });
+
+  it("stops after 3 dry scroll rounds and keeps the captured post", async (t) => {
+    const evaluate = { calls: 0 };
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/dry")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/dry", graphqlBody(id19(1))]]),
+        evaluate,
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1)],
+    );
+    assert.equal(evaluate.calls, 3); // the dry counter stops the walk, not the scroll ceiling
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      lines.some((line) => /\(dry 3\/3\)/.test(line)),
+      `no (dry 3/3) log line in: ${JSON.stringify(lines)}`,
+    );
+  });
+
+  it("keeps scrolling to the 8-round ceiling while every round gains fresh posts", async () => {
+    const evaluate = { calls: 0 };
+    // Rounds 1-6 each gain 3 posts (the dry counter resets); rounds 7-8 gain
+    // 0 — only two drys, so the loop ends at the scroll ceiling, not dry 3/3.
+    const scrollBodies = [1, 2, 3, 4, 5, 6].map((round) =>
+      graphqlBodyMany([id19(3 * round - 1), id19(3 * round), id19(3 * round + 1)]),
+    );
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/reset")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/reset", graphqlBody(id19(1))]]),
+        evaluate,
+        scrollBodies,
+      }),
+    );
+
+    assert.equal(result.length, 19); // 1 captured at goto + 6 rounds x 3 posts
+    assert.equal(evaluate.calls, 8);
+  });
+
+  it("breaks on the post cap after one scroll round with exactly 150 posts", async () => {
+    const evaluate = { calls: 0 };
+    const all = Array.from({ length: 150 }, (_, i) => id19(i + 1));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/cap")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/cap", graphqlBodyMany(all)]]),
+        evaluate,
+      }),
+    );
+
+    assert.equal(result.length, 150); // one response may carry all 150 (the cap is not per-item)
+    assert.equal(evaluate.calls, 1); // the cap break fires after round 1's dry log
+  });
+
+  it("ignores graphql responses that arrive once the post cap is reached", async () => {
+    const evaluate = { calls: 0 };
+    const all = Array.from({ length: 150 }, (_, i) => id19(i + 1));
+    const late = Array.from({ length: 100 }, (_, i) => id19(151 + i));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/late")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/late", graphqlBodyMany(all)]]),
+        evaluate,
+        scrollBodies: [graphqlBodyMany(late)], // fired by the round-1 evaluate
+      }),
+    );
+
+    assert.equal(result.length, 150);
+    assert.ok(result.every((post) => !late.includes(post.id)));
+  });
+
+  it("keeps walking when one surface yields zero posts and another captures posts", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/empty"), surface("tag/rich")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/rich", graphqlBody(id19(1))]]),
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1)],
+    ); // tracked, not thrown
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /tag\/empty: 0 post\(s\) \(authenticated\)/.test(line)));
+  });
+
+  it("warns when a tag surface has no Recent tab", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/noTab")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/noTab", graphqlBody(id19(1))]]),
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1)],
+    ); // the default view still captures
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      lines.some((line) => /tag\/noTab has no Recent tab — using the default view/.test(line)),
+    );
+  });
+
+  it("logs the URL-selected view for a profile surface and never warns about the tab", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("profile/dev")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["profile/dev", graphqlBody(id19(1))]]),
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1)],
+    );
+    const logLines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      logLines.some((line) =>
+        /profile\/dev has no Recent tab — the URL selects its own view/.test(line),
+      ),
+    );
+    const warnLines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(warnLines.every((line) => !line.includes("no Recent tab")));
+  });
+
+  it("clicks the Recent tab once and waits the settle window when it is visible", async () => {
+    const evaluate = { calls: 0 };
+    const recentTabClicks: number[] = [];
+    const settleWaits: number[] = [];
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/recent")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/recent", graphqlBody(id19(1))]]),
+        evaluate,
+        recentTabVisible: true,
+        recentTabClicks,
+        settleWaits,
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1)],
+    );
+    assert.equal(recentTabClicks.length, 1); // one click, not one per scroll round
+    assert.equal(settleWaits[0], 5000); // the Recent settle rides before the scroll settles
   });
 });

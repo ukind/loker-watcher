@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check src tests scripts/probe-judge.ts",
+    "lint": "biome check src tests scripts/probe-judge.ts scripts/hooks",
     "format": "biome format --write src tests",
     "prepare": "husky"
   },
@@ -18,13 +18,12 @@
     ]
   },
   "dependencies": {
-    "nodemailer": "^6.9.16",
+    "nodemailer": "^10.3.0",
     "playwright": "^1.49.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.1",
-    "@types/nodemailer": "^6.4.17",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
     "tsx": "^4.19.2",

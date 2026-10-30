@@ -2,3 +2,6 @@ node_modules/
 .env
 .env.*
 .pi/
+.rpiv/tmp/
+.codebase-memory/graph.db.zst
+slice*-recon/

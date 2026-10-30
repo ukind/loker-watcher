@@ -28,6 +28,8 @@
  */
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
+import { sleep } from "./judge.js";
+import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
 
 const NAV_TIMEOUT_MS = 30_000;
@@ -199,26 +201,19 @@ export async function fetchSurfaces(
   try {
     const results: Array<SurfaceFetch | undefined> = Array.from({ length: surfaces.length });
     const failures: Array<string | undefined> = Array.from({ length: surfaces.length });
-    let next = 0;
-    const worker = async (): Promise<void> => {
-      for (;;) {
-        const index = next;
-        next += 1;
-        if (index >= surfaces.length) return;
-        const surface = surfaces[index];
-        if (surface === undefined) continue;
-        try {
-          const html = await fetchOne(context, surface);
-          results[index] = { label: surface.label, html };
-          console.log(`fetch: ${surface.label} OK`);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          failures[index] = `${surface.label}: ${message}`;
-          console.warn(`fetch: ${surface.label} FAILED — ${message}`);
-        }
+    // Cursor, width clamp, and join live in runPool (F007); failures ride
+    // the side array, so the worker stays total (join-never-rejects).
+    await runPool(surfaces, FETCH_CONCURRENCY, async (surface, index) => {
+      try {
+        const html = await fetchOne(context, surface);
+        results[index] = { label: surface.label, html };
+        console.log(`fetch: ${surface.label} OK`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures[index] = `${surface.label}: ${message}`;
+        console.warn(`fetch: ${surface.label} FAILED — ${message}`);
       }
-    };
-    await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, surfaces.length) }, worker));
+    });
 
     const successes = results.filter((entry): entry is SurfaceFetch => entry !== undefined);
     if (successes.length === 0) {
@@ -287,30 +282,23 @@ export async function fetchSurfacesAuthenticated(
     const perSurface: Array<Post[] | undefined> = Array.from({ length: surfaces.length });
     const failures: Array<string | undefined> = Array.from({ length: surfaces.length });
     const emptyLabels: Array<string | undefined> = Array.from({ length: surfaces.length });
-    let next = 0;
-    const worker = async (): Promise<void> => {
-      for (;;) {
-        const index = next;
-        next += 1;
-        if (index >= surfaces.length) return;
-        const surface = surfaces[index];
-        if (surface === undefined) continue;
-        try {
-          const posts = await fetchOneAuthenticated(context, surface);
-          console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
-          // A surface that yields 0 posts is NOT a thrown failure, so it never
-          // reaches `failures`. Track it separately or the all-fail error below
-          // lists nothing and the run dies with no diagnostic.
-          if (posts.length === 0) emptyLabels[index] = surface.label;
-          perSurface[index] = posts;
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          failures[index] = `${surface.label}: ${message}`;
-          console.warn(`fetch: ${surface.label} FAILED — ${message}`);
-        }
+    // Same migration as fetchSurfaces (F007): the empty-surface side
+    // channel rides the closure, the worker stays total.
+    await runPool(surfaces, FETCH_CONCURRENCY, async (surface, index) => {
+      try {
+        const posts = await fetchOneAuthenticated(context, surface);
+        console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
+        // A surface that yields 0 posts is NOT a thrown failure, so it never
+        // reaches `failures`. Track it separately or the all-fail error below
+        // lists nothing and the run dies with no diagnostic.
+        if (posts.length === 0) emptyLabels[index] = surface.label;
+        perSurface[index] = posts;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures[index] = `${surface.label}: ${message}`;
+        console.warn(`fetch: ${surface.label} FAILED — ${message}`);
       }
-    };
-    await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, surfaces.length) }, worker));
+    });
 
     const results = perSurface.filter((posts): posts is Post[] => posts !== undefined).flat();
     if (results.length === 0) {
@@ -430,8 +418,4 @@ async function fetchOneAuthenticated(
   } finally {
     await page.close();
   }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

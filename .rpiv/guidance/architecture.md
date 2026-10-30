@@ -1,6 +1,6 @@
 # Project Overview
 
-loker-watcher: a TypeScript ESM pipeline (Node >= 22, strict TS) that watches Indonesian job-hunting surfaces on Threads every 10 minutes from GitHub Actions, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM (an account pool with 429 rotation), and emails new matches as a plain-text digest. The only persistence is `state/seen-posts.json`, which the workflow commits back after match runs.
+loker-watcher: a TypeScript ESM pipeline (Node >= 22, strict TS) that watches Indonesian job-hunting surfaces on Threads every 10 minutes from GitHub Actions, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM (an account pool where a 429 cools the account and calls park past cooldowns on a shared wait budget), and emails new matches as a plain-text digest. The only persistence is `state/seen-posts.json`, which the workflow commits back after match runs.
 
 ## Architecture
 
@@ -12,8 +12,10 @@ scripts/            # probe-judge.ts (measures the LLM endpoint, feeds JUDGE_CON
 state/              # runtime state only; written by the run, committed back by the workflow
 ```
 
+Untracked by decision: `.rpiv/tmp/` scratch and `.codebase-memory/graph.db.zst` (the local graph index, rewritten on reindex) must not be re-added. `.rpiv/artifacts/` stays tracked.
+
 Detailed guidance:
-- `.rpiv/guidance/src/architecture.md` — pipeline stages, funnel gates and ordering, DI seams, judge rotation
+- `.rpiv/guidance/src/architecture.md` — pipeline stages, funnel gates and ordering, DI seams, judge cooldown+park
 - `.rpiv/guidance/tests/architecture.md` — offline conventions, doubles, fixtures, coverage map
 - `.rpiv/guidance/.github/workflows/architecture.md` — triggers, permissions, secret mapping, state commit-back
 - `.rpiv/guidance/scripts/architecture.md` — the probe workflow and hook exit-code contracts

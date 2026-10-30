@@ -45,9 +45,13 @@ jobs:
     # 8-minute cap keeps a hung run under the 10-minute cron interval — it
     # dies before the next tick queues. Measured 2026-10-27: 8-wide bursts
     # drew HTTP 429s from the endpoint, 4-wide ran clean.
-    # Envelope race, documented not solved: 300s cooldown budget + 60s
-    # abort tail + fetch worst case can exceed this timeout — raise it if
-    # exhaustion alarms cluster.
+    # Timeout envelope arithmetic (F023): 480s job cap - 60-100s setup
+    # prologue (checkout + npm ci + Playwright install; the ms-playwright
+    # cache removes 30-60s of it) - 71s measured fetch worst case
+    # (2026-10-27) - 60s abort tail leaves ~249-289s for judge waves and
+    # parks. WAIT_BUDGET_MS (180s, src/judge.ts) caps the parked wait
+    # before the exhaustion alarm, so the alarm lands ~1-2 min inside the
+    # cap and the run still dies before the next 10-minute tick queues.
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -58,6 +62,18 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Cache Playwright browser
+        # F020: the browser download repeats on every 10-minute tick. The
+        # lockfile pins the browser build, so the key misses only on a
+        # playwright bump. Saves the measured 30-60s install cost per run
+        # (2026-10-27). runner.os separates OS-specific builds. The install
+        # step stays unconditional: a cache miss self-heals, a hit makes it
+        # a fast no-op.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browser
         # The watcher is headless-only; the full browser build adds install
@@ -70,6 +86,7 @@ jobs:
       - name: Run watcher
         env:
           JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
+          HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -77,6 +94,11 @@ jobs:
         run: npx tsx src/index.ts
 
       - name: Commit state
+        # F021: the queue serializes watcher runs, but a human push can land
+        # between this run's checkout and its commit-back. Rebase onto main
+        # before the first push, and again before the single retry. A
+        # conflicting rebase fails here with git's message. The next run
+        # recovers by re-judging; the audit accepts one duplicate digest.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -88,4 +110,14 @@ jobs:
           PREV=$(git show HEAD:state/seen-posts.json | jq '.seenPostIds | length' 2>/dev/null || echo 0)
           CURR=$(jq '.seenPostIds | length' state/seen-posts.json)
           git commit -m "state: $((CURR - PREV)) new seen post ids"
-          git push
+          git pull --rebase origin main
+          if git push; then
+            exit 0
+          fi
+          echo "state push rejected; rebasing onto main and retrying once"
+          git pull --rebase origin main
+          if git push; then
+            exit 0
+          fi
+          echo "state push failed twice; failing the run"
+          exit 1
