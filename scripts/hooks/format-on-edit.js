@@ -2,8 +2,8 @@
 // PostToolUse feedback hook: formats the file an agent just edited with Biome.
 // Reads one JSON event on stdin. Never blocks: always exits 0.
 
-import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 
 let event;
 try {
