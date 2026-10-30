@@ -29,9 +29,9 @@ import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js"
 import { extractPosts } from "./extract.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
+import { isRotationExhausted } from "./judge-rotation.js";
 import {
   type JudgedPost,
-  isRotationExhausted,
   judgePosts,
   parseJudgeConcurrency,
   resolveJudgeConfig,
@@ -39,7 +39,7 @@ import {
 } from "./judge.js";
 import { filterRecent } from "./recency.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
-import { resolveSession } from "./threads-session.js";
+import { cleanupSessionDir, resolveSession } from "./threads-session.js";
 import type { Post } from "./types.js";
 
 /**
@@ -149,9 +149,19 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   // after the duration line.
   const { value: collected, durationMs: fetchMs } = await timeStage(async () => {
     const sessionPath = await resolveSession(env);
-    return sessionPath !== null
-      ? await fetchSurfacesAuthenticated(surfaces, sessionPath, deps.contextFactory)
-      : await fetchLoggedOutPosts(surfaces, deps.contextFactory);
+    try {
+      return sessionPath !== null
+        ? await fetchSurfacesAuthenticated(surfaces, sessionPath, deps.contextFactory)
+        : await fetchLoggedOutPosts(surfaces, deps.contextFactory);
+    } finally {
+      // F019: the session dir dies with the walk. The context closes inside
+      // the walk's own finally, so this runs strictly after close, on both
+      // the success and the throw path. The logged-out path never created
+      // a dir, so there is nothing to remove.
+      if (sessionPath !== null) {
+        await cleanupSessionDir(sessionPath);
+      }
+    }
   });
   console.log(`timing: fetch ${fetchMs}ms`);
   const posts = dedupePosts(collected);

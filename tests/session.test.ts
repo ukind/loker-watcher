@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
-import { isValidStorageState, resolveSession } from "../src/threads-session.js";
+import { cleanupSessionDir, isValidStorageState, resolveSession } from "../src/threads-session.js";
 
 const VALID = Buffer.from(
   JSON.stringify({
@@ -46,5 +48,23 @@ describe("resolveSession", () => {
       cookies: Array<{ name: string }>;
     };
     assert.equal(doc.cookies[0]?.name, "sessionid");
+  });
+});
+
+describe("cleanupSessionDir", () => {
+  it("removes the session dir that resolveSession created", async () => {
+    const path = await resolveSession({ THREADS_SESSION_STATE: VALID });
+    assert.ok(path !== null);
+    await stat(path); // the storage-state file exists before cleanup
+    await cleanupSessionDir(path);
+    await assert.rejects(() => stat(path), /ENOENT/); // file gone
+    await assert.rejects(() => stat(dirname(path)), /ENOENT/); // the dir with it
+  });
+
+  it("tolerates a missing dir silently", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const missing = join(tmpdir(), "loker-session-gone", "storage-state.json");
+    await cleanupSessionDir(missing); // resolves — force ignores ENOENT
+    assert.equal(warns.mock.calls.length, 0); // silence is part of the contract
   });
 });

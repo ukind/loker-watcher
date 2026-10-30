@@ -23,7 +23,7 @@ import type {
   ResponseLike,
 } from "../src/fetch-threads.js";
 import { runWatcher, timeStage } from "../src/index.js";
-import { isRotationExhausted } from "../src/judge.js";
+import { isRotationExhausted } from "../src/judge-rotation.js";
 import type { AppState } from "../src/state.js";
 import type { JudgeVerdict } from "../src/types.js";
 
@@ -333,8 +333,8 @@ describe("runWatcher", () => {
     const posts = [{ id: id19(10), text: "Hiring: rust engineer, remote" }];
     const statePath = await tempStatePath("budget-death.json");
     const { transport, subjects } = recordingTransport();
-    // Hand-stepped clock + inert park: five cooldown parks drain the
-    // 5-minute budget instantly.
+    // Hand-stepped clock + inert park: three cooldown parks drain the
+    // 3-minute budget instantly.
     let tick = 0;
     const now = (): number => tick;
     const sleepFn = (ms: number): Promise<void> => {

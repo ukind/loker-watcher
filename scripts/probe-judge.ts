@@ -22,12 +22,11 @@
  * watch job itself is the real gate for throttling.
  */
 import { loadWatcherConfig } from "../src/config-file.js";
-import { type LlmAccount, resolveJudgeConfig } from "../src/judge.js";
+import { type LlmAccount, buildBulkMessages, resolveJudgeConfig } from "../src/judge.js";
 import type { Post } from "../src/types.js";
 
 // Read once at startup; a missing or malformed file fails the probe loudly.
 const CONFIG = await loadWatcherConfig();
-const KEYWORDS = CONFIG.keywords;
 
 /**
  * Real captured Threads captions, kept verbatim so token counts match
@@ -56,23 +55,6 @@ function syntheticPost(index: number): Post {
     timestamp: "2026-10-26T00:00:00.000Z",
     text,
   };
-}
-
-/** The production bulk prompt shape: keyword criterion plus id+text pairs. */
-function bulkMessages(posts: readonly Post[]): Array<{ role: string; content: string }> {
-  const listing = posts
-    .map((post) => `id ${post.id} by @${post.author}:\n"${post.text}"`)
-    .join("\n\n");
-  return [
-    {
-      role: "system",
-      content: `You are an automated evaluation filter for job alerts. A post is relevant when it is a genuine job opening related to at least one of these keywords: ${JSON.stringify(KEYWORDS)}. You also determine whether the position is in Indonesia or remote.`,
-    },
-    {
-      role: "user",
-      content: `Judge each Threads post below against the criteria.\n\n${listing}\n\nDetermine two criteria per post:\n1. relevant: true ONLY if the post is a genuine job opening or hiring announcement related to at least one keyword above.\n2. locationOk: true ONLY if the job is located in Indonesia, or explicitly remote.\n\nRespond with ONLY a raw JSON object mapping EACH post id above to its verdict:\n{"<post id>": {"relevant": boolean, "locationOk": boolean}}`,
-    },
-  ];
 }
 
 /** One probe call's classified outcome. */
@@ -222,7 +204,7 @@ async function main(): Promise<void> {
     const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
     const bulkPayload = {
       model: account.model,
-      messages: bulkMessages(ten),
+      messages: buildBulkMessages(ten, CONFIG.keywords),
       temperature: 0,
       reasoning_effort: CONFIG.reasoningEffort,
       response_format: { type: "json_object" },

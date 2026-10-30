@@ -8,9 +8,9 @@
  * enters state/seen-posts.json. The decoded document is written to an OS
  * temp file that Playwright loads as the browser context's storage state.
  */
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { ENV_NAMES } from "./config.js";
 
 /** Minimal shape check for a Playwright storageState document. */
@@ -49,4 +49,23 @@ export async function resolveSession(
   const filePath = join(dir, "storage-state.json");
   await writeFile(filePath, JSON.stringify(doc), "utf8");
   return filePath;
+}
+
+/**
+ * Delete the OS temp dir behind a resolved session file path (F019).
+ * Best-effort by contract — temp cleanup is one of the sanctioned
+ * never-fails-the-run calls: a leaked temp dir must not turn a run whose
+ * real work succeeded into a failed one. A missing dir is a silent no-op
+ * (force ignores ENOENT: the logged-out path never made one, or the dir
+ * is already gone); any other removal fault warns with the path and
+ * resolves.
+ */
+export async function cleanupSessionDir(sessionPath: string): Promise<void> {
+  const dir = dirname(sessionPath);
+  try {
+    await rm(dir, { recursive: true, force: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`session: failed to remove session dir ${dir} — ${message}`);
+  }
 }
