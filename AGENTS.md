@@ -16,7 +16,7 @@ back after match runs.
 - `npm test` - unit tests (node:test runner via tsx, offline and deterministic)
 - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
 - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, and ramp concurrent calls to find the concurrency ceiling (needs `LLM_*` env vars)
-- `npm run lint` - Biome check over `src/` and `tests/`
+- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, and `scripts/hooks`
 - `npm run format` - Biome format in place
 - `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars)
 - `npx playwright install chromium` - one-time browser install for local runs
@@ -35,12 +35,20 @@ against the configured keywords, email digest, commit state.
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)
 - `src/judge.ts` - ~10-post bulk chat-completions calls judged against the
   keywords in `watcher.config.json`; accounts come from the `LLM_ACCOUNTS`
-  pool (the first HTTP 429 rotates to the next account with no backoff,
-  run-sticky; 5xx retries the same account with backoff; an exhausted pool
-  throws a typed error that sends one alarm email and exits 1), up to
-  `JUDGE_CONCURRENCY` batches run at once, bulk misses fall back to
-  single-post calls, and a batch the endpoint does not answer is deferred
-  whole; returns `{relevant, locationOk}` per post
+  pool (an HTTP 429 cools that account for 60s and dispatches re-scan past
+  cooling accounts; when all are cooling, calls park up to a shared 180s
+  wait budget before the pool converts to exhaustion; 5xx retries the same
+  account with backoff; an exhausted pool throws a typed error that sends
+  one alarm email and exits 1), up to `JUDGE_CONCURRENCY` batches run at
+  once, bulk misses fall back to single-post calls, and a batch the
+  endpoint does not answer is deferred whole; returns
+  `{relevant, locationOk}` per post
+- `src/judge-rotation.ts` - account-pool rotation primitives: the cooldown
+  map state, the tagged exhaustion error, and the park helper
+- `src/judge-parse.ts` - verdict parsers for the judge's responses
+  (single-post and bulk)
+- `src/pool.ts` - shared bounded worker pool (`runPool`) used by the judge
+  and by the surface fetches
 - `src/email.ts` - nodemailer transport for the digest
 - `src/heartbeat.ts` - zero-match status email so quiet runs stay legible
 - `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation

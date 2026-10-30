@@ -15,7 +15,9 @@ index.ts                                  # ENTRY: runWatcher(deps) / WatcherDep
 types.ts, config.ts, config-file.ts       # LEAVES + FILE CONFIG: shared contracts, ENV_NAMES, paths | watcher.config.json validation
 threads-session.ts, fetch-threads.ts,     # ACQUISITION: session secret → temp storageState (null ⇒ logged-out);
 extract.ts                                #   logged-out data-sjs walk + authenticated graphql-XHR walk; parse → Post[]
-recency.ts, judge.ts                      # FUNNEL: recency window filter (pure) | bulk judge, rotation, bounded pools
+recency.ts                                # FUNNEL: recency window filter (pure)
+judge.ts, judge-rotation.ts,              # FUNNEL: bulk judge + dispatcher | rotation primitives,
+judge-parse.ts, pool.ts                   #   verdict parsers | bounded shared runPool
 email.ts, heartbeat.ts, state.ts          # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 state, atomic save
 ```
 
@@ -62,20 +64,26 @@ const pk = readPk(post?.pk);                       // 19-digit ids stay strings,
 if (pk === null || text === null) return null;     // null = drop + count, never throw; verdicts use Map (proto-safe)
 ```
 
-## Judge rotation: 429 CAS, 5xx backoff same account, drain-then-throw
+## Judge rotation: 429 cools the account, calls park past cooldowns, budget-bounded
 ```typescript
-const state: RotationState = { accounts, index: 0, failures: [] };   // run-sticky, shared by reference
-function rotateOnRateLimit(state: RotationState, failedIndex: number): boolean {
-  if (state.index === failedIndex) {       // CAS on the dispatch-time index: N workers that all 429'd
-    state.failures.push(/* AccountFailure */);   // on account 1 advance the pointer exactly once
-    state.index += 1;
-  }
-  return state.index < state.accounts.length;
+const state: RotationState = { accounts, cooldownUntil: new Map(), waitBudgetRemainingMs: WAIT_BUDGET_MS };
+                                           // per-run, shared by reference; NO sticky pointer — every dispatch
+                                           // scans the pool from account 1 and skips still-cooling entries, so a
+                                           // call that starts after a cooldown expiry lands back on account 1
+function coolAccount(state: RotationState, accountIndex: number, nowMs: number): void {
+  state.cooldownUntil.set(accountIndex, nowMs + COOLDOWN_MS);  // 60s, first-write-wins: a second 429 never extends
 }
-// Retry loop: 429 → rotate and `attempt -= 1; continue` (rotation replaces the wait, spends no budget);
-// {500,502,503,504} → SAME account, RETRY_DELAYS_MS [1s, 2s, 4s]; transport error → batch "unanswered" (deferred whole);
-// bulk-parse misses fall back to single-post calls. Exhaustion never throws mid-pool: the join throws
-// rotationExhausted(failures) AFTER Promise.all — the entry guard sends ONE best-effort alarm email, then exit(1).
+// Attempt loop, per call: pickEligibleAccount scans in order; when every account is cooling,
+// parkUntilEligible charges the shared waitBudgetRemainingMs (180s, charge-before-sleep, re-charged with
+// the actual elapsed after wake), sleeps to the earliest expiry + WAKE_JITTER_MS (500ms herd spread), and
+// returns false when the budget is spent — the terminal is returned OUTSIDE the try: both catches are total
+// transport converters, so a throw inside would be swallowed (batch would skip silently; post would burn an
+// attempt on a dead pool).
+// HTTP 429 → coolAccount + re-pick, NO backoff wait; {500,502,503,504} → SAME account, RETRY_DELAYS_MS [1s, 2s,
+// 4s]; transport error → batch "unanswered" (deferred whole); bulk-parse misses fall back to single-post calls.
+// The all-cooling terminal is a union member the wrappers map: judgeBatch → {status: "exhausted"},
+// judgePost → throw rotationExhausted(failuresFromCooldowns(state)). judgePosts drains the pool first, then
+// throws AFTER Promise.all — the entry guard sends ONE best-effort alarm email, then exit(1).
 ```
 
 ## State: load → migrate → prune → gated atomic save

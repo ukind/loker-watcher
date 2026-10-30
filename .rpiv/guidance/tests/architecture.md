@@ -20,7 +20,10 @@ extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/t
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 heartbeat.ts       → heartbeat.test.ts
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
-judge.ts           → judge.test.ts           # largest suite: rotation, pools, parsing
+judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins
+judge-parse.ts     → judge-parse.test.ts     # verdict parsers — pure string-in/string-out
+judge-rotation.ts  → judge-rotation.test.ts  # cooldown, park budget, exhaustion suites
+judge-helpers.ts   — no test (shared pure fixtures; not *.test.ts, never executed)
 recency.ts         → recency.test.ts
 state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
 threads-session.ts → session.test.ts         # GRANDFATHERED name drift — new files mirror <module>.test.ts
@@ -59,7 +62,8 @@ function recordingTransport() {
 const NOW = Date.UTC(2026, 9, 26, 9, 14, 0);        // month is 0-based; never Date.now()
 await runWatcher({ env: BASE_ENV, now: () => NOW, /* ... */ });   // env literal, not process.env
 // Structured env values inline: LLM_ACCOUNTS: JSON.stringify([...]); secrets as Buffer base64 literals.
-// The one Date.now() exception: a deliberate elapsed-time assertion with a message (rotation "no backoff" test).
+// The one Date.now() exception: a deliberate elapsed-time assertion with a message (the 429 "no backoff wait"
+// test, tests/judge-rotation.test.ts).
 ```
 
 ## Temp files: lazy mkdtemp, one after() cleanup, byte-identity assertions
@@ -95,8 +99,8 @@ assert.deepEqual(extractPosts(noisy), extractPosts(fixture));   // variants by M
 
 ## Architectural Boundaries
 - **Offline only**: browser/SMTP/LLM faked via injection; importing src never loads Playwright (dynamic import)
-- **Never touch `process.env` or repo files** — writes go to OS temp only; no console stubbing
-- **No mock libraries, no shared helpers module** — `id19()` etc. duplicated on purpose, with mirroring comments; full-pipeline oracles are layered: `WatcherRun` → disk state → captured subjects
+- **Never touch `process.env` or repo files** — writes go to OS temp only; console access is call-through spies only (`t.mock.method(console, "log"/"warn", console.log.bind(console))` — F014 walk-log discrimination), never a silencing stub
+- **No mock libraries**; the ONE shared-helpers exception is `tests/judge-helpers.ts` (six pure fixtures — KEYWORDS, singleAccount, ok, id19, bulkPost, bulkContent; doubles and mock-fetch factories stay per-suite); full-pipeline oracles are layered: `WatcherRun` → disk state → captured subjects
 
 <important if="you are adding a test for a new src module">
 ## Adding a Test for a New src Module

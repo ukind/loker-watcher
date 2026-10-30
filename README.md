@@ -14,15 +14,17 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
    `graphql` XHR responses; otherwise it loads each surface logged out and
    reads posts from the embedded `data-sjs` JSON blobs.
 2. Posts are deduplicated across surfaces.
-3. Posts older than `recencyHours` (default 72) are dropped.
+3. Posts older than `recencyHours` are dropped.
 4. Posts already in `state/seen-posts.json` are dropped.
 5. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
    `keywords` list is sent as the relevance criterion; a post the bulk
    response misses falls back to a single-post call. A batch the endpoint
    does not answer is deferred whole — those posts stay unseen and retry
-   on the next run. Accounts come from the `LLM_ACCOUNTS` pool: the first
-   HTTP 429 rotates to the next account with no wait, and an exhausted pool
-   sends one alarm email and fails the run. Up to `JUDGE_CONCURRENCY`
+   on the next run. Accounts come from the `LLM_ACCOUNTS` pool: an HTTP 429
+   cools that account for 60 seconds and dispatches re-scan past cooling
+   accounts; when every account is cooling, calls park up to a shared
+   3-minute wait budget, then an exhausted pool sends one alarm email and
+   fails the run. Up to `JUDGE_CONCURRENCY`
    batches run at once, so a 280-post backlog judges in about 3 minutes
    instead of 13.
 6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
@@ -41,7 +43,8 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
 - A Gmail account with an
   [app password](https://myaccount.google.com/apppasswords) (2FA required).
 - One or more OpenAI-compatible chat endpoints, configured as the `LLM_ACCOUNTS`
-  pool (see Setup). The judge rotates to the next account on the first HTTP 429.
+  pool (see Setup). On an HTTP 429 the answering account cools for 60 seconds;
+  the judge re-scans past cooling accounts and parks when all are.
 
 ## Setup
 
@@ -50,7 +53,7 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
 
    | Name | Example value | Purpose |
    |---|---|---|
-   | `LLM_ACCOUNTS` | `[{"baseUrl":"https://api.openai.com/v1","apiKey":"your-key","model":"gpt-4o-mini"}]` | Judge accounts as a JSON array, tried in order; the first 429 rotates to the next, and an exhausted pool emails an alarm and fails the run |
+   | `LLM_ACCOUNTS` | `[{"baseUrl":"https://api.openai.com/v1","apiKey":"your-key","model":"gpt-4o-mini"}]` | Judge accounts as a JSON array, tried in order; a 429-cooled account sits out 60 seconds, and an exhausted pool (all accounts cooling past the wait budget) emails an alarm and fails the run |
    | `GMAIL_USER` | `you@gmail.com` | Sender and recipient |
    | `GMAIL_APP_PASSWORD` | your-app-password | Gmail SMTP credentials |
    | `THREADS_SESSION_STATE` | base64 storageState | Threads login session (see below) |
@@ -86,7 +89,7 @@ no code change and no Actions variable is involved.
 | `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }` or `{ "type": "url", "value": "https://www.threads.com/@someone" }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
-| `recencyHours` | How far back a post can be and still count. Default `72`. |
+| `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
 
 Adding a profile or a search URL is the same edit as adding a tag:
