@@ -51,6 +51,11 @@ describe("matchesCandidateTerms", () => {
     assert.equal(matchesCandidateTerms("100% remote role", TERMS), true);
   });
 
+  it("matches mixed-case and padded terms", () => {
+    assert.equal(matchesCandidateTerms("frontend dev wanted", ["Frontend"]), true);
+    assert.equal(matchesCandidateTerms("100% remote role", [" Remote "]), true);
+  });
+
   it("rejects unrelated posts", () => {
     assert.equal(matchesCandidateTerms("HIRING Barista Waiter", TERMS), false);
     assert.equal(matchesCandidateTerms("Kitchen crew Johor Bahru", TERMS), false);
