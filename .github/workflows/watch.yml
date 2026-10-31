@@ -88,6 +88,7 @@ jobs:
           JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
+          LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret => resolver null => LinkedIn surfaces skip (src/threads-session.ts)
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}

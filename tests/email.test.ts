@@ -20,6 +20,7 @@ describe("buildSubject", () => {
   it("formats subject for a single post without plural s", () => {
     const posts: Post[] = [
       {
+        platform: "threads",
         id: "1",
         text: "Hiring React dev",
         author: "techcorp",
@@ -33,6 +34,7 @@ describe("buildSubject", () => {
   it("formats subject for multiple posts with plural s", () => {
     const posts: Post[] = [
       {
+        platform: "threads",
         id: "1",
         text: "Hiring React dev",
         author: "techcorp",
@@ -40,6 +42,7 @@ describe("buildSubject", () => {
         timestamp: "2026-10-24T00:00:00.000Z",
       },
       {
+        platform: "threads",
         id: "2",
         text: "Looking for Vue dev",
         author: "startup",
@@ -47,6 +50,7 @@ describe("buildSubject", () => {
         timestamp: "2026-10-24T01:00:00.000Z",
       },
       {
+        platform: "threads",
         id: "3",
         text: "Senior Frontend Lead",
         author: "agency",
@@ -55,6 +59,60 @@ describe("buildSubject", () => {
       },
     ];
     assert.equal(buildSubject(posts), "3 new job posts on Threads (#hiring indonesia)");
+  });
+
+  it("appends + LinkedIn to the subject only when a linkedin match is present", () => {
+    const posts: Post[] = [
+      {
+        platform: "threads",
+        id: "1",
+        text: "Hiring React dev",
+        author: "techcorp",
+        permalink: "https://www.threads.com/@techcorp/post/1",
+        timestamp: "2026-10-24T00:00:00.000Z",
+      },
+      {
+        platform: "linkedin",
+        id: "urn:li:activity:7522028760582447104",
+        text: "Hiring backend engineer, remote",
+        author: "sometechguy",
+        permalink: "https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
+        timestamp: "2026-10-24T01:00:00.000Z",
+      },
+    ];
+    assert.equal(buildSubject(posts), "2 new job posts on Threads + LinkedIn (#hiring indonesia)");
+  });
+
+  it("keeps all-Threads subjects free of the + LinkedIn suffix", () => {
+    const posts: Post[] = [
+      {
+        platform: "threads",
+        id: "1",
+        text: "Hiring React dev",
+        author: "techcorp",
+        permalink: "https://www.threads.com/@techcorp/post/1",
+        timestamp: "2026-10-24T00:00:00.000Z",
+      },
+      {
+        platform: "threads",
+        id: "2",
+        text: "Looking for Vue dev",
+        author: "startup",
+        permalink: "https://www.threads.com/@startup/post/2",
+        timestamp: "2026-10-24T01:00:00.000Z",
+      },
+      {
+        platform: "threads",
+        id: "3",
+        text: "Senior Frontend Lead",
+        author: "agency",
+        permalink: "https://www.threads.com/@agency/post/3",
+        timestamp: "2026-10-24T02:00:00.000Z",
+      },
+    ];
+    const subject = buildSubject(posts);
+    assert.equal(subject, "3 new job posts on Threads (#hiring indonesia)");
+    assert.ok(!subject?.includes("+ LinkedIn"));
   });
 });
 
@@ -66,6 +124,7 @@ describe("buildDigest", () => {
   it("formats single post digest with author and permalink", () => {
     const posts: Post[] = [
       {
+        platform: "threads",
         id: "101",
         text: "Looking for a Next.js frontend dev in Jakarta, hybrid...",
         author: "pttechcareers",
@@ -85,6 +144,7 @@ describe("buildDigest", () => {
   it("formats multi-post digest with sequential numbers and double spacing", () => {
     const posts: Post[] = [
       {
+        platform: "threads",
         id: "101",
         text: "First job post",
         author: "companyA",
@@ -92,6 +152,7 @@ describe("buildDigest", () => {
         timestamp: "2026-10-24T08:00:00.000Z",
       },
       {
+        platform: "threads",
         id: "102",
         text: "Second job post",
         author: "@companyB",
@@ -118,6 +179,7 @@ describe("buildDigest", () => {
   it("preserves multi-line captions without breaking post structure", () => {
     const posts: Post[] = [
       {
+        platform: "threads",
         id: "103",
         text: "HIRING NOW!\n- React\n- TypeScript\nApply via DM",
         author: "recruiter",
@@ -130,6 +192,41 @@ describe("buildDigest", () => {
     assert.ok(digest !== null);
     assert.ok(
       digest.includes("1. HIRING NOW!\n- React\n- TypeScript\nApply via DM\n   — @recruiter"),
+    );
+  });
+
+  it("marks only the linkedin item lines with the [linkedin] token", () => {
+    const posts: Post[] = [
+      {
+        platform: "threads",
+        id: "101",
+        text: "First job post",
+        author: "companyA",
+        permalink: "https://www.threads.com/@companyA/post/P1",
+        timestamp: "2026-10-24T08:00:00.000Z",
+      },
+      {
+        platform: "linkedin",
+        id: "urn:li:activity:7522028760582447104",
+        text: "Second job post",
+        author: "sometechguy",
+        permalink: "https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
+        timestamp: "2026-10-24T09:00:00.000Z",
+      },
+    ];
+
+    const digest = buildDigest(posts);
+    assert.ok(digest !== null);
+    assert.ok(digest.startsWith("2 new job posts on Threads + LinkedIn (#hiring indonesia)\n\n"));
+    assert.ok(
+      digest.includes(
+        "1. First job post\n   — @companyA\n   https://www.threads.com/@companyA/post/P1",
+      ),
+    );
+    assert.ok(
+      digest.includes(
+        "2. [linkedin] Second job post\n   — @sometechguy\n   https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
+      ),
     );
   });
 });
@@ -185,6 +282,7 @@ describe("sendDigest", () => {
 
   const samplePosts: Post[] = [
     {
+      platform: "threads",
       id: "201",
       text: "Hiring React dev",
       author: "devteam",

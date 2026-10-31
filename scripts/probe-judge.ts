@@ -49,6 +49,7 @@ const FIXTURE_TEXTS: readonly string[] = [
 function syntheticPost(index: number): Post {
   const text = FIXTURE_TEXTS[index % FIXTURE_TEXTS.length] ?? "";
   return {
+    platform: "threads",
     id: `90000000000000000${index}`,
     author: `probe${index}`,
     permalink: `https://www.threads.com/@probe${index}/post/90000000000000000${index}`,

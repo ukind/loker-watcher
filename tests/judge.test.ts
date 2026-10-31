@@ -150,7 +150,7 @@ describe("judgePosts", () => {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
-      if (content.includes("Judge each Threads post below")) {
+      if (content.includes("Judge each post below")) {
         return ok("I cannot judge these posts."); // answered-but-unparseable: every post falls back
       }
       return ok('{"relevant": true, "locationOk": false}');
@@ -442,7 +442,7 @@ describe("judgePosts", () => {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
-      if (content.includes("Judge each Threads post below")) {
+      if (content.includes("Judge each post below")) {
         return ok("I cannot judge these posts.");
       }
       if (content.includes(id19(5))) {
@@ -480,7 +480,7 @@ describe("judgePosts", () => {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
-      if (!content.includes("Judge each Threads post below")) {
+      if (!content.includes("Judge each post below")) {
         return ok('{"relevant": true, "locationOk": false}');
       }
       state.inFlight += 1;

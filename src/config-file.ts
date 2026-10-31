@@ -10,12 +10,18 @@
 import { readFile } from "node:fs/promises";
 import { CONFIG_PATH } from "./config.js";
 
-/** One surface to sample. `tag` builds the tag-page URL; `url` is verbatim. */
-export type Surface = { type: "tag"; value: string } | { type: "url"; value: string };
+/** One surface to sample. `tag` builds the tag-page URL; `url` is verbatim;
+ * `linkedin` builds a LinkedIn content-search URL from keywords. */
+export type Surface =
+  | { type: "tag"; value: string }
+  | { type: "url"; value: string }
+  | { type: "linkedin"; value: string };
 
 /** A surface resolved to the URL Playwright loads, plus its log label. */
 export interface ResolvedSurface {
-  /** Log label: `tag/hiring`, or the full URL for a `url` surface. */
+  /** Which platform walker drives this surface. */
+  platform: "threads" | "linkedin";
+  /** Log label: `tag/hiring`, `linkedin/<keywords>`, or the full URL for a `url` surface. */
   label: string;
   /** Absolute URL to load. */
   url: string;
@@ -31,6 +37,7 @@ export interface WatcherConfig {
   surfaces: Surface[];
   recencyHours: number;
   reasoningEffort: ReasoningEffort;
+  scrollRounds: number;
 }
 
 const ALLOWED_KEYS = [
@@ -39,6 +46,7 @@ const ALLOWED_KEYS = [
   "surfaces",
   "recencyHours",
   "reasoningEffort",
+  "scrollRounds",
 ] as const;
 
 const THREADS_HOST = "www.threads.com";
@@ -91,8 +99,9 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
   const surfaces = readSurfaces(record.surfaces, filePath);
   const recencyHours = readRecencyHours(record.recencyHours, filePath);
   const reasoningEffort = readReasoningEffort(record.reasoningEffort, filePath);
+  const scrollRounds = readScrollRounds(record.scrollRounds, filePath);
 
-  return { keywords, candidateTerms, surfaces, recencyHours, reasoningEffort };
+  return { keywords, candidateTerms, surfaces, recencyHours, reasoningEffort, scrollRounds };
 }
 
 function readStringArray(
@@ -134,9 +143,9 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
     const entry = item as Record<string, unknown>;
     const type = entry.type;
     const surfaceValue = entry.value;
-    if (type !== "tag" && type !== "url") {
+    if (type !== "tag" && type !== "url" && type !== "linkedin") {
       throw new Error(
-        `config: ${filePath} surface "type" must be "tag" or "url", got ${JSON.stringify(type)}`,
+        `config: ${filePath} surface "type" must be "tag", "url", or "linkedin", got ${JSON.stringify(type)}`,
       );
     }
     if (typeof surfaceValue !== "string" || surfaceValue.trim().length === 0) {
@@ -187,16 +196,62 @@ function readReasoningEffort(value: unknown, filePath: string): ReasoningEffort 
   return normalized;
 }
 
+/** Scroll-round bound for both walks; defaults to the Threads-measured 8. */
+const DEFAULT_SCROLL_ROUNDS = 8;
+
+/**
+ * Optional scroll knob: absent -> the measured default, present but not a
+ * whole number >= 1 -> fail with the path and key. Flooring a walk length
+ * silently changes operator intent, so fractions are rejected, not floored.
+ */
+function readScrollRounds(value: unknown, filePath: string): number {
+  if (value === undefined) {
+    return DEFAULT_SCROLL_ROUNDS;
+  }
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+    throw new Error(
+      `config: ${filePath} "scrollRounds" must be an integer >= 1, got ${JSON.stringify(value)}`,
+    );
+  }
+  return value;
+}
+
 /** Resolve configured surfaces to the URLs Playwright loads. */
 export function resolveSurfaces(surfaces: readonly Surface[]): ResolvedSurface[] {
-  return surfaces.map((surface) =>
-    surface.type === "tag"
-      ? { label: `tag/${surface.value}`, url: tagPageUrlFor(surface.value) }
-      : { label: surface.value, url: surface.value },
-  );
+  return surfaces.map((surface): ResolvedSurface => {
+    if (surface.type === "tag") {
+      return {
+        platform: "threads",
+        label: `tag/${surface.value}`,
+        url: tagPageUrlFor(surface.value),
+      };
+    }
+    if (surface.type === "linkedin") {
+      return {
+        platform: "linkedin",
+        label: `linkedin/${surface.value}`,
+        url: linkedinSearchUrlFor(surface.value),
+      };
+    }
+    return { platform: "threads", label: surface.value, url: surface.value };
+  });
 }
 
 /** Tag-page URL. Kept local so src/config.ts no longer owns surface policy. */
 function tagPageUrlFor(tag: string): string {
   return `https://www.threads.com/tag/${encodeURIComponent(tag)}`;
+}
+
+/**
+ * LinkedIn content-search URL from a keywords string. The facets ride the
+ * URL as server-side arguments (live capture 2026-10-31): sortBy is
+ * newest-first and datePosted is the past 24 hours. encodeURIComponent and
+ * not URLSearchParams because spaces must render as %20 (the operator
+ * example URL byte) and URLSearchParams emits +.
+ */
+function linkedinSearchUrlFor(keywords: string): string {
+  const encoded = encodeURIComponent(keywords);
+  const sortBy = encodeURIComponent('["date_posted"]');
+  const datePosted = encodeURIComponent('["past-24h"]');
+  return `https://www.linkedin.com/search/results/content/?keywords=${encoded}&origin=FACETED_SEARCH&sortBy=${sortBy}&datePosted=${datePosted}`;
 }

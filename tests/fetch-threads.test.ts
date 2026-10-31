@@ -20,6 +20,7 @@ import {
 } from "../src/fetch-threads.js";
 
 const surface = (label: string): ResolvedSurface => ({
+  platform: "threads",
   label,
   url: `https://www.threads.com/${label}`,
 });
@@ -86,6 +87,14 @@ function fakeContextFactory(options: {
   concurrency: { inFlight: number; peak: number };
   failUrls?: ReadonlySet<string>;
   xhrBySubstring?: ReadonlyMap<string, string>;
+  /** Flagship-web bodies fired with a linkedin URL (the walker's filter accepts these). */
+  linkedinBodiesBySubstring?: ReadonlyMap<string, string>;
+  /** Storage-state path per context creation, in creation order. */
+  sessionPaths?: string[];
+  /** One staged body per wheel round of the LinkedIn walk. */
+  wheelBodies?: readonly string[];
+  /** Per-round wheel counter — the LinkedIn walk's round oracle. */
+  wheel?: { calls: number };
   closed?: { value: boolean };
   /** One graphql body per scroll round; evaluate round N fires element N-1. */
   scrollBodies?: readonly string[];
@@ -101,15 +110,15 @@ function fakeContextFactory(options: {
   const failUrls = options.failUrls ?? new Set<string>();
   const xhrBySubstring = options.xhrBySubstring ?? new Map<string, string>();
   const scrollBodies = options.scrollBodies ?? [];
-  return async () => {
+  return async (storageStatePath?: string) => {
+    options.sessionPaths?.push(storageStatePath ?? "");
     const context: ContextLike = {
       newPage: async (): Promise<PageLike> => {
         options.concurrency.inFlight += 1;
         options.concurrency.peak = Math.max(options.concurrency.peak, options.concurrency.inFlight);
         let open = true;
         const listeners: Array<(response: ResponseLike) => void> = [];
-        const fire = (body: string): void => {
-          const response = graphqlResponse(body);
+        const fire = (response: ResponseLike): void => {
           for (const listener of listeners) listener(response);
         };
         const page: PageLike = {
@@ -117,10 +126,22 @@ function fakeContextFactory(options: {
             if ([...failUrls].some((fragment) => url.includes(fragment))) {
               throw new Error(`navigation failed for ${url}`);
             }
+            const linkedinEntry = [
+              ...(options.linkedinBodiesBySubstring ?? new Map()).entries(),
+            ].find(([fragment]) => url.includes(fragment));
+            if (linkedinEntry !== undefined) {
+              fire({
+                url: () =>
+                  "https://www.linkedin.com/flagship-web/search/results/content/?keywords=x",
+                status: () => 200,
+                text: async () => linkedinEntry[1],
+              });
+              return undefined;
+            }
             const entry = [...xhrBySubstring.entries()].find(([fragment]) =>
               url.includes(fragment),
             );
-            if (entry !== undefined) fire(entry[1]);
+            if (entry !== undefined) fire(graphqlResponse(entry[1]));
             return undefined;
           },
           waitForFunction: async () => undefined,
@@ -153,12 +174,27 @@ function fakeContextFactory(options: {
             const round = (options.evaluate?.calls ?? 0) + 1;
             if (options.evaluate !== undefined) options.evaluate.calls = round;
             const body = scrollBodies[round - 1];
-            if (body !== undefined) fire(body);
+            if (body !== undefined) fire(graphqlResponse(body));
             return undefined;
           },
           waitForTimeout: async (ms: number) => {
             options.settleWaits?.push(ms);
             return undefined;
+          },
+          mouse: {
+            move: async () => undefined,
+            wheel: async () => {
+              const round = (options.wheel?.calls ?? 0) + 1;
+              if (options.wheel !== undefined) options.wheel.calls = round;
+              const body = options.wheelBodies?.[round - 1];
+              if (body !== undefined) {
+                fire({
+                  url: () => "https://www.linkedin.com/flagship-web/rsc-action/actions/pagination",
+                  status: () => 200,
+                  text: async () => body,
+                });
+              }
+            },
           },
           close: async () => {
             if (!open) return;
@@ -476,5 +512,132 @@ describe("fetchSurfacesAuthenticated", () => {
     );
     assert.equal(recentTabClicks.length, 1); // one click, not one per scroll round
     assert.equal(settleWaits[0], 5000); // the Recent settle rides before the scroll settles
+  });
+});
+
+describe("fetchSurfacesAuthenticated — platform dispatch", () => {
+  const LINKEDIN_ID = "7522028760582447104"; // capture-verified epoch id
+
+  /** Minimal flagship-web flight body: one activityUrn row + one commentary_text row. */
+  const linkedinBody = (id: string): string =>
+    [
+      `1:${JSON.stringify({ tracking: { activityUrn: { activityId: id } } })}`,
+      `2:${JSON.stringify([
+        "$",
+        "$Lmark",
+        null,
+        {
+          viewTrackingSpecs: { viewName: "feed-commentary", legacyControlName: "commentary_text" },
+          children: [
+            "$",
+            "$Ldiv",
+            null,
+            { textProps: { children: [`LinkedIn hiring post ${id}`] } },
+          ],
+        },
+      ])}`,
+    ].join("\n");
+
+  const linkedinSurfaceEntry = (): ResolvedSurface => ({
+    platform: "linkedin",
+    label: "linkedin/kw",
+    url: "https://www.linkedin.com/search/results/content/?keywords=kw",
+  });
+
+  it("keeps Threads posts when a linkedin surface has no session path", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/ok"), linkedinSurfaceEntry()],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/ok", graphqlBody(id19(1))]]),
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1)],
+    ); // the LinkedIn failure never discards Threads results (acceptance pin)
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      lines.some((line) =>
+        /linkedin\/kw FAILED — linkedin surface walked without a session path/.test(line),
+      ),
+    );
+  });
+
+  it("walks a linkedin surface through a second context built from its session path", async () => {
+    const sessionPaths: string[] = [];
+    const closed = { value: false };
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/ok"), linkedinSurfaceEntry()],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/ok", graphqlBody(id19(1))]]),
+        // keyed by a NAV-URL substring (the label "linkedin/kw" never occurs in the URL)
+        linkedinBodiesBySubstring: new Map([["search/results/content", linkedinBody(LINKEDIN_ID)]]),
+        sessionPaths,
+        closed,
+      }),
+      { linkedinSessionPath: "li-state.json" },
+    );
+
+    assert.deepEqual(sessionPaths, ["session-state.json", "li-state.json"]); // two contexts
+    assert.equal(result.length, 2);
+    const linkedinPost = result[1];
+    assert.equal(linkedinPost?.platform, "linkedin");
+    assert.equal(linkedinPost?.id, `urn:li:activity:${LINKEDIN_ID}`);
+    assert.equal(
+      linkedinPost?.permalink,
+      `https://www.linkedin.com/feed/update/urn:li:activity:${LINKEDIN_ID}`,
+    );
+    assert.equal(closed.value, true); // both contexts tear down
+  });
+
+  it("bounds the Threads scroll loop with scrollRounds: 5 while every round gains", async () => {
+    const evaluate = { calls: 0 };
+    const scrollBodies = [1, 2, 3, 4, 5, 6, 7, 8].map((round) =>
+      graphqlBodyMany([id19(3 * round - 1), id19(3 * round), id19(3 * round + 1)]),
+    );
+
+    const result = await fetchSurfacesAuthenticated(
+      [surface("tag/bounded")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/bounded", graphqlBody(id19(1))]]),
+        evaluate,
+        scrollBodies,
+      }),
+      { scrollRounds: 5 },
+    );
+
+    assert.equal(result.length, 16); // 1 captured at goto + 5 rounds x 3 posts
+    assert.equal(evaluate.calls, 5); // the config knob, not the 8-round default
+  });
+
+  it("builds one context for a linkedin-only dispatch (D12: no idle base)", async () => {
+    const sessionPaths: string[] = [];
+    const closed = { value: false };
+
+    const result = await fetchSurfacesAuthenticated(
+      [linkedinSurfaceEntry()],
+      "session-state.json", // vestigial base path: never becomes a context
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        linkedinBodiesBySubstring: new Map([["search/results/content", linkedinBody(LINKEDIN_ID)]]),
+        sessionPaths,
+        closed,
+      }),
+      { linkedinSessionPath: "li-state.json" },
+    );
+
+    assert.deepEqual(sessionPaths, ["li-state.json"]); // the base path built nothing
+    assert.equal(result.length, 1);
+    assert.equal(closed.value, true);
   });
 });

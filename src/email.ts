@@ -1,7 +1,7 @@
 /**
  * Gmail plain-text digest notification sender (FRD #7, #8).
  *
- * Formats new relevant Threads job posts into a clean plain-text email digest
+ * Formats new relevant job posts into a clean plain-text email digest
  * and dispatches it via Gmail SMTP using nodemailer.
  * Gated by post count: sends no email when candidate matches are zero (FRD #8).
  */
@@ -55,7 +55,11 @@ export function buildSubject(posts: readonly Post[]): string | null {
   if (posts.length === 0) return null;
   const count = posts.length;
   const plural = count === 1 ? "" : "s";
-  return `${count} new job post${plural} on Threads (#hiring indonesia)`;
+  // D10: the suffix rides only when at least one LinkedIn match is present;
+  // an all-Threads subject stays byte-identical to the pre-LinkedIn pin.
+  const suffix = posts.some((post) => post.platform !== "threads") ? " + LinkedIn" : "";
+
+  return `${count} new job post${plural} on Threads${suffix} (#hiring indonesia)`;
 }
 
 /**
@@ -68,7 +72,8 @@ export function buildDigest(posts: readonly Post[]): string | null {
 
   const items = posts.map((post, index) => {
     const author = post.author.replace(/^@+/, "");
-    return `${index + 1}. ${post.text}\n   — @${author}\n   ${post.permalink}`;
+    const platformToken = post.platform === "threads" ? "" : "[linkedin] ";
+    return `${index + 1}. ${platformToken}${post.text}\n   — @${author}\n   ${post.permalink}`;
   });
 
   return `${subject}\n\n${items.join("\n\n")}\n`;

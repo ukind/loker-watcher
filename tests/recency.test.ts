@@ -7,6 +7,7 @@ const NOW = Date.UTC(2026, 9, 25, 12, 0, 0);
 
 function post(id: string, hoursAgo: number): Post {
   return {
+    platform: "threads",
     id,
     text: `post ${id}`,
     author: "tester",
