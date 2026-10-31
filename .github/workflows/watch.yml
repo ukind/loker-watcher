@@ -117,12 +117,21 @@ jobs:
           # The rebase rewrites SHAs whenever main moved mid-run, so the push
           # is non-fast-forward by construction; the lease still rejects a
           # concurrent push the local fetch has not seen (F021 protection).
-          git pull --rebase origin main
+          # A state commit that conflicts against main's own state line is
+          # skipped whole (F021: the next run re-judges; one duplicate digest
+          # is the accepted cost) instead of failing the run.
+          if ! git pull --rebase origin main; then
+            echo "state rebase conflicted; skipping conflicting state commits"
+            while test -d .git/rebase-merge; do git rebase --skip; done
+          fi
           if git push --force-with-lease; then
             exit 0
           fi
           echo "state push rejected; rebasing onto main and retrying once"
-          git pull --rebase origin main
+          if ! git pull --rebase origin main; then
+            echo "state rebase conflicted; skipping conflicting state commits"
+            while test -d .git/rebase-merge; do git rebase --skip; done
+          fi
           if git push --force-with-lease; then
             exit 0
           fi
