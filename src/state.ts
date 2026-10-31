@@ -35,7 +35,7 @@ export interface SaveStateResult {
 export const CURRENT_STATE_VERSION = 2;
 
 /** Return a fresh empty initial state object. */
-export function createInitialState(): AppState {
+function createInitialState(): AppState {
   return {
     version: CURRENT_STATE_VERSION,
     seenPostIds: {},
