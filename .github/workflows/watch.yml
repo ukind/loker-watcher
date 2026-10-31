@@ -122,11 +122,18 @@ jobs:
           # is the accepted cost) instead of failing the run.
           if ! git pull --rebase origin main; then
             echo "state rebase conflicted; skipping conflicting state commits"
-            # --skip exits nonzero when it stops at the NEXT conflict; the
-            # loop condition must see that, so the body is set -e-proof and
-            # bounded. More state commits than any replay can carry.
             skips=0
             while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
+              # Skip ONLY state-file conflicts; any other conflicted path is
+              # real work failing to replay (F021's loud failure preserved).
+              conflicts=$(git diff --name-only --diff-filter=U)
+              if [ "$conflicts" != "state/seen-posts.json" ]; then
+                echo "non-state conflict in: $conflicts — failing the run"
+                git rebase --abort
+                exit 1
+              fi
+              # --skip exits nonzero when it stops at the NEXT conflict; the
+              # loop condition must see that, so this is set -e-proof.
               git rebase --skip || true
               skips=$((skips + 1))
             done
@@ -139,6 +146,16 @@ jobs:
             echo "state rebase conflicted; skipping conflicting state commits"
             skips=0
             while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
+              # Skip ONLY state-file conflicts; any other conflicted path is
+              # real work failing to replay (F021's loud failure preserved).
+              conflicts=$(git diff --name-only --diff-filter=U)
+              if [ "$conflicts" != "state/seen-posts.json" ]; then
+                echo "non-state conflict in: $conflicts — failing the run"
+                git rebase --abort
+                exit 1
+              fi
+              # --skip exits nonzero when it stops at the NEXT conflict; the
+              # loop condition must see that, so this is set -e-proof.
               git rebase --skip || true
               skips=$((skips + 1))
             done
