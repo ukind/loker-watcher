@@ -122,7 +122,7 @@ export type ContextFactory = (storageStatePath?: string) => Promise<ContextLike>
  * file never loads Playwright — the offline suites rely on that). The
  * factory owns the browser and closes it when the context closes.
  */
-export const chromiumContextFactory: ContextFactory = async (
+const chromiumContextFactory: ContextFactory = async (
   storageStatePath?: string,
 ): Promise<ContextLike> => {
   const { chromium } = await import("playwright");

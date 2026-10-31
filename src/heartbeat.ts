@@ -18,7 +18,7 @@ import { type EmailConfig, sendText } from "./email.js";
 import type { Post } from "./types.js";
 
 /** Maximum candidates listed in one heartbeat email. */
-export const MAX_CANDIDATES = 10;
+const MAX_CANDIDATES = 10;
 
 /** Funnel counts for one run, collected by src/index.ts. */
 export interface HeartbeatStats {

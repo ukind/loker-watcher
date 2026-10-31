@@ -6,14 +6,16 @@ branch: main
 repository: loker-watcher
 topic: tech-debt-audit-remediation
 tags: [design, judge, heartbeat, workflow, docs, refactor, deps, hygiene, tests, slices]
-status: ready
+status: superseded
 parent: .rpiv/artifacts/research/2026-10-29_12-15-34_tech-debt-audit-remediation.md
-last_updated: 2026-10-30T13:37:51+0700
+last_updated: 2026-10-31T09:44:40+0700
 last_updated_by: Yogiswara Utama
-last_updated_note: "Slice 15 (F016) locked — manifest merged fence (F017 + lint path gains scripts/hooks as a directory), format-on-edit import-order fix (the one live biome violation), gate-destructive zero-edit evidence entry, new 6-case black-box stdin test, AGENTS.md + guidance/scripts staleness flips; slice-verifier 1 VIOLATION (unsatisfiable F017 grep backslash form) fixed per citation; hunk-faithful mechanical gate green (anchors unique, biome clean, tsc clean, 6/6 + 176/176)"
+last_updated_note: "Superseded by the run #2 remediation FRD (.rpiv/artifacts/discover/2026-10-31_07-47-21_tech-debt-run2-remediation.md): its Slice 11 (F020+F021) already landed on disk (watch.yml:73, :113-123, commit 510ff2a); do not resume this artifact."
 ---
 
 # Design: Tech-Debt Audit Remediation (24 findings, F001-F024)
+
+> **SUPERSEDED 2026-10-31:** by the run #2 remediation FRD — .rpiv/artifacts/discover/2026-10-31_07-47-21_tech-debt-run2-remediation.md. All landed slices are on disk; do not resume.
 
 ## Summary
 One PR remediating every TECH_DEBT_AUDIT.md finding as themed commits in audit priority order: top-5 first (heartbeat knob, case bug, prompt copy, docs sync, nodemailer bump), then the judge.ts refactor cluster (split -> dispatcher -> pool -> test split) landing as one commit unit, then watch.yml runtime work, then tests/hardening/hygiene. Every behavior change ships with its test; docs sync twice — theme 1 and again after the refactor (the precedent lesson from 1a61bf9).

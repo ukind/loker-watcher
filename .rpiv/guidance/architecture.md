@@ -26,11 +26,11 @@ Detailed guidance:
 |---|---|
 | `npm test` | unit tests (node:test via tsx; offline and deterministic) |
 | `npm run typecheck` | `tsc --noEmit` over src, tests, and scripts/probe-judge.ts |
-| `npm run lint` | Biome check over src, tests, and scripts/probe-judge.ts |
-| `npm run format` | Biome format in place, repo-wide |
+| `npm run lint` | Biome check over src, tests, scripts/probe-judge.ts, and scripts/hooks |
+| `npm run format` | `biome format --write src tests` in place (src and tests only — not repo-wide) |
 | `npx biome check --write <path>` | scoped check+fix for the given files (the lint-staged form) |
 | `npm start` | run the watcher locally (needs LLM_ACCOUNTS and GMAIL_* env vars) |
-| `npx tsx scripts/probe-judge.ts` | measure the LLM endpoint; prints the recommended JUDGE_CONCURRENCY (needs LLM_ACCOUNTS) |
+| `npx tsx scripts/probe-judge.ts` | gate every LLM_ACCOUNTS entry: latency, bulk shape, per-account `ceiling=N`; exit 1 on a dead account (needs LLM_ACCOUNTS) |
 
 ## Business Context
 

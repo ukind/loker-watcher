@@ -66,7 +66,9 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
    Tunable (a literal in `watch.yml`, not a secret): `JUDGE_CONCURRENCY` —
    how many bulk judge calls run at once. Measure it first: trigger
    **Actions → watch → Run workflow**; the dispatch-only probe job ramps
-   concurrent calls against the endpoint and prints a recommended width.
+   concurrent calls against the endpoint and prints a per-account
+   `ceiling=N` summary line; a dead account (failed leg, HTTP 401/403, or a
+   broken ramp) fails the probe job.
    Paste that reading into the workflow's `JUDGE_CONCURRENCY` line, commit,
    push. With the line removed — or on a local run without the variable —
    the watcher judges 4 at a time; a non-positive-integer value fails the run

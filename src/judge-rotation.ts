@@ -48,7 +48,7 @@ export interface RotationState {
 }
 
 /** Name tag for the pool-exhausted error; test with isRotationExhausted. */
-export const ROTATION_EXHAUSTED = "RotationExhaustedError";
+const ROTATION_EXHAUSTED = "RotationExhaustedError";
 
 /** The tagged error judgePosts throws when every LLM_ACCOUNTS entry failed. */
 export interface RotationExhausted extends Error {
