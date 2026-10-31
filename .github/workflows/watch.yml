@@ -55,14 +55,17 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        # The Commit state step rebases onto main; a shallow clone cannot
+        # find the merge base and add/add-conflicts the whole tree.
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
+          cache-dependency-path: package-lock.json
       - run: npm ci
-
       - name: Cache Playwright browser
         # F020: the browser download repeats on every 10-minute tick. The
         # lockfile pins the browser build, so the key misses only on a
