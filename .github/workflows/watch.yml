@@ -55,14 +55,17 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        # The Commit state step rebases onto main; a shallow clone cannot
+        # find the merge base and add/add-conflicts the whole tree.
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
+          cache-dependency-path: package-lock.json
       - run: npm ci
-
       - name: Cache Playwright browser
         # F020: the browser download repeats on every 10-minute tick. The
         # lockfile pins the browser build, so the key misses only on a
@@ -88,6 +91,7 @@ jobs:
           JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
+          LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret => resolver null => LinkedIn surfaces skip (src/threads-session.ts)
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -110,13 +114,53 @@ jobs:
           PREV=$(git show HEAD:state/seen-posts.json | jq '.seenPostIds | length' 2>/dev/null || echo 0)
           CURR=$(jq '.seenPostIds | length' state/seen-posts.json)
           git commit -m "state: $((CURR - PREV)) new seen post ids"
-          git pull --rebase origin main
-          if git push; then
+          # The rebase rewrites SHAs whenever main moved mid-run, so the push
+          # is non-fast-forward by construction; the lease still rejects a
+          # concurrent push the local fetch has not seen (F021 protection).
+          # A state commit that conflicts against main's own state line is
+          # skipped whole (F021: the next run re-judges; one duplicate digest
+          # is the accepted cost) instead of failing the run.
+          if ! git pull --rebase origin main; then
+            echo "state rebase conflicted; skipping conflicting state commits"
+            skips=0
+            while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
+              # Skip ONLY state-file conflicts; any other conflicted path is
+              # real work failing to replay (F021's loud failure preserved).
+              conflicts=$(git diff --name-only --diff-filter=U)
+              if [ "$conflicts" != "state/seen-posts.json" ]; then
+                echo "non-state conflict in: $conflicts — failing the run"
+                git rebase --abort
+                exit 1
+              fi
+              # --skip exits nonzero when it stops at the NEXT conflict; the
+              # loop condition must see that, so this is set -e-proof.
+              git rebase --skip || true
+              skips=$((skips + 1))
+            done
+          fi
+          if git push --force-with-lease; then
             exit 0
           fi
           echo "state push rejected; rebasing onto main and retrying once"
-          git pull --rebase origin main
-          if git push; then
+          if ! git pull --rebase origin main; then
+            echo "state rebase conflicted; skipping conflicting state commits"
+            skips=0
+            while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
+              # Skip ONLY state-file conflicts; any other conflicted path is
+              # real work failing to replay (F021's loud failure preserved).
+              conflicts=$(git diff --name-only --diff-filter=U)
+              if [ "$conflicts" != "state/seen-posts.json" ]; then
+                echo "non-state conflict in: $conflicts — failing the run"
+                git rebase --abort
+                exit 1
+              fi
+              # --skip exits nonzero when it stops at the NEXT conflict; the
+              # loop condition must see that, so this is set -e-proof.
+              git rebase --skip || true
+              skips=$((skips + 1))
+            done
+          fi
+          if git push --force-with-lease; then
             exit 0
           fi
           echo "state push failed twice; failing the run"

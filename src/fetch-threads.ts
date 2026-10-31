@@ -28,6 +28,7 @@
  */
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
+import { fetchLinkedInSurface } from "./fetch-linkedin.js";
 import { sleep } from "./judge.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
@@ -41,6 +42,7 @@ export const FETCH_CONCURRENCY = 4;
 
 // Authenticated fetch tuning (Phase 8, measured 2026-10-25).
 const RECENT_TAB_LABEL = "Recent";
+/** Loop-bound default for BOTH walks; the config scrollRounds key overrides (D4). */
 const MAX_SCROLL_ROUNDS = 8;
 const SCROLL_MIN_GAIN = 2;
 const MAX_POSTS_PER_SURFACE = 150;
@@ -85,6 +87,12 @@ export interface LocatorLike {
   click(): Promise<void>;
 }
 
+/** Wheel-driven scroll controller (LinkedIn pagination; Threads scrolls via evaluate). */
+export interface PageMouseLike {
+  move(x: number, y: number): Promise<void>;
+  wheel(deltaX: number, deltaY: number): Promise<void>;
+}
+
 /** One browser page, narrowed to the surface the walks actually drive. */
 export interface PageLike {
   goto(url: string, options?: { waitUntil: "domcontentloaded"; timeout: number }): Promise<unknown>;
@@ -98,6 +106,8 @@ export interface PageLike {
   locator(selector: string): LocatorLike;
   evaluate(script: string): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
+  /** Wheel controller; absent on pages that cannot wheel-scroll. */
+  readonly mouse?: PageMouseLike;
   close(): Promise<void>;
 }
 
@@ -158,6 +168,14 @@ const chromiumContextFactory: ContextFactory = async (
         },
         evaluate: (script) => page.evaluate(script),
         waitForTimeout: (ms) => page.waitForTimeout(ms),
+        mouse: {
+          move: async (x, y) => {
+            await page.mouse.move(x, y);
+          },
+          wheel: async (deltaX, deltaY) => {
+            await page.mouse.wheel(deltaX, deltaY);
+          },
+        },
         close: () => page.close(),
       };
     },
@@ -255,7 +273,19 @@ async function fetchOne(context: ContextLike, surface: ResolvedSurface): Promise
 }
 
 /**
- * Fetch posts from the configured surfaces with an authenticated session.
+ * Walk-shaping options for the authenticated dispatch (D6). Both fields
+ * are optional: the absent feature (no linkedin surfaces, no scrollRounds
+ * key) behaves byte-identically to the pre-LinkedIn walker.
+ */
+export interface AuthenticatedFetchOptions {
+  /** Storage-state file for the LinkedIn context; linkedin surfaces fail without it. */
+  readonly linkedinSessionPath?: string;
+  /** Loop bound for BOTH walks; absent means the Threads-measured default (D4). */
+  readonly scrollRounds?: number;
+}
+
+/**
+ * Fetch posts from the configured surfaces with authenticated sessions.
  *
  * The logged-in tag page defaults to the Top view (old, popular posts) and
  * hydrates post data through graphql XHR responses instead of the initial
@@ -268,6 +298,12 @@ async function fetchOne(context: ContextLike, surface: ResolvedSurface): Promise
  * search URLs have no such tab, and a `filter=recent` search URL is recent
  * by construction.
  *
+ * Dispatch is platform-typed (D1): threads surfaces walk the storageState
+ * context through the graphql-XHR walk, linkedin surfaces walk a second
+ * context built from options.linkedinSessionPath through the flagship-web
+ * walk (src/fetch-linkedin.ts). The base context is built lazily (D12): a
+ * dispatch with no threads surfaces never builds it.
+ *
  * Surfaces drain through the same bounded slot-array pool as the logged-out
  * walk (D4): results reassemble in input order, peak <= FETCH_CONCURRENCY.
  * Throws when every surface fails (message lists per-surface errors).
@@ -276,17 +312,55 @@ export async function fetchSurfacesAuthenticated(
   surfaces: readonly ResolvedSurface[],
   storageStatePath: string,
   contextFactory: ContextFactory = chromiumContextFactory,
+  options: AuthenticatedFetchOptions = {},
 ): Promise<Post[]> {
-  const context = await contextFactory(storageStatePath);
+  // The base context is built lazily (D12): a dispatch whose surfaces are
+  // all linkedin (the logged-out Threads arm; a linkedin-only config whose
+  // Threads secret is set) never walks it, so eager building would open an
+  // idle browser context from a path no surface reads.
+  const threadsPresent = surfaces.some((surface) => surface.platform === "threads");
+  const context: ContextLike | null = threadsPresent
+    ? await contextFactory(storageStatePath)
+    : null;
+  const scrollRounds = options.scrollRounds ?? MAX_SCROLL_ROUNDS;
+  let linkedinContext: ContextLike | null = null;
   try {
+    if (options.linkedinSessionPath !== undefined) {
+      linkedinContext = await contextFactory(options.linkedinSessionPath);
+    }
     const perSurface: Array<Post[] | undefined> = Array.from({ length: surfaces.length });
     const failures: Array<string | undefined> = Array.from({ length: surfaces.length });
     const emptyLabels: Array<string | undefined> = Array.from({ length: surfaces.length });
+    // Platform dispatch (D9): the caller filters surfaces it cannot walk;
+    // a linkedin surface arriving with no session path is a wiring bug and
+    // fails that surface (visible in the all-fail detail).
+    const walkLinkedInSurface = async (
+      linkedinContext: ContextLike | null,
+      surface: ResolvedSurface,
+      rounds: number,
+    ): Promise<Post[]> => {
+      if (linkedinContext === null) {
+        throw new Error("linkedin surface walked without a session path");
+      }
+      return fetchLinkedInSurface(linkedinContext, surface, rounds);
+    };
+    // Mirror of the LinkedIn guard: a threads surface arriving in a
+    // dispatch that built no base context is a wiring bug and fails that
+    // surface (unreachable — the context exists iff a threads surface does).
+    const threadsContext = (): ContextLike => {
+      if (context === null) {
+        throw new Error("threads surface walked without a base context");
+      }
+      return context;
+    };
     // Same migration as fetchSurfaces (F007): the empty-surface side
     // channel rides the closure, the worker stays total.
     await runPool(surfaces, FETCH_CONCURRENCY, async (surface, index) => {
       try {
-        const posts = await fetchOneAuthenticated(context, surface);
+        const posts =
+          surface.platform === "linkedin"
+            ? await walkLinkedInSurface(linkedinContext, surface, scrollRounds)
+            : await fetchOneAuthenticated(threadsContext(), surface, scrollRounds);
         console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
         // A surface that yields 0 posts is NOT a thrown failure, so it never
         // reaches `failures`. Track it separately or the all-fail error below
@@ -315,7 +389,8 @@ export async function fetchSurfacesAuthenticated(
     }
     return results;
   } finally {
-    await context.close();
+    if (linkedinContext !== null) await linkedinContext.close();
+    if (context !== null) await context.close();
   }
 }
 
@@ -323,6 +398,7 @@ export async function fetchSurfacesAuthenticated(
 async function fetchOneAuthenticated(
   context: ContextLike,
   surface: ResolvedSurface,
+  scrollRounds: number,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
@@ -391,7 +467,7 @@ async function fetchOneAuthenticated(
     // round 3 +13). Stop only after MAX_DRY_SCROLL_ROUNDS consecutive rounds
     // that gain fewer than SCROLL_MIN_GAIN posts.
     let dryRounds = 0;
-    for (let round = 1; round <= MAX_SCROLL_ROUNDS; round += 1) {
+    for (let round = 1; round <= scrollRounds; round += 1) {
       const before = posts.size;
       await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
       await page.waitForTimeout(SCROLL_SETTLE_MS);

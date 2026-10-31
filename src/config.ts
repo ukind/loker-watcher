@@ -13,6 +13,7 @@
 /** Environment variable names; values never appear in the repo. */
 export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
+  linkedinSession: "LINKEDIN_SESSION_STATE",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
   judgeConcurrency: "JUDGE_CONCURRENCY",

@@ -27,7 +27,12 @@ import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js"
  * loaded once at startup. A missing or malformed file fails the run.
  */
 import { extractPosts } from "./extract.js";
-import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
+import {
+  type AuthenticatedFetchOptions,
+  type ContextFactory,
+  fetchSurfaces,
+  fetchSurfacesAuthenticated,
+} from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { isRotationExhausted } from "./judge-rotation.js";
 import {
@@ -147,20 +152,82 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   // Acquisition stage (D9): session resolution + surface fetch timed as one
   // span. Extraction happens inside the walk; the dedupe count logs right
   // after the duration line.
+  // Acquisition stage (D9): per-platform session resolution + surface
+  // fetch timed as one span. Extraction happens inside the walk; the
+  // dedupe count logs right after the duration line.
   const { value: collected, durationMs: fetchMs } = await timeStage(async () => {
-    const sessionPath = await resolveSession(env);
+    // D9: the platform split happens BEFORE session resolution. Each
+    // platform resolves its own session variable; a null Threads session
+    // keeps the existing logged-out walk, while a null LinkedIn session
+    // SKIPS its surfaces with a warn (anonymous LinkedIn hits an authwall —
+    // never the logged-out path).
+    const threadsSurfaces = surfaces.filter((s) => s.platform === "threads");
+    const linkedinSurfaces = surfaces.filter((s) => s.platform === "linkedin");
+    const threadsSessionPath = await resolveSession(env);
+    const linkedinSessionPath =
+      linkedinSurfaces.length > 0 ? await resolveSession(env, ENV_NAMES.linkedinSession) : null;
+    if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
+      console.warn(
+        `fetch: ${ENV_NAMES.linkedinSession} missing or invalid — skipping ${linkedinSurfaces.length} linkedin surface(s)`,
+      );
+    }
     try {
-      return sessionPath !== null
-        ? await fetchSurfacesAuthenticated(surfaces, sessionPath, deps.contextFactory)
-        : await fetchLoggedOutPosts(surfaces, deps.contextFactory);
-    } finally {
-      // F019: the session dir dies with the walk. The context closes inside
-      // the walk's own finally, so this runs strictly after close, on both
-      // the success and the throw path. The logged-out path never created
-      // a dir, so there is nothing to remove.
-      if (sessionPath !== null) {
-        await cleanupSessionDir(sessionPath);
+      if (threadsSessionPath !== null) {
+        // One authenticated dispatch carries the mixed pool: the LinkedIn
+        // context is built inside the walk from linkedinSessionPath (D6),
+        // and both platform types share the walk's own runPool (FR#8).
+        const walkedSurfaces = linkedinSessionPath !== null ? surfaces : threadsSurfaces;
+        // A linkedin-only config with no LinkedIn session walks nothing:
+        // D5 degrades to warn + empty funnel + heartbeat, never a throw
+        // (an empty surfaces array would trip the walker's all-fail gate).
+        if (walkedSurfaces.length === 0) return [];
+        const options: AuthenticatedFetchOptions =
+          linkedinSessionPath !== null
+            ? { linkedinSessionPath, scrollRounds: config.scrollRounds }
+            : { scrollRounds: config.scrollRounds };
+        return await fetchSurfacesAuthenticated(
+          walkedSurfaces,
+          threadsSessionPath,
+          deps.contextFactory,
+          options,
+        );
       }
+      // Threads logged-out: blob extraction per surface. A configured
+      // LinkedIn surface with its own session walks alone here (rare mixed
+      // config: no Threads secret but a LinkedIn one) — the walker builds
+      // only the LinkedIn context for this dispatch (lazy base, D12: no
+      // threads surfaces, no base context), so the base argument below is
+      // vestigial and never becomes a context.
+      const loggedOut =
+        threadsSurfaces.length > 0
+          ? await fetchLoggedOutPosts(threadsSurfaces, deps.contextFactory)
+          : [];
+      if (linkedinSessionPath === null) return loggedOut;
+      // A walk-time dead LinkedIn session must not discard the logged-out
+      // Threads results (acceptance 1, D5 — expiry is routine): the
+      // LinkedIn arm's all-fail throw downgrades to a warn and zero posts,
+      // and the run goes on. The mixed dispatch above needs no such guard:
+      // there the side arrays already keep Threads posts alive inside one
+      // call, and a total all-fail is the pre-existing throw contract.
+      try {
+        const linkedinPosts = await fetchSurfacesAuthenticated(
+          linkedinSurfaces,
+          linkedinSessionPath,
+          deps.contextFactory,
+          { linkedinSessionPath, scrollRounds: config.scrollRounds },
+        );
+        return [...loggedOut, ...linkedinPosts];
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`fetch: linkedin surfaces FAILED — ${message}`);
+        return loggedOut;
+      }
+    } finally {
+      // F019 pairing, extended: each created session dir dies with the run.
+      // Contexts close inside the walks' own finally, so these run strictly
+      // after close, on both the success and the throw path.
+      if (threadsSessionPath !== null) await cleanupSessionDir(threadsSessionPath);
+      if (linkedinSessionPath !== null) await cleanupSessionDir(linkedinSessionPath);
     }
   });
   console.log(`timing: fetch ${fetchMs}ms`);

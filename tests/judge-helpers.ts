@@ -30,6 +30,7 @@ export const id19 = (n: number): string => `722463891274392${String(n).padStart(
 
 export function bulkPost(id: string): Post {
   return {
+    platform: "threads",
     id,
     text: `Hiring a frontend developer — post ${id}`,
     author: "techco",

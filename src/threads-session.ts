@@ -1,12 +1,20 @@
 /**
- * Threads session resolution (Phase 8).
+ * Session resolution for both watched platforms (Phase 8; extended for
+ * LinkedIn).
  *
- * The authenticated fetch replays a Playwright storageState document
+ * An authenticated walk replays a Playwright storageState document
  * exported from a real browser login. The document travels base64-encoded
- * in the THREADS_SESSION_STATE environment variable (a GitHub Actions
- * secret): it is account-equivalent, so it never enters the repo and never
- * enters state/seen-posts.json. The decoded document is written to an OS
- * temp file that Playwright loads as the browser context's storage state.
+ * in a session environment variable (a GitHub Actions secret): it is
+ * account-equivalent, so it never enters the repo and never enters
+ * state/seen-posts.json. The decoded document is written to an OS temp
+ * file that Playwright loads as the browser context's storage state.
+ *
+ * The variable name is a parameter defaulting to the Threads var, so one
+ * resolver serves THREADS_SESSION_STATE and LINKEDIN_SESSION_STATE. A null
+ * return means "no usable session"; what happens next is the caller's
+ * policy — Threads falls back to the logged-out walk, LinkedIn surfaces
+ * are skipped with a warn (an anonymous LinkedIn page hits an authwall,
+ * never a logged-out walk).
  */
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -21,27 +29,27 @@ export function isValidStorageState(doc: unknown): boolean {
 }
 
 /**
- * Decode the base64 session secret and write it to a temp file.
- * Returns the file path, or null when the secret is unset or invalid —
- * callers fall back to the logged-out fetch.
+ * Decode the named base64 session secret and write it to a temp file.
+ * Returns the file path, or null when the secret is unset or invalid.
+ * Warn messages interpolate the variable name so an operator sees which
+ * secret is bad.
  */
 export async function resolveSession(
   env: Record<string, string | undefined> = process.env,
+  envName: string = ENV_NAMES.threadsSession,
 ): Promise<string | null> {
-  const raw: string | undefined = env[ENV_NAMES.threadsSession];
+  const raw: string | undefined = env[envName];
   if (raw === undefined || raw.trim() === "") return null;
 
   let doc: unknown;
   try {
     doc = JSON.parse(Buffer.from(raw.trim(), "base64").toString("utf8"));
   } catch {
-    console.warn(
-      "session: THREADS_SESSION_STATE is not valid base64 JSON — using the logged-out fetch",
-    );
+    console.warn(`session: ${envName} is not valid base64 JSON — continuing without it`);
     return null;
   }
   if (!isValidStorageState(doc)) {
-    console.warn("session: THREADS_SESSION_STATE carries no cookies — using the logged-out fetch");
+    console.warn(`session: ${envName} carries no cookies — continuing without it`);
     return null;
   }
 

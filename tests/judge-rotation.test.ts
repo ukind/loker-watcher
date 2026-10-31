@@ -67,6 +67,7 @@ function accountTwoAnswering(auths: string[]): typeof fetch {
 
 describe("judgePost", () => {
   const samplePost: Post = {
+    platform: "threads",
     id: "100",
     text: "Hiring React developer in Jakarta",
     author: "techco",
@@ -328,7 +329,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
-      if (content.includes("Judge each Threads post below")) {
+      if (content.includes("Judge each post below")) {
         return ok("{}"); // answered, zero verdicts — every post falls back
       }
       return new Response("Too Many Requests", { status: 429 }); // both accounts cool
@@ -591,7 +592,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
-      if (content.includes("Judge each Threads post below")) {
+      if (content.includes("Judge each post below")) {
         return ok("{}"); // answered, zero verdicts — every post falls back
       }
       return new Response("Too Many Requests", { status: 429 });

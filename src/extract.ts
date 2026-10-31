@@ -103,6 +103,7 @@ export function normalizeThreadItem(item: unknown): Post | null {
   }
   const code = typeof post.code === "string" && post.code.length > 0 ? post.code : codeFromPk(pk);
   return {
+    platform: "threads",
     id: pk,
     text,
     author,

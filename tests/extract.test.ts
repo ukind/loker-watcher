@@ -19,6 +19,7 @@ describe("extractPosts", () => {
     const posts = extractPosts(fixture);
     assert.equal(posts.length, 4);
     assert.deepEqual(posts[0], {
+      platform: "threads",
       id: "4012496661532082278",
       text: "Anyone tengah open for hiring? Please please let me know.",
       author: "hasrashidd",
@@ -88,6 +89,7 @@ describe("graphql XHR body extraction", () => {
     const posts = items.map(normalizeThreadItem).filter((p): p is Post => p !== null);
     assert.equal(posts.length, 3);
     assert.deepEqual(posts[0], {
+      platform: "threads",
       id: "4014250536231619721",
       text: "We're Hiring warga threads !! [ URGENT ]\n\nKantor aku lagi urgently hiring cari kandidat sebagai Staf Admin Entry di Start Dinamics \nSistem kerja: Full Remote\nEst. Salary: UMK \nTerbuka untuk semua kalangan yang berpengalaman dan non pengalaman ya !!",
       author: "hamimakania40",

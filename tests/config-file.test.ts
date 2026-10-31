@@ -133,24 +133,104 @@ describe("loadWatcherConfig — failures", () => {
     const config = await loadWatcherConfig(path);
     assert.deepEqual(config.candidateTerms, []);
   });
+
+  it("accepts a linkedin surface", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [{ type: "linkedin", value: "#hiring" }],
+    });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.surfaces, [{ type: "linkedin", value: "#hiring" }]);
+  });
+
+  it("rejects an empty linkedin surface value", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [{ type: "linkedin", value: "   " }],
+    });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /surface "value" must be a non-empty string/,
+    );
+  });
+
+  it("rejects a non-string linkedin surface value", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [{ type: "linkedin", value: 123 }],
+    });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /surface "value" must be a non-empty string/,
+    );
+  });
 });
 
 describe("resolveSurfaces", () => {
   it("builds the tag-page URL and label", () => {
     const resolved = resolveSurfaces([{ type: "tag", value: "hiring" }]);
     assert.deepEqual(resolved, [
-      { label: "tag/hiring", url: "https://www.threads.com/tag/hiring" },
+      {
+        platform: "threads",
+        label: "tag/hiring",
+        url: "https://www.threads.com/tag/hiring",
+      },
     ]);
   });
 
   it("uses a url surface verbatim", () => {
     const url = "https://www.threads.com/@hiresflow";
     const resolved = resolveSurfaces([{ type: "url", value: url }]);
-    assert.deepEqual(resolved, [{ label: url, url }]);
+    assert.deepEqual(resolved, [{ platform: "threads", label: url, url }]);
   });
 
   it("percent-encodes a tag that needs it", () => {
     const resolved = resolveSurfaces([{ type: "tag", value: "a b" }]);
     assert.equal(resolved[0]?.url, "https://www.threads.com/tag/a%20b");
+  });
+
+  it("builds a linkedin content-search URL byte-exactly", () => {
+    const resolved = resolveSurfaces([
+      { type: "linkedin", value: "#hiring engineer developer jakarta" },
+    ]);
+    assert.deepEqual(resolved, [
+      {
+        platform: "linkedin",
+        label: "linkedin/#hiring engineer developer jakarta",
+        url: "https://www.linkedin.com/search/results/content/?keywords=%23hiring%20engineer%20developer%20jakarta&origin=FACETED_SEARCH&sortBy=%5B%22date_posted%22%5D&datePosted=%5B%22past-24h%22%5D",
+      },
+    ]);
+  });
+});
+
+describe("scrollRounds", () => {
+  it("defaults to 8 when absent", async () => {
+    const path = await writeConfig({ ...VALID });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.scrollRounds, 8);
+  });
+
+  it("accepts a positive integer", async () => {
+    const path = await writeConfig({ ...VALID, scrollRounds: 5 });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.scrollRounds, 5);
+  });
+
+  it("rejects a fractional value", async () => {
+    const path = await writeConfig({ ...VALID, scrollRounds: 5.5 });
+    await assert.rejects(() => loadWatcherConfig(path), /"scrollRounds" must be an integer >= 1/);
+  });
+
+  it("rejects zero", async () => {
+    const path = await writeConfig({ ...VALID, scrollRounds: 0 });
+    await assert.rejects(() => loadWatcherConfig(path), /"scrollRounds" must be an integer >= 1/);
+  });
+
+  it("rejects a non-numeric value", async () => {
+    const path = await writeConfig({ ...VALID, scrollRounds: "five" });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"scrollRounds" must be an integer >= 1, got "five"/,
+    );
   });
 });

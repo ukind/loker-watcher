@@ -1,22 +1,26 @@
 # loker-watcher
 
-Threads #hiring Indonesia job alerts. A GitHub Actions workflow loads the
-Threads surfaces listed in `watcher.config.json` every 10 minutes, has an LLM
-judge posts against the configured keywords (Indonesia or remote roles), and
-emails new matches as a plain-text digest. No web UI; the only persistence is
-`state/seen-posts.json`.
+Threads + LinkedIn #hiring Indonesia job alerts. A GitHub Actions workflow
+loads the surfaces listed in `watcher.config.json` every 10 minutes, has an
+LLM judge posts against the configured keywords (Indonesia or remote roles),
+and emails new matches as a plain-text digest. No web UI; the only
+persistence is `state/seen-posts.json`.
 
 ## Pipeline
 
-1. Playwright loads every surface listed in `watcher.config.json` — tag pages,
-   profile pages and search URLs. With `THREADS_SESSION_STATE` set it signs in,
-   clicks the **Recent** tab where one exists, and reads posts from the
-   `graphql` XHR responses; otherwise it loads each surface logged out and
-   reads posts from the embedded `data-sjs` JSON blobs.
-2. Posts are deduplicated across surfaces.
-3. Posts older than `recencyHours` are dropped.
-4. Posts already in `state/seen-posts.json` are dropped.
-5. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
+1. Playwright loads every Threads surface listed in `watcher.config.json` —
+   tag pages, profile pages and search URLs. With `THREADS_SESSION_STATE`
+   set it signs in, clicks the **Recent** tab where one exists, and reads
+   posts from the `graphql` XHR responses; otherwise it loads each surface
+   logged out and reads posts from the embedded `data-sjs` JSON blobs.
+2. LinkedIn surfaces are walked with a signed-in session from
+   `LINKEDIN_SESSION_STATE`, reading posts from the LinkedIn flagship-web
+   search responses. With that secret unset or invalid, those surfaces are
+   skipped with a warning and the run continues on Threads alone.
+3. Posts are deduplicated across surfaces and platforms.
+4. Posts older than `recencyHours` are dropped.
+5. Posts already in `state/seen-posts.json` are dropped.
+6. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
    `keywords` list is sent as the relevance criterion; a post the bulk
    response misses falls back to a single-post call. A batch the endpoint
    does not answer is deferred whole — those posts stay unseen and retry
@@ -27,13 +31,15 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
    fails the run. Up to `JUDGE_CONCURRENCY`
    batches run at once, so a 280-post backlog judges in about 3 minutes
    instead of 13.
-6. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
+7. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
    fails is skipped — the post stays unseen and retries on the next run.
-7. New relevant + located posts are emailed as the job digest.
-8. On match runs the state file is committed back as `github-actions[bot]`.
-9. **Zero-match runs email a status digest instead** — the scan funnel plus
-   the closest candidate posts with their permalinks — so a quiet run is
-   still legible. Set `HEARTBEAT_ENABLED=false` to turn it off.
+8. New relevant + located posts are emailed as the job digest; LinkedIn
+   item lines carry a `[linkedin]` marker and the subject appends
+   `+ LinkedIn` when at least one LinkedIn post matched.
+9. On match runs the state file is committed back as `github-actions[bot]`.
+10. **Zero-match runs email a status digest instead** — the scan funnel plus
+    the closest candidate posts with their permalinks — so a quiet run is
+    still legible. Set `HEARTBEAT_ENABLED=false` to turn it off.
 
 ## Requirements
 
@@ -57,6 +63,7 @@ emails new matches as a plain-text digest. No web UI; the only persistence is
    | `GMAIL_USER` | `you@gmail.com` | Sender and recipient |
    | `GMAIL_APP_PASSWORD` | your-app-password | Gmail SMTP credentials |
    | `THREADS_SESSION_STATE` | base64 storageState | Threads login session (see below) |
+   | `LINKEDIN_SESSION_STATE` | base64 storageState | LinkedIn login session (see below) |
 
    Optional variable (not a secret): `HEARTBEAT_ENABLED` — set to `false` to
    stop the zero-match status email, default `true`. Surfaces, keywords,
@@ -88,16 +95,24 @@ no code change and no Actions variable is involved.
 
 | Key | What it does |
 |---|---|
-| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }` or `{ "type": "url", "value": "https://www.threads.com/@someone" }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`. |
+| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries build a LinkedIn content search (newest first, past 24 hours) from a keywords string and need `LINKEDIN_SESSION_STATE`. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
 | `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
+| `scrollRounds` | Upper bound on scroll rounds per surface walk, shared by the Threads scroll loop and LinkedIn pagination. Must be a whole number >= 1; absent defaults to `8`. |
 
 Adding a profile or a search URL is the same edit as adding a tag:
 
 ```json
 { "type": "url", "value": "https://www.threads.com/search?q=frontend&serp_type=deeplink&filter=recent" }
+```
+
+A LinkedIn content search is the same kind of edit — a keywords string, not
+a URL:
+
+```json
+{ "type": "linkedin", "value": "#hiring frontend developer indonesia" }
 ```
 
 A missing file, a typo in a key, an unknown surface `type`, or a
@@ -220,6 +235,31 @@ The session lasts roughly a year (`sessionid` expiry). When runs start
 logging the logged-out fallback warning or post counts drop back to ~19 per
 tag, repeat the export. With the secret unset or invalid the watcher falls
 back to the logged-out fetch and still runs.
+
+## Refresh the LinkedIn session
+
+LinkedIn content search is logged-in-only — an anonymous page hits an
+authwall, so unlike Threads there is no logged-out fallback. LinkedIn
+surfaces walk a session from `LINKEDIN_SESSION_STATE`; with the secret
+unset or invalid they are skipped with a warning naming the variable, and
+the run continues on Threads alone.
+
+1. Log in to linkedin.com in a regular Firefox session.
+2. Export the cookies for `.linkedin.com` as a Playwright storageState
+   document and convert it exactly as in the Threads section above — the
+   same `sameSite` mapping and `{ "cookies": [...], "origins": [] }`
+   wrapper apply. Keep `li_at` (the session cookie); the remaining
+   `.linkedin.com` cookies can ride along.
+3. Base64-encode the file and set the secret:
+
+   ```bash
+   gh secret set LINKEDIN_SESSION_STATE < linkedin-state.json.b64
+   ```
+
+The session lasts roughly a year (`li_at` expiry). When runs start logging
+the skip warning, or linkedin surfaces log `FAILED` while Threads surfaces
+stay healthy, repeat the export. LinkedIn also kills sessions server-side;
+that is routine and looks the same — a fresh export fixes it.
 
 ## Local run
 

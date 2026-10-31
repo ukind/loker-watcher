@@ -22,6 +22,7 @@ const TERMS = ["developer", "software", "engineer", "jakarta", "remote"];
 
 function post(id: string, text: string, hoursAgo: number, author = "tester"): Post {
   return {
+    platform: "threads",
     id,
     text,
     author,

@@ -36,6 +36,7 @@ const STATE: AppState = {
 };
 
 const post = (id: string): Post => ({
+  platform: "threads",
   id,
   text: `post ${id}`,
   author: "tester",

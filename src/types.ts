@@ -6,15 +6,17 @@
  * raw type is exported until a consumer needs one.
  */
 
-/** One Threads post, normalized. Produced by extract (Slice 2). */
+/** One post from any watched platform, normalized. Produced by extract (Threads) and each fetcher. */
 export interface Post {
   /** Stable dedup key: numeric post id, e.g. "3388928313420694692". */
   id: string;
+  /** Which platform minted the post; drives digest marking (src/email.ts). Colons in urn ids cannot collide with Threads digit ids. */
+  platform: "threads" | "linkedin";
   /** Full post text (caption). May contain newlines. */
   text: string;
   /** Author handle without the leading "@". */
   author: string;
-  /** Canonical permalink: https://www.threads.com/@{author}/post/{code}. */
+  /** Canonical permalink: Threads keeps https://www.threads.com/@{author}/post/{code}. */
   permalink: string;
   /** Post time, ISO 8601 UTC, e.g. "2026-10-24T08:15:00.000Z". */
   timestamp: string;
