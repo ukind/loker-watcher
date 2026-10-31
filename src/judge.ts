@@ -187,7 +187,7 @@ export interface JudgeBatchResult {
  * job never set the variable, and watch.yml carries the probe-measured
  * value for production. Present but not a positive integer -> throw naming
  * the variable: a typo must not silently run at the default width
- * (fail-visible - same rule as parseLlmAccounts below).
+ * (fail-visible - same rule as parseLlmAccounts above).
  */
 export function parseJudgeConcurrency(raw: string | undefined): number {
   if (raw === undefined || raw.trim().length === 0) {

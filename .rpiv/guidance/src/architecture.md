@@ -7,7 +7,7 @@ The entire application: a single-shot CLI pipeline that fetches Threads posts, f
 - **playwright**: quarantined behind the single dynamic-import site, `chromiumContextFactory` in fetch-threads.ts
 - **nodemailer**: quarantined to the single creation site in email.ts; heartbeat and the exhaustion alarm ride its `sendText`
 - **raw `fetch` + `AbortSignal.timeout`**: the LLM client — no SDK
-- **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports its parsers
+- **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports buildBulkMessages and resolveJudgeConfig
 
 ## Module Structure (role groups; imports point downward only)
 ```
@@ -49,6 +49,7 @@ export interface WatcherDeps {
   readonly transport?: Transporter;                    // default nodemailer, built inside sendText
   readonly statePath?: string;                         // default STATE_PATH
   readonly now?: () => number;                         // default Date.now
+  readonly sleepFn?: (ms: number) => Promise<void>;   // park wait for cooldown parking; default: the judge module's sleep
 }
 ```
 Function-level idiom: I/O is an optional trailing param with the production default — judgePost, sendText, saveState, filterRecent.
