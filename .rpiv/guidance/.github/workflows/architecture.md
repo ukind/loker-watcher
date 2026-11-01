@@ -4,20 +4,21 @@
 Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, no secrets); `watch.yml` runs the pipeline every 10 minutes with secrets, then commits `state/seen-posts.json` back as `github-actions[bot]`. A dispatch-only `probe` job inside watch.yml measures the LLM endpoint.
 
 ## Sync points (break these and the workflow silently misbehaves)
-- Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — 1:1 name mirroring; `HEARTBEAT_ENABLED` maps via `vars.` (not `secrets.` — the one non-secret knob); unset means enabled
-- `jq '.seenPostIds | length'` ↔ `AppState.seenPostIds` in `src/state.ts` — renaming the field would silently read as "0 new" (v2 is a map; jq length counts keys)
+- Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — 1:1 name mirroring (7 today, incl. `LINKEDIN_SESSION_STATE`); `HEARTBEAT_ENABLED` maps via `vars.` (not `secrets.` — the one non-secret knob); unset means enabled
+- `jq '.seenPostIds | length'` ↔ `AppState.seenPostIds` in `src/state.ts` — renaming the field would silently read as "0 new"; jq `length` counts KEYS, so it is shape-agnostic across the v2 map (and v1 arrays)
 - `node-version: 22` ↔ `engines.node` in package.json
 - The `JUDGE_CONCURRENCY` literal ↔ `DEFAULT_JUDGE_CONCURRENCY` in `src/judge.ts` (both 4 today; the literal is a maintenance pointer)
+- `fetch-depth: 0` exists ONLY in the watch job because Commit state rebases — a shallow clone cannot find the merge base
 
 ## Structure
 ```
 ci.yml      # push(main)+PRs+dispatch | permissions: contents: read | timeout 10
             # checkout@v4 → setup-node@v4 (node 22, npm cache) → npm ci → typecheck → lint → test
 watch.yml   # cron */10 + dispatch | permissions: contents: write | concurrency: watch (queue)
-            # job probe: dispatch-only GATE, timeout 10 → npx tsx scripts/probe-judge.ts (LLM_ACCOUNTS only; walks every account)
-            # job watch: timeout 8 (< the 10-min cron) → npm ci → ms-playwright cache (lockfile hash)
-            #            → playwright install --only-shell chromium → Run watcher (step-scoped secrets)
-            #            → Commit state (bot identity, no-op guard, jq delta, rebase + one push retry)
+            # job probe: dispatch-only GATE, timeout 10 → npx tsx scripts/probe-judge.ts (LLM_ACCOUNTS only)
+            # job watch: timeout 8 (< the 10-min cron) → npm ci (checkout fetch-depth: 0)
+            #   → ms-playwright cache (lockfile hash) → playwright install --only-shell chromium
+            #   → Run watcher (step-scoped secrets) → Commit state (script invocation)
 ```
 
 ## One lane per pipeline; the timeout dies before the next tick
@@ -33,57 +34,47 @@ concurrency:
   cancel-in-progress: false    # QUEUE, never kill: the state read-modify-write must serialize
     # (job-level) timeout-minutes: 8 — a hung run dies BEFORE the next */10 tick queues
 ```
+README documents an external cron dispatching watch.yml by filename — a wrong-but-valid filename still answers 204 and starts the WRONG workflow.
 
 ## Step-scoped secrets, 1:1 names; the literal goes first with its evidence
 ```yaml
 - name: Run watcher
   env:
-    JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading — paste a fresh measuring run's reading
+    JUDGE_CONCURRENCY: "4"   # probe run <id> reading — paste a fresh measuring run's reading
     HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # the one non-secret knob: vars., not secrets.; unset = enabled
-    THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}   # YAML key == secret name == ENV_NAMES value
+    THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
+    LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret ⇒ resolver null ⇒ surfaces skip
     LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
     GMAIL_USER: ${{ secrets.GMAIL_USER }}
     GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
   run: npx tsx src/index.ts  # a non-zero exit fails the step → the commit step is skipped
 ```
-Secrets exist only inside this step; the commit-back step runs secret-free. Playwright is installed with `--only-shell` — the pipeline is headless-only and the runner image already carries the chromium shared libs. A `ms-playwright` cache step (actions/cache@v4, key = the lockfile hash) sits ahead of the install. The install stays unconditional: a cache miss self-heals, a hit is a fast no-op (~30-60s/run saved, measured 2026-10-27).
+Secrets exist only inside this step; the commit-back step runs secret-free. Playwright installs with `--only-shell` — headless-only, the runner image carries the chromium shared libs. The `ms-playwright` cache step (lockfile-hash key) sits ahead of the install, which stays UNCONDITIONAL: a miss self-heals, a hit is a fast no-op.
 
-## Commit-back: bot identity, no-op guard, jq delta, rebase + one push retry
+## Commit-back: bot identity, no-op guard, jq delta, state-only rebase skips, lease push
 ```yaml
 - name: Commit state
-  # The concurrency queue serializes watcher runs, but a human push can land
-  # between this run's checkout and its commit-back. Rebase onto main before
-  # the first push, and again before the single retry.
   run: |
     git config user.name "github-actions[bot]"
     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add state/seen-posts.json                                  # ONLY the state file
-    if git diff --cached --quiet; then echo "state unchanged"; exit 0; fi   # most runs are no-ops
+    if git diff --cached --quiet; then echo "state unchanged; nothing to commit"; exit 0; fi
     PREV=$(git show HEAD:state/seen-posts.json | jq '.seenPostIds | length' 2>/dev/null || echo 0)
     CURR=$(jq '.seenPostIds | length' state/seen-posts.json)
     git commit -m "state: $((CURR - PREV)) new seen post ids"      # greppable delta history
-    git pull --rebase origin main
-    if git push; then
-      exit 0
-    fi
-    echo "state push rejected; rebasing onto main and retrying once"
-    git pull --rebase origin main
-    if git push; then
-      exit 0
-    fi
-    echo "state push failed twice; failing the run"
-    exit 1
+    bash scripts/commit-state-rebase.sh   # the ONLY invocation — rebase, state-only
+                                          # conflict skips (bounded), lease push, and the
+                                          # single retry all live inside the script
 ```
-A conflicting rebase fails the step with git's message. The next run recovers by re-judging; the audit accepts one duplicate digest.
+The script re-establishes errexit itself and exits 0 on push, 1 on a non-state conflict abort or a second push failure. It is invoked exactly once; the single retry lives inside it. Any conflicted path other than the state file aborts the run loudly.
+Accepted cost (F021): a skipped state conflict means the next run re-judges — the audit tolerates one duplicate digest. The commit-back is the only production writer to `state/`.
 
 ## The probe job: a gate that walks every account
 ```yaml
 probe:
   if: github.event_name == 'workflow_dispatch'   # never on the cron tick
-  # Walks EVERY LLM_ACCOUNTS account (stop-once-4 ramp, ~6 calls each): an
-  # auth-dead key or a failed leg fails this job, so a rotten key in the pool
-  # reddens the dispatch run instead of passing unseen. 429-refused legs are
-  # busy, not dead — the watch job is the real gate for throttling.
+  # Walks EVERY LLM_ACCOUNTS account (2→4 ramp): an auth-dead key or a failed leg fails this job, so a
+  # rotten key reddens the dispatch run instead of passing unseen. 429-refused legs are busy, not dead.
   timeout-minutes: 10
   steps:
     - name: Probe judge latency
@@ -101,8 +92,8 @@ probe:
 ## Adding a Secret or Env Var
 1. Add the name to `ENV_NAMES` in `src/config.ts` — the single source of truth
 2. Write or extend a resolver with one of the three contracts — see `.rpiv/guidance/src/architecture.md`
-3. GitHub: Settings → Secrets and variables → Actions, exact-case name
-4. Map it in the step-scoped `env:` of the exact step that needs it (the probe needs only what probe-judge.ts reads), keeping the 1:1 `NAME: \${{ secrets.NAME }}` mirroring; literals go first, quoted, with an evidence comment
+3. GitHub: Settings → Secrets and variables → Actions, exact-case name (non-secret knobs go to repo variables)
+4. Map it in the step-scoped `env:` of the exact step that needs it, keeping the 1:1 `NAME: \${{ secrets.NAME }}` mirroring; literals go first, quoted, with an evidence comment
 5. Optional toggle with a resolver default? Map it anyway (cf. `HEARTBEAT_ENABLED` via `vars.`) — an unmapped knob is a no-op in the only production runtime
 6. Never interpolate secret values into `run:` scripts via \${{ }}
 7. Verify with a manual dispatch; a missing secret surfaces as the resolver's named error
@@ -112,10 +103,10 @@ probe:
 ## Adding a New Scheduled Job
 1. Clone the watch.yml skeleton: triggers → permissions → concurrency → job (timeout + setup prologue) → steps
 2. Pick the cron interval first — everything else is sized against it; always pair with `workflow_dispatch`
-3. Default to `contents: read`; bump to `write` only if the job commits back
+3. Permissions: `contents: read` by default; `write` only if the job commits back (a watch.yml clone needs write)
 4. Shared state or a rate-limited API ⇒ a `concurrency` group with a unique hardcoded name, `cancel-in-progress: false`
-5. `timeout-minutes` strictly below the cron interval, with a measured-evidence comment
-6. Setup prologue: checkout → setup-node (22, npm cache) → `npm ci`; add `playwright install --only-shell chromium` only if a browser is driven; cache `~/.cache/ms-playwright` on the lockfile hash when you do
-7. Pushing state? Replicate the commit-back block exactly (rebase + one push retry included) and keep the jq path in sync with `AppState`
+5. `timeout-minutes` strictly below the cron interval, with the envelope-arithmetic comment
+6. Setup prologue: checkout → setup-node (22, npm cache) → `npm ci`; add `fetch-depth: 0` only when a later step rebases or pushes; add `playwright install --only-shell chromium` (lockfile-hash cache ahead of it) only if a browser is driven
+7. Pushing state? Keep the YAML head (bot identity, state-file-only add, no-op guard, jq delta commit) and invoke `scripts/commit-state-rebase.sh` exactly once — the single retry lives inside the script; keep the jq path in sync with `AppState`
 8. Verify with a manual dispatch before trusting the cron
 </important if>
