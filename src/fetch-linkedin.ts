@@ -298,6 +298,14 @@ export async function fetchLinkedInSurface(
       polls += 1;
     }
     if (responses === 0) {
+      // A zero-result window fires no search-data response either (live
+      // 2026-11-01): a page still on the search path is an empty result,
+      // not a dead session — only a bounce keeps the throw.
+      const landed = page.url?.() ?? "";
+      if (landed.includes("/search/results/content")) {
+        console.log(`fetch: ${surface.label} OK — 0 post(s) (no results in the past-24h window)`);
+        return [];
+      }
       throw new Error(
         `no flagship-web response within ${LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS}ms — the session may be dead`,
       );

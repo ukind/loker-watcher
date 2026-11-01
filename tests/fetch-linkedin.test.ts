@@ -96,6 +96,8 @@ function fakeContext(options: {
   closed?: { value: boolean };
   gotoError?: Error;
   noWheel?: boolean;
+  /** Final page URL after goto; absent doubles keep the dead-session throw. */
+  url?: string;
 }): ContextLike {
   return {
     newPage: async (): Promise<PageLike> => {
@@ -111,6 +113,7 @@ function fakeContext(options: {
       };
       const wheel = options.wheel ?? { calls: 0 };
       if (options.wheel === undefined) options.wheel = wheel;
+      const pageUrl = options.url;
       const page: PageLike = {
         goto: async () => {
           if (options.gotoError !== undefined) throw options.gotoError;
@@ -143,6 +146,7 @@ function fakeContext(options: {
                 },
               },
             }),
+        ...(pageUrl === undefined ? {} : { url: () => pageUrl }),
         close: async () => {
           if (!open) return;
           open = false;
@@ -346,6 +350,26 @@ describe("fetchLinkedInSurface", () => {
     assert.equal(posts.length, 150);
     assert.equal(wheel.calls, 1); // the cap break fires after round 1's dry log
     assert.ok(posts.every((post) => post.id !== `urn:li:activity:${ID_A}`));
+  });
+
+  it("returns [] and logs an empty window when the page stays on the search path", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const emptyLine = /linkedin\/#hiring OK — 0 post\(s\) \(no results in the past-24h window\)/;
+
+    const posts = await fetchLinkedInSurface(
+      fakeContext({
+        url: "https://www.linkedin.com/search/results/content/?keywords=%23hiring",
+      }),
+      linkedinSurface("linkedin/#hiring"),
+      8,
+    );
+
+    assert.deepEqual(posts, []);
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      lines.some((line) => emptyLine.test(line)),
+      `no empty-results line in: ${JSON.stringify(lines)}`,
+    );
   });
 
   it("throws when no flagship-web response arrives inside the window", async () => {
