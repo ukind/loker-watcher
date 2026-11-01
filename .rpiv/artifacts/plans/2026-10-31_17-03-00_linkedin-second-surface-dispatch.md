@@ -8,7 +8,7 @@ topic: "LinkedIn second surface + configurable scroll"
 tags: [plan, config-file, fetch-linkedin, fetch-threads, index, judge, email, linkedin, platform]
 status: ready
 parent: ".rpiv/artifacts/designs/2026-10-31_11-07-47_linkedin-second-surface-dispatch.md"
-phase_count: 6
+phase_count: 8
 phases:
   - { n: 1, title: Config spine, files: [src/config-file.ts, tests/config-file.test.ts, tests/fetch-threads.test.ts, tests/index.test.ts], depends_on: [] }
   - { n: 2, title: Contracts + session, files: [src/types.ts, src/extract.ts, src/config.ts, src/threads-session.ts, .github/workflows/watch.yml, scripts/probe-judge.ts, tests/session.test.ts, tests/judge-helpers.ts, tests/state.test.ts, tests/heartbeat.test.ts, tests/recency.test.ts, tests/email.test.ts, tests/extract.test.ts, tests/judge-rotation.test.ts], depends_on: [1] }
@@ -16,9 +16,11 @@ phases:
   - { n: 4, title: Acquisition split, files: [src/index.ts, tests/index.test.ts], depends_on: [3] }
   - { n: 5, title: Judge + digest marking, files: [src/judge.ts, src/email.ts, tests/judge.test.ts, tests/judge-rotation.test.ts, tests/index.test.ts, tests/email.test.ts], depends_on: [4] }
   - { n: 6, title: Sample config + gates, files: [watcher.config.json, README.md], depends_on: [5] }
-last_updated: 2026-10-31T17:52:31+0700
-last_updated_by: Yogiswara Utama
-last_updated_note: "Step 5 triage: all 3 reviewer findings applied — Phase 4 keeps the Threads-worded discriminator (Phase 5 owns the flip); every fenced concatenation rewritten as template literals (Biome 1.9.4 useTemplate is recommended repo-wide); long import split. Status ready."
+  - { n: 7, title: Credential login + secret self-refresh, files: [src/linkedin-login.ts, src/fetch-threads.ts, src/config.ts, src/index.ts, .github/workflows/watch.yml, scripts/linkedin-login.ts, tests/linkedin-login.test.ts, tests/index.test.ts, README.md], depends_on: [6] }
+  - { n: 8, title: Live retune, files: [src/fetch-linkedin.ts, src/linkedin-login.ts, tests/fetch-linkedin.test.ts], depends_on: [7] }
+last_updated: 2026-11-01T07:38:29+0700
+last_updated_by: pi-bolt
+last_updated_note: "Revision 2026-11-01 07:38 (+0700): Phase 8 live retune added — empty-results classification (a zero-result search is not a dead session), useNumberNamespace lint fix, first real runs 2026-11-01 recorded (75 LinkedIn posts live across two surfaces in one run)."
 ---
 
 # LinkedIn second surface + configurable scroll — Implementation Plan
@@ -47,7 +49,7 @@ Non-Threads digest lines carry the `[linkedin]` token; the subject reads "12 new
 
 ## What We're NOT Doing
 
-- Automated username/password login (challenge/restriction risk) — session secret only.
+- Automated login in CI runs ONLY as a cooldown-gated fallback when the session secret is absent or invalid (Phase 7); the storageState secret stays the primary session contract. A headed local login helper is the operator-side fallback when CI login is challenged.
 - A LinkedIn probe script — doctrine: hard-code until volume justifies measuring.
 - Heartbeat platform-dimension redesign — subject/body stay platform-neutral.
 - A dedicated LinkedIn cron — stays `*/10`; revisit when volume demands.
@@ -2642,11 +2644,297 @@ that is routine and looks the same — a fresh export fixes it.
 
 ---
 
+## Phase 7: Credential login + secret self-refresh
+
+### Overview
+
+Operator-directed revision (2026-10-31, post-merge): LinkedIn posts never flowed because the `LINKEDIN_SESSION_STATE` secret requires a manual browser-cookie export. This phase lets the operator set `LINKEDIN_EMAIL` + `LINKEDIN_PASSWORD` instead and have the run recover by itself: when linkedin surfaces exist and the session secret is absent or invalid, the run attempts ONE headless credential login (cooldown-gated); on success it walks the surfaces with the fresh session and rewrites `LINKEDIN_SESSION_STATE` from the run via a fine-grained PAT. The storageState contract (D8, `resolveSession`) is unchanged — login is a fallback, never the primary path. Evidence basis: research §Session/auth (incident 2026-10-31: server-side session invalidation mid-capture; credential login = the most-challenged LinkedIn pattern: CAPTCHAs, checkpoints, account restriction), so the login is single-attempt per run, 6h-cooled after failures, and every failure degrades to the existing D5 warn-and-continue.
+
+### Changes Required:
+
+#### 1. Login flow module (NEW)
+**File**: `src/linkedin-login.ts`
+**Changes**: Pure-DOM login on an explicit `/login` navigation, classified outcomes, storageState export. No judge/pipeline imports.
+
+```typescript
+/** Outcome of one credential login attempt. */
+export type LoginOutcome = "ok" | "challenge" | "bad-credentials";
+
+/**
+ * Drive one headless credential login on a fresh page. LinkedIn's challenge
+ * wall (CAPTCHA, email OTP, device verification) redirects to /checkpoint/,
+ * which headless CI cannot answer — that outcome is "challenge", never a
+ * retry: the 6h cooldown (see index wiring) keeps the account off
+ * LinkedIn's restriction radar (research: ~250 req/day/account tolerance).
+ */
+export async function loginLinkedIn(
+  page: PageLike,
+  email: string,
+  password: string,
+): Promise<LoginOutcome> {
+  await page.goto("https://www.linkedin.com/login", {
+    waitUntil: "domcontentloaded",
+    timeout: 30_000,
+  });
+  // Selectors verified live 2026-10-31 (headless chromium, production
+  // conditions): the /login page carries NO #session_key / #session_password
+  // ids (React-generated ids, no name attributes, no <form> element) and the
+  // Login button is type="button" with per-deploy obfuscated classes and
+  // locale-dependent text ("Sign in" / "Login"). The stable anchors are the
+  // autocomplete attributes plus the primary button's layout position below
+  // the password field. Inputs exist TWICE (desktop + mobile layouts; the
+  // first copy is hidden) and the form hydrates after domcontentloaded, so
+  // every locator filters :visible and rides Playwright's actionability wait.
+  await page.locator('input[autocomplete="username"]:visible').first().fill(email);
+  await page
+    .locator('input[autocomplete="current-password"]:visible')
+    .first()
+    .fill(password);
+  // Exactly one visible button candidate sits below the password input; the
+  // layout anchor is locale-free and .first() rides the LocatorLike seam.
+  await page
+    .locator('button:visible:below(input[autocomplete="current-password"]:visible)')
+    .first()
+    .click();
+  // Settle the POST + redirect before classifying. Verified with a failed
+  // dummy-credential login (2026-10-31): the POST fires
+  // (/flagship-web/rsc-action/actions/server-request), the inline error
+  // renders, and the URL stays on /login -> "bad-credentials"; /checkpoint/
+  // -> "challenge".
+  await page.waitForTimeout(5_000);
+  const url = page.url();
+  if (url.includes("/checkpoint/")) return "challenge";
+  if (url.includes("/login")) return "bad-credentials";
+  return "ok"; // landed on feed/search; the walker's first-response window is the real oracle
+}
+
+/** True when the login page is done challenging and a session cookie exists. */
+export function looksAuthenticated(cookies: ReadonlyArray<{ name: string }>, url: string): boolean {
+  return !url.includes("/checkpoint/") && cookies.some((cookie) => cookie.name === "li_at");
+}
+```
+
+**Requires**: `PageLike.url(): string` and `LocatorLike.fill(value: string): Promise<void>` — add both to `src/fetch-threads.ts` (`PageLike` + `LocatorLike`) and the chromium adapter (`page.url()`, `locator(...).fill(...)`); test doubles gain the same two members.
+
+#### 2. Cooldown gate (NEW, in the same module)
+**File**: `src/linkedin-login.ts`
+**Changes**: Marker file in the state dir, committed back beside seen-posts. Absent marker or a prior "ok" → attempt allowed.
+
+```typescript
+import { readFile, writeFile } from "node:fs/promises";
+
+/** One failed login silences further attempts for 6h (10-min cron = ≤4 attempts/day worst case). */
+const LOGIN_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+
+export interface LoginMarker {
+  lastAttempt: string; // ISO 8601
+  lastOutcome: Exclude<LoginOutcome, "ok">;
+}
+
+export async function loginAllowed(
+  markerPath: string,
+  now: () => Date,
+): Promise<boolean> {
+  const raw = await readFile(markerPath, "utf8").catch(() => null);
+  if (raw === null) return true;
+  try {
+    const marker = JSON.parse(raw) as LoginMarker;
+    if (marker.lastOutcome === undefined) return true;
+    const at = Date.parse(marker.lastAttempt);
+    if (!Number.isFinite(at)) return true;
+    return now().getTime() - at >= LOGIN_COOLDOWN_MS;
+  } catch {
+    return true; // corrupt marker = fail open; the login itself still degrades safely
+  }
+}
+
+export async function writeLoginMarker(
+  markerPath: string,
+  outcome: LoginOutcome,
+  now: () => Date,
+): Promise<void> {
+  if (outcome === "ok") return; // success needs no cooldown — the fresh secret is the gate
+  const marker: LoginMarker = { lastAttempt: now().toISOString(), lastOutcome: outcome };
+  await writeFile(markerPath, JSON.stringify(marker, null, 2) + "\n");
+}
+```
+
+#### 3. Acquisition wiring: fallback login + refresh handoff
+**File**: `src/index.ts`
+**Changes**: In the acquisition split, the `linkedinSessionPath === null` branch gains the login attempt BEFORE the skip warn. New `deps`-adjacent env reads via `ENV_NAMES`.
+
+```typescript
+// --- ENV_NAMES gains the credential + refresh names (src/config.ts) ---
+export const ENV_NAMES = {
+  threadsSession: "THREADS_SESSION_STATE",
+  linkedinSession: "LINKEDIN_SESSION_STATE",
+  linkedinEmail: "LINKEDIN_EMAIL",
+  linkedinPassword: "LINKEDIN_PASSWORD",
+  linkedinRefreshPath: "LINKEDIN_REFRESH_PATH", // runner temp file the refresh step consumes
+  // ...rest unchanged
+} as const;
+```
+
+```typescript
+// --- Hunk: replaces the skip-warn branch in runWatcher's acquisition stage ---
+    let linkedinSessionPath =
+      linkedinSurfaces.length > 0 ? await resolveSession(env, ENV_NAMES.linkedinSession) : null;
+    if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
+      linkedinSessionPath = await recoverLinkedInSession(env, deps, now);
+    }
+    if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
+      console.warn(
+        `fetch: ${ENV_NAMES.linkedinSession} missing or invalid — skipping ${linkedinSurfaces.length} linkedin surface(s)`,
+      );
+    }
+```
+
+```typescript
+// --- New private helper in src/index.ts ---
+/**
+ * One cooldown-gated credential login (Phase 7). No stored session, both
+ * credentials set, cooldown clear -> attempt; "ok" writes the storageState
+ * to a paired-cleanup temp dir AND hands the base64 to the workflow's
+ * refresh step via LINKEDIN_REFRESH_PATH. Any failure returns null and the
+ * D5 skip-warn path takes over.
+ */
+async function recoverLinkedInSession(
+  env: NodeJS.ProcessEnv,
+  deps: WatcherDeps,
+  now: () => Date,
+): Promise<string | null> {
+  const email = env[ENV_NAMES.linkedinEmail];
+  const password = env[ENV_NAMES.linkedinPassword];
+  if (email === undefined || password === undefined || email === "" || password === "") {
+    return null; // credentials not configured — plain D5 skip, no warn change
+  }
+  const markerPath = join(dirname(deps.statePath), "linkedin-login.json");
+  if (!(await loginAllowed(markerPath, now))) {
+    console.warn("fetch: linkedin login skipped — cooldown active after a failed attempt");
+    return null;
+  }
+  const outcome = await loginLinkedInContext(deps.contextFactory, email, password);
+  await writeLoginMarker(markerPath, outcome, now);
+  if (outcome !== "ok") {
+    console.warn(`fetch: linkedin credential login failed (${outcome}) — surfaces stay skipped`);
+    return null;
+  }
+  const sessionPath = await resolveSession(env, ENV_NAMES.linkedinSession); // unchanged: still null
+  // loginLinkedInContext wrote the fresh storageState to a temp file and
+  // returned its path; see the module for the pairing with cleanupSessionDir.
+  const freshPath = await lastLinkedInSessionPath();
+  const refreshPath = env[ENV_NAMES.linkedinRefreshPath];
+  if (refreshPath !== undefined && freshPath !== null) {
+    const state = await readFile(freshPath, "utf8");
+    await writeFile(refreshPath, Buffer.from(state).toString("base64"));
+  }
+  return freshPath;
+}
+```
+
+_(Implement note: the draft above is the shape contract — the landing must keep the session temp dir inside the existing paired-cleanup `finally` (D9/F019) and avoid a second `resolveSession` call; have `loginLinkedInContext` return the temp path directly and drop `lastLinkedInSessionPath`.)_
+
+#### 4. Workflow: secrets, refresh step, marker commit-back
+**File**: `.github/workflows/watch.yml`
+**Changes**: Step-scoped env additions (literal-first, evidence comment) + a refresh step AFTER Run watcher (it consumes the temp file only when the login succeeded) + the marker joins the state commit-back.
+
+```yaml
+          LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}          # Phase 7 fallback login; absent = fallback disabled
+          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+          LINKEDIN_REFRESH_PATH: ${{ runner.temp }}/linkedin-refresh.b64   # written only on login success
+          GH_TOKEN: ${{ secrets.LINKEDIN_SECRET_WRITER }}        # fine-grained PAT: this repo only, Actions secrets RW, short expiry
+```
+
+```yaml
+      - name: Refresh LinkedIn session secret
+        if: hashFiles(format('{0}/linkedin-refresh.b64', runner.temp)) != ''
+        run: |
+          gh secret set LINKEDIN_SESSION_STATE --body-file "$LINKEDIN_REFRESH_PATH" --repo "$GITHUB_REPOSITORY"
+          rm -f "$LINKEDIN_REFRESH_PATH"
+          echo "LINKEDIN_SESSION_STATE refreshed from a successful credential login"
+```
+
+```yaml
+          git add state/seen-posts.json state/linkedin-login.json   # Phase 7 login marker rides the same commit-back
+```
+
+#### 5. Local headed fallback (NEW)
+**File**: `scripts/linkedin-login.ts` (NEW)
+**Changes**: Same module, headed chromium, real env or readline prompt; on success writes `linkedin-state.json.b64` and prints the `gh secret set` command. This is the operator escape hatch when CI login keeps hitting checkpoints — one headed login on a residential IP.
+
+#### 6. Tests (offline, page doubles only)
+**File**: `tests/linkedin-login.test.ts` (NEW) + `tests/index.test.ts`
+**Changes**: Suite inventory — URL classification (`/checkpoint/` → challenge; stays on `/login` → bad-credentials; feed → ok); `looksAuthenticated` cookie pin; cooldown gate (fresh marker attempts, 6h-fresh failure skips, corrupt marker fails open, ok-marker attempts); acquisition wiring with doubles (credentials absent → no login, warn unchanged; login ok → surfaces walked, refresh file written, session dir cleaned; login challenge → D5 warn + zero linkedin posts + cooldown marker written; cooldown active → no login attempted). Doubles extend `PageLike`/`LocatorLike` with `url`/`fill`, and record every `locator(selector)` call — one pin asserts the autocomplete + below-layout anchors from §1 (never the dead `#session_key` ids).
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes on touched files: `npx biome check src/linkedin-login.ts src/fetch-threads.ts src/config.ts src/index.ts scripts/linkedin-login.ts tests/linkedin-login.test.ts tests/index.test.ts`
+- [x] Login suite passes: `npx tsx --test tests/linkedin-login.test.ts`
+- [x] Acquisition pins hold (login fallback + cooldown + D5 degrade): `npx tsx --test tests/index.test.ts`
+- [x] No credential material in logs: `grep -rn "password" src/index.ts src/linkedin-login.ts` shows no `console.log` of it (warns name outcomes only)
+- [x] Session contract untouched: `grep -c "import type" src/linkedin-login.ts` ≥ 1 and the only fetch-threads import is type-only (walker direction preserved)
+- [x] Whole-plan gate: `npm run typecheck` && `npm run lint` && `npm test`
+
+#### Manual Verification:
+- [ ] Set `LINKEDIN_EMAIL` + `LINKEDIN_PASSWORD` + `LINKEDIN_SECRET_WRITER` (fine-grained PAT: this repo, Actions secrets read/write) as repo secrets; dispatch watch with `LINKEDIN_SESSION_STATE` still unset: the run logs the login attempt, walks linkedin surfaces, and the refresh step updates `LINKEDIN_SESSION_STATE` (verify: repo secret timestamp changes)
+- [ ] The NEXT dispatch resolves the session from the refreshed secret with NO login attempt (marker silent, no "credential login" line)
+- [ ] If LinkedIn challenges the CI login: run `npx tsx scripts/linkedin-login.ts` locally, solve the challenge in the headed browser, set the secret from its output
+
+## Phase 8: Live retune (post-first-runs)
+
+### Overview
+
+The first real runs (2026-11-01, local, live session) proved the LinkedIn acquisition chain end to end — two configured surfaces walked 8 scroll rounds each, 75 posts parsed and funneled into judge + digest — and surfaced exactly two deltas: the lint gate broke on a `NaN` literal in the shipped Phase 7 module, and the walker misreports a healthy zero-result search as a dead session (live-observed: the past-24h page for `#hiring frontend developer indonesia` says "No results"; zero parsed posts trip the first-response throw). This phase lands both fixes with the live evidence recorded below.
+
+### Changes Required:
+
+#### 1. Lint: useNumberNamespace
+**File**: `src/linkedin-login.ts`
+**Changes**: `NaN` → `Number.NaN` in `writeLoginMarker` (biome lint/style/useNumberNamespace — the one validation blocker).
+
+#### 2. Empty-results classification in fetchLinkedInSurface
+**File**: `src/fetch-linkedin.ts`
+**Changes**: On the first-response timeout the walker currently throws "no flagship-web response within 30000ms — the session may be dead". A live zero-result search ALSO hits that path (the page stays on the search URL; only the filter-bar component fires, which parses 0 posts). Distinguish the two: a page that still sits on the search path after the window is an empty result, not a dead session — log and return an empty list. A page that bounced (`/uas/login`, `/login`, `/checkpoint`, `/authwall`) keeps the throw. Doubles without the optional `url` seam keep the throw, so the existing dead-session test is untouched.
+
+```typescript
+// --- replaces the first-response throw in fetchLinkedInSurface ---
+    if (responses === 0) {
+      const landed = page.url?.() ?? "";
+      if (landed.includes("/search/results/content")) {
+        console.log(
+          `fetch: ${surface.label} OK — 0 post(s) (no results in the past-24h window)`,
+        );
+        return [];
+      }
+      throw new Error(
+        `no flagship-web response within ${LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS}ms — the session may be dead`,
+      );
+    }
+```
+
+#### 3. Test: empty-results pin
+**File**: `tests/fetch-linkedin.test.ts`
+**Changes**: `fakeContext` pages gain an optional `url` override (absent = current doubles, which keep the dead-session throw). New case: goto leaves `url()` on the search path, no bodies fire → expect `[]`, an "OK — 0 post(s) (no results…)" log line, and NO throw. The existing no-response throw case (url-less double) stays byte-green.
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint clean including the fixed literal: `npx biome check src/fetch-linkedin.ts src/linkedin-login.ts tests/fetch-linkedin.test.ts`
+- [x] Walker suite passes with the new empty-results pin and the unchanged dead-session throw: `npx tsx --test tests/fetch-linkedin.test.ts`
+- [x] Whole-plan gate: `npm run typecheck` && `npm run lint` && `npm test`
+
+#### Manual Verification:
+- [ ] A run inside a zero-result window logs "OK — 0 post(s) (no results in the past-24h window)" for the linkedin surface and the run completes on its remaining surfaces (operator-run when the configured query has no matching posts)
+
 ## Testing Strategy
 
 ### Automated:
 - Per-phase suites as recorded in each phase's Success Criteria (scoped `npx tsx --test <suites>` + scoped `npx biome check <files>`).
 - Phase 6 owns the whole-plan gate: `npm run typecheck` && `npm run lint` && `npm test` (CI runs the same three).
+- Phase 7 gates ride the same whole-plan gate; its scoped suites are recorded in the phase's Success Criteria.
 
 ### Manual Testing Steps:
 1. Byte-identity check (design Verification Notes): after Phases 1-4, a Threads-only config must produce identical run output; `grep -rn "linkedin" src/ | grep -v fetch-linkedin` shows only stamps and session plumbing.
@@ -2683,3 +2971,48 @@ _Independent post-finalization review by artifact-code-reviewer and artifact-cov
 - FRD: `.rpiv/artifacts/discover/2026-10-31_07-45-40_linkedin-second-surface.md`
 - Guidance: `.rpiv/guidance/src/architecture.md`, `.rpiv/guidance/tests/architecture.md`, `.rpiv/guidance/.github/workflows/architecture.md`
 - Precedent commits: b050436, d8fc15b, 9e1c8ef, 93a3f38
+
+## Follow-up — 2026-10-31T21:41:28+0700 (revision: hybrid credential login)
+
+Operator direction post-merge: "set the email and password of linkedin in secret env, then let the playwright login, then continue to get the linkedin post." Three approaches presented with the research evidence (research §Session/auth: server-side session invalidation incident 2026-10-31; automated credential login = most-challenged pattern per 2026 public sources; ~250 req/day/account tolerance). Operator chose **hybrid with self-refresh**. Consequences recorded in Phase 7:
+
+- StorageState secret stays the primary contract; credential login is a cooldown-gated fallback only (6h after a failure).
+- Secret self-refresh needs a fine-grained PAT (`LINKEDIN_SECRET_WRITER`: this repo only, Actions secrets read/write, short expiry) — a new credential with secret-write blast radius, documented in the phase and README.
+- A headed local script (`scripts/linkedin-login.ts`) is the operator escape hatch when CI login is challenged.
+- The original design decision (D-series, "no automated login") is superseded by operator direction; the research evidence stands and shapes the guards.
+
+## Follow-up — 2026-10-31T22:04:36+0700 (revision: Phase 7 login selector refresh)
+
+Live-DOM validation of the Phase 7 §1 login flow (headless chromium, production browser
+conditions: chromiumContextFactory UA/viewport/locale/webdriver patch) falsified the fenced
+selectors and replaced them with verified anchors. Evidence, Playwright probes 2026-10-31:
+
+- `#session_key` / `#session_password`: 0 nodes on the live /login page — inputs carry
+  React-generated ids, no `name` attributes, and the page has no `<form>` element at all.
+- `button[type="submit"]`: 0 nodes — the Login button is `type="button"` with per-deploy
+  obfuscated classes, a random `componentkey`, and locale-dependent text ("Login" on an
+  Indonesian IP; "Sign in" expected on US CI runners).
+- Inputs exist twice (desktop + mobile layouts; the first copy is hidden) and the form
+  hydrates after domcontentloaded — every locator filters `:visible` and rides Playwright's
+  actionability wait (fill on the unfiltered first locator hangs on the hidden copy).
+- Verified anchors (end-to-end with a failed dummy-credential login): email
+  `input[autocomplete="username"]:visible` → `.first()`; password
+  `input[autocomplete="current-password"]:visible` → `.first()`; submit
+  `button:visible:below(input[autocomplete="current-password"]:visible)` — exactly one
+  candidate, locale-free layout anchor, compatible with the LocatorLike.first() seam.
+- Outcome classification re-validated: the login POST fires
+  (/flagship-web/rsc-action/actions/server-request); wrong credentials render an inline
+  error ("Kata sandi atau email salah.") and the URL stays on /login → "bad-credentials"
+  holds; /checkpoint/ → "challenge" holds; the walker's first-response window stays the
+  success oracle. Only the three selector lines changed; the URL classification is untouched.
+- Re-runnable probe (scratch): .rpiv/tmp/check-linkedin-login.mjs
+
+## Follow-up — 2026-11-01T07:38:29+0700 (revision: Phase 8 live retune)
+
+First real runs 2026-11-01 (local, live session from a successful headless credential login) — evidence basis for Phase 8:
+
+- Acquisition proven end to end: "fetch: linkedin/#hiring react OK — 38 post(s) from 13 response(s)" and "linkedin/#hiring OK — 37 post(s)" in one run; 8 scroll rounds each, 222 unique posts across 11 surfaces, digest sent (8 matches), 72 ids persisted.
+- Results endpoint CONFIRMED LIVE: the initial page AND every scroll round stream through /flagship-web/rsc-action/actions/pagination?sduiid=com.linkedin.sdui.search.contentSearchResults — already in the walker's filter regex; the shipped parser mints posts from it unmodified (probe: 3 posts from a broad #hiring payload; 38+37 in the live run).
+- Zero-results behavior observed: a past-24h search with no matching posts renders "No results" and fires NO search-data responses (the 585 KB component response is the filter bar only; 0 posts in it). The walker's first-response throw then mislabels the empty window as a dead session → Phase 8 §2.
+- Session facts: concurrent sessions coexist (a web login does not kick the walker session — verified after an operator web login); a dead/absent secret bounces to /uas/login?session_redirect=...; an exported-cookie session died when its origin session ended; a headless credential login succeeded on retry after one one-off /checkpoint/ challenge (marker evidence 06:37 +0700).
+- Environment note: on Windows with Kaspersky, HEADED chromium is denied network access entirely (net::ERR_NETWORK_ACCESS_DENIED for all sites, headed only; headless unaffected — probes 2026-11-01). The headed operator script needs a Kaspersky trusted-application exclusion for the ms-playwright chrome.exe on such machines; cookie export or headless login are the unaffected paths.
