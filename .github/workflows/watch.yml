@@ -99,10 +99,11 @@ jobs:
 
       - name: Commit state
         # F021: the queue serializes watcher runs, but a human push can land
-        # between this run's checkout and its commit-back. Rebase onto main
-        # before the first push, and again before the single retry. A
-        # conflicting rebase fails here with git's message. The next run
-        # recovers by re-judging; the audit accepts one duplicate digest.
+        # between this run's checkout and its commit-back. The rebase, the
+        # state-only conflict skip, the lease push, and the single retry all
+        # live in the committed script under scripts/ — this step keeps only
+        # the YAML-owned head: bot identity, the state-file-only add, the
+        # no-op guard, and the jq delta commit.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -114,54 +115,4 @@ jobs:
           PREV=$(git show HEAD:state/seen-posts.json | jq '.seenPostIds | length' 2>/dev/null || echo 0)
           CURR=$(jq '.seenPostIds | length' state/seen-posts.json)
           git commit -m "state: $((CURR - PREV)) new seen post ids"
-          # The rebase rewrites SHAs whenever main moved mid-run, so the push
-          # is non-fast-forward by construction; the lease still rejects a
-          # concurrent push the local fetch has not seen (F021 protection).
-          # A state commit that conflicts against main's own state line is
-          # skipped whole (F021: the next run re-judges; one duplicate digest
-          # is the accepted cost) instead of failing the run.
-          if ! git pull --rebase origin main; then
-            echo "state rebase conflicted; skipping conflicting state commits"
-            skips=0
-            while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
-              # Skip ONLY state-file conflicts; any other conflicted path is
-              # real work failing to replay (F021's loud failure preserved).
-              conflicts=$(git diff --name-only --diff-filter=U)
-              if [ "$conflicts" != "state/seen-posts.json" ]; then
-                echo "non-state conflict in: $conflicts — failing the run"
-                git rebase --abort
-                exit 1
-              fi
-              # --skip exits nonzero when it stops at the NEXT conflict; the
-              # loop condition must see that, so this is set -e-proof.
-              git rebase --skip || true
-              skips=$((skips + 1))
-            done
-          fi
-          if git push --force-with-lease; then
-            exit 0
-          fi
-          echo "state push rejected; rebasing onto main and retrying once"
-          if ! git pull --rebase origin main; then
-            echo "state rebase conflicted; skipping conflicting state commits"
-            skips=0
-            while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
-              # Skip ONLY state-file conflicts; any other conflicted path is
-              # real work failing to replay (F021's loud failure preserved).
-              conflicts=$(git diff --name-only --diff-filter=U)
-              if [ "$conflicts" != "state/seen-posts.json" ]; then
-                echo "non-state conflict in: $conflicts — failing the run"
-                git rebase --abort
-                exit 1
-              fi
-              # --skip exits nonzero when it stops at the NEXT conflict; the
-              # loop condition must see that, so this is set -e-proof.
-              git rebase --skip || true
-              skips=$((skips + 1))
-            done
-          fi
-          if git push --force-with-lease; then
-            exit 0
-          fi
-          echo "state push failed twice; failing the run"
-          exit 1
+          bash scripts/commit-state-rebase.sh
