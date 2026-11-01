@@ -64,6 +64,9 @@ persistence is `state/seen-posts.json`.
    | `GMAIL_APP_PASSWORD` | your-app-password | Gmail SMTP credentials |
    | `THREADS_SESSION_STATE` | base64 storageState | Threads login session (see below) |
    | `LINKEDIN_SESSION_STATE` | base64 storageState | LinkedIn login session (see below) |
+   | `LINKEDIN_EMAIL` | you@gmail.com | Optional. With `LINKEDIN_PASSWORD`, enables the fallback login below |
+   | `LINKEDIN_PASSWORD` | your-linkedin-password | Optional. Only sent to linkedin.com at login time |
+   | `LINKEDIN_SECRET_WRITER` | fine-grained PAT | Optional. Lets a successful fallback login rewrite `LINKEDIN_SESSION_STATE` (this repo only, **Actions secrets read/write**, short expiry) |
 
    Optional variable (not a secret): `HEARTBEAT_ENABLED` — set to `false` to
    stop the zero-match status email, default `true`. Surfaces, keywords,
@@ -260,6 +263,48 @@ The session lasts roughly a year (`li_at` expiry). When runs start logging
 the skip warning, or linkedin surfaces log `FAILED` while Threads surfaces
 stay healthy, repeat the export. LinkedIn also kills sessions server-side;
 that is routine and looks the same — a fresh export fixes it.
+
+## Optional: the fallback login (self-refreshing session)
+
+Instead of exporting cookies by hand, you can let a run recover by itself.
+Set `LINKEDIN_EMAIL` + `LINKEDIN_PASSWORD` (and `LINKEDIN_SECRET_WRITER` for
+the self-refresh) and keep `LINKEDIN_SESSION_STATE` as the primary session:
+
+- When the session secret is absent or invalid, the run attempts **ONE**
+  headless login on the `/login` page and, on success, walks the LinkedIn
+  surfaces with the fresh session. The run never tries twice — automated
+  login is the most-challenged LinkedIn pattern (CAPTCHAs, email OTP,
+  device verification), so a failure cools the attempt down for 6 hours
+  (the marker lands in `state/linkedin-login.json`, committed back beside
+  the state file).
+- On success the run writes the fresh session to a runner temp file and a
+  follow-up step runs `gh secret set LINKEDIN_SESSION_STATE` with it — the
+  next runs resolve the session from the refreshed secret and never log in
+  again. That step needs `LINKEDIN_SECRET_WRITER`: a fine-grained PAT with
+  **this repo only** and **Actions secrets read/write**, with an expiry you
+  actually rotate. Without the PAT the login still works; only the secret
+  stays stale, so every dead session logs in again.
+- A challenge (`/checkpoint/`) or wrong credentials degrade to the existing
+  skip warning and the run continues on Threads alone.
+- Credentials live in GitHub secrets only. The password never enters the
+  repo, the logs, or the state file — warnings name the outcome, never the
+  values.
+
+### When CI login keeps hitting checkpoints
+
+Solve the challenge once in a real browser and set the secret from it:
+
+```bash
+npx tsx scripts/linkedin-login.ts
+```
+
+This opens a **headed** browser (credentials from the two environment
+variables or a prompt), runs the same login, and if LinkedIn challenges it,
+waits up to 5 minutes while you solve the CAPTCHA / OTP in that window. On
+success it writes the session base64-encoded into your OS temp dir and
+prints the exact `gh secret set LINKEDIN_SESSION_STATE --body-file ...`
+command. The file is account-equivalent: never commit it, never paste it
+anywhere but the secret.
 
 ## Local run
 

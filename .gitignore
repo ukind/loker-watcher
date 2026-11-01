@@ -5,3 +5,5 @@ node_modules/
 .rpiv/tmp/
 .codebase-memory/graph.db.zst
 slice*-recon/
+linkedin-state*.b64
+run.log

@@ -91,11 +91,42 @@ jobs:
           JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
-          LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret => resolver null => LinkedIn surfaces skip (src/threads-session.ts)
+          LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret => resolver null => Phase 7 fallback login (src/linkedin-login.ts)
+          LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}          # Phase 7 fallback login; absent = fallback disabled
+          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+          LINKEDIN_REFRESH_PATH: ${{ runner.temp }}/linkedin-refresh.b64   # Phase 7 self-refresh hand-off; written only on login success
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: npx tsx src/index.ts
+
+      - name: Refresh LinkedIn session secret
+        # Phase 7: the watcher writes LINKEDIN_REFRESH_PATH only when its
+        # fallback credential login succeeded, so the file's existence is the
+        # gate (hashFiles cannot see runner.temp — it is workspace-scoped).
+        # GH_TOKEN is the fine-grained PAT (this repo only, Actions secrets
+        # read/write, short expiry) and exists only inside this step.
+        env:
+          GH_TOKEN: ${{ secrets.LINKEDIN_SECRET_WRITER }}
+          LINKEDIN_REFRESH_PATH: ${{ runner.temp }}/linkedin-refresh.b64
+        run: |
+          if test -f "$LINKEDIN_REFRESH_PATH"; then
+            # Non-fatal by contract: a wrong or expired PAT must not fail the
+            # run — the watcher already judged, emailed, and still needs Commit
+            # state. On failure, write the login cooldown marker right here:
+            # that is where the failure is visible, and it stops the run from
+            # re-logging-in every 10 minutes against a secret-write that keeps
+            # failing (recorded as a challenge-shaped marker = 6h cool).
+            if gh secret set LINKEDIN_SESSION_STATE --body-file "$LINKEDIN_REFRESH_PATH" --repo "$GITHUB_REPOSITORY"; then
+              rm -f "$LINKEDIN_REFRESH_PATH"
+              echo "LINKEDIN_SESSION_STATE refreshed from a successful credential login"
+            else
+              printf '{"lastAttempt": "%s", "lastOutcome": "challenge", "consecutiveTransients": 0}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > state/linkedin-login.json
+              echo "secret refresh FAILED — cooldown marker written; check LINKEDIN_SECRET_WRITER"
+            fi
+          else
+            echo "no fresh LinkedIn session this run — secret left as is"
+          fi
 
       - name: Commit state
         # F021: the queue serializes watcher runs, but a human push can land
@@ -107,7 +138,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/seen-posts.json
+          # Phase 7: the login marker rides the same commit-back when present
+          # (a failed login's 6h cooldown must survive to the next run).
+          if test -f state/linkedin-login.json; then
+            git add state/seen-posts.json state/linkedin-login.json
+          else
+            git add state/seen-posts.json
+          fi
           if git diff --cached --quiet; then
             echo "state unchanged; nothing to commit"
             exit 0

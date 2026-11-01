@@ -1,3 +1,5 @@
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Transporter } from "nodemailer";
 import {
@@ -30,6 +32,7 @@ import { extractPosts } from "./extract.js";
 import {
   type AuthenticatedFetchOptions,
   type ContextFactory,
+  chromiumContextFactory,
   fetchSurfaces,
   fetchSurfacesAuthenticated,
 } from "./fetch-threads.js";
@@ -42,6 +45,13 @@ import {
   resolveJudgeConfig,
   sleep,
 } from "./judge.js";
+import {
+  TRANSIENT_ESCALATION_ATTEMPTS,
+  clearLoginMarker,
+  loginAllowed,
+  loginLinkedInContext,
+  writeLoginMarker,
+} from "./linkedin-login.js";
 import { filterRecent } from "./recency.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
 import { cleanupSessionDir, resolveSession } from "./threads-session.js";
@@ -161,8 +171,22 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     const threadsSurfaces = surfaces.filter((s) => s.platform === "threads");
     const linkedinSurfaces = surfaces.filter((s) => s.platform === "linkedin");
     const threadsSessionPath = await resolveSession(env);
-    const linkedinSessionPath =
+    let linkedinSessionPath =
       linkedinSurfaces.length > 0 ? await resolveSession(env, ENV_NAMES.linkedinSession) : null;
+    // Phase 7: the credential login is the fallback BEFORE the skip warn.
+    // Both credentials set, cooldown clear -> ONE headless login; on success
+    // the fresh session's temp dir joins the paired cleanup below (F019) and
+    // its base64 hand-off lands on LINKEDIN_REFRESH_PATH for the workflow's
+    // refresh step. Every failure path returns null and the D5 warn takes
+    // over unchanged.
+    if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
+      linkedinSessionPath = await recoverLinkedInSession(
+        env,
+        deps.contextFactory ?? chromiumContextFactory,
+        statePath,
+        now,
+      );
+    }
     if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
       console.warn(
         `fetch: ${ENV_NAMES.linkedinSession} missing or invalid — skipping ${linkedinSurfaces.length} linkedin surface(s)`,
@@ -323,6 +347,70 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     skipped: skippedPostIds.length,
     saved,
   };
+}
+
+// --- Phase 7: the cooldown-gated credential-login fallback ---
+
+/**
+ * One cooldown-gated credential login (Phase 7). No stored session, both
+ * credentials set, cooldown clear -> attempt; on success the fresh
+ * storageState rides the same paired-cleanup teardown as a resolved secret
+ * (D9/F019) and its base64 hand-off lands on LINKEDIN_REFRESH_PATH for the
+ * workflow's refresh step. Any failure returns null and the D5 skip-warn
+ * path takes over — the login never throws the run.
+ */
+async function recoverLinkedInSession(
+  env: Record<string, string | undefined>,
+  contextFactory: ContextFactory,
+  statePath: string,
+  now: () => number,
+): Promise<string | null> {
+  const email = env[ENV_NAMES.linkedinEmail];
+  const password = env[ENV_NAMES.linkedinPassword];
+  if (email === undefined || password === undefined || email === "" || password === "") {
+    return null; // credentials not configured — plain D5 skip, no warn change
+  }
+  const markerPath = join(dirname(statePath), "linkedin-login.json");
+  if (!(await loginAllowed(markerPath, now))) {
+    console.warn("fetch: linkedin login skipped — cooldown active after a failed attempt");
+    return null;
+  }
+  const attempt = await loginLinkedInContext(contextFactory, email, password);
+  if (attempt.outcome === "transient") {
+    // Infra fault (network, navigation, export) — not LinkedIn's verdict:
+    // the run retries, but the streak is counted. Three consecutive
+    // transients are a PERSISTENT fault and escalate to the 6h cooldown —
+    // without this, an IP block would retry every 10 minutes forever.
+    const streak = await writeLoginMarker(markerPath, "transient", now);
+    console.warn(
+      streak >= TRANSIENT_ESCALATION_ATTEMPTS
+        ? `fetch: linkedin credential login failed (transient, attempt ${streak}) — persistent fault, cooling down 6h`
+        : `fetch: linkedin credential login failed (transient, attempt ${streak}) — surfaces stay skipped, will retry`,
+    );
+    return null;
+  }
+  if (attempt.outcome !== "ok") {
+    // LinkedIn's verdict — write the 6h cooldown marker (and reset any
+    // transient series: the streak counts consecutive TRANSIENTS only).
+    await writeLoginMarker(markerPath, attempt.outcome, now);
+    console.warn(
+      `fetch: linkedin credential login failed (${attempt.outcome}) — surfaces stay skipped`,
+    );
+    return null;
+  }
+  // Success resets any stale transient series.
+  await clearLoginMarker(markerPath);
+  const freshSessionPath = attempt.sessionPath;
+  if (freshSessionPath === null) return null; // unreachable by the ok contract; defensive
+  // Hand the fresh state to the workflow's refresh step (base64 — the same
+  // encoding the secret carries). Absent LINKEDIN_REFRESH_PATH (a local run)
+  // skips the hand-off; this run still walks with the fresh session.
+  const refreshPath = env[ENV_NAMES.linkedinRefreshPath];
+  if (refreshPath !== undefined) {
+    const state = await readFile(freshSessionPath, "utf8");
+    await writeFile(refreshPath, Buffer.from(state).toString("base64"));
+  }
+  return freshSessionPath;
 }
 
 // --- New: the shared persistence tail (D8) ---

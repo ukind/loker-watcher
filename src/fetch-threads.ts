@@ -85,6 +85,8 @@ export interface LocatorLike {
   first(): LocatorLike;
   waitFor(options: { state: "visible"; timeout: number }): Promise<void>;
   click(): Promise<void>;
+  /** Type into an input (the credential-login fallback, Phase 7); absent on minimal doubles. */
+  fill?(value: string): Promise<void>;
 }
 
 /** Wheel-driven scroll controller (LinkedIn pagination; Threads scrolls via evaluate). */
@@ -106,6 +108,8 @@ export interface PageLike {
   locator(selector: string): LocatorLike;
   evaluate(script: string): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
+  /** Current URL (the Phase 7 login outcome classifier); absent on minimal doubles. */
+  readonly url?: () => string;
   /** Wheel controller; absent on pages that cannot wheel-scroll. */
   readonly mouse?: PageMouseLike;
   close(): Promise<void>;
@@ -116,6 +120,11 @@ export interface ContextLike {
   newPage(): Promise<PageLike>;
   addInitScript(script: string): Promise<void>;
   close(): Promise<void>;
+  /**
+   * Cookie-jar read for the Phase 7 credential-login fallback (the fresh
+   * session exports from here); absent on minimal doubles.
+   */
+  readonly cookies?: () => Promise<ReadonlyArray<{ name: string }>>;
 }
 
 /**
@@ -127,67 +136,78 @@ export interface ContextLike {
 export type ContextFactory = (storageStatePath?: string) => Promise<ContextLike>;
 
 /**
- * The production factory, and the ONLY Playwright import site: the dynamic
- * await import below keeps module import side-effect free (importing this
- * file never loads Playwright — the offline suites rely on that). The
- * factory owns the browser and closes it when the context closes.
+ * Build one browser context for a walk at a fixed headless mode. The
+ * dynamic await import inside is the ONLY Playwright import site, so
+ * importing this module never loads Playwright — the offline suites rely
+ * on that — and the factory owns the browser, closing it when the context
+ * closes. The optional storage-state path is the session file the
+ * authenticated walk passes so the context attaches the logged-in cookies;
+ * zero-arg calls (test doubles, the fresh credential-login context) simply
+ * build a context from no stored session.
  */
-const chromiumContextFactory: ContextFactory = async (
-  storageStatePath?: string,
-): Promise<ContextLike> => {
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    ...(storageStatePath === undefined ? {} : { storageState: storageStatePath }),
-    userAgent: USER_AGENT,
-    viewport: { width: 1366, height: 768 },
-    locale: "en-US",
-  });
-  await context.addInitScript(WEBDRIVER_PATCH);
-  return {
-    newPage: async (): Promise<PageLike> => {
-      const page = await context.newPage();
-      return {
-        goto: (url, options) => page.goto(url, options),
-        waitForFunction: async (pageFunction, arg, options) => {
-          await page.waitForFunction(pageFunction, arg, options);
-        },
-        content: () => page.content(),
-        on: (event, listener) => {
-          page.on(event, (response) => listener(response));
-          return undefined;
-        },
-        locator: (selector) => {
-          const chain = page.locator(selector).first();
-          const adapted: LocatorLike = {
-            first: () => adapted,
-            waitFor: (options) => chain.waitFor(options),
-            click: () => chain.click(),
-          };
-          return adapted;
-        },
-        evaluate: (script) => page.evaluate(script),
-        waitForTimeout: (ms) => page.waitForTimeout(ms),
-        mouse: {
-          move: async (x, y) => {
-            await page.mouse.move(x, y);
+export function makeChromiumContextFactory(headless: boolean): ContextFactory {
+  const factory: ContextFactory = async (storageStatePath?: string): Promise<ContextLike> => {
+    const { chromium } = await import("playwright");
+    const browser = await chromium.launch({ headless });
+    const context = await browser.newContext({
+      ...(storageStatePath === undefined ? {} : { storageState: storageStatePath }),
+      userAgent: USER_AGENT,
+      viewport: { width: 1366, height: 768 },
+      locale: "en-US",
+    });
+    await context.addInitScript(WEBDRIVER_PATCH);
+    return {
+      newPage: async (): Promise<PageLike> => {
+        const page = await context.newPage();
+        return {
+          goto: (url, options) => page.goto(url, options),
+          waitForFunction: async (pageFunction, arg, options) => {
+            await page.waitForFunction(pageFunction, arg, options);
           },
-          wheel: async (deltaX, deltaY) => {
-            await page.mouse.wheel(deltaX, deltaY);
+          content: () => page.content(),
+          on: (event, listener) => {
+            page.on(event, (response) => listener(response));
+            return undefined;
           },
-        },
-        close: () => page.close(),
-      };
-    },
-    addInitScript: async (script) => {
-      await context.addInitScript(script);
-    },
-    close: async () => {
-      await context.close();
-      await browser.close();
-    },
+          locator: (selector) => {
+            const chain = page.locator(selector).first();
+            const adapted: LocatorLike = {
+              first: () => adapted,
+              waitFor: (options) => chain.waitFor(options),
+              click: () => chain.click(),
+              fill: (value) => chain.fill(value),
+            };
+            return adapted;
+          },
+          evaluate: (script) => page.evaluate(script),
+          waitForTimeout: (ms) => page.waitForTimeout(ms),
+          url: () => page.url(),
+          mouse: {
+            move: async (x, y) => {
+              await page.mouse.move(x, y);
+            },
+            wheel: async (deltaX, deltaY) => {
+              await page.mouse.wheel(deltaX, deltaY);
+            },
+          },
+          close: () => page.close(),
+        };
+      },
+      addInitScript: async (script) => {
+        await context.addInitScript(script);
+      },
+      cookies: async () => await context.cookies(),
+      close: async () => {
+        await context.close();
+        await browser.close();
+      },
+    };
   };
-};
+  return factory;
+}
+
+/** The production factory: headless, hardened, storage-state aware. */
+export const chromiumContextFactory: ContextFactory = makeChromiumContextFactory(true);
 
 /**
  * A `tag` surface logs as `tag/<value>`; a `url` surface logs as its full

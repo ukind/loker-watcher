@@ -14,6 +14,9 @@
 export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
   linkedinSession: "LINKEDIN_SESSION_STATE",
+  linkedinEmail: "LINKEDIN_EMAIL",
+  linkedinPassword: "LINKEDIN_PASSWORD",
+  linkedinRefreshPath: "LINKEDIN_REFRESH_PATH",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
   judgeConcurrency: "JUDGE_CONCURRENCY",
