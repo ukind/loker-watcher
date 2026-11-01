@@ -88,7 +88,7 @@ export interface LocatorLike {
 }
 
 /** Wheel-driven scroll controller (LinkedIn pagination; Threads scrolls via evaluate). */
-export interface PageMouseLike {
+interface PageMouseLike {
   move(x: number, y: number): Promise<void>;
   wheel(deltaX: number, deltaY: number): Promise<void>;
 }

@@ -149,9 +149,6 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const surfaces = resolveSurfaces(config.surfaces);
   console.log(`watch: surfaces: ${surfaces.map((s) => s.label).join(", ")}`);
 
-  // Acquisition stage (D9): session resolution + surface fetch timed as one
-  // span. Extraction happens inside the walk; the dedupe count logs right
-  // after the duration line.
   // Acquisition stage (D9): per-platform session resolution + surface
   // fetch timed as one span. Extraction happens inside the walk; the
   // dedupe count logs right after the duration line.
