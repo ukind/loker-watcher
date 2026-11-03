@@ -4,7 +4,8 @@ Guidance for AI coding agents working in this repository.
 
 ## What this project is
 
-loker-watcher watches Indonesian job-hunting surfaces on Threads. A scheduled
+loker-watcher watches Indonesian job-hunting surfaces on Threads and
+LinkedIn. A scheduled
 GitHub Actions workflow loads the surfaces listed in `watcher.config.json`,
 asks an OpenAI-compatible LLM judge to keep posts matching the configured
 keywords, and emails new matches as a plain-text digest.
@@ -18,7 +19,9 @@ back after match runs.
 - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, and ramp concurrent calls to find the concurrency ceiling (needs `LLM_*` env vars)
 - `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, and `scripts/hooks`
 - `npm run format` - Biome format in place
-- `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars)
+- `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars,
+  plus `LINKED_API_*` for the linkedin surfaces; absent, those surfaces skip
+  with a warn)
 - `npx playwright install chromium` - one-time browser install for local runs
 
 ## Architecture
@@ -30,6 +33,10 @@ against the configured keywords, email digest, commit state.
 - `src/fetch-threads.ts`, `src/threads-session.ts` - Playwright loading of tag,
   profile, and search surfaces; signed-in via `THREADS_SESSION_STATE` with a
   logged-out fallback
+- `src/fetch-linkedin-api.ts` - Linked API SDK post search for the linkedin
+  surfaces; sequential, never throws (degrades per surface), tokens from the
+  `LINKED_API_TOKEN` / `LINKED_API_IDENTIFICATION_TOKEN` pair with the
+  caller-owned skip warn
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)

@@ -4,7 +4,8 @@
 The entire application: a single-shot CLI pipeline that fetches job posts from Threads and LinkedIn surfaces, filters them, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM, emails matches, and persists judged post ids. One exported unit seam — `runWatcher(deps)` — no server, no daemon.
 
 ## Dependencies and consumers
-- **playwright**: quarantined behind the single dynamic-import site — `chromiumContextFactory` in fetch-threads.ts is the ONLY `await import("playwright")` in src/; fetch-linkedin.ts consumes the seam type-only
+- **playwright**: quarantined behind the single dynamic-import site — `chromiumContextFactory` in fetch-threads.ts is the ONLY `await import("playwright")` in src/ (Threads walks only)
+- **@linkedapi/node**: quarantined the same way — `createLinkedApiClient` in fetch-linkedin-api.ts is the ONLY `await import("@linkedapi/node")` in src/; the import is NAMED (the default export is the CJS namespace object — not constructable under NodeNext + verbatimModuleSyntax, D2/D15)
 - **nodemailer**: single creation site in email.ts (heartbeat + exhaustion alarm ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
 - **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports buildBulkMessages, resolveJudgeConfig, loadWatcherConfig
 
@@ -13,8 +14,8 @@ The entire application: a single-shot CLI pipeline that fetches job posts from T
 index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
 types.ts, config.ts, config-file.ts      # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json validation
                                          #   (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds, reasoningEffort)
-threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | walker + *Like seam +
-fetch-linkedin.ts, extract.ts            #   contextFactory + platform dispatch | LinkedIn wheel walk | data-sjs walk
+threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
+fetch-linkedin-api.ts, extract.ts        #   contextFactory | LinkedIn SDK post search (sequential, never throws) | data-sjs walk
 recency.ts, judge.ts, judge-rotation.ts, # FUNNEL: window filter | dispatchLlmCall + wrappers | rotation | parsers |
 judge-parse.ts, pool.ts                  #   bounded shared runPool (zero imports)
 email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 atomic save
@@ -61,19 +62,28 @@ const state: RotationState = { accounts, cooldownUntil: new Map(), waitBudgetRem
 // Terminal RETURNED, never thrown in the core; judgePosts drains, then throws AFTER Promise.all: ONE alarm email, exit(1).
 ```
 
-## fetch-linkedin.ts: the second platform rides the same seam
+## fetch-linkedin-api.ts: the second platform rides the Linked API SDK
+
 ```typescript
-// TYPES-ONLY seam import (no Playwright); index.ts policy: unset/invalid LINKEDIN_SESSION_STATE ⇒ null ⇒
-// "skipping N linkedin surface(s)" (warn, never throw, never logged-out; a walk-time failure downgrades to a warn).
-function mintPost(activityId: string, text: string): Post {  // body-absent facts are MINTED from the id
-  return {
-    platform: "linkedin",
-    id: `urn:li:activity:\${activityId}`,                   // dedup key; permalink is constructed from it
-    author: "linkedin-member",                               // placeholder — DOM carries no ids to join on
-    timestamp: new Date(Number(BigInt(activityId) >> 22n)).toISOString(),  // id >> 22 = epoch ms
-  };
-}
-// Flight stream: "rowId:{json}" lines → generic walk → capture-verified leaves; subject suffix " + LinkedIn" rides only when ≥1 LinkedIn match exists.
+// SEARCH SHAPE (module constants, not config — repo doctrine): term verbatim from the raw linkedin
+// surface value, limit 100 (the SDK max), filter { sort: "latest", datePosted: "past24Hours" }.
+// TOKEN RESOLVER (silent null, the resolveSession model): resolveLinkedApiTokens(env) returns both tokens
+// or null when either is unset/blank; runWatcher owns the ONE warn naming BOTH variables — a single-exit
+// resolver cannot say which half is absent, and the tokens ship as a pair. Missing tokens ⇒ surfaces skip,
+// run exits 0.
+// SEAM: LinkedApiClientLike structural double for the offline suite; createLinkedApiClient (dynamic NAMED
+// import — the default export is the CJS namespace, TS2351) is the module's only @linkedapi/node touch.
+// TOTAL BY CONTRACT (never rejects): the sequential per-surface loop (FR4 — no runPool for LinkedIn) warns
+// + skips a surface whose execute()/result() throws (LinkedApiError.type + message); a parked workflow
+// (ANY non-nullish pendingReason parks — "outsideWorkingHours" keeps its dedicated message; any other
+// reason warns "parked (pendingReason: <reason>)") and NEVER awaits result(); result().errors[] warns each entry
+// and keeps the posts so far; an empty result is success ("OK — 0 post(s)"); a failed client build degrades
+// to warn + [] (D12: the module is the required boundary, the caller's catch is belt).
+// MAPPING: id = activityUrn ?? the urn parsed from url (drop+count when neither); text = text ??
+// repostText (drop+count when both empty); author.name required; the timestamp is guarded BEFORE
+// toISOString; per-surface Map dedupe by id (global dedupe stays in runWatcher's dedupePosts).
+// DIGEST: post lines carry the [linkedin] marker and the subject appends " + LinkedIn" when >=1 match —
+// unchanged (email.ts never knew how posts were fetched).
 ```
 
 ## State: load → migrate → prune → gated atomic save

@@ -5,7 +5,7 @@ Full-pipeline offline verification of src/ (plus the commit-state-rebase shell s
 
 ## Dependencies
 - **node:test + node:assert/strict**, run via tsx — the only runner/assertion stack
-- nodemailer contributes types only (fake transports); Playwright is never imported at test time (structural `*Like` doubles)
+- nodemailer contributes types only (fake transports); Playwright is never imported at test time (structural `*Like` doubles); the Linked API SDK never loads either (the factory's dynamic import is the only site)
 - Consumers: `npm test` (the `tests/*.test.ts` glob auto-picks new files; CI's final gate); watch.yml does NOT run tests — merge gate only
 
 ## Coverage map (the 1:1 mirror rule, today)
@@ -14,7 +14,7 @@ config.ts, types.ts   — no test (names/paths/kill switch — the "false" branc
 config-file.ts     → config-file.test.ts
 email.ts, heartbeat.ts → email.test.ts, heartbeat.test.ts
 extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/tag-page.html, graphql-response.json
-fetch-linkedin.ts  → fetch-linkedin.test.ts  # synthetic Flight bodies; staged-response ContextLike double
+fetch-linkedin-api.ts → fetch-linkedin-api.test.ts  # stubbed LinkedApiClientLike: typed errors, parked workflows, errors[], drop-count
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins

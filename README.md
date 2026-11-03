@@ -13,10 +13,11 @@ persistence is `state/seen-posts.json`.
    set it signs in, clicks the **Recent** tab where one exists, and reads
    posts from the `graphql` XHR responses; otherwise it loads each surface
    logged out and reads posts from the embedded `data-sjs` JSON blobs.
-2. LinkedIn surfaces are walked with a signed-in session from
-   `LINKEDIN_SESSION_STATE`, reading posts from the LinkedIn flagship-web
-   search responses. With that secret unset or invalid, those surfaces are
-   skipped with a warning and the run continues on Threads alone.
+2. LinkedIn surfaces run one Linked API post search each — the surface's
+   keywords string goes verbatim to the `@linkedapi/node` SDK (`sort:
+   latest`, past 24 hours, up to 100 posts). With `LINKED_API_TOKEN` or
+   `LINKED_API_IDENTIFICATION_TOKEN` unset or blank, those surfaces are
+   skipped with one warning and the run continues on Threads alone.
 3. Posts are deduplicated across surfaces and platforms.
 4. Posts older than `recencyHours` are dropped.
 5. Posts already in `state/seen-posts.json` are dropped.
@@ -63,10 +64,8 @@ persistence is `state/seen-posts.json`.
    | `GMAIL_USER` | `you@gmail.com` | Sender and recipient |
    | `GMAIL_APP_PASSWORD` | your-app-password | Gmail SMTP credentials |
    | `THREADS_SESSION_STATE` | base64 storageState | Threads login session (see below) |
-   | `LINKEDIN_SESSION_STATE` | base64 storageState | LinkedIn login session (see below) |
-   | `LINKEDIN_EMAIL` | you@gmail.com | Optional. With `LINKEDIN_PASSWORD`, enables the fallback login below |
-   | `LINKEDIN_PASSWORD` | your-linkedin-password | Optional. Only sent to linkedin.com at login time |
-   | `LINKEDIN_SECRET_WRITER` | fine-grained PAT | Optional. Lets a successful fallback login rewrite `LINKEDIN_SESSION_STATE` (this repo only, **Actions secrets read/write**, short expiry) |
+   | `LINKED_API_TOKEN` | your-linked-api-token | Linked API token for the LinkedIn post search (see below) |
+   | `LINKED_API_IDENTIFICATION_TOKEN` | your-identification-token | Linked API identification token — ships as a pair with `LINKED_API_TOKEN` |
 
    Optional variable (not a secret): `HEARTBEAT_ENABLED` — set to `false` to
    stop the zero-match status email, default `true`. Surfaces, keywords,
@@ -98,12 +97,12 @@ no code change and no Actions variable is involved.
 
 | Key | What it does |
 |---|---|
-| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries build a LinkedIn content search (newest first, past 24 hours) from a keywords string and need `LINKEDIN_SESSION_STATE`. |
+| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries feed a keywords string to the Linked API post search (newest first, past 24 hours) and need `LINKED_API_TOKEN` + `LINKED_API_IDENTIFICATION_TOKEN`. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
 | `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
-| `scrollRounds` | Upper bound on scroll rounds per surface walk, shared by the Threads scroll loop and LinkedIn pagination. Must be a whole number >= 1; absent defaults to `8`. |
+| `scrollRounds` | Upper bound on scroll rounds per Threads surface walk. Must be a whole number >= 1; absent defaults to `8`. |
 
 Adding a profile or a search URL is the same edit as adding a tag:
 
@@ -111,8 +110,8 @@ Adding a profile or a search URL is the same edit as adding a tag:
 { "type": "url", "value": "https://www.threads.com/search?q=frontend&serp_type=deeplink&filter=recent" }
 ```
 
-A LinkedIn content search is the same kind of edit — a keywords string, not
-a URL:
+A LinkedIn search is the same kind of edit — a keywords string the Linked
+API post search runs, not a URL:
 
 ```json
 { "type": "linkedin", "value": "#hiring frontend developer indonesia" }
@@ -204,7 +203,7 @@ Two traps to know:
   still answer `204` — and if the filename is `ci.yml`, every trigger
   starts a CI run instead. The run must appear under **watch**.
 - The native schedule stays on. Both clocks share one concurrency group
-  (`watch.yml:11-13`), so overlapping triggers queue instead of racing.
+  (`watch.yml:11-13`), so overlapping triggers cancel the older run instead of racing it.
   Two clocks also double the zero-match status emails; set
   `HEARTBEAT_ENABLED=false` (see Setup) if that is too many, and turn on
   cron-job.org's failure notifications so a broken trigger still alerts
@@ -239,72 +238,28 @@ logging the logged-out fallback warning or post counts drop back to ~19 per
 tag, repeat the export. With the secret unset or invalid the watcher falls
 back to the logged-out fetch and still runs.
 
-## Refresh the LinkedIn session
+## LinkedIn tokens (Linked API)
 
-LinkedIn content search is logged-in-only — an anonymous page hits an
-authwall, so unlike Threads there is no logged-out fallback. LinkedIn
-surfaces walk a session from `LINKEDIN_SESSION_STATE`; with the secret
-unset or invalid they are skipped with a warning naming the variable, and
-the run continues on Threads alone.
+LinkedIn posts come from the [Linked API](https://linkedapi.io) post
+search — a cloud-browser service, so no LinkedIn session, cookie export,
+or password is stored anywhere. The watcher needs a paid Linked API seat
+with a connected LinkedIn account and both tokens:
 
-1. Log in to linkedin.com in a regular Firefox session.
-2. Export the cookies for `.linkedin.com` as a Playwright storageState
-   document and convert it exactly as in the Threads section above — the
-   same `sameSite` mapping and `{ "cookies": [...], "origins": [] }`
-   wrapper apply. Keep `li_at` (the session cookie); the remaining
-   `.linkedin.com` cookies can ride along.
-3. Base64-encode the file and set the secret:
+1. Sign up at linkedapi.io, connect your LinkedIn account, and create an
+   API token and an identification token in the dashboard.
+2. Set both secrets:
 
    ```bash
-   gh secret set LINKEDIN_SESSION_STATE < linkedin-state.json.b64
+   gh secret set LINKED_API_TOKEN --body "your-linked-api-token"
+   gh secret set LINKED_API_IDENTIFICATION_TOKEN --body "your-identification-token"
    ```
 
-The session lasts roughly a year (`li_at` expiry). When runs start logging
-the skip warning, or linkedin surfaces log `FAILED` while Threads surfaces
-stay healthy, repeat the export. LinkedIn also kills sessions server-side;
-that is routine and looks the same — a fresh export fixes it.
-
-## Optional: the fallback login (self-refreshing session)
-
-Instead of exporting cookies by hand, you can let a run recover by itself.
-Set `LINKEDIN_EMAIL` + `LINKEDIN_PASSWORD` (and `LINKEDIN_SECRET_WRITER` for
-the self-refresh) and keep `LINKEDIN_SESSION_STATE` as the primary session:
-
-- When the session secret is absent or invalid, the run attempts **ONE**
-  headless login on the `/login` page and, on success, walks the LinkedIn
-  surfaces with the fresh session. The run never tries twice — automated
-  login is the most-challenged LinkedIn pattern (CAPTCHAs, email OTP,
-  device verification), so a failure cools the attempt down for 6 hours
-  (the marker lands in `state/linkedin-login.json`, committed back beside
-  the state file).
-- On success the run writes the fresh session to a runner temp file and a
-  follow-up step runs `gh secret set LINKEDIN_SESSION_STATE` with it — the
-  next runs resolve the session from the refreshed secret and never log in
-  again. That step needs `LINKEDIN_SECRET_WRITER`: a fine-grained PAT with
-  **this repo only** and **Actions secrets read/write**, with an expiry you
-  actually rotate. Without the PAT the login still works; only the secret
-  stays stale, so every dead session logs in again.
-- A challenge (`/checkpoint/`) or wrong credentials degrade to the existing
-  skip warning and the run continues on Threads alone.
-- Credentials live in GitHub secrets only. The password never enters the
-  repo, the logs, or the state file — warnings name the outcome, never the
-  values.
-
-### When CI login keeps hitting checkpoints
-
-Solve the challenge once in a real browser and set the secret from it:
-
-```bash
-npx tsx scripts/linkedin-login.ts
-```
-
-This opens a **headed** browser (credentials from the two environment
-variables or a prompt), runs the same login, and if LinkedIn challenges it,
-waits up to 5 minutes while you solve the CAPTCHA / OTP in that window. On
-success it writes the session base64-encoded into your OS temp dir and
-prints the exact `gh secret set LINKEDIN_SESSION_STATE --body-file ...`
-command. The file is account-equivalent: never commit it, never paste it
-anywhere but the secret.
+With either secret unset or blank, linkedin surfaces are skipped with one
+warning naming both variables, and the run continues on Threads alone. A
+surface the Linked API cannot serve — an error, or the search parked
+outside Linked API working hours — logs a `FAILED` line and the rest of
+the run continues. LinkedIn has no logged-out fallback, but one bad
+surface never fails the run.
 
 ## Local run
 
