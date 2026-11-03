@@ -10,7 +10,14 @@ permissions:
 
 concurrency:
   group: watch
-  cancel-in-progress: false
+  # The SDK cutover flips queue to cancel: a run parked on a Linked API
+  # workflow can hold the whole 8-minute cap, and queueing every 10-minute
+  # tick behind it backs the schedule up without bound. Cancel keeps at
+  # most one run alive — which still serializes the state read-modify-
+  # write (the in-flight run is dead, never concurrent) — and the newest
+  # run is the one worth keeping. State writes stay atomic + rebase-safe
+  # either way.
+  cancel-in-progress: true
 
 jobs:
   probe:
@@ -40,18 +47,21 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     # Width-4 judge (the probe job's reading): 30 bulk calls clear in ~8
-    # waves, width-4 surface pools cut the serial fetch to ~1 min (71s
-    # measured), and the 40-call fallback budget adds about a minute. The
-    # 8-minute cap keeps a hung run under the 10-minute cron interval — it
-    # dies before the next tick queues. Measured 2026-10-27: 8-wide bursts
-    # drew HTTP 429s from the endpoint, 4-wide ran clean.
+    # waves, and the 40-call fallback budget adds about a minute. Measured
+    # 2026-10-27: 8-wide bursts drew HTTP 429s from the endpoint, 4-wide
+    # ran clean. The 8-minute cap keeps a hung run under the 10-minute
+    # cron interval — it dies before the next tick queues (cancel-in-
+    # progress now drops a superseded run instead of queueing it).
     # Timeout envelope arithmetic (F023): 480s job cap - 60-100s setup
     # prologue (checkout + npm ci + Playwright install; the ms-playwright
-    # cache removes 30-60s of it) - 71s measured fetch worst case
-    # (2026-10-27) - 60s abort tail leaves ~249-289s for judge waves and
-    # parks. WAIT_BUDGET_MS (180s, src/judge.ts) caps the parked wait
-    # before the exhaustion alarm, so the alarm lands ~1-2 min inside the
-    # cap and the run still dies before the next 10-minute tick queues.
+    # cache removes 30-60s of it) - 60s abort tail leaves ~320-360s for
+    # the fetch stage, judge waves, and parks. The fetch term is PENDING
+    # MEASUREMENT: LinkedIn rides the sequential Linked API SDK workflows
+    # now, and the first live dispatch's `timing: fetch <N>ms` line pastes
+    # here and into src/judge.ts in the one declared retune commit.
+    # WAIT_BUDGET_MS (180s, src/judge.ts) caps the parked wait before the
+    # exhaustion alarm, so the alarm lands ~1-2 min inside the cap and the
+    # run still dies before the next 10-minute tick queues.
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -91,42 +101,12 @@ jobs:
           JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
-          LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret => resolver null => Phase 7 fallback login (src/linkedin-login.ts)
-          LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}          # Phase 7 fallback login; absent = fallback disabled
-          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
-          LINKEDIN_REFRESH_PATH: ${{ runner.temp }}/linkedin-refresh.b64   # Phase 7 self-refresh hand-off; written only on login success
+          LINKED_API_TOKEN: ${{ secrets.LINKED_API_TOKEN }}   # absent/blank => linkedin surfaces skip with one warn (src/fetch-linkedin-api.ts); Threads still runs
+          LINKED_API_IDENTIFICATION_TOKEN: ${{ secrets.LINKED_API_IDENTIFICATION_TOKEN }}   # ships as a pair with LINKED_API_TOKEN
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: npx tsx src/index.ts
-
-      - name: Refresh LinkedIn session secret
-        # Phase 7: the watcher writes LINKEDIN_REFRESH_PATH only when its
-        # fallback credential login succeeded, so the file's existence is the
-        # gate (hashFiles cannot see runner.temp — it is workspace-scoped).
-        # GH_TOKEN is the fine-grained PAT (this repo only, Actions secrets
-        # read/write, short expiry) and exists only inside this step.
-        env:
-          GH_TOKEN: ${{ secrets.LINKEDIN_SECRET_WRITER }}
-          LINKEDIN_REFRESH_PATH: ${{ runner.temp }}/linkedin-refresh.b64
-        run: |
-          if test -f "$LINKEDIN_REFRESH_PATH"; then
-            # Non-fatal by contract: a wrong or expired PAT must not fail the
-            # run — the watcher already judged, emailed, and still needs Commit
-            # state. On failure, write the login cooldown marker right here:
-            # that is where the failure is visible, and it stops the run from
-            # re-logging-in every 10 minutes against a secret-write that keeps
-            # failing (recorded as a challenge-shaped marker = 6h cool).
-            if gh secret set LINKEDIN_SESSION_STATE --body-file "$LINKEDIN_REFRESH_PATH" --repo "$GITHUB_REPOSITORY"; then
-              rm -f "$LINKEDIN_REFRESH_PATH"
-              echo "LINKEDIN_SESSION_STATE refreshed from a successful credential login"
-            else
-              printf '{"lastAttempt": "%s", "lastOutcome": "challenge", "consecutiveTransients": 0}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > state/linkedin-login.json
-              echo "secret refresh FAILED — cooldown marker written; check LINKEDIN_SECRET_WRITER"
-            fi
-          else
-            echo "no fresh LinkedIn session this run — secret left as is"
-          fi
 
       - name: Commit state
         # F021: the queue serializes watcher runs, but a human push can land
@@ -138,13 +118,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Phase 7: the login marker rides the same commit-back when present
-          # (a failed login's 6h cooldown must survive to the next run).
-          if test -f state/linkedin-login.json; then
-            git add state/seen-posts.json state/linkedin-login.json
-          else
-            git add state/seen-posts.json
-          fi
+          git add state/seen-posts.json
           if git diff --cached --quiet; then
             echo "state unchanged; nothing to commit"
             exit 0
