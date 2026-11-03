@@ -11,7 +11,8 @@ import { readFile } from "node:fs/promises";
 import { CONFIG_PATH } from "./config.js";
 
 /** One surface to sample. `tag` builds the tag-page URL; `url` is verbatim;
- * `linkedin` builds a LinkedIn content-search URL from keywords. */
+ * `linkedin` stays a valid config value whose raw keyword string the SDK
+ * fetcher consumes directly (it never resolves to a URL here). */
 export type Surface =
   | { type: "tag"; value: string }
   | { type: "url"; value: string }
@@ -19,9 +20,9 @@ export type Surface =
 
 /** A surface resolved to the URL Playwright loads, plus its log label. */
 export interface ResolvedSurface {
-  /** Which platform walker drives this surface. */
-  platform: "threads" | "linkedin";
-  /** Log label: `tag/hiring`, `linkedin/<keywords>`, or the full URL for a `url` surface. */
+  /** Always "threads": LinkedIn rides the SDK fetcher and never resolves here. */
+  platform: "threads";
+  /** Log label: `tag/hiring`, or the full URL for a `url` surface. */
   label: string;
   /** Absolute URL to load. */
   url: string;
@@ -216,21 +217,25 @@ function readScrollRounds(value: unknown, filePath: string): number {
   return value;
 }
 
-/** Resolve configured surfaces to the URLs Playwright loads. */
+/**
+ * Resolve configured surfaces to the URLs Playwright loads. Only threads
+ * surfaces resolve: linkedin entries stay valid config, but the SDK fetcher
+ * (src/fetch-linkedin-api.ts) consumes their raw value, so the caller
+ * partitions them out first — one reaching this function is a wiring bug
+ * and fails visibly.
+ */
 export function resolveSurfaces(surfaces: readonly Surface[]): ResolvedSurface[] {
   return surfaces.map((surface): ResolvedSurface => {
+    if (surface.type === "linkedin") {
+      throw new Error(
+        `linkedin surface "${surface.value}" reached resolveSurfaces — a wiring bug: partition linkedin surfaces out before resolving (the SDK fetcher takes their raw value)`,
+      );
+    }
     if (surface.type === "tag") {
       return {
         platform: "threads",
         label: `tag/${surface.value}`,
         url: tagPageUrlFor(surface.value),
-      };
-    }
-    if (surface.type === "linkedin") {
-      return {
-        platform: "linkedin",
-        label: `linkedin/${surface.value}`,
-        url: linkedinSearchUrlFor(surface.value),
       };
     }
     return { platform: "threads", label: surface.value, url: surface.value };
@@ -240,18 +245,4 @@ export function resolveSurfaces(surfaces: readonly Surface[]): ResolvedSurface[]
 /** Tag-page URL. Kept local so src/config.ts no longer owns surface policy. */
 function tagPageUrlFor(tag: string): string {
   return `https://www.threads.com/tag/${encodeURIComponent(tag)}`;
-}
-
-/**
- * LinkedIn content-search URL from a keywords string. The facets ride the
- * URL as server-side arguments (live capture 2026-10-31): sortBy is
- * newest-first and datePosted is the past 24 hours. encodeURIComponent and
- * not URLSearchParams because spaces must render as %20 (the operator
- * example URL byte) and URLSearchParams emits +.
- */
-function linkedinSearchUrlFor(keywords: string): string {
-  const encoded = encodeURIComponent(keywords);
-  const sortBy = encodeURIComponent('["date_posted"]');
-  const datePosted = encodeURIComponent('["past-24h"]');
-  return `https://www.linkedin.com/search/results/content/?keywords=${encoded}&origin=FACETED_SEARCH&sortBy=${sortBy}&datePosted=${datePosted}`;
 }

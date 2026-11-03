@@ -1,6 +1,5 @@
 /**
- * Session resolution for both watched platforms (Phase 8; extended for
- * LinkedIn).
+ * Session resolution for the Threads walk (Phase 8).
  *
  * An authenticated walk replays a Playwright storageState document
  * exported from a real browser login. The document travels base64-encoded
@@ -9,12 +8,11 @@
  * state/seen-posts.json. The decoded document is written to an OS temp
  * file that Playwright loads as the browser context's storage state.
  *
- * The variable name is a parameter defaulting to the Threads var, so one
- * resolver serves THREADS_SESSION_STATE and LINKEDIN_SESSION_STATE. A null
+ * The variable name is a parameter defaulting to the Threads var. A null
  * return means "no usable session"; what happens next is the caller's
- * policy — Threads falls back to the logged-out walk, LinkedIn surfaces
- * are skipped with a warn (an anonymous LinkedIn page hits an authwall,
- * never a logged-out walk).
+ * policy — Threads falls back to the logged-out walk. LinkedIn rides the
+ * Linked API SDK tokens (src/fetch-linkedin-api.ts) and resolves no
+ * session at all.
  */
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

@@ -1,9 +1,8 @@
-import { readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Transporter } from "nodemailer";
 import {
   type ResolvedSurface,
+  type Surface,
   type WatcherConfig,
   loadWatcherConfig,
   resolveSurfaces,
@@ -30,12 +29,12 @@ import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js"
  */
 import { extractPosts } from "./extract.js";
 import {
-  type AuthenticatedFetchOptions,
-  type ContextFactory,
-  chromiumContextFactory,
-  fetchSurfaces,
-  fetchSurfacesAuthenticated,
-} from "./fetch-threads.js";
+  type LinkedInApiTokens,
+  type LinkedinSurface,
+  fetchLinkedInPosts,
+  resolveLinkedApiTokens,
+} from "./fetch-linkedin-api.js";
+import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { isRotationExhausted } from "./judge-rotation.js";
 import {
@@ -45,13 +44,6 @@ import {
   resolveJudgeConfig,
   sleep,
 } from "./judge.js";
-import {
-  TRANSIENT_ESCALATION_ATTEMPTS,
-  clearLoginMarker,
-  loginAllowed,
-  loginLinkedInContext,
-  writeLoginMarker,
-} from "./linkedin-login.js";
 import { filterRecent } from "./recency.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
 import { cleanupSessionDir, resolveSession } from "./threads-session.js";
@@ -109,8 +101,8 @@ export async function timeStage<T>(
  * Injectable dependencies for one watcher run; every field has the
  * production default the pipeline uses when omitted. This is the unit seam
  * the offline suite operates (tests/index.test.ts): env, config, surface
- * fetch, LLM transport, SMTP transport, state file, and the clock all
- * inject, so a full pipeline run executes offline.
+ * fetch, the LinkedIn SDK fetch, LLM transport, SMTP transport, state file,
+ * and the clock all inject, so a full pipeline run executes offline.
  */
 export interface WatcherDeps {
   /** Environment record for every resolver. Default: process.env. */
@@ -119,6 +111,11 @@ export interface WatcherDeps {
   readonly config?: WatcherConfig;
   /** Browser-context factory for the surface walks (Slice 3 seam). Default: chromiumContextFactory. */
   readonly contextFactory?: ContextFactory;
+  /** LinkedIn SDK fetcher (Slice 2 seam). Default: fetchLinkedInPosts — the module owns its degrade contract. */
+  readonly linkedinFetch?: (
+    surfaces: readonly LinkedinSurface[],
+    tokens: LinkedInApiTokens,
+  ) => Promise<Post[]>;
   /** LLM HTTP transport. Default: global fetch. */
   readonly fetchFn?: typeof fetch;
   /** SMTP transport for the digest and the heartbeat. Default: nodemailer. */
@@ -156,104 +153,84 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const sleepFn = deps.sleepFn ?? sleep;
   const statePath = deps.statePath ?? STATE_PATH;
   const startedAt = now();
-  const surfaces = resolveSurfaces(config.surfaces);
-  console.log(`watch: surfaces: ${surfaces.map((s) => s.label).join(", ")}`);
+  const linkedinFetch = deps.linkedinFetch ?? fetchLinkedInPosts;
+  // D14: labels come from the RAW config partition, not the resolved
+  // array — Slice 3 narrows ResolvedSurface to threads-only, and this
+  // line must keep listing every surface the run attempts, linkedin
+  // included. Labels: tag/<value>, url verbatim, linkedin/<value>.
+  console.log(`watch: surfaces: ${config.surfaces.map(surfaceLabel).join(", ")}`);
+  // Raw partition first: the SDK fetcher takes raw linkedin surfaces
+  // (value verbatim), the walker takes resolved threads records. Slice 3
+  // narrows ResolvedSurface.platform to "threads"; partitioning here keeps
+  // linkedin entries out of resolveSurfaces from this slice on.
+  const linkedinSurfaces = config.surfaces.filter(
+    (surface): surface is LinkedinSurface => surface.type === "linkedin",
+  );
+  const surfaces = resolveSurfaces(
+    config.surfaces.filter((surface) => surface.type !== "linkedin"),
+  );
 
-  // Acquisition stage (D9): per-platform session resolution + surface
-  // fetch timed as one span. Extraction happens inside the walk; the
-  // dedupe count logs right after the duration line.
+  // Acquisition stage (D4): the per-platform fetches timed as one span.
+  // Extraction happens inside the walk; the dedupe count logs right after
+  // the duration line. Threads keeps its Playwright walks; LinkedIn rides
+  // the SDK fetcher (Slice 2 rewiring) with a caller-owned token warn.
   const { value: collected, durationMs: fetchMs } = await timeStage(async () => {
-    // D9: the platform split happens BEFORE session resolution. Each
-    // platform resolves its own session variable; a null Threads session
-    // keeps the existing logged-out walk, while a null LinkedIn session
-    // SKIPS its surfaces with a warn (anonymous LinkedIn hits an authwall —
-    // never the logged-out path).
-    const threadsSurfaces = surfaces.filter((s) => s.platform === "threads");
-    const linkedinSurfaces = surfaces.filter((s) => s.platform === "linkedin");
     const threadsSessionPath = await resolveSession(env);
-    let linkedinSessionPath =
-      linkedinSurfaces.length > 0 ? await resolveSession(env, ENV_NAMES.linkedinSession) : null;
-    // Phase 7: the credential login is the fallback BEFORE the skip warn.
-    // Both credentials set, cooldown clear -> ONE headless login; on success
-    // the fresh session's temp dir joins the paired cleanup below (F019) and
-    // its base64 hand-off lands on LINKEDIN_REFRESH_PATH for the workflow's
-    // refresh step. Every failure path returns null and the D5 warn takes
-    // over unchanged.
-    if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
-      linkedinSessionPath = await recoverLinkedInSession(
-        env,
-        deps.contextFactory ?? chromiumContextFactory,
-        statePath,
-        now,
-      );
-    }
-    if (linkedinSurfaces.length > 0 && linkedinSessionPath === null) {
-      console.warn(
-        `fetch: ${ENV_NAMES.linkedinSession} missing or invalid — skipping ${linkedinSurfaces.length} linkedin surface(s)`,
-      );
-    }
     try {
-      if (threadsSessionPath !== null) {
-        // One authenticated dispatch carries the mixed pool: the LinkedIn
-        // context is built inside the walk from linkedinSessionPath (D6),
-        // and both platform types share the walk's own runPool (FR#8).
-        const walkedSurfaces = linkedinSessionPath !== null ? surfaces : threadsSurfaces;
-        // A linkedin-only config with no LinkedIn session walks nothing:
-        // D5 degrades to warn + empty funnel + heartbeat, never a throw
-        // (an empty surfaces array would trip the walker's all-fail gate).
-        if (walkedSurfaces.length === 0) return [];
-        const options: AuthenticatedFetchOptions =
-          linkedinSessionPath !== null
-            ? { linkedinSessionPath, scrollRounds: config.scrollRounds }
-            : { scrollRounds: config.scrollRounds };
-        return await fetchSurfacesAuthenticated(
-          walkedSurfaces,
+      let threadsPosts: Post[] = [];
+      // An empty threads partition never reaches the walker: its all-fail
+      // gate throws on zero surfaces (fetch-threads.ts:397-409). D13 keeps
+      // the LinkedIn arm alive regardless of the Threads partition shape.
+      if (threadsSessionPath !== null && surfaces.length > 0) {
+        threadsPosts = await fetchSurfacesAuthenticated(
+          surfaces,
           threadsSessionPath,
           deps.contextFactory,
-          options,
+          { scrollRounds: config.scrollRounds },
         );
+      } else if (threadsSessionPath === null && surfaces.length > 0) {
+        threadsPosts = await fetchLoggedOutPosts(surfaces, deps.contextFactory);
       }
-      // Threads logged-out: blob extraction per surface. A configured
-      // LinkedIn surface with its own session walks alone here (rare mixed
-      // config: no Threads secret but a LinkedIn one) — the walker builds
-      // only the LinkedIn context for this dispatch (lazy base, D12: no
-      // threads surfaces, no base context), so the base argument below is
-      // vestigial and never becomes a context.
-      const loggedOut =
-        threadsSurfaces.length > 0
-          ? await fetchLoggedOutPosts(threadsSurfaces, deps.contextFactory)
-          : [];
-      if (linkedinSessionPath === null) return loggedOut;
-      // A walk-time dead LinkedIn session must not discard the logged-out
-      // Threads results (acceptance 1, D5 — expiry is routine): the
-      // LinkedIn arm's all-fail throw downgrades to a warn and zero posts,
-      // and the run goes on. The mixed dispatch above needs no such guard:
-      // there the side arrays already keep Threads posts alive inside one
-      // call, and a total all-fail is the pre-existing throw contract.
-      try {
-        const linkedinPosts = await fetchSurfacesAuthenticated(
-          linkedinSurfaces,
-          linkedinSessionPath,
-          deps.contextFactory,
-          { linkedinSessionPath, scrollRounds: config.scrollRounds },
-        );
-        return [...loggedOut, ...linkedinPosts];
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn(`fetch: linkedin surfaces FAILED — ${message}`);
-        return loggedOut;
+      let linkedinPosts: Post[] = [];
+      if (linkedinSurfaces.length > 0) {
+        const tokens = resolveLinkedApiTokens(env);
+        if (tokens === null) {
+          // D3: the resolver is silent; the caller owns the warn. One
+          // message names BOTH variables — the single-exit resolver cannot
+          // say which half is absent, and the tokens ship as a pair.
+          console.warn(
+            `fetch: ${ENV_NAMES.linkedApiToken} / ${ENV_NAMES.linkedApiIdentificationToken} missing or blank — skipping ${linkedinSurfaces.length} linkedin surface(s)`,
+          );
+        } else {
+          try {
+            linkedinPosts = await linkedinFetch(linkedinSurfaces, tokens);
+          } catch (error) {
+            // D12 belt: the module is total by contract (it warns + returns
+            // [] internally), so this catches only unanticipated faults and
+            // throwing injected stubs — warn + empty, the run goes on (the
+            // logged-out-arm catch-degrade precedent, old index.ts:230-243).
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`fetch: linkedin surfaces FAILED — ${message}`);
+          }
+        }
       }
+      // D13: ONE return. The old early returns (empty-pool guard, logged-out
+      // arm) silently dropped LinkedIn posts on a linkedin-only config with
+      // a Threads secret.
+      return [...threadsPosts, ...linkedinPosts];
     } finally {
-      // F019 pairing, extended: each created session dir dies with the run.
-      // Contexts close inside the walks' own finally, so these run strictly
-      // after close, on both the success and the throw path.
+      // F019 pairing: the Threads session dir dies with the run. The
+      // LinkedIn leg keeps no session (SDK tokens, not storage state).
       if (threadsSessionPath !== null) await cleanupSessionDir(threadsSessionPath);
-      if (linkedinSessionPath !== null) await cleanupSessionDir(linkedinSessionPath);
     }
   });
   console.log(`timing: fetch ${fetchMs}ms`);
   const posts = dedupePosts(collected);
-  console.log(`extract: ${posts.length} unique post(s) across ${surfaces.length} surface(s)`);
+  console.log(
+    `extract: ${posts.length} unique post(s) across ${config.surfaces.length} surface(s)`,
+  );
+  // (the extract line counts config.surfaces.length — the resolved array is
+  // threads-only from this slice on; the count is the surfaces ATTEMPTED)
 
   const recencyHours = config.recencyHours;
   const recent = filterRecent(posts, recencyHours, now());
@@ -349,70 +326,6 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   };
 }
 
-// --- Phase 7: the cooldown-gated credential-login fallback ---
-
-/**
- * One cooldown-gated credential login (Phase 7). No stored session, both
- * credentials set, cooldown clear -> attempt; on success the fresh
- * storageState rides the same paired-cleanup teardown as a resolved secret
- * (D9/F019) and its base64 hand-off lands on LINKEDIN_REFRESH_PATH for the
- * workflow's refresh step. Any failure returns null and the D5 skip-warn
- * path takes over — the login never throws the run.
- */
-async function recoverLinkedInSession(
-  env: Record<string, string | undefined>,
-  contextFactory: ContextFactory,
-  statePath: string,
-  now: () => number,
-): Promise<string | null> {
-  const email = env[ENV_NAMES.linkedinEmail];
-  const password = env[ENV_NAMES.linkedinPassword];
-  if (email === undefined || password === undefined || email === "" || password === "") {
-    return null; // credentials not configured — plain D5 skip, no warn change
-  }
-  const markerPath = join(dirname(statePath), "linkedin-login.json");
-  if (!(await loginAllowed(markerPath, now))) {
-    console.warn("fetch: linkedin login skipped — cooldown active after a failed attempt");
-    return null;
-  }
-  const attempt = await loginLinkedInContext(contextFactory, email, password);
-  if (attempt.outcome === "transient") {
-    // Infra fault (network, navigation, export) — not LinkedIn's verdict:
-    // the run retries, but the streak is counted. Three consecutive
-    // transients are a PERSISTENT fault and escalate to the 6h cooldown —
-    // without this, an IP block would retry every 10 minutes forever.
-    const streak = await writeLoginMarker(markerPath, "transient", now);
-    console.warn(
-      streak >= TRANSIENT_ESCALATION_ATTEMPTS
-        ? `fetch: linkedin credential login failed (transient, attempt ${streak}) — persistent fault, cooling down 6h`
-        : `fetch: linkedin credential login failed (transient, attempt ${streak}) — surfaces stay skipped, will retry`,
-    );
-    return null;
-  }
-  if (attempt.outcome !== "ok") {
-    // LinkedIn's verdict — write the 6h cooldown marker (and reset any
-    // transient series: the streak counts consecutive TRANSIENTS only).
-    await writeLoginMarker(markerPath, attempt.outcome, now);
-    console.warn(
-      `fetch: linkedin credential login failed (${attempt.outcome}) — surfaces stay skipped`,
-    );
-    return null;
-  }
-  // Success resets any stale transient series.
-  await clearLoginMarker(markerPath);
-  const freshSessionPath = attempt.sessionPath;
-  if (freshSessionPath === null) return null; // unreachable by the ok contract; defensive
-  // Hand the fresh state to the workflow's refresh step (base64 — the same
-  // encoding the secret carries). Absent LINKEDIN_REFRESH_PATH (a local run)
-  // skips the hand-off; this run still walks with the fresh session.
-  const refreshPath = env[ENV_NAMES.linkedinRefreshPath];
-  if (refreshPath !== undefined) {
-    const state = await readFile(freshSessionPath, "utf8");
-    await writeFile(refreshPath, Buffer.from(state).toString("base64"));
-  }
-  return freshSessionPath;
-}
-
 // --- New: the shared persistence tail (D8) ---
 
 /**
@@ -445,6 +358,13 @@ async function fetchLoggedOutPosts(
     posts.push(...extracted);
   }
   return posts;
+}
+
+/** D14 log label for one raw config surface. */
+function surfaceLabel(surface: Surface): string {
+  if (surface.type === "linkedin") return `linkedin/${surface.value}`;
+  if (surface.type === "tag") return `tag/${surface.value}`;
+  return surface.value; // url surfaces log verbatim
 }
 
 /** Dedupe posts by id, keeping first-seen order. */
