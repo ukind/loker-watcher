@@ -28,6 +28,7 @@
     { "type": "url", "value": "https://www.threads.com/search?q=Loker%20IT%20Jakarta&serp_type=tags&filter=recent" },
     { "type": "url", "value": "https://www.threads.com/search?q=techthreads&serp_type=tags&filter=recent" },
     { "type": "url", "value": "https://www.threads.com/search?exact_match=false&q=techthreads&serp_type=tags&filter=recent" },
+    { "type": "url", "value": "https://www.threads.com/search?exact_match=false&q=Loker&serp_type=default&filter=recent" },
     { "type": "linkedin", "value": "#hiring frontend developer indonesia" }
   ],
   "recencyHours": 72
