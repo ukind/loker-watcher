@@ -3,11 +3,13 @@
  *
  * Pins pushPayload's single-path rebase+retry discipline over a fake
  * GitRunner, fetchTick's composition over the injected seams, the
- * leg-dead episode-marker edge, and the Phase 8 tick guards: an
- * all-faulted walk is a quiet-zeros no-op (payload/git/marker untouched)
- * while a fine-empty walk still writes and pushes (defb8af). Zero network,
- * zero real git, zero real email: GitRunner, Transport, alarm, and env are
- * the test doubles.
+ * leg-dead episode-marker edge, the Phase 8 tick guards (an all-faulted
+ * walk is a quiet-zeros no-op while a fine-empty walk still writes and
+ * pushes, defb8af), and the Phase 10 preflight + honest git failures: the
+ * checkout guard (branch main + clean porcelain) runs BEFORE any fetch,
+ * and every push-discipline failure carries git's own merged output.
+ * Zero network, zero real email; the doubles carry every behavior pin
+ * (realGit is exercised only by two read-only git spawns in its block).
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -17,8 +19,10 @@ import { after, describe, it } from "node:test";
 import {
   type GitRunner,
   fetchTick,
+  guardCheckout,
   handleLegDeadEpisode,
   pushPayload,
+  realGit,
 } from "../scripts/fetch-linkedin.js";
 import type { WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
@@ -56,8 +60,15 @@ async function exists(path: string): Promise<boolean> {
   );
 }
 
-/** Fake GitRunner: records every invocation; exit codes scripted per command. */
-function scriptGit(script: Partial<Record<string, number | number[]>> = {}): GitRunner & {
+/** Fake GitRunner: records every invocation; exit code + output scripted per command. */
+function scriptGit(
+  script: Partial<
+    Record<
+      string,
+      number | { code: number; output: string } | Array<number | { code: number; output: string }>
+    >
+  > = {},
+): GitRunner & {
   calls: string[][];
 } {
   const calls: string[][] = [];
@@ -66,10 +77,12 @@ function scriptGit(script: Partial<Record<string, number | number[]>> = {}): Git
     calls.push([...args]);
     const scripted = script[command];
     const index = calls.filter((entry) => entry[0] === command).length - 1;
-    const code = Array.isArray(scripted)
-      ? (scripted[index] ?? scripted[scripted.length - 1] ?? 0)
-      : (scripted ?? 0);
-    return { code };
+    const entry = Array.isArray(scripted)
+      ? (scripted[index] ?? scripted[scripted.length - 1])
+      : scripted;
+    if (entry === undefined) return { code: 0, output: "" };
+    if (typeof entry === "number") return { code: entry, output: "" };
+    return { code: entry.code, output: entry.output };
   };
   return Object.assign(git, { calls });
 }
@@ -103,9 +116,13 @@ const pageBody = (ids: readonly string[]): string =>
 /** Distinct activity ids at 1-second spacing (linkedin-fetch suite idiom). */
 const idAt = (n: number): string => (BigInt(Date.UTC(2026, 9, 26, 9, 14, n)) << 22n).toString();
 
-const transportFor = (body: string | Error): Transport & { disposeCount: () => number } => {
+const transportFor = (
+  body: string | Error,
+): Transport & { disposeCount: () => number; gets: () => number } => {
   let disposeCount = 0;
+  let getCount = 0;
   const get = async (): Promise<{ status: number; body: string }> => {
+    getCount += 1;
     if (body instanceof Error) throw body;
     return { status: 200, body };
   };
@@ -113,8 +130,22 @@ const transportFor = (body: string | Error): Transport & { disposeCount: () => n
     disposeCount += 1;
   };
   const transport: Transport = { get, dispose };
-  return Object.assign(transport, { disposeCount: () => disposeCount });
+  return Object.assign(transport, { disposeCount: () => disposeCount, gets: () => getCount });
 };
+
+describe("realGit (git's merged output, resolved and rejected paths)", () => {
+  it("captures git's stdout on success and its stderr + exit code on failure", async (t) => {
+    const probe = await realGit(["--version"]); // read-only: no repo state touched
+    if (probe.code !== 0) {
+      t.skip("git is not on PATH — the read-only spawn pins need a real git");
+      return;
+    }
+    assert.match(probe.output, /git version/); // resolved path: stdout rides output
+    const dead = await realGit(["rev-parse", "--verify", "lw-no-such-ref-realgit-pin"]);
+    assert.notEqual(dead.code, 0); // rejected path: the real exit code survives
+    assert.ok(dead.output.length > 0); // git's own stderr, merged and trimmed
+  });
+});
 
 describe("pushPayload (single-path rebase+retry discipline)", () => {
   it("stages ONLY the injected path, commits, rebases onto main, and pushes", async () => {
@@ -140,10 +171,21 @@ describe("pushPayload (single-path rebase+retry discipline)", () => {
     assert.ok(git.calls.every((args) => !args.includes(LINKEDIN_PAYLOAD_PATH)));
   });
 
-  it("throws loudly when the commit itself fails (unconfigured identity) and never pushes", async () => {
-    const git = scriptGit({ diff: 1, commit: 128 });
+  it("throws loudly when the commit itself fails: names the identity fix AND carries git's output", async () => {
+    const git = scriptGit({
+      diff: 1,
+      commit: { code: 128, output: "fatal: unable to auto-detect email address" },
+    });
     const payload = await workPath("push-commit-fail.json");
-    await assert.rejects(() => pushPayload(git, 2, payload), /payload commit failed/);
+    await assert.rejects(
+      () => pushPayload(git, 2, payload),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /payload commit failed — configure the clone's git identity first/);
+        assert.match(message, /git said: fatal: unable to auto-detect email address/);
+        return true;
+      },
+    );
     assert.equal(git.calls.filter((args) => args[0] === "push").length, 0);
     assert.equal(git.calls.filter((args) => args[0] === "pull").length, 0);
   });
@@ -172,13 +214,47 @@ describe("pushPayload (single-path rebase+retry discipline)", () => {
     assert.equal(git.calls.filter((args) => args[0] === "push").length, 2);
   });
 
-  it("aborts the rebase loudly on conflict and never pushes", async () => {
-    const git = scriptGit({ diff: 1, pull: 1 });
+  it("aborts the rebase loudly on failure and never pushes — git's own line rides the error", async () => {
+    const git = scriptGit({
+      diff: 1,
+      pull: { code: 1, output: "CONFLICT (content): Merge conflict in state/linkedin-posts.json" },
+    });
     const payload = await workPath("push-conflict.json");
-    await assert.rejects(() => pushPayload(git, 2, payload), /payload push failed twice/);
+    await assert.rejects(
+      () => pushPayload(git, 2, payload),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /payload push failed twice/);
+        assert.match(
+          message,
+          /git said: CONFLICT \(content\): Merge conflict in state\/linkedin-posts\.json/,
+        );
+        return true;
+      },
+    );
     const aborts = git.calls.filter((args) => args[0] === "rebase" && args[1] === "--abort");
     assert.equal(aborts.length, 2);
     assert.equal(git.calls.filter((args) => args[0] === "push").length, 0);
+  });
+
+  it("surfaces git's real cause, not a misread conflict (the unstaged-changes misdiagnosis)", async () => {
+    const git = scriptGit({
+      diff: 1,
+      pull: { code: 1, output: "error: cannot pull with rebase: You have unstaged changes." },
+    });
+    const payload = await workPath("push-rebase-output.json");
+    await assert.rejects(
+      () => pushPayload(git, 2, payload),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(
+          message,
+          /git said: error: cannot pull with rebase: You have unstaged changes\./,
+        );
+        assert.ok(!message.includes("rebase conflicted"));
+        return true;
+      },
+    );
   });
 });
 
@@ -188,7 +264,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const marker = await workPath("tick-ok.flag");
     await writeFile(marker, "dead session\n", "utf8"); // a stale episode: a clean tick clears it
     const transport = transportFor(pageBody([idAt(1)]));
-    const git = scriptGit({ diff: 1 });
+    const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       config: CONFIG,
       cookies: COOKIES,
@@ -214,8 +290,11 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     assert.deepEqual(envelope.posts, [expected]);
     assert.equal(transport.disposeCount(), 0); // caller-owned: fetchTick never disposes it
     assert.equal(await exists(marker), false); // the healthy tick cleared the episode
-    assert.equal(git.calls[0]?.[0], "add");
-    assert.equal(git.calls[0]?.[1], payload); // ONLY the injected payload path
+    // The two preflight reads (clean main, empty porcelain) precede the push discipline.
+    assert.deepEqual(git.calls[0], ["rev-parse", "--abbrev-ref", "HEAD"]);
+    assert.deepEqual(git.calls[1], ["status", "--porcelain"]);
+    assert.equal(git.calls[2]?.[0], "add");
+    assert.equal(git.calls[2]?.[1], payload); // ONLY the injected payload path
     assert.ok(git.calls.some((args) => args[0] === "commit"));
     assert.ok(git.calls.some((args) => args[0] === "push"));
   });
@@ -225,7 +304,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const marker = await workPath("tick-dead.flag");
     const alarms: string[] = [];
     const transport = transportFor(legDead("bare HTTP 400 — dead session"));
-    const git = scriptGit({});
+    const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     await assert.rejects(
       () =>
         fetchTick({
@@ -244,7 +323,11 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     );
     assert.equal(transport.disposeCount(), 0); // caller-owned, even on failure
     assert.equal(await exists(payload), false); // the walk aborted before any write
-    assert.equal(git.calls.length, 0); // no push on a dead leg
+    // Only the two preflight reads ran (the guard precedes the walk); zero push-discipline calls.
+    assert.deepEqual(git.calls, [
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      ["status", "--porcelain"],
+    ]);
     assert.deepEqual(alarms, []); // the alarm policy belongs to the entry/loop callers
   });
 
@@ -254,7 +337,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const marker = await workPath("tick-all-faulted.flag");
     await writeFile(marker, "stale episode\n", "utf8"); // must survive untouched
     const transport = transportFor(new Error("surface blew up"));
-    const git = scriptGit({});
+    const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       config: CONFIG,
       cookies: COOKIES,
@@ -267,7 +350,11 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
     assert.equal(await exists(payload), false); // b2: the last good payload stays
-    assert.equal(git.calls.length, 0); // no add/commit/push on a faulted tick
+    // The preflight ran (it precedes the walk); still zero add/commit/push on a faulted tick.
+    assert.deepEqual(git.calls, [
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      ["status", "--porcelain"],
+    ]);
     assert.equal(await readFile(marker, "utf8"), "stale episode\n"); // never cleared
     assert.equal(transport.disposeCount(), 0); // caller-owned, even on the no-op path
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
@@ -278,7 +365,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const payload = await workPath("tick-fine-empty.json");
     const marker = await workPath("tick-fine-empty.flag");
     const transport = transportFor(pageBody([])); // 200, zero posts, zero faults
-    const git = scriptGit({ diff: 1 });
+    const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       config: CONFIG,
       cookies: COOKIES,
@@ -296,7 +383,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     assert.ok(git.calls.some((args) => args[0] === "push"));
   });
 
-  it("returns early when no linkedin surfaces are configured (resolvers never run)", async () => {
+  it("returns early when no linkedin surfaces are configured (resolvers AND the checkout preflight never run)", async () => {
     const git = scriptGit({});
     const result = await fetchTick({
       config: { ...CONFIG, surfaces: [{ type: "tag", value: "hiring" }] },
@@ -305,7 +392,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
       markerPath: await workPath("tick-noop.flag"),
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
-    assert.equal(git.calls.length, 0);
+    assert.equal(git.calls.length, 0); // the guard sits AFTER this return — a threads-only config never demands a main checkout
   });
 
   it("opens the transport through resolveLinkedInTransport when none is injected", async () => {
@@ -318,11 +405,87 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
           cookies: COOKIES,
           env: { LINKEDIN_TRANSPORT: "wget" },
           payloadPath,
-          git: scriptGit({}),
+          git: scriptGit({ "rev-parse": { code: 0, output: "main" } }),
           markerPath,
         }),
       /LINKEDIN_TRANSPORT="wget" is not one of: curl, playwright/,
     );
+  });
+});
+
+describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () => {
+  it("passes on clean main with exactly the two guard reads (direct pin)", async () => {
+    const git = scriptGit({ "rev-parse": { code: 0, output: "main" } }); // status → empty porcelain
+    await guardCheckout(git); // must not throw
+    assert.deepEqual(git.calls, [
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      ["status", "--porcelain"],
+    ]);
+  });
+
+  it("rejects a wrong branch naming it and the wrong-ref consequence — zero GETs, no payload", async () => {
+    const payload = await workPath("tick-wrong-branch.json");
+    const marker = await workPath("tick-wrong-branch.flag");
+    const transport = transportFor(pageBody([idAt(1)]));
+    const git = scriptGit({
+      "rev-parse": { code: 0, output: "feature/add-support-for-linkeind" },
+    });
+    await assert.rejects(
+      () =>
+        fetchTick({
+          config: CONFIG,
+          cookies: COOKIES,
+          transport,
+          payloadPath: payload,
+          git,
+          env: {},
+          markerPath: marker,
+        }),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /on branch "feature\/add-support-for-linkeind", not main/);
+        assert.match(message, /wrong ref/); // the hosted run would never read that push
+        return true;
+      },
+    );
+    assert.equal(transport.gets(), 0); // the guard precedes the walk — zero voyager GETs
+    assert.equal(await exists(payload), false); // nothing written before the rejection
+    assert.deepEqual(git.calls, [["rev-parse", "--abbrev-ref", "HEAD"]]); // throws before status
+  });
+
+  it("rejects a dirty tree naming the path count and the paths — zero GETs, no payload", async () => {
+    const payload = await workPath("tick-dirty.json");
+    const marker = await workPath("tick-dirty.flag");
+    const transport = transportFor(pageBody([idAt(1)]));
+    const git = scriptGit({
+      "rev-parse": { code: 0, output: "main" },
+      status: { code: 0, output: " M src/linkedin-fetch.ts\n M README.md" },
+    });
+    await assert.rejects(
+      () =>
+        fetchTick({
+          config: CONFIG,
+          cookies: COOKIES,
+          transport,
+          payloadPath: payload,
+          git,
+          env: {},
+          markerPath: marker,
+        }),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /not clean \(2 path\(s\)/);
+        assert.match(message, /src\/linkedin-fetch\.ts/);
+        assert.match(message, /README\.md/);
+        return true;
+      },
+    );
+    assert.equal(transport.gets(), 0); // no live fetch burned on a mis-homed checkout
+    assert.equal(await exists(payload), false);
+    assert.deepEqual(git.calls, [
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      ["status", "--porcelain"],
+    ]);
   });
 });
 

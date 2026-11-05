@@ -9,8 +9,11 @@
  * commit-back runs the same discipline on a disjoint path, and each
  * file has exactly one writer, so an exact-simultaneous push pair costs
  * the loser one retry — never a lost update. Run from a DEDICATED clone of
- * main (unrelated uncommitted edits would wedge the rebase); the rebase
- * doubles as the loop's own code auto-update.
+ * main: the checkout preflight (guardCheckout) enforces branch main + a
+ * clean tree BEFORE cookies, transport, or any voyager GET — a dirty tree
+ * wedges the rebase only AFTER a live fetch is burned, and a non-main
+ * branch would push the payload to the wrong ref. The rebase doubles as
+ * the loop's own code auto-update.
  *
  * Leg-dead: ONE alarm email per episode (edge-detected via a repo-local
  * marker file beside the payload — never OS temp: a reboot or temp-cleaner
@@ -44,21 +47,23 @@ import { writePayloadAtomic } from "../src/linkedin-payload.js";
 import { type LinkedInCookies, resolveLinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
 
-/** Injectable git runner: args → exit code (never rejects). */
-export type GitRunner = (args: readonly string[]) => Promise<{ code: number }>;
+/** Injectable git runner: args → exit code + git's own merged output (never rejects). */
+export type GitRunner = (args: readonly string[]) => Promise<{ code: number; output: string }>;
 
 const execFilePromised = promisify(execFile);
 
-const realGit: GitRunner = async (args) => {
+/** The real git on PATH; exported for the suite's read-only spawn pins. */
+export const realGit: GitRunner = async (args) => {
   try {
-    await execFilePromised("git", [...args], { windowsHide: true });
-    return { code: 0 };
+    const { stdout, stderr } = await execFilePromised("git", [...args], { windowsHide: true });
+    return { code: 0, output: `${stdout}\n${stderr}`.trim() };
   } catch (error) {
-    const code =
-      typeof error === "object" && error !== null && "code" in error
-        ? Number((error as { code: unknown }).code)
-        : 1;
-    return { code: Number.isInteger(code) ? code : 1 };
+    // execFile rejects on a nonzero code with {stdout, stderr} attached;
+    // both channels merge into one trimmed output either way.
+    const raw = error as { code?: unknown; stdout?: unknown; stderr?: unknown };
+    const code = typeof raw.code === "number" ? raw.code : 1;
+    const output = `${String(raw.stdout ?? "")}\n${String(raw.stderr ?? "")}`.trim();
+    return { code: Number.isInteger(code) ? code : 1, output };
   }
 };
 
@@ -150,11 +155,40 @@ async function clearEpisodeMarker(deps: FetchTickDeps): Promise<void> {
 }
 
 /**
+ * Dedicated-clone preflight (D5, Phase 10): the push discipline assumes a
+ * clean checkout of main. A dirty tree kills the rebase AFTER a live fetch;
+ * a non-main branch silently pushes the payload to the wrong ref (the
+ * hosted run reads main). Both fail here — before cookies, transport, or
+ * any voyager GET — naming what is wrong and the remedy. Two git reads,
+ * zero network.
+ */
+export async function guardCheckout(git: GitRunner): Promise<void> {
+  const head = await git(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const branch = head.output.split(/\r?\n/)[0] ?? "";
+  if (head.code !== 0 || branch !== "main") {
+    throw new Error(
+      `fetch-linkedin: this checkout is on branch "${branch || "unknown"}", not main — the payload push would land on the wrong ref and the hosted run would never read it. Run the loop from a DEDICATED clone of main (README: PC operations)`,
+    );
+  }
+  const status = await git(["status", "--porcelain"]);
+  if (status.code !== 0 || status.output !== "") {
+    const paths = status.output.split("\n");
+    const names = paths.slice(0, 5).join("; ");
+    throw new Error(
+      `fetch-linkedin: this checkout is not clean (${paths.length} path(s): ${names}) — uncommitted edits break the rebase AFTER a live fetch. Run from a dedicated clone of main with a clean tree (README: PC operations)`,
+    );
+  }
+}
+
+/**
  * Commit + push ONLY the payload path with the rebase+retry discipline.
  * The rebase replays the payload commit onto origin/main; a conflict on
- * the payload path is impossible while it has one writer, so a conflict
+ * the payload path is impossible while it has one writer, so a failure
  * aborts loudly instead of skipping (the bot's whitelist never applies —
- * its seen-posts.json replay touches a disjoint path).
+ * its seen-posts.json replay touches a disjoint path). Every failure
+ * message carries git's own output — the real cause (e.g. "cannot pull
+ * with rebase: You have unstaged changes") can never masquerade as a
+ * misdiagnosed conflict again.
  */
 export async function pushPayload(
   git: GitRunner,
@@ -174,21 +208,25 @@ export async function pushPayload(
   const commit = await git(["commit", "-m", `linkedin: payload ${postCount} post(s)`]);
   if (commit.code !== 0) {
     throw new Error(
-      "git: payload commit failed — configure the clone's git identity first (git config user.name + user.email)",
+      `git: payload commit failed — configure the clone's git identity first (git config user.name + user.email) — git said: ${commit.output || "(no output)"}`,
     );
   }
+  let lastFailure = "";
   const attempt = async (): Promise<boolean> => {
     const rebase = await git(["pull", "--rebase", "origin", "main"]);
     if (rebase.code !== 0) {
-      console.error("git: rebase conflicted — aborting; a non-payload change cannot replay");
+      lastFailure = rebase.output;
+      console.error(`git: rebase failed — aborting — git said: ${rebase.output || "(no output)"}`);
       await git(["rebase", "--abort"]);
       return false;
     }
-    return (await git(["push"])).code === 0;
+    const push = await git(["push"]);
+    if (push.code !== 0) lastFailure = push.output;
+    return push.code === 0;
   };
   const pushed = (await attempt()) || (await attempt());
   if (!pushed) {
-    throw new Error("git: payload push failed twice — run aborted");
+    throw new Error(`git: payload push failed twice — git said: ${lastFailure || "(no output)"}`);
   }
   console.log("git: pushed payload commit");
 }
@@ -204,6 +242,11 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
     console.log("fetch-linkedin: no linkedin surfaces configured — nothing to do");
     return { wrote: false, pushed: false, postCount: 0 };
   }
+  // The checkout preflight runs BEFORE the cookie/transport resolvers: a
+  // mis-homed checkout costs zero voyager GETs and writes nothing. The loop
+  // catches this plain error and keeps running (a mis-homed loop warns
+  // every 10 min instead of burning live fetches); the one-shot entry exits 1.
+  await guardCheckout(deps.git ?? realGit);
   const cookies = deps.cookies ?? resolveLinkedInCookies(env);
   const transport = deps.transport ?? (await resolveLinkedInTransport(env, cookies));
   let posts: Post[];
