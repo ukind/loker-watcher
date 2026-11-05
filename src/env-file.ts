@@ -12,6 +12,7 @@
  * skipped.
  */
 import { readFileSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 /** The convenience file the PC scripts read beside the working directory. */
@@ -67,4 +68,36 @@ export function envWithDotEnv(
     if (merged[key] === undefined) merged[key] = value;
   }
   return merged;
+}
+
+/**
+ * Append or replace ONE KEY=VALUE line in the .env file; idempotent.
+ * Returns true when the file changed. Values ride verbatim (the .env
+ * parser in this module takes the whole rest of the line — no quote
+ * games needed for paths with spaces).
+ *
+ * Hoisted here (Phase 9) from scripts/login-linkedin.ts VERBATIM:
+ * env-file owns the whole .env contract, and a second PC script
+ * (setup-curl-impersonate) now needs the same writer.
+ */
+export async function upsertDotEnvLine(
+  filePath: string,
+  key: string,
+  value: string,
+): Promise<boolean> {
+  let text = "";
+  try {
+    text = await readFile(filePath, "utf8");
+  } catch {
+    // Absent .env: start from an empty document.
+  }
+  const line = `${key}=${value}`;
+  const lines = text === "" ? [] : text.split(/\r?\n/);
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  const index = lines.findIndex((candidate) => candidate.startsWith(`${key}=`));
+  if (index >= 0 && lines[index] === line) return false;
+  if (index >= 0) lines[index] = line;
+  else lines.push(line);
+  await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
+  return true;
 }

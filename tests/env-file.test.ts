@@ -8,11 +8,12 @@
  * fixtures live in OS temp.
  */
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
-import { DOT_ENV_PATH, envWithDotEnv, parseDotEnv } from "../src/env-file.js";
+import { ENV_NAMES } from "../src/config.js";
+import { DOT_ENV_PATH, envWithDotEnv, parseDotEnv, upsertDotEnvLine } from "../src/env-file.js";
 
 let dir: string | undefined;
 after(async () => {
@@ -28,6 +29,12 @@ async function envDir(content?: string): Promise<string> {
     await writeFile(join(cwd, DOT_ENV_PATH), content, "utf8");
   }
   return cwd;
+}
+
+/** A plain work file in the suite's OS-temp dir (upsert pins write any path, not only .env). */
+async function workPath(name: string): Promise<string> {
+  dir ??= await mkdtemp(join(tmpdir(), "lw-env-file-"));
+  return join(dir, name);
 }
 
 describe("parseDotEnv", () => {
@@ -80,5 +87,39 @@ describe("envWithDotEnv", () => {
     await mkdir(join(cwd, DOT_ENV_PATH));
     const merged = envWithDotEnv({ ONLY: "env" }, cwd);
     assert.equal(merged.ONLY, "env");
+  });
+});
+
+describe("upsertDotEnvLine", () => {
+  // Pins hoisted here from tests/login-linkedin.test.ts (Phase 9): the
+  // writer moved to src/env-file.ts verbatim, so its pins moved with it.
+  it("creates the file with the line when absent", async () => {
+    const path = await workPath("env-1");
+    assert.equal(
+      await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/x/cook.json"),
+      true,
+    );
+    assert.equal(await readFile(path, "utf8"), `${ENV_NAMES.linkedinCookiesFile}=C:/x/cook.json\n`);
+  });
+
+  it("replaces an existing line without duplicating it", async () => {
+    const path = await workPath("env-2");
+    await writeFile(path, `OTHER=1\n${ENV_NAMES.linkedinCookiesFile}=C:/old.json\n`, "utf8");
+    assert.equal(await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/new.json"), true);
+    const text = await readFile(path, "utf8");
+    assert.ok(text.includes("C:/new.json"));
+    assert.ok(!text.includes("C:/old.json"));
+    assert.equal(text.match(new RegExp(ENV_NAMES.linkedinCookiesFile, "g"))?.length, 1);
+  });
+
+  it("writes nothing when the line already carries the value", async () => {
+    const path = await workPath("env-3");
+    assert.equal(await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/same.json"), true);
+    assert.equal(
+      await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/same.json"),
+      false,
+    );
+    const text = await readFile(path, "utf8");
+    assert.equal(text.match(new RegExp(ENV_NAMES.linkedinCookiesFile, "g"))?.length, 1);
   });
 });

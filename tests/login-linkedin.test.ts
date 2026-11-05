@@ -4,11 +4,14 @@
  * The headed browser never opens here: runLoginHelper's context seam is
  * injected, sleeps and the clock are injected, and the file writes land
  * in OS temp. Pins the harvest contract (verbatim cookie values, quoted
- * JSESSIONID kept), the atomic cookie-file write, the .env upsert, and
- * the poll/timeout loop over injected doubles.
+ * JSESSIONID kept), the atomic cookie-file write, and the poll/timeout
+ * loop over injected doubles. (The .env upsert unit pins moved to
+ * tests/env-file.test.ts in Phase 9 — the writer now lives in
+ * src/env-file.ts; the runLoginHelper pin below still proves the line
+ * lands.)
  */
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
@@ -16,7 +19,6 @@ import {
   type LoginContext,
   findSessionCookies,
   runLoginHelper,
-  upsertDotEnvLine,
   writeCookieFile,
 } from "../scripts/login-linkedin.js";
 import { ENV_NAMES } from "../src/config.js";
@@ -68,38 +70,6 @@ describe("writeCookieFile", () => {
       liAt: "AQE-live-li-at",
       jsessionId: "ajax:0123456789012345678",
     });
-  });
-});
-
-describe("upsertDotEnvLine", () => {
-  it("creates the file with the line when absent", async () => {
-    const path = await workPath("env-1");
-    assert.equal(
-      await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/x/cook.json"),
-      true,
-    );
-    assert.equal(await readFile(path, "utf8"), `${ENV_NAMES.linkedinCookiesFile}=C:/x/cook.json\n`);
-  });
-
-  it("replaces an existing line without duplicating it", async () => {
-    const path = await workPath("env-2");
-    await writeFile(path, `OTHER=1\n${ENV_NAMES.linkedinCookiesFile}=C:/old.json\n`, "utf8");
-    assert.equal(await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/new.json"), true);
-    const text = await readFile(path, "utf8");
-    assert.ok(text.includes("C:/new.json"));
-    assert.ok(!text.includes("C:/old.json"));
-    assert.equal(text.match(new RegExp(ENV_NAMES.linkedinCookiesFile, "g"))?.length, 1);
-  });
-
-  it("writes nothing when the line already carries the value", async () => {
-    const path = await workPath("env-3");
-    assert.equal(await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/same.json"), true);
-    assert.equal(
-      await upsertDotEnvLine(path, ENV_NAMES.linkedinCookiesFile, "C:/same.json"),
-      false,
-    );
-    const text = await readFile(path, "utf8");
-    assert.equal(text.match(new RegExp(ENV_NAMES.linkedinCookiesFile, "g"))?.length, 1);
   });
 });
 

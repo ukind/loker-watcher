@@ -4,10 +4,14 @@
  *
  * Two transports behind one seam — `VoyagerGet`, one GET per call:
  *
- * - curl (default): spawns the curl-impersonate chrome build
- *   (CURL_IMPERSONATE_BIN, fail-visible when unset) with the §3/§10 header
- *   set. The HTTP status rides a write-out sentinel after the body — one
- *   exec, no temp files. The exec runner is injectable for offline tests.
+ * - curl (default): spawns the lexiforest curl-impersonate single binary
+ *   (CURL_IMPERSONATE_BIN, fail-visible when unset — the message names
+ *   both remedies: npm run setup-curl, or the playwright .env line) with
+ *   the §3/§10 header set on top of the pinned chrome116 profile. The
+ *   profile owns the UA + TLS + HTTP/2 fingerprint as one consistent set
+ *   (D2 amendment 2026-11-05); the HTTP status rides a write-out sentinel
+ *   after the body — one exec, no temp files. The exec runner is
+ *   injectable for offline tests.
  * - playwright: a standalone API-request context
  *   (`request.newContext({ storageState })`) behind the SAME dynamic-import
  *   quarantine idiom as makeChromiumContextFactory (fetch-threads.ts:129).
@@ -67,7 +71,22 @@ const REQUEST_TIMEOUT_MS = 30_000;
 /** curl -w appends this sentinel + status after the response body. */
 const STATUS_SENTINEL = "___CURL_STATUS:";
 
-/** §10 client fingerprint: both adapters present the identical Chrome UA. */
+/**
+ * The pinned impersonation profile (lexiforest single binary, §D2
+ * amendment 2026-11-05). The profile owns the UA + TLS + HTTP/2 headers
+ * as ONE consistent set — chrome116 is the Windows-10 Chrome profile the
+ * release ships. The transport's own `user-agent` header is deliberately
+ * GONE: overriding the profile's UA with a different Chrome version is a
+ * mismatched fingerprint signal. Our §3/§10 -H overrides (cookie,
+ * csrf-token, the static set) ride ON TOP of the profile defaults.
+ */
+export const CURL_IMPERSONATE_PROFILE = "chrome116";
+
+/**
+ * §10 client fingerprint for the PLAYWRIGHT adapter only (no profile
+ * system there — `request.newContext` presents no TLS fingerprint, so the
+ * explicit UA header is the only browser signal it can send).
+ */
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -236,12 +255,18 @@ const realExec: ExecFn = (file, args) =>
   });
 
 /**
- * curl-impersonate chrome build (developer-selected primary transport).
- * One exec per GET: `-sS` body to stdout, `--max-time` mirrors the exec
- * timeout, the §3/§10 header set via -H pairs, and `-w` appends the status
- * sentinel after the body — parseable without temp files or stderr games.
- * Exec-level failures (connection reset, timeout, missing binary) throw
- * plain errors: surface faults, never leg-dead.
+ * curl-impersonate transport (developer-selected primary transport, D2
+ * amendment 2026-11-05): the LEXIFOREST single binary — upstream lwthiker
+ * ships linux/mac/docker only, so lexiforest is the Windows distribution
+ * of record, installed by `npm run setup-curl`. The profile headers + our
+ * overrides compose per the fork README (`-H` overrides individual
+ * profile headers), so the §3/§10 set rides on top of chrome116's own
+ * UA/TLS/HTTP/2 fingerprint. One exec per GET: `--impersonate` selects the
+ * pinned profile, `-sS` body to stdout, `--max-time` mirrors the exec
+ * timeout, and `-w` appends the status sentinel after the body —
+ * parseable without temp files or stderr games. Exec-level failures
+ * (connection reset, timeout, missing binary) throw plain errors: surface
+ * faults, never leg-dead.
  */
 export function createCurlTransport(
   cookies: LinkedInCookies,
@@ -252,17 +277,21 @@ export function createCurlTransport(
     const bin = env[ENV_NAMES.curlImpersonateBin]?.trim();
     if (bin === undefined || bin === "") {
       throw new Error(
-        `linkedin-fetch: ${ENV_NAMES.curlImpersonateBin} is not set — the curl transport needs the curl-impersonate chrome binary path (README: PC operations)`,
+        `linkedin-fetch: ${ENV_NAMES.curlImpersonateBin} is not set — run npm run setup-curl, or put LINKEDIN_TRANSPORT=playwright in .env to skip the binary (README: PC operations)`,
       );
     }
+    // No user-agent pair here ON PURPOSE: the chrome116 profile owns the
+    // UA + TLS + HTTP/2 set; overriding its UA is the mismatched-signal
+    // class the fingerprint exists to avoid (D2 amendment).
     const headerPairs = [
       `cookie: ${buildCookieHeader(cookies)}`,
       `csrf-token: ${csrfToken(cookies)}`,
       ...Object.entries(VOYAGER_STATIC_HEADERS).map(([name, value]) => `${name}: ${value}`),
-      `user-agent: ${BROWSER_UA}`,
     ];
     const get: VoyagerGet = async (url) => {
       const args = [
+        "--impersonate",
+        CURL_IMPERSONATE_PROFILE,
         "-sS",
         "--max-time",
         String(Math.round(REQUEST_TIMEOUT_MS / 1000)),

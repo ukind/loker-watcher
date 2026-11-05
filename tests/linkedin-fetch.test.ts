@@ -4,7 +4,8 @@
  * Covers: the §13.3 fault-classifier table incl. the 3xx redirect-loop rows
  * (live-observed 2026-11-05, Phase 8); the curl transport over a fake
  * exec (header set, status-sentinel parse, exec failure, missing-binary
- * fail-visible); the transport resolver accept/reject matrix; the runPool
+ * fail-visible with BOTH Phase 9 remedies, --impersonate chrome116 pin,
+ * user-agent absence pin); the transport resolver accept/reject matrix; the runPool
  * surface walk over a scripted VoyagerGet — partial-page stop, exhaustion
  * stop, input-order reassembly under out-of-order completion, per-surface
  * fault skip, leg-dead drain-then-throw with sibling stop (the scripted-302
@@ -192,6 +193,13 @@ describe("createCurlTransport", () => {
     assert.ok(headers.includes("csrf-token: ajax:0123456789012345678"));
     assert.ok(headers.includes("x-restli-protocol-version: 2.0.0"));
     assert.ok(headers.includes("accept: application/json"));
+    // Phase 9: the pinned lexiforest profile rides the args, adjacent pair;
+    // the profile OWNS the UA, so no user-agent pair may ride the -H values.
+    const curlArgs = call?.args ?? [];
+    const impersonateAt = curlArgs.indexOf("--impersonate");
+    assert.ok(impersonateAt >= 0);
+    assert.equal(curlArgs[impersonateAt + 1], "chrome116");
+    assert.ok(headers.every((header) => !/^user-agent:/i.test(header)));
     // Phase 8's 3xx leg-dead branch only sees the status because curl does
     // NOT follow redirects: one -L/--location in the arg array would follow
     // the dead 302 loop and republish the b2 empty-payload failure via curl.
@@ -209,6 +217,20 @@ describe("createCurlTransport", () => {
   it("fails visibly naming the variable when CURL_IMPERSONATE_BIN is unset", async () => {
     const make = createCurlTransport(COOKIES, {});
     await assert.rejects(() => make(), /CURL_IMPERSONATE_BIN is not set/);
+  });
+
+  it("names both remedies when CURL_IMPERSONATE_BIN is unset (Phase 9: setup-curl + the playwright line)", async () => {
+    const make = createCurlTransport(COOKIES, {});
+    await assert.rejects(
+      () => make(),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /CURL_IMPERSONATE_BIN is not set/); // the Phase 3 prefix pin survives unchanged
+        assert.match(message, /npm run setup-curl/);
+        assert.match(message, /LINKEDIN_TRANSPORT=playwright in \.env/);
+        return true;
+      },
+    );
   });
 });
 

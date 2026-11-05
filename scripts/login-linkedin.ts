@@ -20,11 +20,11 @@
  * Entry-guarded main (index.ts idiom): importing the module stays
  * side-effect free — no browser opens on import.
  */
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ENV_NAMES } from "../src/config.js";
-import { envWithDotEnv } from "../src/env-file.js";
+import { envWithDotEnv, upsertDotEnvLine } from "../src/env-file.js";
 import { stateTempPath } from "../src/state.js";
 
 /** Where the cookie pair lands when LINKEDIN_COOKIES_FILE is unset everywhere. */
@@ -82,34 +82,6 @@ export async function writeCookieFile(pair: LinkedInCookiePair, filePath: string
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`login-linkedin: cookie write failed for ${filePath}: ${message}`);
   }
-}
-
-/**
- * Append or replace ONE KEY=VALUE line in the .env file; idempotent.
- * Returns true when the file changed. Values ride verbatim (the .env
- * parser in src/env-file.ts takes the whole rest of the line — no quote
- * games needed for paths with spaces).
- */
-export async function upsertDotEnvLine(
-  filePath: string,
-  key: string,
-  value: string,
-): Promise<boolean> {
-  let text = "";
-  try {
-    text = await readFile(filePath, "utf8");
-  } catch {
-    // Absent .env: start from an empty document.
-  }
-  const line = `${key}=${value}`;
-  const lines = text === "" ? [] : text.split(/\r?\n/);
-  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
-  const index = lines.findIndex((candidate) => candidate.startsWith(`${key}=`));
-  if (index >= 0 && lines[index] === line) return false;
-  if (index >= 0) lines[index] = line;
-  else lines.push(line);
-  await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
-  return true;
 }
 
 export interface LoginHelperDeps {
