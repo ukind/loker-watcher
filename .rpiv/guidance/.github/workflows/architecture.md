@@ -4,7 +4,7 @@
 Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, no secrets); `watch.yml` runs the pipeline every 10 minutes with secrets, then commits `state/seen-posts.json` back as `github-actions[bot]`. A dispatch-only `probe` job inside watch.yml measures the LLM endpoint.
 
 ## Sync points (break these and the workflow silently misbehaves)
-- Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — 1:1 name mirroring (8 today, incl. the Linked API pair `LINKED_API_TOKEN` / `LINKED_API_IDENTIFICATION_TOKEN`); `HEARTBEAT_ENABLED` maps via `vars.` (not `secrets.` — the one non-secret knob); unset means enabled
+- Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — watch.yml maps 6 of the 9 ENV_NAMES (`HEARTBEAT_ENABLED` via `vars.` — the one non-secret knob); the LinkedIn trio (`LINKEDIN_COOKIES_FILE`, `LINKEDIN_TRANSPORT`, `CURL_IMPERSONATE_BIN`) is deliberately NOT mapped — PC-only, never enters Actions; unset means enabled
 - `jq '.seenPostIds | length'` ↔ `AppState.seenPostIds` in `src/state.ts` — renaming the field would silently read as "0 new"; jq `length` counts KEYS, so it is shape-agnostic across the v2 map (and v1 arrays)
 - `node-version: 22` ↔ `engines.node` in package.json
 - The `JUDGE_CONCURRENCY` literal ↔ `DEFAULT_JUDGE_CONCURRENCY` in `src/judge.ts` (both 4 today; the literal is a maintenance pointer)
@@ -31,11 +31,12 @@ permissions:
   contents: write              # ci.yml gets contents: read — the gate never writes
 concurrency:
   group: watch
-  cancel-in-progress: true     # the SDK cutover flipped queue to cancel: a parked Linked API workflow can
-                               # hold the whole 8-minute cap, and queueing every 10-minute tick behind it
-                               # backs the schedule up without bound. Cancel keeps at most one run alive —
-                               # which still serializes the state read-modify-write (the in-flight run is
-                               # dead, never concurrent)
+  cancel-in-progress: true     # a run parked on judge cooldowns can hold the whole 8-minute cap, and
+                               # queueing every 10-minute tick behind it backs the schedule up without
+                               # bound. Cancel keeps at most one run alive — which still serializes the
+                               # state read-modify-write (the in-flight run is dead, never concurrent).
+                               # The PC loop writes state/linkedin-posts.json via its own rebase+retry
+                               # push — never this workflow.
       # (job-level) timeout-minutes: 8 — a hung run dies BEFORE the next */10 tick (cancel drops a superseded run instead of queueing it)
 ```
 README documents an external cron dispatching watch.yml by filename — a wrong-but-valid filename still answers 204 and starts the WRONG workflow.
@@ -47,8 +48,9 @@ README documents an external cron dispatching watch.yml by filename — a wrong-
     JUDGE_CONCURRENCY: "4"   # probe run <id> reading — paste a fresh measuring run's reading
     HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # the one non-secret knob: vars., not secrets.; unset = enabled
     THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
-    LINKED_API_TOKEN: ${{ secrets.LINKED_API_TOKEN }}   # absent/blank ⇒ linkedin surfaces skip with one warn (fetch-linkedin-api.ts); Threads still runs
-    LINKED_API_IDENTIFICATION_TOKEN: ${{ secrets.LINKED_API_IDENTIFICATION_TOKEN }}   # ships as a pair with LINKED_API_TOKEN
+    # no LinkedIn secret: the PC loop pushes state/linkedin-posts.json and
+    # this job reads it from the checkout — an absent/stale payload
+    # degrades to a threads-only run (src/linkedin-payload.ts, D13)
     LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
     GMAIL_USER: ${{ secrets.GMAIL_USER }}
     GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}

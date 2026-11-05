@@ -9,6 +9,9 @@ LinkedIn. A scheduled
 GitHub Actions workflow loads the surfaces listed in `watcher.config.json`,
 asks an OpenAI-compatible LLM judge to keep posts matching the configured
 keywords, and emails new matches as a plain-text digest.
+LinkedIn posts come from an always-on loop on the developer's PC (`npm run
+watch-linkedin`), which fetches the voyager search API and pushes
+`state/linkedin-posts.json`; the hosted run reads that payload.
 The only persistence is `state/seen-posts.json`, which the workflow commits
 back after match runs.
 
@@ -17,11 +20,25 @@ back after match runs.
 - `npm test` - unit tests (node:test runner via tsx, offline and deterministic)
 - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
 - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, and ramp concurrent calls to find the concurrency ceiling (needs `LLM_*` env vars)
-- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, and `scripts/hooks`
+- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, `scripts/fetch-linkedin.ts`, `scripts/watch-linkedin.ts`, `scripts/probe-linkedin.ts`, `scripts/login-linkedin.ts`, and `scripts/hooks`
 - `npm run format` - Biome format in place
-- `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars,
-  plus `LINKED_API_*` for the linkedin surfaces; absent, those surfaces skip
-  with a warn)
+- `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars;
+  an absent or stale `state/linkedin-posts.json` degrades to a
+  threads-only run with one log line)
+- `npm run probe-linkedin` - gate the LinkedIn transport: exit 1 on a dead,
+  short, or faulted leg; run twice >=6h apart with stored cookies before
+  trusting the loop (needs `LINKEDIN_COOKIES_FILE`)
+- `npm run fetch-linkedin` - one LinkedIn fetch tick from a dedicated clone
+  of main: fetch, write the payload, push that single path (leg-dead exits 1
+  after the episode alarm)
+- `npm run watch-linkedin` - the always-on PC loop: one tick, then a
+  10-minute sleep, forever; leg-dead sends ONE alarm per episode and the
+  loop keeps running
+- `npm run login-linkedin` - headed LinkedIn login helper: the operator
+  logs in by hand in the opened window (2FA included); the helper writes
+  the cookie file and the `LINKEDIN_COOKIES_FILE` line in `.env` (exit 1
+  on timeout/no session; re-run on a still-signed-in profile harvests
+  without a new login)
 - `npx playwright install chromium` - one-time browser install for local runs
 
 ## Architecture
@@ -33,10 +50,36 @@ against the configured keywords, email digest, commit state.
 - `src/fetch-threads.ts`, `src/threads-session.ts` - Playwright loading of tag,
   profile, and search surfaces; signed-in via `THREADS_SESSION_STATE` with a
   logged-out fallback
-- `src/fetch-linkedin-api.ts` - Linked API SDK post search for the linkedin
-  surfaces; sequential, never throws (degrades per surface), tokens from the
-  `LINKED_API_TOKEN` / `LINKED_API_IDENTIFICATION_TOKEN` pair with the
-  caller-owned skip warn
+- `src/linkedin-voyager.ts` - pure voyager search client core: endpoint
+  constants, restli encoding (# -> %23), the canonical search-URL builder,
+  and the response parser (drop+count, never throws); timestamp derives
+  from `BigInt(id) >> 22n`
+- `src/linkedin-session.ts` - the `LINKEDIN_COOKIES_FILE` resolver
+  (fail-visible; the cookie file lives OUTSIDE the repo), the Cookie
+  header (JSESSIONID quoted, last), the csrf token, and the storageState
+  synthesis for the Playwright transport
+- `src/linkedin-fetch.ts` - the voyager fetch leg: curl-impersonate
+  (`CURL_IMPERSONATE_BIN`) and Playwright transports behind one
+  `VoyagerGet` seam (`LINKEDIN_TRANSPORT`, no auto-fallback), the §13.3
+  fault classifier with the tagged `LegDeadError`, and the runPool surface
+  walk under a shared 5s pacing gate
+- `src/linkedin-payload.ts` - the atomic payload envelope writer/reader;
+  reading never throws: absent -> quiet log, stale -> age log, malformed
+  -> warn, bad rows -> drop+count
+- `src/env-file.ts` - `.env` auto-load for the PC scripts: fills only
+  unset keys, the real environment wins, a missing `.env` is a quiet no-op
+- `scripts/fetch-linkedin.ts` - one tick: fetch -> payload -> add ONLY
+  `state/linkedin-posts.json` -> commit -> pull --rebase -> push with one
+  retry (mirrors `scripts/commit-state-rebase.sh`; leg-dead = ONE alarm per
+  episode via a repo-local marker, then exit 1)
+- `scripts/watch-linkedin.ts` - the always-on PC loop (tick + 600s sleep)
+- `scripts/probe-linkedin.ts` - the transport gate probe (exit contracts:
+  tick = leg-dead exits 1; loop = never exits on leg-dead; probe = gate
+  exit 1)
+- `scripts/login-linkedin.ts` - headed cookie harvest: the operator logs
+  in by hand; the script polls the jar, writes the cookie file atomically,
+  and upserts the `.env` line (exit 1 on timeout/no session; entry-guarded,
+  importing stays side-effect free)
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)
@@ -56,7 +99,8 @@ against the configured keywords, email digest, commit state.
   (single-post and bulk)
 - `src/pool.ts` - shared bounded worker pool (`runPool`) used by the judge
   and by the surface fetches
-- `src/email.ts` - nodemailer transport for the digest
+- `src/email.ts` - nodemailer transport for the digest and the leg-dead
+  alarm
 - `src/heartbeat.ts` - zero-match status email so quiet runs stay legible
 - `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation
 

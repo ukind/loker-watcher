@@ -1,11 +1,12 @@
 # scripts/ — production commit-back script, endpoint probe + agent hooks
 
 ## Responsibility
-Four files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of watch.yml's Commit state step, executed by the only production write path; `probe-judge.ts` measures the LLM endpoint's latency and concurrency ceiling from an Actions runner; `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
+Seven files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of watch.yml's Commit state step, executed by the only hosted write path; `probe-judge.ts` measures the LLM endpoint's latency and concurrency ceiling from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
 
 ## Invokers
 - **commit-state-rebase.sh**: watch.yml's Commit state step only — invoked EXACTLY ONCE (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
 - **probe-judge.ts**: the dispatch-only `probe` GATE job in watch.yml, or locally `npx tsx scripts/probe-judge.ts` (needs `LLM_ACCOUNTS`; loads `watcher.config.json` at startup, so run from the repo root)
+- **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm, loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session
 - **hooks/**: `.claude/settings.json` only — PreToolUse matcher `Bash` → gate, PostToolUse matcher `Edit|Write` → formatter. NOT husky: husky runs only `lint-staged`
 
 ## Structure
@@ -16,6 +17,18 @@ commit-state-rebase.sh       # bash, set -e self-owned; OUTSIDE typecheck + lint
 probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (keywords + reasoningEffort for the
                              #   real payload), buildBulkMessages + resolveJudgeConfig (+ Post type) from src;
                              #   INSIDE typecheck + lint + lint-staged
+fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect free); exports fetchTick /
+                             #   pushPayload / handleLegDeadEpisode; tick = fetch → payload → add ONLY
+                             #   state/linkedin-posts.json → commit → pull --rebase → push, ONE retry
+                             #   (realGit injectable); INSIDE typecheck + lint + lint-staged
+watch-linkedin.ts            # .ts, always-on loop: one tick + 600s sleep; leg-dead → ONE alarm per episode
+                             #   (repo-local marker beside the payload) + continue; INSIDE typecheck + lint
+probe-linkedin.ts            # .ts, top-level await gate: cookie resolver → transport → one small voyager page;
+                             #   INSIDE typecheck + lint + lint-staged
+login-linkedin.ts            # .ts, entry-guarded (imports runLoginHelper side-effect free); exports runLoginHelper /
+                             #   findSessionCookies / upsertDotEnvLine / writeCookieFile; HEADED persistent-profile
+                             #   login assist (INTERACTIVE — the operator logs in by hand; no headless re-login);
+                             #   writes the cookie file atomically + the .env line; INSIDE typecheck + lint + lint-staged
 hooks/gate-destructive.js    # plain .js for bare node (instant start, no tsx); INSIDE lint ONLY — lint-staged's
 hooks/format-on-edit.js      #   *.ts glob never matches .js; hooks are covered by npm run lint + their own tests
 ```
@@ -37,6 +50,9 @@ return 4;                                     // only a fully clean 2→4 ramp r
 commit-state-rebase.sh      exit 0 = pushed; exit 1 = non-state conflict abort or second push
                             failure — watch.yml's step shell consumes it with no wrapper
 probe-judge.ts              exit 1 on any failed leg, auth-dead 401/403, or ceiling < 1 — the probe job is a gate, so this reddens the dispatch run
+fetch-linkedin.ts           exit 1 on leg-dead (after the ONE episode alarm) or a failed push — the one-off entry
+curl/watch entries          watch-linkedin.ts never exits on leg-dead; probe-linkedin.ts exits 1 on leg-dead/short/fault (gate)
+login-linkedin.ts           exit 1 on timeout (no session within the budget) or a failed poll/context — one alarm-free operator gate
 gate-destructive.js         exit 2 = DENY the tool call (reason on stderr); unreadable stdin → exit 0 (fail-open, never block)
 format-on-edit.js           ALWAYS exit 0 — post-edit feedback only, can never veto an edit
 ```

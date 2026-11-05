@@ -6,7 +6,7 @@ loker-watcher: a TypeScript ESM pipeline (Node >= 22, strict TS) that watches In
 
 ```
 .github/workflows/  # ci.yml gate + watch.yml: cron */10 → npx tsx src/index.ts → state commit-back via scripts/commit-state-rebase.sh (+ dispatch-only probe job)
-src/                # the pipeline: fetch (threads Playwright walks + linkedin Linked API SDK) → extract → dedupe → recency → seen → judge → notify → persist
+src/                # the pipeline: fetch (threads Playwright walks + the PC-linked linkedin payload read) → extract → dedupe → recency → seen → judge → notify → persist
 tests/              # offline unit suite (node:test via tsx), ~1:1 with src module names + hook subprocess tests
 scripts/            # commit-state-rebase.sh (state commit-back body: rebase + skip + push + one internal retry), probe-judge.ts (measures the LLM endpoint, feeds JUDGE_CONCURRENCY) + Claude Code hooks
 .claude/, .cursor/, # agent meta: hook registration + agents/commands/skills | editor rules | husky pre-commit
@@ -35,7 +35,7 @@ Detailed guidance:
 
 ## Business Context
 
-A scheduled GitHub Actions run is the only runtime. Zero-match runs email a status digest (the heartbeat) instead — `HEARTBEAT_ENABLED` unset means enabled. Missing optional credentials (e.g. the Linked API token pair `LINKED_API_TOKEN` / `LINKED_API_IDENTIFICATION_TOKEN`) skip that platform's surfaces with a warn; the run still completes and the heartbeat still fires. Operator configuration lives in `watcher.config.json`; a typo stops the run with an error that names the problem. Repo doctrine: only probe-measured values are env-tunable (`JUDGE_CONCURRENCY`); all other tuning values are hard-coded module constants.
+A scheduled GitHub Actions run is the only runtime. Zero-match runs email a status digest (the heartbeat) instead — `HEARTBEAT_ENABLED` unset means enabled. A dark LinkedIn leg (absent or stale `state/linkedin-posts.json` — the PC loop is off) degrades to a threads-only run with one log line; the heartbeat still fires and renders the leg state. Operator configuration lives in `watcher.config.json`; a typo stops the run with an error that names the problem. Repo doctrine: only probe-measured values are env-tunable (`JUDGE_CONCURRENCY`); all other tuning values are hard-coded module constants.
 
 <important if="you are adding a new pipeline stage end-to-end">
 1. Stage code and funnel wiring — see `.rpiv/guidance/src/architecture.md` ("Adding a New Pipeline Stage")
