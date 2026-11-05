@@ -13,7 +13,9 @@
 /** Environment variable names; values never appear in the repo. */
 export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
-  linkedinSession: "LINKEDIN_SESSION_STATE",
+  linkedinCookiesFile: "LINKEDIN_COOKIES_FILE",
+  linkedinTransport: "LINKEDIN_TRANSPORT",
+  curlImpersonateBin: "CURL_IMPERSONATE_BIN",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
   judgeConcurrency: "JUDGE_CONCURRENCY",
@@ -49,6 +51,15 @@ export function runUrlFromEnv(env: Record<string, string | undefined>): string |
 
 /** Commit-back location of the seen-state file (FRD #6). */
 export const STATE_PATH = "state/seen-posts.json";
+
+/**
+ * PC-leg payload (design D5): the local voyager loop writes fetched raw
+ * posts here and pushes this single path to main; the hosted run reads it
+ * (src/linkedin-payload.ts). Exactly one writer per file — the bot owns
+ * seen-posts.json, the PC owns this one — so the two rebase+retry push
+ * disciplines can never lose each other's commits.
+ */
+export const LINKEDIN_PAYLOAD_PATH = "state/linkedin-posts.json";
 
 /**
  * Location of the JSON source of truth for surfaces, keywords, candidate

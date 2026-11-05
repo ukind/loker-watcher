@@ -189,17 +189,11 @@ describe("resolveSurfaces", () => {
     assert.equal(resolved[0]?.url, "https://www.threads.com/tag/a%20b");
   });
 
-  it("builds a linkedin content-search URL byte-exactly", () => {
-    const resolved = resolveSurfaces([
-      { type: "linkedin", value: "#hiring engineer developer jakarta" },
-    ]);
-    assert.deepEqual(resolved, [
-      {
-        platform: "linkedin",
-        label: "linkedin/#hiring engineer developer jakarta",
-        url: "https://www.linkedin.com/search/results/content/?keywords=%23hiring%20engineer%20developer%20jakarta&origin=FACETED_SEARCH&sortBy=%5B%22date_posted%22%5D&datePosted=%5B%22past-24h%22%5D",
-      },
-    ]);
+  it("fails visibly when a linkedin surface reaches resolveSurfaces (the PC fetch leg consumes them raw)", () => {
+    assert.throws(
+      () => resolveSurfaces([{ type: "linkedin", value: "#hiring" }]),
+      /linkedin surface "#hiring" reached resolveSurfaces/,
+    );
   });
 });
 

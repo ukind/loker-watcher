@@ -10,7 +10,15 @@ permissions:
 
 concurrency:
   group: watch
-  cancel-in-progress: false
+  # Cancel keeps at most one run alive: a run that parks on judge
+  # cooldowns could otherwise hold the whole 8-minute cap, and queueing
+  # every 10-minute tick behind it backs the schedule up without bound.
+  # One live run still serializes the state read-modify-write (the
+  # in-flight run is dead, never concurrent) and the newest run is the one
+  # worth keeping. State writes stay atomic + rebase-safe either way. The
+  # PC-linked payload (state/linkedin-posts.json) is written by the local
+  # loop's own rebase+retry push — never by this workflow.
+  cancel-in-progress: true
 
 jobs:
   probe:
@@ -40,18 +48,21 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     # Width-4 judge (the probe job's reading): 30 bulk calls clear in ~8
-    # waves, width-4 surface pools cut the serial fetch to ~1 min (71s
-    # measured), and the 40-call fallback budget adds about a minute. The
-    # 8-minute cap keeps a hung run under the 10-minute cron interval — it
-    # dies before the next tick queues. Measured 2026-10-27: 8-wide bursts
-    # drew HTTP 429s from the endpoint, 4-wide ran clean.
+    # waves, and the 40-call fallback budget adds about a minute. Measured
+    # 2026-10-27: 8-wide bursts drew HTTP 429s from the endpoint, 4-wide
+    # ran clean. The 8-minute cap keeps a hung run under the 10-minute
+    # cron interval — it dies before the next tick queues (cancel-in-
+    # progress now drops a superseded run instead of queueing it).
     # Timeout envelope arithmetic (F023): 480s job cap - 60-100s setup
     # prologue (checkout + npm ci + Playwright install; the ms-playwright
-    # cache removes 30-60s of it) - 71s measured fetch worst case
-    # (2026-10-27) - 60s abort tail leaves ~249-289s for judge waves and
-    # parks. WAIT_BUDGET_MS (180s, src/judge.ts) caps the parked wait
-    # before the exhaustion alarm, so the alarm lands ~1-2 min inside the
-    # cap and the run still dies before the next 10-minute tick queues.
+    # cache removes 30-60s of it) - 60s abort tail leaves ~320-360s for the
+    # fetch stage, judge waves, and parks. The LinkedIn fetch term left this
+    # budget entirely (2026-11-04): the leg runs on the developer PC and
+    # this job only READS its pushed payload — the fetch measurement note
+    # moved to the PC-loop docs in README.md.
+    # WAIT_BUDGET_MS (180s, src/judge.ts) caps the parked wait before the
+    # exhaustion alarm, so the alarm lands ~1-2 min inside the cap and the
+    # run still dies before the next 10-minute tick queues.
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +102,10 @@ jobs:
           JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
-          LINKEDIN_SESSION_STATE: ${{ secrets.LINKEDIN_SESSION_STATE }}   # absent secret => resolver null => LinkedIn surfaces skip (src/threads-session.ts)
+          # The LinkedIn leg needs no secret here: the PC loop pushes
+          # state/linkedin-posts.json and this job reads it from the
+          # checkout — an absent/stale payload degrades to a threads-only
+          # run (src/linkedin-payload.ts, D13).
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}

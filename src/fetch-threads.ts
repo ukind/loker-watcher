@@ -28,7 +28,6 @@
  */
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
-import { fetchLinkedInSurface } from "./fetch-linkedin.js";
 import { sleep } from "./judge.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
@@ -87,12 +86,6 @@ export interface LocatorLike {
   click(): Promise<void>;
 }
 
-/** Wheel-driven scroll controller (LinkedIn pagination; Threads scrolls via evaluate). */
-interface PageMouseLike {
-  move(x: number, y: number): Promise<void>;
-  wheel(deltaX: number, deltaY: number): Promise<void>;
-}
-
 /** One browser page, narrowed to the surface the walks actually drive. */
 export interface PageLike {
   goto(url: string, options?: { waitUntil: "domcontentloaded"; timeout: number }): Promise<unknown>;
@@ -106,8 +99,6 @@ export interface PageLike {
   locator(selector: string): LocatorLike;
   evaluate(script: string): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
-  /** Wheel controller; absent on pages that cannot wheel-scroll. */
-  readonly mouse?: PageMouseLike;
   close(): Promise<void>;
 }
 
@@ -127,67 +118,66 @@ export interface ContextLike {
 export type ContextFactory = (storageStatePath?: string) => Promise<ContextLike>;
 
 /**
- * The production factory, and the ONLY Playwright import site: the dynamic
- * await import below keeps module import side-effect free (importing this
- * file never loads Playwright — the offline suites rely on that). The
- * factory owns the browser and closes it when the context closes.
+ * Build one browser context for a walk at a fixed headless mode. The
+ * dynamic await import inside is the ONLY Playwright import site, so
+ * importing this module never loads Playwright — the offline suites rely
+ * on that — and the factory owns the browser, closing it when the context
+ * closes. The optional storage-state path is the session file the
+ * authenticated walk passes so the context attaches the logged-in cookies;
+ * zero-arg calls (test doubles) simply build a context from no stored session.
  */
-const chromiumContextFactory: ContextFactory = async (
-  storageStatePath?: string,
-): Promise<ContextLike> => {
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    ...(storageStatePath === undefined ? {} : { storageState: storageStatePath }),
-    userAgent: USER_AGENT,
-    viewport: { width: 1366, height: 768 },
-    locale: "en-US",
-  });
-  await context.addInitScript(WEBDRIVER_PATCH);
-  return {
-    newPage: async (): Promise<PageLike> => {
-      const page = await context.newPage();
-      return {
-        goto: (url, options) => page.goto(url, options),
-        waitForFunction: async (pageFunction, arg, options) => {
-          await page.waitForFunction(pageFunction, arg, options);
-        },
-        content: () => page.content(),
-        on: (event, listener) => {
-          page.on(event, (response) => listener(response));
-          return undefined;
-        },
-        locator: (selector) => {
-          const chain = page.locator(selector).first();
-          const adapted: LocatorLike = {
-            first: () => adapted,
-            waitFor: (options) => chain.waitFor(options),
-            click: () => chain.click(),
-          };
-          return adapted;
-        },
-        evaluate: (script) => page.evaluate(script),
-        waitForTimeout: (ms) => page.waitForTimeout(ms),
-        mouse: {
-          move: async (x, y) => {
-            await page.mouse.move(x, y);
+function makeChromiumContextFactory(headless: boolean): ContextFactory {
+  const factory: ContextFactory = async (storageStatePath?: string): Promise<ContextLike> => {
+    const { chromium } = await import("playwright");
+    const browser = await chromium.launch({ headless });
+    const context = await browser.newContext({
+      ...(storageStatePath === undefined ? {} : { storageState: storageStatePath }),
+      userAgent: USER_AGENT,
+      viewport: { width: 1366, height: 768 },
+      locale: "en-US",
+    });
+    await context.addInitScript(WEBDRIVER_PATCH);
+    return {
+      newPage: async (): Promise<PageLike> => {
+        const page = await context.newPage();
+        return {
+          goto: (url, options) => page.goto(url, options),
+          waitForFunction: async (pageFunction, arg, options) => {
+            await page.waitForFunction(pageFunction, arg, options);
           },
-          wheel: async (deltaX, deltaY) => {
-            await page.mouse.wheel(deltaX, deltaY);
+          content: () => page.content(),
+          on: (event, listener) => {
+            page.on(event, (response) => listener(response));
+            return undefined;
           },
-        },
-        close: () => page.close(),
-      };
-    },
-    addInitScript: async (script) => {
-      await context.addInitScript(script);
-    },
-    close: async () => {
-      await context.close();
-      await browser.close();
-    },
+          locator: (selector) => {
+            const chain = page.locator(selector).first();
+            const adapted: LocatorLike = {
+              first: () => adapted,
+              waitFor: (options) => chain.waitFor(options),
+              click: () => chain.click(),
+            };
+            return adapted;
+          },
+          evaluate: (script) => page.evaluate(script),
+          waitForTimeout: (ms) => page.waitForTimeout(ms),
+          close: () => page.close(),
+        };
+      },
+      addInitScript: async (script) => {
+        await context.addInitScript(script);
+      },
+      close: async () => {
+        await context.close();
+        await browser.close();
+      },
+    };
   };
-};
+  return factory;
+}
+
+/** The production factory: headless, hardened, storage-state aware. */
+const chromiumContextFactory: ContextFactory = makeChromiumContextFactory(true);
 
 /**
  * A `tag` surface logs as `tag/<value>`; a `url` surface logs as its full
@@ -273,19 +263,18 @@ async function fetchOne(context: ContextLike, surface: ResolvedSurface): Promise
 }
 
 /**
- * Walk-shaping options for the authenticated dispatch (D6). Both fields
- * are optional: the absent feature (no linkedin surfaces, no scrollRounds
- * key) behaves byte-identically to the pre-LinkedIn walker.
+ * Walk-shaping options for the authenticated walk (D6). All fields are
+ * optional: the absent scrollRounds key behaves byte-identically to the
+ * pre-config walker.
  */
 export interface AuthenticatedFetchOptions {
-  /** Storage-state file for the LinkedIn context; linkedin surfaces fail without it. */
-  readonly linkedinSessionPath?: string;
-  /** Loop bound for BOTH walks; absent means the Threads-measured default (D4). */
+  /** Loop bound for the walk; absent means the Threads-measured default (D4). */
   readonly scrollRounds?: number;
 }
 
 /**
- * Fetch posts from the configured surfaces with authenticated sessions.
+ * Fetch posts from the configured Threads surfaces with authenticated
+ * sessions.
  *
  * The logged-in tag page defaults to the Top view (old, popular posts) and
  * hydrates post data through graphql XHR responses instead of the initial
@@ -298,12 +287,6 @@ export interface AuthenticatedFetchOptions {
  * search URLs have no such tab, and a `filter=recent` search URL is recent
  * by construction.
  *
- * Dispatch is platform-typed (D1): threads surfaces walk the storageState
- * context through the graphql-XHR walk, linkedin surfaces walk a second
- * context built from options.linkedinSessionPath through the flagship-web
- * walk (src/fetch-linkedin.ts). The base context is built lazily (D12): a
- * dispatch with no threads surfaces never builds it.
- *
  * Surfaces drain through the same bounded slot-array pool as the logged-out
  * walk (D4): results reassemble in input order, peak <= FETCH_CONCURRENCY.
  * Throws when every surface fails (message lists per-surface errors).
@@ -314,53 +297,19 @@ export async function fetchSurfacesAuthenticated(
   contextFactory: ContextFactory = chromiumContextFactory,
   options: AuthenticatedFetchOptions = {},
 ): Promise<Post[]> {
-  // The base context is built lazily (D12): a dispatch whose surfaces are
-  // all linkedin (the logged-out Threads arm; a linkedin-only config whose
-  // Threads secret is set) never walks it, so eager building would open an
-  // idle browser context from a path no surface reads.
-  const threadsPresent = surfaces.some((surface) => surface.platform === "threads");
-  const context: ContextLike | null = threadsPresent
-    ? await contextFactory(storageStatePath)
-    : null;
+  // Eager build is safe: the only caller (index.ts) guards surfaces.length > 0
+  // before dispatching, so an empty-surface run can never open an idle browser.
+  const context = await contextFactory(storageStatePath);
   const scrollRounds = options.scrollRounds ?? MAX_SCROLL_ROUNDS;
-  let linkedinContext: ContextLike | null = null;
   try {
-    if (options.linkedinSessionPath !== undefined) {
-      linkedinContext = await contextFactory(options.linkedinSessionPath);
-    }
     const perSurface: Array<Post[] | undefined> = Array.from({ length: surfaces.length });
     const failures: Array<string | undefined> = Array.from({ length: surfaces.length });
     const emptyLabels: Array<string | undefined> = Array.from({ length: surfaces.length });
-    // Platform dispatch (D9): the caller filters surfaces it cannot walk;
-    // a linkedin surface arriving with no session path is a wiring bug and
-    // fails that surface (visible in the all-fail detail).
-    const walkLinkedInSurface = async (
-      linkedinContext: ContextLike | null,
-      surface: ResolvedSurface,
-      rounds: number,
-    ): Promise<Post[]> => {
-      if (linkedinContext === null) {
-        throw new Error("linkedin surface walked without a session path");
-      }
-      return fetchLinkedInSurface(linkedinContext, surface, rounds);
-    };
-    // Mirror of the LinkedIn guard: a threads surface arriving in a
-    // dispatch that built no base context is a wiring bug and fails that
-    // surface (unreachable — the context exists iff a threads surface does).
-    const threadsContext = (): ContextLike => {
-      if (context === null) {
-        throw new Error("threads surface walked without a base context");
-      }
-      return context;
-    };
     // Same migration as fetchSurfaces (F007): the empty-surface side
     // channel rides the closure, the worker stays total.
     await runPool(surfaces, FETCH_CONCURRENCY, async (surface, index) => {
       try {
-        const posts =
-          surface.platform === "linkedin"
-            ? await walkLinkedInSurface(linkedinContext, surface, scrollRounds)
-            : await fetchOneAuthenticated(threadsContext(), surface, scrollRounds);
+        const posts = await fetchOneAuthenticated(context, surface, scrollRounds);
         console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
         // A surface that yields 0 posts is NOT a thrown failure, so it never
         // reaches `failures`. Track it separately or the all-fail error below
@@ -389,8 +338,7 @@ export async function fetchSurfacesAuthenticated(
     }
     return results;
   } finally {
-    if (linkedinContext !== null) await linkedinContext.close();
-    if (context !== null) await context.close();
+    await context.close();
   }
 }
 

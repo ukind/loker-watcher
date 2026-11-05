@@ -1,6 +1,6 @@
 ---
 name: validate-e2e
-description: Run a full end-to-end validation of the loker-watcher pipeline against the live Threads feed and the real LLM judge endpoint. Use when the user asks to validate, smoke-test, or prove the watcher works before a release or a config change.
+description: Run a full end-to-end validation of the loker-watcher pipeline against the live Threads and LinkedIn feeds and the real LLM judge endpoint. Use when the user asks to validate, smoke-test, or prove the watcher works before a release or a config change.
 ---
 
 # End-to-end validation of loker-watcher

@@ -3,13 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "tsx src/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check src tests scripts/probe-judge.ts scripts/hooks",
-    "format": "biome format --write src tests",
+    "lint": "biome check src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/setup-curl-impersonate.ts scripts/hooks",
+    "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/setup-curl-impersonate.ts",
+    "fetch-linkedin": "tsx scripts/fetch-linkedin.ts",
+    "watch-linkedin": "tsx scripts/watch-linkedin.ts",
+    "probe-linkedin": "tsx scripts/probe-linkedin.ts",
+    "login-linkedin": "tsx scripts/login-linkedin.ts",
+    "setup-curl": "tsx scripts/setup-curl-impersonate.ts",
     "prepare": "husky"
   },
   "lint-staged": {

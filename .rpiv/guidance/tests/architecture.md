@@ -5,7 +5,7 @@ Full-pipeline offline verification of src/ (plus the commit-state-rebase shell s
 
 ## Dependencies
 - **node:test + node:assert/strict**, run via tsx — the only runner/assertion stack
-- nodemailer contributes types only (fake transports); Playwright is never imported at test time (structural `*Like` doubles)
+- nodemailer contributes types only (fake transports); Playwright is never imported at test time (structural `*Like` doubles); the linkedin transport stays unexercised like chromiumContextFactory — the VoyagerGet seam carries the tests
 - Consumers: `npm test` (the `tests/*.test.ts` glob auto-picks new files; CI's final gate); watch.yml does NOT run tests — merge gate only
 
 ## Coverage map (the 1:1 mirror rule, today)
@@ -14,7 +14,16 @@ config.ts, types.ts   — no test (names/paths/kill switch — the "false" branc
 config-file.ts     → config-file.test.ts
 email.ts, heartbeat.ts → email.test.ts, heartbeat.test.ts
 extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/tag-page.html, graphql-response.json
-fetch-linkedin.ts  → fetch-linkedin.test.ts  # synthetic Flight bodies; staged-response ContextLike double
+linkedin-voyager.ts → linkedin-voyager.test.ts   # §12.5 escaping matrix, §12.7 URL pin, id>>22n clock, scrubbed fixture (edges 1-4)
+linkedin-session.ts → linkedin-session.test.ts   # resolver reject matrix (all name LINKEDIN_COOKIES_FILE), quote asymmetry, storageState
+linkedin-fetch.ts → linkedin-fetch.test.ts        # §13.3 classifier table, curl-over-fake-exec, resolver matrix, scripted VoyagerGet walk
+linkedin-payload.ts → linkedin-payload.test.ts    # all four failure classes + atomic round trip
+env-file.ts        → env-file.test.ts            # parser pins (malformed line warn+skip naming file+line) + merge contract
+                                                 #   (fills ONLY unset keys; real env wins; missing = quiet no-op) + the
+                                                 #   hoisted upsertDotEnvLine writer pins (moved from login-linkedin, Phase 9)
+login-linkedin.ts (core) → login-linkedin.test.ts  # context seam injected, sleeps/clock injected — no headed Chromium in tests
+scripts/setup-curl-impersonate.ts → setup-curl-impersonate.test.ts  # fetch + tar doubles, fixture sha computed by the suite,
+                                                 #   already-configured short-circuit, sha/tar/exe/platform failure pins
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins

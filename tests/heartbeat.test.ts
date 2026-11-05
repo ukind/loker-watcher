@@ -7,6 +7,7 @@ import {
   ageHours,
   buildHeartbeatBody,
   buildHeartbeatSubject,
+  linkedinLegLine,
   matchesCandidateTerms,
   selectCandidates,
   sendHeartbeat,
@@ -136,6 +137,33 @@ describe("buildHeartbeatSubject", () => {
   });
 });
 
+describe("linkedinLegLine (D13)", () => {
+  it("renders ok with the payload-age detail", () => {
+    assert.equal(
+      linkedinLegLine({ status: "ok", detail: "payload 3 min old" }),
+      "LinkedIn leg: ok — payload 3 min old",
+    );
+  });
+
+  it("renders DARK with the staleness detail", () => {
+    assert.equal(
+      linkedinLegLine({ status: "stale", detail: "payload 2h old" }),
+      "LinkedIn leg: DARK — payload 2h old",
+    );
+  });
+
+  it("renders absent without detail", () => {
+    assert.equal(linkedinLegLine({ status: "absent" }), "LinkedIn leg: absent — no payload file");
+  });
+
+  it("renders malformed with the reason detail", () => {
+    assert.equal(
+      linkedinLegLine({ status: "malformed", detail: "not valid JSON: x" }),
+      "LinkedIn leg: malformed — not valid JSON: x",
+    );
+  });
+});
+
 describe("buildHeartbeatBody", () => {
   it("includes the funnel counts", () => {
     const body = buildHeartbeatBody(STATS, [], NOW);
@@ -143,6 +171,28 @@ describe("buildHeartbeatBody", () => {
     assert.ok(body.includes("303 within 72h"));
     assert.ok(body.includes("1 judged candidate(s)"));
     assert.ok(body.includes("0 relevant + located"));
+  });
+
+  it("renders the leg line inside the funnel block when the reader ran (stale state)", () => {
+    const body = buildHeartbeatBody(
+      { ...STATS, linkedinLeg: { status: "stale", detail: "payload 2h old" } },
+      [],
+      NOW,
+    );
+    assert.ok(body.includes("  LinkedIn leg: DARK — payload 2h old"));
+  });
+
+  it("renders the ok leg with the payload age", () => {
+    const body = buildHeartbeatBody(
+      { ...STATS, linkedinLeg: { status: "ok", detail: "payload 3 min old" } },
+      [],
+      NOW,
+    );
+    assert.ok(body.includes("  LinkedIn leg: ok — payload 3 min old"));
+  });
+
+  it("omits the leg line entirely when the reader never ran", () => {
+    assert.ok(!buildHeartbeatBody(STATS, [], NOW).includes("LinkedIn leg:"));
   });
 
   it("lists candidates with permalinks", () => {

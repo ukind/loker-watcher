@@ -4,8 +4,8 @@
 The entire application: a single-shot CLI pipeline that fetches job posts from Threads and LinkedIn surfaces, filters them, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM, emails matches, and persists judged post ids. One exported unit seam — `runWatcher(deps)` — no server, no daemon.
 
 ## Dependencies and consumers
-- **playwright**: quarantined behind the single dynamic-import site — `chromiumContextFactory` in fetch-threads.ts is the ONLY `await import("playwright")` in src/; fetch-linkedin.ts consumes the seam type-only
-- **nodemailer**: single creation site in email.ts (heartbeat + exhaustion alarm ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
+- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, `request.newContext` in linkedin-fetch.ts (ContextLike exposes no request surface, verified 2026-11-04), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep — curl spawns the PC-local curl-impersonate binary (CURL_IMPERSONATE_BIN, not an npm package)
+- **nodemailer**: single creation site in email.ts (heartbeat + exhaustion + leg-dead alarms ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
 - **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports buildBulkMessages, resolveJudgeConfig, loadWatcherConfig
 
 ## Module Structure (role groups; imports point downward only)
@@ -13,8 +13,11 @@ The entire application: a single-shot CLI pipeline that fetches job posts from T
 index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
 types.ts, config.ts, config-file.ts      # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json validation
                                          #   (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds, reasoningEffort)
-threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | walker + *Like seam +
-fetch-linkedin.ts, extract.ts            #   contextFactory + platform dispatch | LinkedIn wheel walk | data-sjs walk
+env-file.ts                              # PC-script support: <cwd>/.env auto-load (fills ONLY unset keys, real env wins)
+                                         #   + the shared .env line writer upsertDotEnvLine (hoisted here Phase 9;
+                                         #   login-linkedin + setup-curl-impersonate import it)
+threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
+linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (voyager/session/fetch/payload) | data-sjs walk
 recency.ts, judge.ts, judge-rotation.ts, # FUNNEL: window filter | dispatchLlmCall + wrappers | rotation | parsers |
 judge-parse.ts, pool.ts                  #   bounded shared runPool (zero imports)
 email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 atomic save
@@ -61,19 +64,40 @@ const state: RotationState = { accounts, cooldownUntil: new Map(), waitBudgetRem
 // Terminal RETURNED, never thrown in the core; judgePosts drains, then throws AFTER Promise.all: ONE alarm email, exit(1).
 ```
 
-## fetch-linkedin.ts: the second platform rides the same seam
+## linkedin-*.ts: the second platform is a PC-local voyager leg (2026-11-04)
+
 ```typescript
-// TYPES-ONLY seam import (no Playwright); index.ts policy: unset/invalid LINKEDIN_SESSION_STATE ⇒ null ⇒
-// "skipping N linkedin surface(s)" (warn, never throw, never logged-out; a walk-time failure downgrades to a warn).
-function mintPost(activityId: string, text: string): Post {  // body-absent facts are MINTED from the id
-  return {
-    platform: "linkedin",
-    id: `urn:li:activity:\${activityId}`,                   // dedup key; permalink is constructed from it
-    author: "linkedin-member",                               // placeholder — DOM carries no ids to join on
-    timestamp: new Date(Number(BigInt(activityId) >> 22n)).toISOString(),  // id >> 22 = epoch ms
-  };
-}
-// Flight stream: "rowId:{json}" lines → generic walk → capture-verified leaves; subject suffix " + LinkedIn" rides only when ≥1 LinkedIn match exists.
+// SPEC OF RECORD: linkedin-reverse/DOCUMENTATION.md — endpoint, restli encoding (§4.1+§12.5,
+// '#'→%23), §12.7 canonical recipe (sortBy:date_posted; orderBy IGNORED §12.4), §13 fault matrix.
+// linkedin-voyager.ts: PURE core — constants + restli encoder + URL builder + parser (drop+count,
+// never throws). Timestamp = BigInt(id)>>22n (§12.4 drift caveat).
+// linkedin-session.ts: LINKEDIN_COOKIES_FILE resolver (fail-visible D4 — the stricter contrast to
+// silent-null resolveSession); quote asymmetry canonicalized once (header quoted+last §10/§14.5;
+// csrf stripped §3; storageState re-quotes).
+// linkedin-fetch.ts: VoyagerGet seam; curl transport (CURL_IMPERSONATE_BIN fail-visible — the message
+// names BOTH remedies: npm run setup-curl, or LINKEDIN_TRANSPORT=playwright in .env; lexiforest single
+// binary, --impersonate chrome116 pinned — the profile OWNS the UA+TLS+H2 set, so the transport sends no
+// user-agent header and BROWSER_UA feeds ONLY the playwright adapter; injectable
+// exec, -w status sentinel) + playwright request.newContext transport (own quarantine); resolve
+// LINKEDIN_TRANSPORT curl|playwright, no auto-fallback; classifyFault §13.3; LegDeadError tagged
+// error; runPool walk — runPool RETURNS VOID: side arrays by claim index (fetchSurfacesAuthenticated
+// idiom), worker total for surface faults, leg-dead drain-then-throw (judgePosts D11 shape); shared
+// per-walk 5s pacing gate — the rate is pacing-bound, not width-bound.
+// linkedin-payload.ts: {version, writtenAt, posts}; writePayloadAtomic (temp+rename); readPayloadPosts
+// NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(30min)→stale+age; bad envelope→malformed;
+// bad rows→drop+count. {posts, leg} feeds HeartbeatStats.linkedinLeg (heartbeat line ALWAYS; digest
+// line when not ok).
+// index.ts arm: linkedinFetch re-keyed to (payloadPath, now) => PayloadRead; no token gate — absence
+// is the PC-off normal; the D12 belt catch remains for unanticipated faults only.
+// PC scripts: fetch tick = fetch → payload → add ONLY state/linkedin-posts.json → commit →
+// login helper (scripts/login-linkedin.ts): HEADED persistent-profile harvest — the OPERATOR logs in by
+//   hand (§2.4 VERIFIED interactive login; NO headless re-login exists), the script polls the jar for the
+//   li_at + JSESSIONID pair (verbatim — the quoted JSESSIONID stays quoted), writes the cookie file
+//   atomically (stateTempPath + rename) and upserts the LINKEDIN_COOKIES_FILE line in <cwd>/.env;
+//   entry-guarded; exit 1 on timeout/no session. env-file.ts merges <cwd>/.env UNDER the real env for
+//   every PC script (missing .env = quiet normal).
+// pull --rebase → push, ONE retry (mirrors commit-state-rebase.sh; single-writer-per-file); leg-dead =
+// ONE alarm per episode (repo-local marker beside the payload) + exit 1; loop continues; probe = gate exit 1.
 ```
 
 ## State: load → migrate → prune → gated atomic save
