@@ -189,7 +189,7 @@ describe("resolveSurfaces", () => {
     assert.equal(resolved[0]?.url, "https://www.threads.com/tag/a%20b");
   });
 
-  it("fails visibly when a linkedin surface reaches resolveSurfaces (the SDK fetcher consumes them raw)", () => {
+  it("fails visibly when a linkedin surface reaches resolveSurfaces (the PC fetch leg consumes them raw)", () => {
     assert.throws(
       () => resolveSurfaces([{ type: "linkedin", value: "#hiring" }]),
       /linkedin surface "#hiring" reached resolveSurfaces/,

@@ -1,5 +1,6 @@
 import type { Transporter } from "nodemailer";
 import { type EmailConfig, sendText } from "./email.js";
+import type { LegLine } from "./linkedin-payload.js";
 /**
  * No-match heartbeat (Phase 9).
  *
@@ -14,6 +15,11 @@ import { type EmailConfig, sendText } from "./email.js";
  * The candidate net comes from watcher.config.json ("candidateTerms") and is
  * deliberately broader than the keyword list the judge uses: a post that
  * names no configured keyword can still be worth a human look.
+ *
+ * The LinkedIn leg line (D6/D13): every run with a linkedin surface renders
+ * one leg line inside the funnel block. A threads-only run is permanently
+ * quiet, and the PC-side leg alarm cannot fire while the PC is off — the
+ * hosted heartbeat is the only surface that can say "LinkedIn dark" then.
  */
 import type { Post } from "./types.js";
 
@@ -38,6 +44,8 @@ export interface HeartbeatStats {
   skipped: number;
   /** Actions run URL, when the workflow provides the ambient variables. */
   runUrl?: string;
+  /** LinkedIn leg state (D6): attached only when the payload reader ran this run. */
+  linkedinLeg?: LegLine;
 }
 
 /** One candidate post plus why it is in the list. */
@@ -101,6 +109,20 @@ export function buildHeartbeatSubject(stats: HeartbeatStats): string {
   return `loker-watcher: 0 new matches — ${stats.recent} post(s) scanned`;
 }
 
+/**
+ * The LinkedIn leg line inside the heartbeat funnel (D6/D13): ok names the
+ * payload age, DARK names the staleness, absent names the missing file,
+ * malformed names the reason. Four states, always exactly one line — the
+ * run log tells why, this line says how dark the leg is.
+ */
+export function linkedinLegLine(leg: LegLine): string {
+  const detail = leg.detail !== undefined && leg.detail !== "" ? ` — ${leg.detail}` : "";
+  if (leg.status === "ok") return `LinkedIn leg: ok${detail}`;
+  if (leg.status === "stale") return `LinkedIn leg: DARK${detail}`;
+  if (leg.status === "absent") return "LinkedIn leg: absent — no payload file";
+  return `LinkedIn leg: malformed${detail}`;
+}
+
 /** Plain-text body: the funnel, then the candidates with permalinks. */
 export function buildHeartbeatBody(
   stats: HeartbeatStats,
@@ -117,6 +139,7 @@ export function buildHeartbeatBody(
     `  ${stats.judged} judged candidate(s)`,
     `  ${stats.relevantLocated} relevant + located`,
     `  ${stats.skipped} skipped by the judge`,
+    ...(stats.linkedinLeg !== undefined ? [`  ${linkedinLegLine(stats.linkedinLeg)}`] : []),
     "",
   ];
 

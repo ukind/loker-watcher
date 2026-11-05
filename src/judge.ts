@@ -99,10 +99,10 @@ const RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
  * 480s job cap minus the 60-100s setup prologue (checkout + npm ci +
  * Playwright install; the watch.yml ms-playwright cache removes 30-60s of
  * it) minus the 60s abort tail leaves ~320-360s for the fetch stage,
- * judge waves, and parks. The fetch term is PENDING MEASUREMENT: LinkedIn
- * rides the sequential Linked API SDK workflows now, and the first live
- * dispatch's `timing: fetch <N>ms` line pastes into this comment and into
- * watch.yml in the one declared retune commit. A 180s park budget keeps
+ * judge waves, and parks. The LinkedIn fetch term left this budget
+ * entirely (2026-11-04): the leg runs on the developer PC and this job
+ * only reads its pushed payload — the fetch measurement note moved to
+ * the PC-loop docs in README.md. A 180s park budget keeps
  * the exhaustion alarm ~1-2 min inside the 8-minute envelope, and the run
  * still dies before the next 10-minute tick queues.
  */

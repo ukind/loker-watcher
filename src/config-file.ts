@@ -11,8 +11,8 @@ import { readFile } from "node:fs/promises";
 import { CONFIG_PATH } from "./config.js";
 
 /** One surface to sample. `tag` builds the tag-page URL; `url` is verbatim;
- * `linkedin` stays a valid config value whose raw keyword string the SDK
- * fetcher consumes directly (it never resolves to a URL here). */
+ * `linkedin` stays a valid config value whose raw keyword string the PC
+ * fetch leg consumes directly (it never resolves to a URL here). */
 export type Surface =
   | { type: "tag"; value: string }
   | { type: "url"; value: string }
@@ -20,7 +20,7 @@ export type Surface =
 
 /** A surface resolved to the URL Playwright loads, plus its log label. */
 export interface ResolvedSurface {
-  /** Always "threads": LinkedIn rides the SDK fetcher and never resolves here. */
+  /** Always "threads": LinkedIn rides the PC fetch leg and never resolves here. */
   platform: "threads";
   /** Log label: `tag/hiring`, or the full URL for a `url` surface. */
   label: string;
@@ -219,8 +219,8 @@ function readScrollRounds(value: unknown, filePath: string): number {
 
 /**
  * Resolve configured surfaces to the URLs Playwright loads. Only threads
- * surfaces resolve: linkedin entries stay valid config, but the SDK fetcher
- * (src/fetch-linkedin-api.ts) consumes their raw value, so the caller
+ * surfaces resolve: linkedin entries stay valid config, but the PC fetch
+ * leg (src/linkedin-fetch.ts) consumes their raw value, so the caller
  * partitions them out first — one reaching this function is a wiring bug
  * and fails visibly.
  */
@@ -228,7 +228,7 @@ export function resolveSurfaces(surfaces: readonly Surface[]): ResolvedSurface[]
   return surfaces.map((surface): ResolvedSurface => {
     if (surface.type === "linkedin") {
       throw new Error(
-        `linkedin surface "${surface.value}" reached resolveSurfaces — a wiring bug: partition linkedin surfaces out before resolving (the SDK fetcher takes their raw value)`,
+        `linkedin surface "${surface.value}" reached resolveSurfaces — a wiring bug: partition linkedin surfaces out before resolving (the PC fetch leg takes their raw value)`,
       );
     }
     if (surface.type === "tag") {

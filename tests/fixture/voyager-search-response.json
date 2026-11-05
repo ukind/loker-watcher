@@ -1,0 +1,101 @@
+{
+  "data": {
+    "searchDashClustersByAll": {
+      "metadata": {
+        "totalResultCount": 243
+      },
+      "elements": [
+        {
+          "items": [
+            {
+              "item": {
+                "simpleTextV2": {
+                  "text": {
+                    "text": "243 results"
+                  }
+                }
+              }
+            },
+            {
+              "item": {
+                "feedbackCard": {
+                  "text": {
+                    "text": "Send feedback"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "items": [
+            {
+              "item": {
+                "searchFeedUpdate": {
+                  "update": {
+                    "metadata": {
+                      "backendUrn": "urn:li:activity:7523281949587681280",
+                      "detailPageType": "FEED_DETAIL"
+                    },
+                    "commentary": {
+                      "text": {
+                        "text": "#hiring Technology Manager\n\nApply here: https://lnkd.in/gP8G6G2N\n\nReady for a challenge?   Then Just Eat might be the place for you. Were a leading global online delivery platform, and our vision is…"
+                      }
+                    },
+                    "actor": {
+                      "name": {
+                        "text": "Author One"
+                      },
+                      "backendUrn": "urn:li:company:100000"
+                    },
+                    "socialContent": {
+                      "shareUrl": "https://www.linkedin.com/posts/member-handle_httpsjobsrminecomjobnltechnology-manager-activity-7523281949587681280-5dUC?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=MASKED"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "item": {
+                "searchFeedUpdate": {
+                  "update": {
+                    "metadata": {
+                      "backendUrn": "urn:li:activity:7523282112511242240",
+                      "detailPageType": "FEED_DETAIL"
+                    },
+                    "commentary": {
+                      "text": {
+                        "text": "🚨 Hiring: Senior Software Engineer | Hyderabad 🚨\nAre you a passionate Java Developer looking to work on enterprise-scale applications and modern technologies? We're hiring experienced professionals…"
+                      }
+                    },
+                    "actor": {
+                      "name": {
+                        "text": "Author Two"
+                      },
+                      "backendUrn": "urn:li:member:200000"
+                    },
+                    "socialContent": {
+                      "shareUrl": "https://www.linkedin.com/posts/member-handle_hiring-javadeveloper-mulesoft-activity-7523282112511242240-7NFk?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=MASKED"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "item": {
+                "searchFeedUpdate": {
+                  "update": {
+                    "metadata": {
+                      "backendUrn": "urn:li:activity:7523282112511242241"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "included": []
+}

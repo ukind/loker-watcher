@@ -6,8 +6,9 @@
  * browser, and zero writes inside the repo. Covers: the zero-match run
  * persisting judged ids (Gate 2), the digest path, the all-seen Gate 1
  * byte-identity, heartbeat-disabled persistence, judge-skip persistence
- * (D3), the SDK-seam mixed run, the token-skip and belt degrades, the
- * D13/D14 acquisition-shape pins, and the timeStage duration measurement.
+ * (D3), the payload-seam mixed run, the absent-payload and belt degrades
+ * (D13), the D13/D14 acquisition-shape pins, and the timeStage duration
+ * measurement.
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -16,7 +17,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import type { Transporter } from "nodemailer";
 import type { WatcherConfig } from "../src/config-file.js";
-import type { LinkedInApiTokens, LinkedinSurface } from "../src/fetch-linkedin-api.js";
+import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import type {
   ContextFactory,
   ContextLike,
@@ -26,6 +27,7 @@ import type {
 } from "../src/fetch-threads.js";
 import { runWatcher, timeStage } from "../src/index.js";
 import { isRotationExhausted } from "../src/judge-rotation.js";
+import type { PayloadRead } from "../src/linkedin-payload.js";
 import type { AppState } from "../src/state.js";
 import type { JudgeVerdict, Post } from "../src/types.js";
 
@@ -92,7 +94,7 @@ const graphqlResponse = (body: string): ResponseLike => ({
 /** LinkedIn activity id whose embedded epoch ms equals the pinned NOW. */
 const linkedinIdNow = (BigInt(NOW) << 22n).toString();
 
-/** One SDK-shaped LinkedIn post for the injected fetcher double. */
+/** One normalized LinkedIn post for the injected payload-reader double. */
 const linkedinPost = (id: string): Post => ({
   platform: "linkedin",
   id: `urn:li:activity:${id}`,
@@ -101,6 +103,10 @@ const linkedinPost = (id: string): Post => ({
   permalink: `https://www.linkedin.com/feed/update/urn:li:activity:${id}`,
   timestamp: iso(NOW),
 });
+
+/** Build a PayloadRead for the re-keyed linkedinFetch double (D6). */
+const payloadRead = (posts: Post[], leg: PayloadRead["leg"], detail?: string): PayloadRead =>
+  detail !== undefined ? { posts, leg, detail } : { posts, leg };
 
 /** Minimal logged-out tag page: one data-sjs blob carrying the thread items. */
 const tagPageHtml = (
@@ -169,21 +175,15 @@ function singlePageContextFactory(capture: string): ContextFactory {
  * Context-factory double for the platform-split acquisition (Phase 4):
  * each page dispatches on its goto URL — threads URLs fire the graphql
  * capture (authenticated walk) or deliver threadsHtml via content()
- * (logged-out walk), linkedin URLs fire a flagship-web flight body from
- * the initial response. Records every requested URL and every storage-state
- * path so a test can pin which surfaces were walked and that both session
- * temp dirs were cleaned.
+ * (logged-out walk). Records every requested URL and every storage-state
+ * path so a test can pin which surfaces were walked and that the session
+ * temp dir was cleaned. (The LinkedIn leg rides the pushed payload since
+ * slice 5 — no linkedin URL is ever walked.)
  */
 function dualPlatformContextFactory(options: {
   threadsCapture: string;
-  /** Flight body for linkedin URLs; optional since Slice 2 rekeyed the
-   * LinkedIn leg onto the SDK fetcher (dead-but-retained: no phase sheds
-   * the branch; trimming it is a separate cleanup). */
-  linkedinBody?: string;
   /** Page HTML for the logged-out Threads walk; absent = bare hydrated page. */
   threadsHtml?: string;
-  /** Thrown by goto on linkedin URLs — forces a walk-time LinkedIn failure. */
-  linkedinGotoError?: Error;
   urls?: string[];
   sessionPaths?: string[];
 }): ContextFactory {
@@ -195,17 +195,6 @@ function dualPlatformContextFactory(options: {
         return {
           goto: async (url: string) => {
             options.urls?.push(url);
-            if (url.includes("linkedin.com")) {
-              if (options.linkedinGotoError !== undefined) throw options.linkedinGotoError;
-              const response: ResponseLike = {
-                url: () =>
-                  "https://www.linkedin.com/flagship-web/search/results/content/?keywords=x",
-                status: () => 200,
-                text: async () => options.linkedinBody ?? "",
-              };
-              for (const listener of listeners) listener(response);
-              return undefined;
-            }
             for (const listener of listeners) listener(graphqlResponse(options.threadsCapture));
             return undefined;
           },
@@ -277,16 +266,18 @@ function partialBulkThenFailFetch(verdicts: Record<string, JudgeVerdict>): typeo
   }) as unknown as typeof fetch;
 }
 
-/** Transport double recording subject lines (capture-closure idiom). */
+/** Transport double recording subject lines and plain-text bodies. */
 function recordingTransport() {
   const subjects: string[] = [];
+  const texts: string[] = [];
   const transport = {
-    sendMail: async (options: { subject: string }) => {
+    sendMail: async (options: { subject: string; text: string }) => {
       subjects.push(options.subject);
+      texts.push(options.text);
       return { messageId: "msg-1" };
     },
   } as unknown as Transporter;
-  return { transport, subjects };
+  return { transport, subjects, texts };
 }
 
 // Temp state files (offline rule: OS temp only, cleaned up once).
@@ -478,22 +469,15 @@ describe("runWatcher", () => {
     await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/);
   });
 
-  it("walks a mixed run: Threads through its session, LinkedIn through the SDK fetcher, and cleans the session dir", async () => {
+  it("walks a mixed run: Threads through its session, LinkedIn through the pushed payload, and cleans the session dir", async () => {
     const urls: string[] = [];
     const sessionPaths: string[] = [];
-    const linkedinCalls: Array<{
-      surfaces: readonly LinkedinSurface[];
-      tokens: LinkedInApiTokens;
-    }> = [];
+    const linkedinCalls: Array<{ path: string; nowMs: number }> = [];
     const statePath = await tempStatePath("mixed-platform.json");
-    const { transport, subjects } = recordingTransport();
+    const { transport, subjects, texts } = recordingTransport();
 
     const run = await runWatcher({
-      env: {
-        ...BASE_ENV,
-        LINKED_API_TOKEN: "linked-api-token",
-        LINKED_API_IDENTIFICATION_TOKEN: "identification-token",
-      },
+      env: BASE_ENV,
       config: MIXED_CONFIG,
       contextFactory: dualPlatformContextFactory({
         threadsCapture: graphqlBody([
@@ -503,9 +487,9 @@ describe("runWatcher", () => {
         urls,
         sessionPaths,
       }),
-      linkedinFetch: async (surfaces, tokens) => {
-        linkedinCalls.push({ surfaces, tokens });
-        return [linkedinPost(linkedinIdNow)];
+      linkedinFetch: async (path, nowFn) => {
+        linkedinCalls.push({ path, nowMs: nowFn() });
+        return payloadRead([linkedinPost(linkedinIdNow)], "ok", "payload 0 min old");
       },
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
       transport,
@@ -515,19 +499,14 @@ describe("runWatcher", () => {
 
     assert.deepEqual(run, { judged: 3, matches: 3, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /3 new job posts/);
-    // The SDK fetcher got the raw surface value verbatim and both tokens.
-    assert.deepEqual(linkedinCalls, [
-      {
-        surfaces: [{ type: "linkedin", value: "#hiring" }],
-        tokens: {
-          linkedApiToken: "linked-api-token",
-          identificationToken: "identification-token",
-        },
-      },
-    ]);
+    assert.match(subjects[0] ?? "", /3 new job posts on Threads \+ LinkedIn/);
+    // The reader got the fixed repo payload path and the injected clock.
+    assert.deepEqual(linkedinCalls, [{ path: LINKEDIN_PAYLOAD_PATH, nowMs: NOW }]);
     // The Playwright walk never drove a linkedin URL...
     assert.ok(urls.every((url) => !url.includes("linkedin.com")));
+    // ...the digest marks the linkedin row and carries no leg line on ok...
+    assert.ok(texts[0]?.includes("3. [linkedin] LinkedIn hiring post"));
+    assert.ok(!texts[0]?.includes("LinkedIn leg:"));
     // ...both platform id forms reached the state file...
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds).sort(), [
@@ -536,62 +515,60 @@ describe("runWatcher", () => {
       `urn:li:activity:${linkedinIdNow}`,
     ]);
     // ...and the Threads session temp file died with the run (F019; the
-    // LinkedIn leg keeps no session dir — SDK tokens, not storage state).
+    // payload reader keeps no session dir — cookies ride the PC leg).
     assert.equal(sessionPaths.length, 1);
     for (const path of sessionPaths) {
       await assert.rejects(() => readFile(path, "utf8"), /ENOENT/);
     }
   });
 
-  it("completes with Threads posts only when the Linked API tokens are absent, skipping the linkedin surface with a warn", async (t) => {
+  it("completes threads-only when the payload is absent, rendering the absent leg on the heartbeat", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const urls: string[] = [];
-    const statePath = await tempStatePath("linkedin-tokens-absent.json");
-    const { transport, subjects } = recordingTransport();
+    const statePath = await tempStatePath("linkedin-payload-absent.json");
+    const { transport, subjects, texts } = recordingTransport();
 
     const run = await runWatcher({
-      env: BASE_ENV, // no LINKED_API_TOKEN / LINKED_API_IDENTIFICATION_TOKEN
+      env: BASE_ENV,
       config: MIXED_CONFIG,
       contextFactory: dualPlatformContextFactory({
         threadsCapture: graphqlBody([{ id: id19(13), text: "Hiring: react developer, remote" }]),
         urls,
       }),
+      linkedinFetch: async () => payloadRead([], "absent"),
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
       transport,
       statePath,
       now: () => NOW,
     });
 
-    // The tokenless LinkedIn arm never discards Threads results
-    // (acceptance 1) and never routes the surface logged-out.
+    // The absent payload is the PC-off NORMAL (D13): a green threads-only
+    // run, zero linkedin warns (the reader logs one quiet line instead).
     assert.deepEqual(run, { judged: 1, matches: 0, skipped: 0, saved: true });
     assert.ok(urls.every((url) => !url.includes("linkedin.com")));
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(
-      lines.some((line) =>
-        /LINKED_API_TOKEN \/ LINKED_API_IDENTIFICATION_TOKEN missing or blank — skipping 1 linkedin surface/.test(
-          line,
-        ),
-      ),
-    );
+    assert.ok(lines.every((line) => !/linkedin/.test(line)));
+    // The Gate 2 heartbeat renders the absent leg line — a threads-only run
+    // is permanently quiet, so the heartbeat is where the dark leg shows.
+    assert.equal(subjects.length, 1);
+    assert.ok(texts[0]?.includes("LinkedIn leg: absent — no payload file"));
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [id19(13)]);
-    assert.equal(subjects.length, 1); // the Gate 2 heartbeat still fires
   });
 
-  it("degrades a linkedin-only config with no tokens to warn + empty funnel + heartbeat", async (t) => {
+  it("degrades a linkedin-only config with an absent payload to a quiet threads-only heartbeat (Gate 1)", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
-    const statePath = await tempStatePath("linkedin-only-no-tokens.json");
-    const { transport, subjects } = recordingTransport();
+    const statePath = await tempStatePath("linkedin-only-absent.json");
+    const { transport, subjects, texts } = recordingTransport();
     let linkedinCalls = 0;
 
     const run = await runWatcher({
-      env: BASE_ENV, // THREADS_SESSION_STATE present; no LINKED_API_* tokens
+      env: BASE_ENV,
       config: { ...CONFIG, surfaces: [{ type: "linkedin", value: "#hiring" }] },
       contextFactory: singlePageContextFactory(graphqlBody([])), // never driven: no threads surfaces
       linkedinFetch: async () => {
         linkedinCalls += 1;
-        return [];
+        return payloadRead([], "absent");
       },
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
       transport,
@@ -600,31 +577,21 @@ describe("runWatcher", () => {
     });
 
     assert.deepEqual(run, { judged: 0, matches: 0, skipped: 0, saved: false });
-    assert.equal(linkedinCalls, 0, "the fetcher never runs without tokens");
+    assert.equal(linkedinCalls, 1, "the reader runs whenever linkedin surfaces are configured");
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(
-      lines.some((line) =>
-        /LINKED_API_TOKEN \/ LINKED_API_IDENTIFICATION_TOKEN missing or blank — skipping 1 linkedin surface/.test(
-          line,
-        ),
-      ),
-    );
+    assert.ok(lines.every((line) => !/linkedin/.test(line))); // absent is a quiet log, never a warn
     assert.equal(subjects.length, 1); // the Gate 1 heartbeat still fires
+    assert.ok(texts[0]?.includes("LinkedIn leg: absent — no payload file"));
     await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/); // nothing persisted
   });
 
-  it("keeps Threads results when the LinkedIn fetch faults at run time (acceptance 1, the D12 belt)", async (t) => {
+  it("keeps Threads results when the payload read faults at run time (acceptance 1, the D12 belt)", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
-    const statePath = await tempStatePath("linkedin-fetch-throws.json");
-    const { transport, subjects } = recordingTransport();
+    const statePath = await tempStatePath("linkedin-payload-throws.json");
+    const { transport, subjects, texts } = recordingTransport();
 
     const run = await runWatcher({
-      env: {
-        ...BASE_ENV,
-        THREADS_SESSION_STATE: undefined, // logged-out Threads walk
-        LINKED_API_TOKEN: "linked-api-token",
-        LINKED_API_IDENTIFICATION_TOKEN: "identification-token",
-      },
+      env: { ...BASE_ENV, THREADS_SESSION_STATE: undefined }, // logged-out Threads walk
       config: MIXED_CONFIG,
       contextFactory: dualPlatformContextFactory({
         threadsCapture: graphqlBody([]), // unused: the Threads walk is logged-out
@@ -633,7 +600,7 @@ describe("runWatcher", () => {
         ]),
       }),
       linkedinFetch: async () => {
-        throw new Error("sdk socket hang up");
+        throw new Error("payload io exploded");
       },
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
       transport,
@@ -641,15 +608,42 @@ describe("runWatcher", () => {
       now: () => NOW,
     });
 
-    // The belt degrades the fault to a warn; the logged-out Threads posts
-    // survive and the run completes (exit 0 shape).
+    // The belt degrades the fault to a warn + a malformed leg; the
+    // logged-out Threads posts survive and the run completes (exit 0 shape).
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(lines.some((line) => /linkedin surfaces FAILED — sdk socket hang up/.test(line)));
+    assert.ok(lines.some((line) => /linkedin payload FAILED — payload io exploded/.test(line)));
     assert.equal(subjects.length, 1);
     assert.match(subjects[0] ?? "", /1 new job post/);
+    // The not-ok leg rides the digest (D13).
+    assert.ok(texts[0]?.includes("LinkedIn leg: malformed — payload io exploded"));
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [id19(14)]);
+  });
+
+  it("renders the stale leg line on a match-run digest even when the leg contributed no posts (D13)", async () => {
+    const statePath = await tempStatePath("stale-leg-digest.json");
+    const { transport, subjects, texts } = recordingTransport();
+
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: MIXED_CONFIG,
+      contextFactory: singlePageContextFactory(
+        graphqlBody([{ id: id19(16), text: "Hiring: scala developer, remote" }]),
+      ),
+      linkedinFetch: async () => payloadRead([], "stale", "payload 3h old"),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    // One threads match; the stale leg rides the digest so a dark leg
+    // stays visible on a match run too.
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.ok(!texts[0]?.includes("[linkedin]")); // the stale leg contributed no posts
+    assert.ok(texts[0]?.includes("\n\nLinkedIn leg: stale — payload 3h old\n"));
   });
 
   it("keeps LinkedIn posts on a linkedin-only config when a Threads session exists (D13 single return)", async () => {
@@ -657,14 +651,10 @@ describe("runWatcher", () => {
     const { transport, subjects } = recordingTransport();
 
     const run = await runWatcher({
-      env: {
-        ...BASE_ENV, // THREADS_SESSION_STATE present
-        LINKED_API_TOKEN: "linked-api-token",
-        LINKED_API_IDENTIFICATION_TOKEN: "identification-token",
-      },
+      env: BASE_ENV, // THREADS_SESSION_STATE present
       config: { ...CONFIG, surfaces: [{ type: "linkedin", value: "#hiring" }] },
       contextFactory: singlePageContextFactory(graphqlBody([])), // never driven: zero threads surfaces
-      linkedinFetch: async () => [linkedinPost(linkedinIdNow)],
+      linkedinFetch: async () => payloadRead([linkedinPost(linkedinIdNow)], "ok"),
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
       transport,
       statePath,
@@ -675,26 +665,25 @@ describe("runWatcher", () => {
     // the single return keeps the LinkedIn posts (D13).
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post/);
+    assert.match(subjects[0] ?? "", /1 new job post on Threads \+ LinkedIn/);
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [`urn:li:activity:${linkedinIdNow}`]);
   });
 
   it("logs every surface from the raw config partition in the startup line (D14)", async (t) => {
     const logs = t.mock.method(console, "log", console.log.bind(console));
-    // The tokenless skip warn fires mid-run; keep the spy call-through.
-    const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const statePath = await tempStatePath("startup-surface-line.json");
     const { transport } = recordingTransport();
 
     await runWatcher({
-      env: BASE_ENV, // tokens absent: the linkedin surface skips after the startup line
+      env: BASE_ENV,
       config: MIXED_CONFIG,
       contextFactory: dualPlatformContextFactory({
         // A real post: an EMPTY authenticated capture trips the kept
         // all-fail gate and the run dies before the startup line is logged.
         threadsCapture: graphqlBody([{ id: id19(15), text: "Hiring: golang developer, remote" }]),
       }),
+      linkedinFetch: async () => payloadRead([], "absent"),
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
       transport,
       statePath,

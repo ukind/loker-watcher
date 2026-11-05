@@ -7,7 +7,13 @@ import {
   loadWatcherConfig,
   resolveSurfaces,
 } from "./config-file.js";
-import { ENV_NAMES, STATE_PATH, isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
+import {
+  ENV_NAMES,
+  LINKEDIN_PAYLOAD_PATH,
+  STATE_PATH,
+  isHeartbeatEnabled,
+  runUrlFromEnv,
+} from "./config.js";
 import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js";
 /**
  * CLI entry point: the full pipeline (FRD #1-#9; fast-workflow-runtime
@@ -28,12 +34,6 @@ import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js"
  * loaded once at startup. A missing or malformed file fails the run.
  */
 import { extractPosts } from "./extract.js";
-import {
-  type LinkedInApiTokens,
-  type LinkedinSurface,
-  fetchLinkedInPosts,
-  resolveLinkedApiTokens,
-} from "./fetch-linkedin-api.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { isRotationExhausted } from "./judge-rotation.js";
@@ -44,6 +44,8 @@ import {
   resolveJudgeConfig,
   sleep,
 } from "./judge.js";
+import type { LinkedinSurface } from "./linkedin-fetch.js";
+import { type LegLine, type PayloadRead, readPayloadPosts } from "./linkedin-payload.js";
 import { filterRecent } from "./recency.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
 import { cleanupSessionDir, resolveSession } from "./threads-session.js";
@@ -101,8 +103,8 @@ export async function timeStage<T>(
  * Injectable dependencies for one watcher run; every field has the
  * production default the pipeline uses when omitted. This is the unit seam
  * the offline suite operates (tests/index.test.ts): env, config, surface
- * fetch, the LinkedIn SDK fetch, LLM transport, SMTP transport, state file,
- * and the clock all inject, so a full pipeline run executes offline.
+ * fetch, the LinkedIn payload reader, LLM transport, SMTP transport, state
+ * file, and the clock all inject, so a full pipeline run executes offline.
  */
 export interface WatcherDeps {
   /** Environment record for every resolver. Default: process.env. */
@@ -111,11 +113,8 @@ export interface WatcherDeps {
   readonly config?: WatcherConfig;
   /** Browser-context factory for the surface walks (Slice 3 seam). Default: chromiumContextFactory. */
   readonly contextFactory?: ContextFactory;
-  /** LinkedIn SDK fetcher (Slice 2 seam). Default: fetchLinkedInPosts — the module owns its degrade contract. */
-  readonly linkedinFetch?: (
-    surfaces: readonly LinkedinSurface[],
-    tokens: LinkedInApiTokens,
-  ) => Promise<Post[]>;
+  /** LinkedIn payload reader (D6 seam). Default: readPayloadPosts — the module owns its degrade contract (D13). */
+  readonly linkedinFetch?: (payloadPath: string, now: () => number) => Promise<PayloadRead>;
   /** LLM HTTP transport. Default: global fetch. */
   readonly fetchFn?: typeof fetch;
   /** SMTP transport for the digest and the heartbeat. Default: nodemailer. */
@@ -153,16 +152,16 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const sleepFn = deps.sleepFn ?? sleep;
   const statePath = deps.statePath ?? STATE_PATH;
   const startedAt = now();
-  const linkedinFetch = deps.linkedinFetch ?? fetchLinkedInPosts;
+  const linkedinFetch = deps.linkedinFetch ?? readPayloadPosts;
   // D14: labels come from the RAW config partition, not the resolved
   // array — Slice 3 narrows ResolvedSurface to threads-only, and this
   // line must keep listing every surface the run attempts, linkedin
   // included. Labels: tag/<value>, url verbatim, linkedin/<value>.
   console.log(`watch: surfaces: ${config.surfaces.map(surfaceLabel).join(", ")}`);
-  // Raw partition first: the SDK fetcher takes raw linkedin surfaces
-  // (value verbatim), the walker takes resolved threads records. Slice 3
-  // narrows ResolvedSurface.platform to "threads"; partitioning here keeps
-  // linkedin entries out of resolveSurfaces from this slice on.
+  // Raw partition first: the PC leg's payload reader takes the fixed repo
+  // path (no surface arguments), the walker takes resolved threads records.
+  // Slice 3 narrows ResolvedSurface.platform to "threads"; partitioning
+  // here keeps linkedin entries out of resolveSurfaces.
   const linkedinSurfaces = config.surfaces.filter(
     (surface): surface is LinkedinSurface => surface.type === "linkedin",
   );
@@ -172,8 +171,10 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
 
   // Acquisition stage (D4): the per-platform fetches timed as one span.
   // Extraction happens inside the walk; the dedupe count logs right after
-  // the duration line. Threads keeps its Playwright walks; LinkedIn rides
-  // the SDK fetcher (Slice 2 rewiring) with a caller-owned token warn.
+  // the duration line. Threads keeps its Playwright walks; LinkedIn reads
+  // the PC leg's pushed payload (D6/D13 — the reader is total, absent and
+  // stale degrade to a logged threads-only run).
+  let linkedinLeg: LegLine | undefined;
   const { value: collected, durationMs: fetchMs } = await timeStage(async () => {
     const threadsSessionPath = await resolveSession(env);
     try {
@@ -193,25 +194,21 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       }
       let linkedinPosts: Post[] = [];
       if (linkedinSurfaces.length > 0) {
-        const tokens = resolveLinkedApiTokens(env);
-        if (tokens === null) {
-          // D3: the resolver is silent; the caller owns the warn. One
-          // message names BOTH variables — the single-exit resolver cannot
-          // say which half is absent, and the tokens ship as a pair.
-          console.warn(
-            `fetch: ${ENV_NAMES.linkedApiToken} / ${ENV_NAMES.linkedApiIdentificationToken} missing or blank — skipping ${linkedinSurfaces.length} linkedin surface(s)`,
-          );
-        } else {
-          try {
-            linkedinPosts = await linkedinFetch(linkedinSurfaces, tokens);
-          } catch (error) {
-            // D12 belt: the module is total by contract (it warns + returns
-            // [] internally), so this catches only unanticipated faults and
-            // throwing injected stubs — warn + empty, the run goes on (the
-            // logged-out-arm catch-degrade precedent, old index.ts:230-243).
-            const message = error instanceof Error ? error.message : String(error);
-            console.warn(`fetch: linkedin surfaces FAILED — ${message}`);
-          }
+        // D6/D13: the arm reads the PC leg's pushed payload. The reader is
+        // total — absent/stale/malformed all degrade to a logged
+        // threads-only run, never a nonzero exit — so this belt catches
+        // only unanticipated faults and throwing injected stubs (D12).
+        try {
+          const read = await linkedinFetch(LINKEDIN_PAYLOAD_PATH, now);
+          linkedinPosts = read.posts;
+          linkedinLeg =
+            read.detail !== undefined
+              ? { status: read.leg, detail: read.detail }
+              : { status: read.leg };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.warn(`fetch: linkedin payload FAILED — ${message}`);
+          linkedinLeg = { status: "malformed", detail: message };
         }
       }
       // D13: ONE return. The old early returns (empty-pool guard, logged-out
@@ -220,7 +217,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       return [...threadsPosts, ...linkedinPosts];
     } finally {
       // F019 pairing: the Threads session dir dies with the run. The
-      // LinkedIn leg keeps no session (SDK tokens, not storage state).
+      // payload reader keeps no session dir (cookies ride the PC leg).
       if (threadsSessionPath !== null) await cleanupSessionDir(threadsSessionPath);
     }
   });
@@ -249,6 +246,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     relevantLocated: 0,
     skipped: 0,
     ...(runUrl !== undefined ? { runUrl } : {}),
+    ...(linkedinLeg !== undefined ? { linkedinLeg } : {}),
   };
 
   // Prune-on-load (D6/D7): state entries outside the recency window drop
@@ -313,8 +311,10 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
 
   // Email before state: a failed send exits non-zero and leaves state
   // untouched, so the next run re-judges and re-sends these matches (D3, D8).
+  // The leg state rides the digest whenever it is not ok (D13 — sendDigest
+  // renders the line only then; undefined omits it entirely).
   const { durationMs: notifyMs } = await timeStage(() =>
-    sendDigest(matches, resolveEmailConfig(env), deps.transport),
+    sendDigest(matches, resolveEmailConfig(env), deps.transport, linkedinLeg),
   );
   console.log(`timing: notify ${notifyMs}ms`);
   const saved = await persistJudged(state, judged, statePath, now());

@@ -1,0 +1,214 @@
+/**
+ * The LinkedIn login helper (Phase 7, operator feedback 2026-11-05:
+ * least-manual setup). Opens a HEADED Chromium with a persistent profile
+ * OUTSIDE the repo; the OPERATOR logs in by hand (2FA included); the
+ * helper polls the jar for the li_at + JSESSIONID pair, writes the cookie
+ * file atomically, and appends/updates the LINKEDIN_COOKIES_FILE line in
+ * <cwd>/.env so the probe and the loop run with zero env setup.
+ *
+ * This is NOT the deleted headless credential login (f571904, removed in
+ * bf6594c — 2FA dead-end, live-confirmed): no credentials pass through
+ * this script and no login is automated. The human performs the login in
+ * a real browser (DOCUMENTATION.md §2.4 VERIFIED interactive login — the
+ * lowest account-flag risk: the browser fingerprint is yours).
+ *
+ * The persistent profile is the less-manual win on refresh days: a
+ * still-signed-in jar is harvested WITHOUT a new login, so refreshing a
+ * dead session is re-running this one command while the loop keeps
+ * running — the next tick heals.
+ *
+ * Entry-guarded main (index.ts idiom): importing the module stays
+ * side-effect free — no browser opens on import.
+ */
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { ENV_NAMES } from "../src/config.js";
+import { envWithDotEnv } from "../src/env-file.js";
+import { stateTempPath } from "../src/state.js";
+
+/** Where the cookie pair lands when LINKEDIN_COOKIES_FILE is unset everywhere. */
+export const DEFAULT_COOKIE_PATH = "C:/loker-secrets/linkedin-cookies.json";
+
+/** Persistent browser profile (outside the repo): a signed-in jar skips the login on refresh runs. */
+export const DEFAULT_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
+
+/** Poll cadence for the cookie jar. */
+export const POLL_INTERVAL_MS = 2_000;
+
+/** The operator gets 5 minutes for the login (2FA included) before the gate exits. */
+export const LOGIN_TIMEOUT_MS = 300_000;
+
+/** The harvested pair, verbatim from the jar — JSESSIONID keeps its quotes; the session module canonicalizes. */
+export interface LinkedInCookiePair {
+  liAt: string;
+  jsessionid: string;
+}
+
+/** The browser-context seam the offline suite injects (no headed Chromium in tests). */
+export interface LoginContext {
+  cookies: (url: string) => Promise<Array<{ name: string; value: string }>>;
+  close: () => Promise<void>;
+}
+
+/** Harvest the pair from one jar snapshot; null until BOTH cookies are present and non-empty. */
+export function findSessionCookies(
+  cookies: ReadonlyArray<{ name: string; value: string }>,
+): LinkedInCookiePair | null {
+  const liAt = cookies.find((cookie) => cookie.name === "li_at")?.value ?? "";
+  const jsessionid = cookies.find((cookie) => cookie.name === "JSESSIONID")?.value ?? "";
+  if (liAt.trim() === "" || jsessionid.trim() === "") return null;
+  return { liAt, jsessionid };
+}
+
+/**
+ * Atomic cookie-file write (sibling unique temp + rename, the state.ts
+ * precedent): a crashed harvest never leaves a partial cookie file for
+ * the next command to misread.
+ */
+export async function writeCookieFile(pair: LinkedInCookiePair, filePath: string): Promise<void> {
+  const dir = dirname(filePath);
+  const tempPath = stateTempPath(dir, Date.now());
+  try {
+    await mkdir(dir, { recursive: true });
+    await writeFile(tempPath, `${JSON.stringify(pair, null, 2)}\n`, "utf8");
+    await rename(tempPath, filePath);
+  } catch (error) {
+    try {
+      await unlink(tempPath);
+    } catch {
+      // Best-effort temp cleanup
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`login-linkedin: cookie write failed for ${filePath}: ${message}`);
+  }
+}
+
+/**
+ * Append or replace ONE KEY=VALUE line in the .env file; idempotent.
+ * Returns true when the file changed. Values ride verbatim (the .env
+ * parser in src/env-file.ts takes the whole rest of the line — no quote
+ * games needed for paths with spaces).
+ */
+export async function upsertDotEnvLine(
+  filePath: string,
+  key: string,
+  value: string,
+): Promise<boolean> {
+  let text = "";
+  try {
+    text = await readFile(filePath, "utf8");
+  } catch {
+    // Absent .env: start from an empty document.
+  }
+  const line = `${key}=${value}`;
+  const lines = text === "" ? [] : text.split(/\r?\n/);
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  const index = lines.findIndex((candidate) => candidate.startsWith(`${key}=`));
+  if (index >= 0 && lines[index] === line) return false;
+  if (index >= 0) lines[index] = line;
+  else lines.push(line);
+  await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
+  return true;
+}
+
+export interface LoginHelperDeps {
+  /** Context opener. Default: headed launchPersistentContext (own playwright quarantine site). */
+  openContext?: () => Promise<LoginContext>;
+  /** Cookie file target. Default: LINKEDIN_COOKIES_FILE from the merged env, else DEFAULT_COOKIE_PATH. */
+  cookiePath?: string;
+  /** The .env document to upsert. Default: <cwd>/.env. */
+  dotEnvPath?: string;
+  /** Environment for the cookie-path default. Default: envWithDotEnv(). */
+  env?: Record<string, string | undefined>;
+  pollMs?: number;
+  timeoutMs?: number;
+  sleepFn?: (ms: number) => Promise<void>;
+  now?: () => number;
+}
+
+export interface LoginHelperResult {
+  cookiePath: string;
+  dotEnvUpdated: boolean;
+}
+
+async function openDefaultContext(profileDir: string): Promise<LoginContext> {
+  const { chromium } = await import("playwright");
+  const context = await chromium.launchPersistentContext(profileDir, {
+    headless: false,
+    viewport: null,
+  });
+  const page = await context.newPage();
+  await page.goto("https://www.linkedin.com/feed/", { waitUntil: "domcontentloaded" });
+  return {
+    cookies: (url) => context.cookies(url),
+    close: async () => {
+      await context.close();
+    },
+  };
+}
+
+/**
+ * Run the helper: open the headed context, poll the jar until the pair
+ * appears (or the budget dies), write the cookie file + the .env line,
+ * close the context in finally. Timeout throws fail-visibly; Ctrl-C or a
+ * closed window surfaces as a poll error with the same contract.
+ */
+export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginHelperResult> {
+  const env = deps.env ?? envWithDotEnv();
+  const fromEnv = env[ENV_NAMES.linkedinCookiesFile]?.trim();
+  const cookiePath =
+    deps.cookiePath ?? (fromEnv !== undefined && fromEnv !== "" ? fromEnv : DEFAULT_COOKIE_PATH);
+  const dotEnvPath = deps.dotEnvPath ?? join(process.cwd(), ".env");
+  const pollMs = deps.pollMs ?? POLL_INTERVAL_MS;
+  const timeoutMs = deps.timeoutMs ?? LOGIN_TIMEOUT_MS;
+  const sleepFn =
+    deps.sleepFn ??
+    ((ms: number): Promise<void> =>
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, ms);
+      }));
+  const now = deps.now ?? Date.now;
+  const openContext = deps.openContext ?? (() => openDefaultContext(DEFAULT_PROFILE_DIR));
+
+  const context = await openContext();
+  try {
+    console.log(
+      "login-linkedin: browser open — log in to LinkedIn by hand (2FA included); waiting for the session...",
+    );
+    const deadline = now() + timeoutMs;
+    let pair = findSessionCookies(await context.cookies("https://www.linkedin.com"));
+    while (pair === null) {
+      if (now() >= deadline) {
+        throw new Error(
+          `login-linkedin: no LinkedIn session appeared within ${Math.round(timeoutMs / 60_000)} min — complete the login (2FA included) in the opened window, then re-run`,
+        );
+      }
+      await sleepFn(pollMs);
+      pair = findSessionCookies(await context.cookies("https://www.linkedin.com"));
+    }
+    await writeCookieFile(pair, cookiePath);
+    console.log(`login-linkedin: session captured — ${cookiePath}`);
+    const dotEnvUpdated = await upsertDotEnvLine(
+      dotEnvPath,
+      ENV_NAMES.linkedinCookiesFile,
+      cookiePath,
+    );
+    console.log(
+      dotEnvUpdated
+        ? `login-linkedin: ${dotEnvPath} updated with ${ENV_NAMES.linkedinCookiesFile}`
+        : `login-linkedin: ${dotEnvPath} already carries the ${ENV_NAMES.linkedinCookiesFile} line`,
+    );
+    return { cookiePath, dotEnvUpdated };
+  } finally {
+    await context.close();
+  }
+}
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runLoginHelper().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`login-linkedin: FAILED — ${message}`);
+    process.exit(1);
+  });
+}

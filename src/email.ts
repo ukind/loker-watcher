@@ -7,6 +7,7 @@
  */
 import nodemailer, { type Transporter } from "nodemailer";
 import { ENV_NAMES } from "./config.js";
+import type { LegLine } from "./linkedin-payload.js";
 import type { AccountFailure, Post } from "./types.js";
 
 export interface EmailConfig {
@@ -65,8 +66,13 @@ export function buildSubject(posts: readonly Post[]): string | null {
 /**
  * Build plain-text digest body (FRD #7, UX non-functional requirement).
  * Returns null when posts array is empty.
+ *
+ * The LinkedIn leg line (D13): rides the body ONLY when the leg state is
+ * not ok — an ok leg is the quiet default, and sendDigest renders the
+ * line only then; undefined omits it entirely. The ` — detail` suffix
+ * rides the legDetailSuffix helper.
  */
-export function buildDigest(posts: readonly Post[]): string | null {
+export function buildDigest(posts: readonly Post[], leg?: LegLine): string | null {
   const subject = buildSubject(posts);
   if (subject === null) return null;
 
@@ -76,7 +82,16 @@ export function buildDigest(posts: readonly Post[]): string | null {
     return `${index + 1}. ${platformToken}${post.text}\n   — @${author}\n   ${post.permalink}`;
   });
 
-  return `${subject}\n\n${items.join("\n\n")}\n`;
+  const legLine =
+    leg !== undefined && leg.status !== "ok"
+      ? `\n\nLinkedIn leg: ${leg.status}${legDetailSuffix(leg)}`
+      : "";
+  return `${subject}\n\n${items.join("\n\n")}${legLine}\n`;
+}
+
+/** The ` — detail` suffix for a leg line; empty when no detail rides. */
+function legDetailSuffix(leg: LegLine): string {
+  return leg.detail !== undefined && leg.detail !== "" ? ` — ${leg.detail}` : "";
 }
 
 /**
@@ -128,6 +143,7 @@ export async function sendDigest(
   posts: readonly Post[],
   config: EmailConfig,
   transport?: Transporter,
+  leg?: LegLine,
 ): Promise<SendDigestResult> {
   if (posts.length === 0) {
     return {
@@ -137,7 +153,7 @@ export async function sendDigest(
   }
 
   const subject = buildSubject(posts);
-  const text = buildDigest(posts);
+  const text = buildDigest(posts, leg);
   if (subject === null || text === null) {
     return {
       sent: false,
@@ -195,5 +211,43 @@ export async function sendExhaustionEmail(
   const subject = `LLM judge pool exhausted (${failures.length} account${plural} failed)`;
   const messageId = await sendText(subject, text, config, transport);
   console.log(`email: sent exhaustion alarm for ${failures.length} account(s)`);
+  return messageId;
+}
+
+/**
+ * Build the plain-text body for the LinkedIn leg-dead alarm (design D7).
+ * One email per episode, sent by the PC fetch leg (the fault's origin);
+ * the hosted run never sends it. The body names the remedy — the cookie
+ * file refresh — so the operator can act without opening the docs.
+ */
+export function buildLegDeadAlarmText(reason: string): string {
+  return [
+    "The LinkedIn fetch leg is dead.",
+    "",
+    `Signature: ${reason}`,
+    "",
+    "The loop keeps running. Refresh the cookie file (LINKEDIN_COOKIES_FILE —",
+    "re-export the pair from a logged-in browser) and the next tick heals;",
+    "no restart needed. Failure matrix: DOCUMENTATION.md §13; session: §14.",
+  ].join("\n");
+}
+
+/**
+ * Send the leg-dead alarm through the same Gmail transport as the digest.
+ * The PC loop caller owns the best-effort try/catch policy — a broken
+ * GMAIL_* configuration must not mask the exit code the tick earned.
+ */
+export async function sendLegDeadAlarm(
+  reason: string,
+  config: EmailConfig,
+  transport?: Transporter,
+): Promise<string | undefined> {
+  const messageId = await sendText(
+    "LinkedIn fetch leg is dead — refresh the cookie file",
+    buildLegDeadAlarmText(reason),
+    config,
+    transport,
+  );
+  console.log("email: sent leg-dead alarm");
   return messageId;
 }

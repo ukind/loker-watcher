@@ -10,9 +10,9 @@
  *
  * The variable name is a parameter defaulting to the Threads var. A null
  * return means "no usable session"; what happens next is the caller's
- * policy — Threads falls back to the logged-out walk. LinkedIn rides the
- * Linked API SDK tokens (src/fetch-linkedin-api.ts) and resolves no
- * session at all.
+ * policy — Threads falls back to the logged-out walk. LinkedIn resolves
+ * no session here at all: its cookie pair rides the PC leg
+ * (LINKEDIN_COOKIES_FILE, src/linkedin-session.ts), outside this repo.
  */
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
