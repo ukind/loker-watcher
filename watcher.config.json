@@ -1,37 +1,126 @@
 {
-  "keywords": [
-    "frontend", "front-end", "front end",
-    "fullstack", "full-stack", "full stack",
-    "web developer", "web dev",
-    "react", "vue", "next.js", "nextjs", "nuxt",
-    "angular", "svelte", "typescript", "javascript",
-    "node.js", "nodejs"
-  ],
-  "candidateTerms": [
-    "developer", "programmer", "software", "engineer", "frontend", "front-end",
-    "fullstack", "full-stack", "react", "vue", "next.js", "nextjs", "typescript",
-    "javascript", "node.js", "nodejs", "web dev", "it support", "teknisi",
-    "coding", "coder",
-    "indonesia", "jakarta", "jogja", "yogyakarta", "surabaya", "bandung",
-    "medan", "semarang", "bali", "denpasar", "makassar", "palembang", "bekasi",
-    "tangerang", "depok", "bogor", "malang", "solo",
-    "remote", "wfh", "work from home"
-  ],
-  "surfaces": [
-    { "type": "tag", "value": "hiring" },
-    { "type": "tag", "value": "loker" },
-    { "type": "tag", "value": "infokerja" },
-    { "type": "url", "value": "https://www.threads.com/@hiresflow" },
-    { "type": "url", "value": "https://www.threads.com/search?q=hiring&serp_type=deeplink&filter=recent" },
-    { "type": "url", "value": "https://www.threads.com/search?q=Loker%20jakarta&serp_type=deeplink&filter=recent" },
-    { "type": "url", "value": "https://www.threads.com/search?q=Loker%20IT&serp_type=default&filter=recent" },
-    { "type": "url", "value": "https://www.threads.com/search?q=Loker%20IT%20Jakarta&serp_type=tags&filter=recent" },
-    { "type": "url", "value": "https://www.threads.com/search?q=techthreads&serp_type=tags&filter=recent" },
-    { "type": "linkedin", "value": "#hiring react" },
-    { "type": "linkedin", "value": "#hiring" }
-    { "type": "url", "value": "https://www.threads.com/search?exact_match=false&q=techthreads&serp_type=tags&filter=recent" },
-    { "type": "url", "value": "https://www.threads.com/search?exact_match=false&q=Loker&serp_type=default&filter=recent" },
-    { "type": "linkedin", "value": "#hiring frontend developer indonesia" }
-  ],
-  "recencyHours": 72
+   "keywords":[
+      "frontend",
+      "front-end",
+      "front end",
+      "fullstack",
+      "full-stack",
+      "full stack",
+      "web developer",
+      "web dev",
+      "react",
+      "vue",
+      "next.js",
+      "nextjs",
+      "nuxt",
+      "angular",
+      "svelte",
+      "typescript",
+      "javascript",
+      "node.js",
+      "nodejs"
+   ],
+   "candidateTerms":[
+      "developer",
+      "programmer",
+      "software",
+      "engineer",
+      "frontend",
+      "front-end",
+      "fullstack",
+      "full-stack",
+      "react",
+      "vue",
+      "next.js",
+      "nextjs",
+      "typescript",
+      "javascript",
+      "node.js",
+      "nodejs",
+      "web dev",
+      "it support",
+      "teknisi",
+      "coding",
+      "coder",
+      "indonesia",
+      "jakarta",
+      "jogja",
+      "yogyakarta",
+      "surabaya",
+      "bandung",
+      "medan",
+      "semarang",
+      "bali",
+      "denpasar",
+      "makassar",
+      "palembang",
+      "bekasi",
+      "tangerang",
+      "depok",
+      "bogor",
+      "malang",
+      "solo",
+      "remote",
+      "wfh",
+      "work from home"
+   ],
+   "surfaces":[
+      {
+         "type":"tag",
+         "value":"hiring"
+      },
+      {
+         "type":"tag",
+         "value":"loker"
+      },
+      {
+         "type":"tag",
+         "value":"infokerja"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/@hiresflow"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?q=hiring&serp_type=deeplink&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?q=Loker%20jakarta&serp_type=deeplink&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?q=Loker%20IT&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?q=Loker%20IT%20Jakarta&serp_type=tags&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?q=techthreads&serp_type=tags&filter=recent"
+      },
+      {
+         "type":"linkedin",
+         "value":"#hiring react"
+      },
+      {
+         "type":"linkedin",
+         "value":"#hiring"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=techthreads&serp_type=tags&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=Loker&serp_type=default&filter=recent"
+      },
+      {
+         "type":"linkedin",
+         "value":"#hiring frontend developer indonesia"
+      }
+   ],
+   "recencyHours":72
 }
