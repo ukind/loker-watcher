@@ -29,8 +29,9 @@ back after match runs.
   short, or faulted leg; run twice >=6h apart with stored cookies before
   trusting the loop (needs `LINKEDIN_COOKIES_FILE`)
 - `npm run fetch-linkedin` - one LinkedIn fetch tick from a dedicated clone
-  of main: fetch, write the payload, push that single path (leg-dead exits 1
-  after the episode alarm)
+  of main: exits 1 BEFORE any fetch on a mis-homed checkout (branch ≠ main
+  or dirty tree), then fetch, write the payload, push that single path
+  (leg-dead exits 1 after the episode alarm)
 - `npm run watch-linkedin` - the always-on PC loop: one tick, then a
   10-minute sleep, forever; leg-dead sends ONE alarm per episode and the
   loop keeps running
@@ -39,6 +40,12 @@ back after match runs.
   the cookie file and the `LINKEDIN_COOKIES_FILE` line in `.env` (exit 1
   on timeout/no session; re-run on a still-signed-in profile harvests
   without a new login)
+- `npm run setup-curl` - one-time curl-impersonate setup: downloads the
+  checksum-pinned lexiforest binary (release-published sha256 digests)
+  into gitignored `tools/curl-impersonate/` and writes the
+  `CURL_IMPERSONATE_BIN` line in `.env`; any failure exits 1 naming both
+  remedies (re-run setup-curl, or `LINKEDIN_TRANSPORT=playwright` in
+  `.env`)
 - `npx playwright install chromium` - one-time browser install for local runs
 
 ## Architecture
@@ -80,6 +87,12 @@ against the configured keywords, email digest, commit state.
   in by hand; the script polls the jar, writes the cookie file atomically,
   and upserts the `.env` line (exit 1 on timeout/no session; entry-guarded,
   importing stays side-effect free)
+- `scripts/setup-curl-impersonate.ts` - one-command curl-impersonate
+  setup: checksum-pinned lexiforest v2.3.2 download, OS-`tar` extraction
+  into gitignored `tools/curl-impersonate/` (inner layout never assumed —
+  the tree is walked for `curl-impersonate*.exe`), `.env` line upsert;
+  every failure path names the playwright escape hatch (exit 1;
+  entry-guarded)
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)

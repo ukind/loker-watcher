@@ -8,7 +8,7 @@ topic: "LinkedIn leg on the local PC"
 tags: [plan, linkedin, voyager-graphql, curl-impersonate, playwright, local-loop, payload-handoff, sdk-removal, login-helper]
 status: ready
 parent: ".rpiv/artifacts/designs/2026-11-04_07-57-15_linkedin-local-leg.md"
-phase_count: 8
+phase_count: 10
 phases:
   - { n: 1, title: "Voyager client core (pure)", files: ["src/linkedin-voyager.ts", "tests/linkedin-voyager.test.ts", "tests/fixture/voyager-search-response.json"], depends_on: [] }
   - { n: 2, title: "Session cookies module", files: ["src/linkedin-session.ts", "tests/linkedin-session.test.ts", "src/config.ts"], depends_on: [1] }
@@ -18,9 +18,11 @@ phases:
   - { n: 6, title: "SDK removal + residue sweep + docs", files: ["src/fetch-linkedin-api.ts", "tests/fetch-linkedin-api.test.ts", "src/config.ts", "src/config-file.ts", "src/threads-session.ts", "src/judge.ts", "src/linkedin-voyager.ts", "tests/config-file.test.ts", ".github/workflows/watch.yml", "README.md", "AGENTS.md", ".gitignore", "package.json", "package-lock.json", ".rpiv/guidance/architecture.md", ".rpiv/guidance/src/architecture.md", ".rpiv/guidance/.github/workflows/architecture.md", ".rpiv/guidance/tests/architecture.md", ".rpiv/guidance/scripts/architecture.md"], depends_on: [5] }
   - { n: 7, title: "Login helper + auto-env (less-manual cookie setup)", files: ["src/env-file.ts", "tests/env-file.test.ts", "scripts/login-linkedin.ts", "tests/login-linkedin.test.ts", "src/linkedin-session.ts", "scripts/probe-linkedin.ts", "scripts/fetch-linkedin.ts", "scripts/watch-linkedin.ts", "package.json", "README.md", "AGENTS.md", ".rpiv/guidance/src/architecture.md", ".rpiv/guidance/scripts/architecture.md", ".rpiv/guidance/tests/architecture.md"], depends_on: [6] }
   - { n: 8, title: "Leg-dead classifier amendment + empty-payload guard", files: ["src/linkedin-fetch.ts", "tests/linkedin-fetch.test.ts", "scripts/fetch-linkedin.ts", "tests/fetch-linkedin.test.ts", ".rpiv/artifacts/designs/2026-11-04_07-57-15_linkedin-local-leg.md"], depends_on: [4] }
-last_updated: 2026-11-05T10:27:36+0700
+  - { n: 9, title: "curl-impersonate one-command setup + probe remedy ergonomics", files: ["src/env-file.ts", "tests/env-file.test.ts", "tests/login-linkedin.test.ts", "scripts/setup-curl-impersonate.ts", "tests/setup-curl-impersonate.test.ts", "src/linkedin-fetch.ts", "tests/linkedin-fetch.test.ts", "scripts/probe-linkedin.ts", "package.json", ".gitignore", "README.md", "AGENTS.md", ".rpiv/artifacts/designs/2026-11-04_07-57-15_linkedin-local-leg.md", ".rpiv/guidance/src/architecture.md", ".rpiv/guidance/scripts/architecture.md", ".rpiv/guidance/tests/architecture.md"], depends_on: [7] }
+  - { n: 10, title: "Dedicated-clone preflight + honest git failure surfaces", files: ["scripts/fetch-linkedin.ts", "tests/fetch-linkedin.test.ts", "README.md", "AGENTS.md", ".rpiv/guidance/scripts/architecture.md"], depends_on: [4] }
+last_updated: 2026-11-05T11:56:56+0700
 last_updated_by: pi (rpiv revise)
-last_updated_note: "Phase 8 added: validate blockers b1+b2 — 3xx redirect loops classify leg-dead (maxRedirects 0 unifies the playwright path), an all-faulted walk throws AllSurfacesFaulted and the tick writes no payload"
+last_updated_note: "Phase 10 added: operator feedback — the first live tick fetched 348 post(s) from the WORKSPACE checkout (dirty tree, feature branch) then failed twice on a misread 'rebase conflicted' (realGit discards git's own output); fetchTick gains a checkout preflight (branch main + clean porcelain) BEFORE any resolver/network, GitRunner carries git's merged output into every failure message, and the wrong-branch case fails loudly (today it can silently push the payload to the wrong ref)"
 ---
 
 # LinkedIn leg on the local PC — Implementation Plan
@@ -33,7 +35,9 @@ All architectural decisions are settled in the design artifact (`.rpiv/artifacts
 
 Phase 7 (added 2026-11-05, operator feedback: `npm run probe-linkedin` failed on an unset `LINKEDIN_COOKIES_FILE` and the goal is the least manual setup) extends past the design's six slices: a headed login helper (`npm run login-linkedin`) and `.env` auto-load (`src/env-file.ts`) remove the devtools export and the env-var step. The helper is NOT the deleted headless credential login (f571904, removed in bf6594c): the operator performs the login in a real browser window; the script only harvests the resulting cookie pair (DOCUMENTATION.md §2.4 verified interactive login — the lowest account-flag risk).
 
-Phase 8 (added 2026-11-05, validate gate: `.rpiv/artifacts/validation/2026-11-05_10-01-36_linkedin-local-leg.md`, blockers b1+b2) amends the fault policy on live-rehearsed evidence: the voyager endpoint answers a shape-valid DEAD session with a **302 redirect loop** — curl surfaces `302` directly, Playwright follows 20 redirects then throws — which `classifyFault` filed under the generic-fault fall-through, so the tick skipped every surface and `fetchTick` pushed an EMPTY payload over the last good one (hosted reader: `leg: "ok"`, zero posts, dead leg invisible). DOCUMENTATION.md §13.1 claims only browser navigations redirect; live observation contradicts it for this client stack, and root cause (session death vs edge-level fingerprint blocking) is deliberately unresolved — both carry the same operator remedy, so the classification does not depend on it.
+Phase 8 (added 2026-11-05, validate gate: `.rpiv/artifacts/validation/2026-11-05_10-01-36_linkedin-local-leg.md`, blockers b1+b2) amends the fault policy on live-rehearsed evidence: the voyager endpoint answers a shape-valid DEAD session with a **302 redirect loop** — curl surfaces `302` directly, Playwright follows 20 redirects then throws — which `classifyFault` filed under the generic-fault fall-through, so the tick skipped every surface and `fetchTick` pushed an EMPTY payload over the last good one (hosted reader: `leg: "ok"`, zero posts, dead leg invisible). DOCUMENTATION.md §13.1 claims only browser navigations redirect; live observation contradicts it for this stack, and root cause (session death vs edge-level fingerprint blocking) is deliberately unresolved — both carry the same operator remedy, so the classification does not depend on it.
+
+Phase 9 (added 2026-11-05, operator feedback: the real first live run — `login-linkedin` succeeded end-to-end, then `npm run probe-linkedin` died on the unset `CURL_IMPERSONATE_BIN`; the goal stays the least manual setup) adds `npm run setup-curl`: a checksum-pinned downloader for the lexiforest/curl-impersonate single binary (the ONLY active distribution shipping Windows builds — verified 2026-11-05: `x86_64-win32` / `arm64-win32` assets with release-published sha256 digests; upstream lwthiker ships linux/mac/docker only). The curl transport adopts that binary's CLI: `--impersonate chrome116` (a Windows-10 profile) is pinned as a module constant and the manual `user-agent` header pair is DROPPED from the curl args — the profile owns the UA + TLS + HTTP/2 fingerprint as one consistent set; overriding the UA with a different Chrome version than the TLS profile is exactly the mismatched-signal class the fingerprint exists to avoid. `BROWSER_UA` keeps feeding ONLY the playwright adapter (no profile system there). D2's policy is unchanged: curl stays default, switching to playwright stays an explicit operator act, no auto-fallback in code — setup merely automates the operator action, and on any setup failure the resolver message names both remedies (run `npm run setup-curl`, or put `LINKEDIN_TRANSPORT=playwright` in .env).
 
 ## Desired End State
 
@@ -43,6 +47,11 @@ Operator flow on the PC (from the repo folder):
 # one-time: log in by hand in a real browser window; the helper writes
 # the cookie file AND the .env line (Phase 7)
 npm run login-linkedin
+
+# one-time: fetch the curl-impersonate binary (checksum-pinned) and
+# write the .env line (Phase 9). If you skip it, put
+# LINKEDIN_TRANSPORT=playwright in .env instead.
+npm run setup-curl
 
 # prove the transport (twice, >=6h apart)
 npm run probe-linkedin
@@ -6031,6 +6040,230 @@ Walk wiring: track `faultedCount` (bump in the catch's NON-leg-dead arm — the 
 
 ---
 
+## Phase 9: curl-impersonate one-command setup + probe remedy ergonomics
+
+### Overview
+
+The operator's first live run (2026-11-05) proved the Phase 7 chain and stopped at the next link: the probe's fail-visible `CURL_IMPERSONATE_BIN is not set` error. This phase closes that gap with `npm run setup-curl` — download, verify, extract, wire the `.env` line, done — and upgrades the resolver message from a README pointer to the two concrete remedies. The binary of record is the lexiforest fork's single binary (`curl-impersonate`), the only distribution with Windows assets, pinned at release `v2.3.2` with the release-published sha256 digests (verified live 2026-11-05 via the GitHub releases API):
+
+- `curl-impersonate-v2.3.2.x86_64-win32.tar.gz` — sha256 `94affc91c64991552403d427cf0e6656ee74f85dcbe58c0ba389f540819f40db`
+- `curl-impersonate-v2.3.2.arm64-win32.tar.gz` — sha256 `e9c1d8d5b4d2001835b1de92dde9b6ce49ee9ab621b612eaa53a5cd4db5408d8`
+
+Asset base URL: `https://github.com/lexiforest/curl-impersonate/releases/download/v2.3.2/`. Archive selection: `process.arch === "arm64"` → arm64 asset, anything else on win32 → x86_64; a non-win32 platform fails visibly printing the manual README step and the playwright escape hatch (no silent platform guessing). Extraction uses the OS `tar` (Windows 10+ ships bsdtar as `tar.exe`); the extracted tree is searched for `curl-impersonate*.exe` — the archive's inner layout is NEVER assumed, a miss fails visibly naming the archive. The install target is `tools/curl-impersonate/` beside the clone (gitignored — a PC-local binary never enters the repo or the lockfile; the "no npm dep" doctrine holds).
+
+### Changes Required:
+
+#### 1. Hoist the .env line writer
+**File**: `src/env-file.ts` (MODIFY)
+**Changes**: `upsertDotEnvLine` moves here from `scripts/login-linkedin.ts:87-113` VERBATIM (signature `(filePath, key, value) => Promise<boolean>`, absent-file starts empty, idempotent replace, returns false when the line already matches). env-file owns the whole `.env` contract; a second script now needs the writer, so it stops living inside login-linkedin. `scripts/login-linkedin.ts` re-imports it; its suite's import follows.
+
+#### 2. The setup script
+**File**: `scripts/setup-curl-impersonate.ts` (NEW)
+**Changes**: module constants for the pinned tag, both asset names, both sha256 digests, and the asset base URL (values above, verbatim). Core `runSetupCurl(deps)` with injected boundaries — `fetchFn`, `tarRunner` (execFile-shaped), `env` (default `envWithDotEnv()`), `envPath`, `targetDir` (default `tools/curl-impersonate/`), `exists` — so the suite runs offline over temp dirs. Flow, in order:
+
+1. `env[ENV_NAMES.curlImpersonateBin]` already set AND the file exists → log `setup-curl: already configured — <path>`, exit 0 (the shell env or a prior run wins; zero downloads).
+2. Download the arch-selected asset (plain `fetch` → `arrayBuffer()`; 2 MB fits memory), hash with `node:crypto` `createHash("sha256")`, compare against the pinned digest. Mismatch → fail naming the URL and both digests.
+3. `tar -xzf <archive> -C <targetDir>` via the injected runner; a missing/failed `tar` fails naming the binary.
+4. Walk `targetDir` for `curl-impersonate*.exe` (case-insensitive); none → fail naming the archive (the inner layout is never assumed).
+5. `upsertDotEnvLine(envPath, ENV_NAMES.curlImpersonateBin, absoluteBinaryPath)`; log the probe pointer: `setup-curl: done — run npm run probe-linkedin`.
+
+EVERY failure path (download non-200, sha mismatch, tar, exe-not-found, unsupported platform) prints the escape hatch block before exiting 1: ` Or put LINKEDIN_TRANSPORT=playwright in .env to skip the binary (no auto-fallback — you choose).` Entry-guarded like every PC script (argv/pathToFileURL check — import stays side-effect free).
+
+#### 3. The curl transport adopts the profile
+**File**: `src/linkedin-fetch.ts` (MODIFY)
+**Changes**: new module constant + arg change in `createCurlTransport`:
+
+```ts
+/**
+ * The pinned impersonation profile (lexiforest single binary, §D2
+ * amendment 2026-11-05). The profile owns the UA + TLS + HTTP/2 headers
+ * as ONE consistent set — chrome116 is the Windows-10 Chrome profile the
+ * release ships. The transport's own `user-agent` header is deliberately
+ * GONE: overriding the profile's UA with a different Chrome version is a
+ * mismatched fingerprint signal. Our §3/§10 -H overrides (cookie,
+ * csrf-token, the static set) ride ON TOP of the profile defaults.
+ */
+export const CURL_IMPERSONATE_PROFILE = "chrome116";
+```
+
+The arg array gains `"--impersonate", CURL_IMPERSONATE_PROFILE` before `-sS`; the `user-agent: ${BROWSER_UA}` header pair is REMOVED from `headerPairs` (BROWSER_UA stays exported and keeps feeding the Playwright adapter only — no profile system there). The doc-comment records the D2 amendment: curl = lexiforest single binary + pinned profile; upstream lwthiker has no Windows builds; the profile headers + our overrides compose per the fork README (`-H` overrides individual profile headers).
+
+The `CURL_IMPERSONATE_BIN is not set` error message names both remedies:
+
+```ts
+throw new Error(
+  `linkedin-fetch: ${ENV_NAMES.curlImpersonateBin} is not set — run npm run setup-curl, or put LINKEDIN_TRANSPORT=playwright in .env to skip the binary (README: PC operations)`,
+);
+```
+
+The existing `/CURL_IMPERSONATE_BIN is not set/` regex pins in `tests/linkedin-fetch.test.ts:206` and `tests/login-linkedin.test.ts` (the Phase 7 env-resolution probe pin) survive UNCHANGED.
+
+#### 4. Suites
+**File**: `tests/setup-curl-impersonate.test.ts` (NEW), `tests/linkedin-fetch.test.ts` (MODIFY), `tests/env-file.test.ts` (MODIFY), `tests/login-linkedin.test.ts` (MODIFY)
+**Changes**: the setup suite pins, over an injected fetch double serving a tiny fixture archive whose sha256 the test computes ITSELF (the assertion recomputes the digest — never a hard-coded fixture hash): happy path (binary written into the temp targetDir, `.env` line lands, probe pointer logged), already-configured exits 0 with the download counter still 0, sha mismatch fails naming the URL, tar failure names `tar`, exe-not-found names the archive, a shell-set `CURL_IMPERSONATE_BIN` pointing at an existing file exits 0 without touching `.env`, unsupported platform prints the playwright escape hatch and exits 1. The fetch suite pins `--impersonate chrome116` present in the curl args and the `user-agent` header ABSENT from them (the §3/§10 header set, the status-sentinel, and the `-L`/`--location` pins stay byte-identical); the playwright adapter test is untouched (BROWSER_UA still rides there). env-file gains the hoisted `upsertDotEnvLine` describes (moved pins: creates the file, replaces without duplicating, returns false and writes nothing when identical); login-linkedin's suite follows the import.
+
+#### 5. Wiring + docs
+**Files**: `package.json`, `.gitignore`, `README.md`, `AGENTS.md`, `.rpiv/artifacts/designs/2026-11-04_07-57-15_linkedin-local-leg.md`, `.rpiv/guidance/src/architecture.md`, `.rpiv/guidance/scripts/architecture.md`, `.rpiv/guidance/tests/architecture.md`
+**Changes**: `setup-curl` npm entry; lint/format globs gain `scripts/setup-curl-impersonate.ts`; `.gitignore` gains `tools/`; README's PC operations list inserts the setup step between login and probe (step 2 becomes `npm run setup-curl`, the manual curl-impersonate install paragraph moves to a fallback note) and the Env setup note names `CURL_IMPERSONATE_BIN` as setup-written; AGENTS.md's command list gains the entry; the design artifact's D2 gains the amendment paragraph (lexiforest single binary is the Windows distribution of record; `--impersonate chrome116` pinned; profile owns UA/TLS/H2; BROWSER_UA is playwright-only); guidance files sync the new module/script/suite rows.
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint` (globs include `scripts/setup-curl-impersonate.ts`)
+- [x] Tests pass: `npm test` — the new setup suite green, amended suites green, rest untouched, zero real network
+- [x] Setup pins: happy path writes the binary + `.env` line; already-configured exits 0 with zero downloads; sha mismatch names the URL; tar failure names `tar`; exe-not-found names the archive; shell-set `CURL_IMPERSONATE_BIN` exits 0 without touching `.env`; unsupported platform prints the playwright escape hatch
+- [x] The suite computes the fixture archive's sha256 itself — no hard-coded fixture digest assertion
+- [x] Curl args pin: `--impersonate chrome116` present; `user-agent` header absent from the curl args; §3/§10 header set, status sentinel, and the `-L`/`--location` pins byte-identical; playwright adapter test untouched
+- [x] Resolver message names `npm run setup-curl` AND the playwright line; the `/CURL_IMPERSONATE_BIN is not set/` prefix pins pass UNCHANGED
+- [x] Hoist pins: `upsertDotEnvLine` exported from `src/env-file.ts`, its pins live in the env-file suite, login-linkedin imports it from there
+- [x] `package.json`: `setup-curl` entry + lint/format globs; `.gitignore` carries `tools/`
+- [x] Pinned constants carry the release-published digests verbatim: `94affc91c64991552403d427cf0e6656ee74f85dcbe58c0ba389f540819f40db` (x86_64-win32), `e9c1d8d5b4d2001835b1de92dde9b6ce49ee9ab621b612eaa53a5cd4db5408d8` (arm64-win32)
+
+#### Manual Verification:
+- [x] Live run on the PC: `npm run setup-curl` → binary lands in `tools/curl-impersonate/`, `.env` line lands → `npm run probe-linkedin` passes on the curl transport — DISCHARGED live 2026-11-05 ~11:50 operator transcript: checksum-pinned download + `.env` update + `probe: 7325ms — HTTP 200 — 10 post(s), 0 dropped` + `probe: all checks passed` on the curl transport (the standing ≥6h-apart second probe stays owed)
+- [ ] Fingerprint coherence eyeball: the probe's 200 rides the profile's own UA (no Chrome-version mismatch between the TLS profile and the header set)
+- [ ] Escape hatch rehearsal: rename the binary away → the probe fails naming `npm run setup-curl` and the playwright line; apply the `.env` line by hand → the probe passes on playwright
+
+## Phase 10: Dedicated-clone preflight + honest git failure surfaces
+
+### Overview
+
+Operator feedback 2026-11-05T11:56:56+0700. The first live chain ran green through `login-linkedin` → `setup-curl` → `probe-linkedin` (curl transport, HTTP 200, 10 post(s), 0 dropped — Phase 9's live setup criterion passes). Then `npm run fetch-linkedin` fetched 348 post(s) from 2 surfaces, wrote the payload, and failed twice:
+
+```
+git: rebase conflicted — aborting; a non-payload change cannot replay
+git: rebase conflicted — aborting; a non-payload change cannot replay
+fetch-linkedin: FAILED — git: payload push failed twice — run aborted
+```
+
+Root cause: the tick ran from the WORKSPACE checkout — branch `feature/add-support-for-linkeind`, dirty tree carrying the uncommitted Phase 9 delta. `git pull --rebase origin main` refuses with unstaged changes, but `realGit` (scripts/fetch-linkedin.ts:52) returns only `{code}` and discards git's own output, so "error: cannot pull with rebase: You have unstaged changes" surfaced as the misleading "rebase conflicted — a non-payload change cannot replay". The run also left a stray untracked `state/linkedin-posts.json` in the workspace (payload written before the push died). Two defects, one fix shape:
+
+1. A mis-homed tick burns a LIVE fetch (~350 voyager posts) and writes a stray payload before failing. A checkout preflight — current branch is `main`, `git status --porcelain` empty — must run FIRST, before cookies or the transport open, and fail with a message naming the branch/dirty paths and the remedy (D5's dedicated-clone doctrine becomes enforced, not just documented).
+2. The wrong-branch case is SILENTLY WRONG, not loud: on a CLEAN feature branch, `pull --rebase origin main` + `push` would SUCCEED and land the payload commit on `origin/<feature-branch>` — the hosted run reads main's checkout and never sees it; the tick reports `pushed: true` while the leg stays dark forever. Branch ≠ main must fail loudly and never push.
+
+### Changes Required:
+
+#### 1. GitRunner carries git's own output
+**File**: `scripts/fetch-linkedin.ts` (MODIFY)
+**Changes**: `GitRunner` resolves `{ code, output }` — `output` is git's merged stdout+stderr, trimmed (rev-parse's branch on success, the real error text on failure). `realGit` reads both channels from the resolved object AND from the rejected error (execFile rejects with `{stdout, stderr}` attached on nonzero codes). All existing call sites keep working — they read `.code` only; the fakes gain an `output` field.
+
+```ts
+/** Injectable git runner: args → exit code + git's own merged output (never rejects). */
+export type GitRunner = (args: readonly string[]) => Promise<{ code: number; output: string }>;
+
+const realGit: GitRunner = async (args) => {
+  try {
+    const { stdout, stderr } = await execFilePromised("git", [...args], { windowsHide: true });
+    return { code: 0, output: `${stdout}\n${stderr}`.trim() };
+  } catch (error) {
+    const raw = error as { code?: unknown; stdout?: unknown; stderr?: unknown };
+    const code = typeof raw.code === "number" ? raw.code : 1;
+    const output = `${String(raw.stdout ?? "")}\n${String(raw.stderr ?? "")}`.trim();
+    return { code: Number.isInteger(code) ? code : 1, output };
+  }
+};
+```
+
+#### 2. The checkout preflight
+**File**: `scripts/fetch-linkedin.ts` (MODIFY)
+**Changes**: exported `guardCheckout(git)` — two git reads, zero network. `fetchTick` calls it immediately AFTER the no-surfaces early return and BEFORE the cookie/transport resolvers, so a mis-homed checkout costs zero voyager GETs and writes nothing.
+
+```ts
+/**
+ * Dedicated-clone preflight (D5, Phase 10): the push discipline assumes a
+ * clean checkout of main. A dirty tree kills the rebase AFTER a live fetch;
+ * a non-main branch silently pushes the payload to the wrong ref (the
+ * hosted run reads main). Both fail here — before cookies, transport, or
+ * any voyager GET — naming what is wrong and the remedy.
+ */
+export async function guardCheckout(git: GitRunner): Promise<void> {
+  const head = await git(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const branch = head.output.split(/\r?\n/)[0] ?? "";
+  if (head.code !== 0 || branch !== "main") {
+    throw new Error(
+      `fetch-linkedin: this checkout is on branch "${branch || "unknown"}", not main — the payload push would land on the wrong ref and the hosted run would never read it. Run the loop from a DEDICATED clone of main (README: PC operations)`,
+    );
+  }
+  const status = await git(["status", "--porcelain"]);
+  if (status.code !== 0 || status.output !== "") {
+    const paths = status.output.split("\n");
+    const names = paths.slice(0, 5).join("; ");
+    throw new Error(
+      `fetch-linkedin: this checkout is not clean (${paths.length} path(s): ${names}) — uncommitted edits break the rebase AFTER a live fetch. Run from a dedicated clone of main with a clean tree (README: PC operations)`,
+    );
+  }
+}
+```
+
+fetchTick wiring (after the surfaces early return, before `resolveLinkedInCookies`):
+
+```ts
+  await guardCheckout(deps.git ?? realGit);
+```
+
+The loop (scripts/watch-linkedin.ts) needs NO change: the guard throws a plain error, the existing non-leg-dead catch warns and continues — a mis-homed loop warns every 10 min instead of burning live fetches.
+
+#### 3. Honest failure messages
+**File**: `scripts/fetch-linkedin.ts` (MODIFY)
+**Changes**: every push-discipline failure carries git's own output so the real cause can never masquerade again. The rebase-failure branch logs it; the final throw includes the last captured output; the commit-failure message keeps naming the identity fix and gains git's output:
+
+```ts
+  const commit = await git(["commit", "-m", `linkedin: payload ${postCount} post(s)`]);
+  if (commit.code !== 0) {
+    throw new Error(
+      `git: payload commit failed — configure the clone's git identity first (git config user.name + user.email) — git said: ${commit.output || "(no output)"}`,
+    );
+  }
+  let lastFailure = "";
+  const attempt = async (): Promise<boolean> => {
+    const rebase = await git(["pull", "--rebase", "origin", "main"]);
+    if (rebase.code !== 0) {
+      lastFailure = rebase.output;
+      console.error(`git: rebase failed — aborting — git said: ${rebase.output || "(no output)"}`);
+      await git(["rebase", "--abort"]);
+      return false;
+    }
+    const push = await git(["push"]);
+    if (push.code !== 0) lastFailure = push.output;
+    return push.code === 0;
+  };
+  const pushed = (await attempt()) || (await attempt());
+  if (!pushed) {
+    throw new Error(`git: payload push failed twice — git said: ${lastFailure || "(no output)"}`);
+  }
+```
+
+#### 4. Suite amendments
+**File**: `tests/fetch-linkedin.test.ts` (MODIFY)
+**Changes**: the `scriptGit` double returns `{ code, output }` (scripted per command, default `output: ""`). New pins:
+- preflight, wrong branch: `rev-parse` scripted `output: "feature/add-support-for-linkeind"` → fetchTick rejects `/on branch "feature/add-support-for-linkeind", not main/` AND `/wrong ref/`; the transport double's get counter stays 0; NO payload file exists; `git.calls` is exactly the two preflight commands.
+- preflight, dirty tree: `status` scripted `output: " M src/linkedin-fetch.ts\n M README.md"` → rejects `/not clean (2 path/` naming the paths; transport untouched.
+- preflight passes on clean main: `rev-parse` → `"main"`, `status` → `""` → the tick proceeds; the two guard commands precede `add` in `git.calls`.
+- honest failure: `pull` scripted `code: 1, output: "error: cannot pull with rebase: You have unstaged changes."` → the thrown message contains that exact git line, NOT "rebase conflicted".
+- amended existing pins: "composes the tick end to end" now expects the two guard calls before `add` (`git.calls[2]` is the add); the leg-dead pin's `git.calls.length === 0` becomes "only the two preflight commands" (the guard runs before the walk; still zero push-discipline calls); the no-surfaces early-return pin keeps `git.calls.length === 0` (the guard sits AFTER that return — pinned).
+- `pushPayload` tests are UNCHANGED (the guard lives in fetchTick, not pushPayload) except the doubles' new `output` field and the rebase-conflict pin, which now asserts the git-said line rides the error.
+
+#### 5. Docs sync
+**Files**: `README.md`, `AGENTS.md`, `.rpiv/guidance/scripts/architecture.md` (MODIFY)
+**Changes**: README PC-operations gains a troubleshooting row: "`git: rebase failed` / `payload push failed twice` → the tick ran from a non-dedicated or dirty checkout; the preflight names the branch/dirty paths — run from a dedicated clean clone of main, and re-run `npm run login-linkedin` + `npm run setup-curl` INSIDE the clone (both write `<cwd>/.env`, so each clone carries its own line)". AGENTS.md's fetch-linkedin bullet gains "exits 1 BEFORE any fetch on a mis-homed checkout (branch ≠ main or dirty tree)". The scripts guidance gains `guardCheckout` in the exports list and the tick contract line gains the preflight step.
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass: `npm test` — amended suite green, rest untouched
+- [x] Preflight pins: wrong branch → fetchTick rejects naming the branch AND the wrong-ref consequence, with `transport.get` count 0 and NO payload file on disk; dirty tree → rejects naming the path count and the paths; clean main → proceeds with exactly the two guard commands preceding `add`
+- [x] Honest-failure pins: a scripted rebase failure surfaces git's own output line in the thrown message; the commit-failure message keeps naming the identity fix and carries git's output; `GitRunner` resolves `{code, output}` and `realGit` captures merged stdout+stderr from both the resolved and rejected paths
+- [x] The no-surfaces early return still precedes the preflight (a threads-only config never demands a main checkout; `git.calls` stays empty there)
+
+#### Manual Verification:
+- [ ] Re-run the chain from a DEDICATED clean clone of main: `npm run login-linkedin` + `npm run setup-curl` inside the clone, probe, then `npm run fetch-linkedin` → the payload commit lands on origin/main and a dispatched watch run merges it
+- [x] Mis-homed rehearsal: run `npm run fetch-linkedin` from THIS workspace again → exits 1 naming the branch and the dirty paths BEFORE any `fetch:` line; delete the stray workspace `state/linkedin-posts.json` from the 2026-11-05 11:56 run (or move it into the dedicated clone)
+
+---
+
 ## Testing Strategy
 
 ### Automated:
@@ -6049,6 +6282,8 @@ Walk wiring: track `faultedCount` (bump in the catch's NON-leg-dead arm — the 
 8. Login helper real run (Phase 7): `npm run login-linkedin` → log in by hand in the opened window → cookie file + `.env` line land → `npm run probe-linkedin` with NO env setup
 9. Refresh rehearsal (Phase 7): re-run `npm run login-linkedin` on a still-signed-in profile → harvested without a login prompt; a leg-dead loop heals on its next tick
 10. Phase 8 live rehearsal (dedicated clone): corrupt the cookie-file copy → the tick throws leg-dead on the redirect loop → exactly ONE alarm email, loop continues; restore the file → the next tick heals (discharges the Phase 4 session-dead item)
+11. Phase 9 live setup: `npm run setup-curl` on the PC → `npm run probe-linkedin` passes on the curl transport with the profile fingerprint; the escape-hatch rehearsal proves the playwright hand-switch still works after a binary rename
+12. Phase 10 preflight rehearsal: `npm run fetch-linkedin` from a non-dedicated checkout exits 1 naming the branch/dirty paths BEFORE any `fetch:` line; then the full chain (login → setup-curl → probe → fetch tick) from a dedicated clean clone of main lands the payload commit on origin/main
 
 ## Performance Considerations
 
@@ -6100,6 +6335,13 @@ _Independent post-finalization review by artifact-code-reviewer and artifact-cov
 - **Decision (user-confirmed)**: cover the validation blockers only; the unpaced-redirect performance extra was offered and declined (note: `maxRedirects: 0` — required by the b1 fix anyway — also removes the 20-unpaced-redirects cost as a side effect).
 - **Added Phase 8** (leg-dead classifier amendment + empty-payload guard): classifyFault 3xx → leg-dead; playwright `maxRedirects: 0` so the status reaches the classifier; tagged `AllSurfacesFaulted` when every surface faults; fetchTick returns quiet zeros without touching payload/git/marker. Design artifact's detection table amended (§5). Phase 8 is verified by the kept rehearsal oracle (`npx tsx .rpiv/tmp/session-dead-rehearsal.mjs` must exit 0 unchanged) plus new offline pins.
 - **Phases 1-7 checkmarks left intact**: every existing §13.3 pin stays true (the 3xx rows are additive); Phase 4's live session-dead manual criterion stays UNCHECKED — Phase 8's manual item discharges it.
+
+## Follow-up 2026-11-05T11:56:56+0700 (revise — operator feedback: first live tick failed on a mis-homed checkout)
+
+- **Feedback**: the live chain ran green through `login-linkedin` → `setup-curl` → `probe-linkedin` (curl transport, `probe: 7325ms — HTTP 200 — 10 post(s), 0 dropped` — Phase 9's live setup criterion passes, marked [x]), but `npm run fetch-linkedin` fetched 348 post(s), wrote the payload, then failed twice on "git: rebase conflicted — aborting; a non-payload change cannot replay" → "payload push failed twice". Root cause: the tick ran from the workspace checkout (branch `feature/add-support-for-linkeind`, dirty tree with the uncommitted Phase 9 delta) — `git pull --rebase origin main` refuses with unstaged changes, and `realGit` discards git's own output, so the message misnamed the cause. The run left a stray untracked `state/linkedin-posts.json` in the workspace.
+- **Research**: no new research needed — the shapes were read directly (scripts/fetch-linkedin.ts:48-54 `GitRunner` is `{code}`-only, :177-191 the generic failure messages, fetchTick at :196 with no checkout guard). The wrong-branch case proved WORSE than the dirty tree: on a clean feature branch the push would SUCCEED to `origin/<feature-branch>`, the hosted main checkout would never read the payload, and the tick would report `pushed: true` — a silent wrong-destination push.
+- **Decision (user-confirmed)**: full guard — Phase 10 adds the checkout preflight (branch main + clean porcelain) BEFORE any resolver/network, `GitRunner` carries git's merged output into every failure message, suites pin both rejections, docs get the troubleshooting row + the per-clone `.env` note. Merging the feature branch alone would only remove TODAY's dirty-tree trigger; the silent wrong-ref push and the every-dev-session dirty-tree failure are the defects the guard kills.
+- **Phases 1-9 checkmarks**: Phase 9's Manual item 1 marked [x] on the operator transcript evidence; every other checkmark stands — Phase 10 is additive new surface with fresh unchecked criteria.
 
 ## References
 

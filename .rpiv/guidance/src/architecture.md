@@ -14,6 +14,8 @@ index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps
 types.ts, config.ts, config-file.ts      # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json validation
                                          #   (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds, reasoningEffort)
 env-file.ts                              # PC-script support: <cwd>/.env auto-load (fills ONLY unset keys, real env wins)
+                                         #   + the shared .env line writer upsertDotEnvLine (hoisted here Phase 9;
+                                         #   login-linkedin + setup-curl-impersonate import it)
 threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
 linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (voyager/session/fetch/payload) | data-sjs walk
 recency.ts, judge.ts, judge-rotation.ts, # FUNNEL: window filter | dispatchLlmCall + wrappers | rotation | parsers |
@@ -72,7 +74,10 @@ const state: RotationState = { accounts, cooldownUntil: new Map(), waitBudgetRem
 // linkedin-session.ts: LINKEDIN_COOKIES_FILE resolver (fail-visible D4 — the stricter contrast to
 // silent-null resolveSession); quote asymmetry canonicalized once (header quoted+last §10/§14.5;
 // csrf stripped §3; storageState re-quotes).
-// linkedin-fetch.ts: VoyagerGet seam; curl transport (CURL_IMPERSONATE_BIN fail-visible, injectable
+// linkedin-fetch.ts: VoyagerGet seam; curl transport (CURL_IMPERSONATE_BIN fail-visible — the message
+// names BOTH remedies: npm run setup-curl, or LINKEDIN_TRANSPORT=playwright in .env; lexiforest single
+// binary, --impersonate chrome116 pinned — the profile OWNS the UA+TLS+H2 set, so the transport sends no
+// user-agent header and BROWSER_UA feeds ONLY the playwright adapter; injectable
 // exec, -w status sentinel) + playwright request.newContext transport (own quarantine); resolve
 // LINKEDIN_TRANSPORT curl|playwright, no auto-fallback; classifyFault §13.3; LegDeadError tagged
 // error; runPool walk — runPool RETURNS VOID: side arrays by claim index (fetchSurfacesAuthenticated

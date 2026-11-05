@@ -19,8 +19,11 @@ linkedin-session.ts → linkedin-session.test.ts   # resolver reject matrix (all
 linkedin-fetch.ts → linkedin-fetch.test.ts        # §13.3 classifier table, curl-over-fake-exec, resolver matrix, scripted VoyagerGet walk
 linkedin-payload.ts → linkedin-payload.test.ts    # all four failure classes + atomic round trip
 env-file.ts        → env-file.test.ts            # parser pins (malformed line warn+skip naming file+line) + merge contract
-                                                 #   (fills ONLY unset keys; real env wins; missing = quiet no-op)
+                                                 #   (fills ONLY unset keys; real env wins; missing = quiet no-op) + the
+                                                 #   hoisted upsertDotEnvLine writer pins (moved from login-linkedin, Phase 9)
 login-linkedin.ts (core) → login-linkedin.test.ts  # context seam injected, sleeps/clock injected — no headed Chromium in tests
+scripts/setup-curl-impersonate.ts → setup-curl-impersonate.test.ts  # fetch + tar doubles, fixture sha computed by the suite,
+                                                 #   already-configured short-circuit, sha/tar/exe/platform failure pins
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins

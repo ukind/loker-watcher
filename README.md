@@ -273,17 +273,30 @@ unconfigured identity fails the tick loudly instead of pushing nothing.
    headed helper keeps the operator in the loop. A dead session sends
    ONE alarm email per episode and the loop keeps running — refresh the
    file, the next tick heals.
-2. Install curl-impersonate (chrome build); point `CURL_IMPERSONATE_BIN`
-   at the binary (default transport). `LINKEDIN_TRANSPORT=playwright`
-   switches after a failed probe; no auto-fallback in code.
+2. `npm run setup-curl` — downloads the checksum-pinned curl-impersonate
+   binary (lexiforest release v2.3.2, release-published sha256 digests),
+   extracts it into gitignored `tools/curl-impersonate/`, and writes the
+   CURL_IMPERSONATE_BIN line to .env. Manual fallback (replaces the old
+   install paragraph): install the binary by hand and point
+   CURL_IMPERSONATE_BIN at it. If you skip the binary, put
+   `LINKEDIN_TRANSPORT=playwright` in .env instead — that switches after
+   a failed probe; no auto-fallback in code.
 3. `npm run probe-linkedin` — twice, ≥6h apart, stored cookies only; exit 1
    on leg-dead/short/fault. Re-run after any `LINKEDIN_TRANSPORT` change.
 4. `npm run watch-linkedin` — tick every 10 min, leave the console open.
 
 Env setup note: the PC scripts read `.env` beside the clone root
-(`LINKEDIN_COOKIES_FILE`, `CURL_IMPERSONATE_BIN`); a variable already set
-in the shell always wins and `.env` fills only unset keys, so the login
-helper's line works without any shell profile edit.
+(`LINKEDIN_COOKIES_FILE` written by `login-linkedin`,
+`CURL_IMPERSONATE_BIN` written by `setup-curl`); a variable already set
+in the shell always wins and `.env` fills only unset keys, so the setup
+commands' lines work without any shell profile edit.
+
+Troubleshooting: `git: rebase failed` / `git: payload push failed twice` —
+the tick ran from a non-dedicated or dirty checkout; the preflight (branch
+`main` + clean tree, checked BEFORE any fetch) names the branch or the
+dirty paths. Run from a dedicated clean clone of `main`, and re-run
+`npm run login-linkedin` + `npm run setup-curl` inside the clone — both
+write `<cwd>/.env`, so each clone carries its own line.
 
 Hosted side: the */10 cron reads the payload from its checkout, merges,
 judges, emails as usual; the heartbeat/digest render one `LinkedIn leg:`
@@ -301,11 +314,12 @@ export GMAIL_USER=... GMAIL_APP_PASSWORD=...
 npm start
 ```
 
-The four LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
+The five LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
 them, and the cookie file must exist):
 
 ```bash
 npm run login-linkedin   # headed login: writes the cookie file + the .env line
+npm run setup-curl       # one-time: fetch the curl-impersonate binary + the .env line
 npm run probe-linkedin   # transport gate: exit 1 on a dead/short/faulted leg
 npm run fetch-linkedin   # one tick: fetch → payload → push
 npm run watch-linkedin   # the always-on loop: tick + 10-minute sleep
