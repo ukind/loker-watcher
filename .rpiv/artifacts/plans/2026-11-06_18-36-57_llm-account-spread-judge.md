@@ -8,14 +8,16 @@ topic: "Spread LLM judge load across all accounts using probe-measured per-accou
 tags: [plan, judge, judge-rotation, judge-ceilings, probe-judge, watch-workflow]
 status: ready
 parent: ".rpiv/artifacts/designs/2026-11-06_11-44-02_llm-account-spread-judge.md"
-phase_count: 4
+phase_count: 5
 phases:
   - { n: 1, title: "Ceilings module", files: [src/judge-ceilings.ts, tests/judge-ceilings.test.ts, src/config.ts], depends_on: [] }
   - { n: 2, title: "Spread mechanism", files: [src/judge-rotation.ts, src/judge.ts, src/index.ts, src/config.ts, tests/judge-rotation.test.ts, tests/judge.test.ts, tests/judge-helpers.ts], depends_on: [1] }
   - { n: 3, title: "Probe persistence + commit-back", files: [scripts/probe-judge.ts, .github/workflows/watch.yml, scripts/commit-state-rebase.sh, tests/commit-state-rebase.test.ts], depends_on: [2] }
   - { n: 4, title: "Docs sync + validation", files: [.rpiv/guidance/architecture.md, .rpiv/guidance/src/architecture.md, .rpiv/guidance/.github/workflows/architecture.md, .rpiv/guidance/scripts/architecture.md, README.md, AGENTS.md], depends_on: [3] }
-last_updated: 2026-11-06T18:36:57+0700
+  - { n: 5, title: "Deep ramp + sequential dispatch", files: [scripts/probe-judge.ts, .github/workflows/watch.yml, README.md, .rpiv/guidance/.github/workflows/architecture.md, .rpiv/guidance/scripts/architecture.md], depends_on: [3] }
+last_updated: 2026-11-07T06:08:49+0700
 last_updated_by: Yogiswara Utama
+last_updated_note: "Phase 5 added (operator decision 2026-11-07): probe ramp doubles to a 32 cap instead of stopping at 4; watch job needs the probe on dispatch runs so fresh maximal ceilings flow into the same run"
 ---
 
 # Spread LLM judge load across all accounts using probe-measured per-account ceilings — Implementation Plan
@@ -2369,11 +2371,162 @@ probe:
 
 ---
 
+## Phase 5: Deep ramp + sequential dispatch
+
+### Overview
+
+Overrides the settled stop-once-4 quota economy (operator decision 2026-11-07): the probe's committed ceiling reading was capped at 4 by the ramp's literal level list (`for (const level of [2, 4])`), so the spread's Σ-ceilings width inherited that cap no matter what the endpoint allows. The ramp now doubles 2→4→8→16→32 and stops at the first refused level — the ceiling reads as high as the endpoint actually allows, with 32 as a safety cap (an endpoint that never refuses would ramp forever). And the workflow serializes: the watch job `needs:` the probe, so a dispatch run delivers fresh maximal ceilings into the same run's watch. Scheduled 10-minute ticks are unchanged — the probe is dispatch-only and the watch `if` keeps the tick alive, reading the committed file. Requires Phase 3: the serialization story builds on the Commit ceilings step and the two-file commit-back.
+
+### Changes Required:
+
+#### 1. Doubling ramp to the 32 cap
+**File**: `scripts/probe-judge.ts`
+**Changes**: module docblock's ramp sentence and Revision tail updated; a NEW `RAMP_MAX` constant (safety cap, not a measured value) joins the module-top constants; `findConcurrencyCeiling` walks the doubling levels instead of the `[2, 4]` list. Everything else — `timed`, `rampLevel`, `classifyDead`, the write-before-gate persistence — is unchanged.
+
+```typescript
+// === HUNK 1 — module docblock: the ramp sentence updates and a Revision
+// 2026-11-07 paragraph joins the Revision tail ===
+ * fixture set of real captured post texts. It ramps concurrent bulk calls
+ * per account, doubling 2→4→8→16→32 and stopping at the first refused
+ * level: Z.AI publishes no concurrency number (tier-based, dynamically
+ * adjusted, higher off-peak).
+ *
+ * Revision 2026-11-07: the stop-once-4 ramp capped every committed ceiling
+ * at 4, so the spread's Σ-ceilings width inherited that cap. Operator asked
+ * for maximal concurrency: the ramp doubles to the RAMP_MAX safety cap of
+ * 32 (worst case 62 verified calls per account), and the dispatch run
+ * serializes probe→watch (watch.yml) so the same run's watch starts on the
+ * fresh maximal readings.
+
+// === HUNK 2 — RAMP_MAX constant + findConcurrencyCeiling replacement
+// (docblock + body; timed/rampLevel unchanged) ===
+/** Safety cap for the doubling ramp: the probe never fires more than 32
+ *  concurrent calls per account, even against an endpoint that never
+ *  refuses. Overrides the settled stop-once-4 quota economy (2026-11-07
+ *  operator decision: maximal per-account concurrency requested). Worst
+ *  case is 2+4+8+16+32 = 62 verified calls per account per probe. */
+const RAMP_MAX = 32;
+
+/**
+ * Doubling ramp 2 -> 4 -> 8 -> 16 -> 32 (RAMP_MAX): each level fires
+ * `level` concurrent verified bulk calls and the walk stops at the first
+ * level that is not fully clean, so the ceiling reads as high as the
+ * endpoint actually allows.
+ * A refused level reads the ceiling below it; a failed call means a
+ * broken endpoint, not a ceiling (return 0). The walk never fires a
+ * level the previous one ruled out.
+ */
+async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Promise<number> {
+  for (let level = 2; level <= RAMP_MAX; level *= 2) {
+    const result = await rampLevel(level, payload, account);
+    console.log(
+      `probe: concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
+    );
+    if (result.failed > 0) {
+      console.log("probe: a ramp call failed — broken endpoint, not a concurrency ceiling");
+      return 0;
+    }
+    if (result.ok < level) {
+      console.log(`probe: concurrency ceiling is below ${level}`);
+      return level / 2;
+    }
+  }
+  return RAMP_MAX;
+}
+```
+
+#### 2. Sequential probe→watch on dispatch runs
+**File**: `.github/workflows/watch.yml`
+**Changes**: the watch job gains `needs: [probe]` and an `if` that keeps scheduled ticks alive (the probe is skipped there) while a dispatch-triggered watch runs only after a GREEN probe; the probe job's ramp comment and commit-back comment update; the watch head comment tells the serialization story.
+
+```yaml
+# === HUNK 1 — the probe job's comment: ramp wording + serialization ===
+    # The probe walks EVERY LLM_ACCOUNTS account (doubling ramp 2→32, ~62
+    # calls worst case each): an auth-dead key or a failed leg fails this
+    # job, so a rotten key in the pool reddens the dispatch run instead of
+    # passing unseen. 429-refused legs are reported as busy, not dead —
+    # throttling is data. The measured per-account ceilings commit to
+    # state/judge-ceilings.json (live-only, before the dead gate) and the
+    # Commit ceilings step pushes them. The watch job NEEDS this job green
+    # on dispatch runs — a fresh maximal reading flows into the same run's
+    # watch; a red gate blocks that dispatch's watch (fail-fast). Scheduled
+    # ticks never gate on it (this job is dispatch-only).
+
+# === HUNK 2 — the watch job: needs + the schedule-preserving if, directly
+# above runs-on; the existing width and timeout paragraphs are unchanged ===
+  watch:
+    needs: [probe]
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || needs.probe.result == 'success') }}
+    runs-on: ubuntu-latest
+    # Serialization (2026-11-07): on dispatch runs this job WAITS for a
+    # green probe and starts on the ceilings it just committed — the
+    # fresh maximal reading reaches the same run. On schedule ticks the
+    # probe is skipped (dispatch-only), and this if keeps the tick alive:
+    # the run reads the committed state/judge-ceilings.json as before. A
+    # red probe blocks only the dispatch's watch — the digest for that
+    # dispatch is suppressed (accepted cost); scheduled ticks never gate
+    # on the probe.
+```
+
+#### 3. Docs re-sync (ramp + serialization story)
+**File**: `README.md`, `.rpiv/guidance/.github/workflows/architecture.md`, `.rpiv/guidance/scripts/architecture.md`
+**Changes**: every surface that quotes the ramp gets the doubling story; README and the workflows guidance additionally carry the serialization.
+
+```markdown
+// === README — probe paragraph: the ramp sentence grows the doubling detail
+// and the serialization sentence joins the "Nothing to paste" story ===
+   Judge widths need no tuning: trigger **Actions → watch → Run workflow**
+   once and the dispatch-only probe job measures every `LLM_ACCOUNTS`
+   account (a per-account `ceiling=N` summary line; the ramp doubles
+   concurrent calls 2→32 per account and stops when the endpoint refuses;
+   a dead account — failed leg, HTTP 401/403, or a broken ramp — fails the
+   probe job), writes `state/judge-ceilings.json`, and commits it. On a
+   dispatch run the watch job waits for the green probe and starts on
+   those fresh ceilings; scheduled 10-minute runs skip the probe and read
+   the committed file. Nothing to paste: watch spreads dispatches under
+   those caps. A green gate commits; a red gate skips the commit and the
+   dispatch's watch, so the file keeps its last green reading.
+
+// === workflows guidance — the probe-job fence comment ("2→4 ramp") and the
+// Structure fence: the doubling wording + the watch needs/if lines ===
+  # Walks EVERY LLM_ACCOUNTS account (doubling ramp 2→32): an auth-dead key or a failed leg fails this job, so a
+  ...
+  # watch: needs probe (serialization) — schedule ticks skip the probe and
+  #   watch's if keeps them alive on the committed ceilings
+
+// === scripts guidance — the probe fence excerpt and important-if step 3 ===
+ for (let level = 2; level <= RAMP_MAX; level *= 2) {  // doubling walk, never fires a ruled-out level
+ ...
+ return RAMP_MAX;                             // only a fully clean 2→32 ramp reads 32
+ ...
+3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level)
+```
+
+(AGENTS.md's probe line — "ramp concurrent calls to find each account's ceiling" — stays true word-for-word; no change.)
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Whole-plan gate green: `npm run typecheck && npm run lint && npm test`
+- [x] Ramp walk replaced: `grep -n "level of \[2, 4\]\|return 4;" scripts/probe-judge.ts` returns 0 hits; `grep -cn "RAMP_MAX" scripts/probe-judge.ts` ≥ 3 (cap constant, loop bound, terminal return)
+- [x] Serialization wired: `grep -n "needs: \[probe\]" .github/workflows/watch.yml` matches; `grep -n "needs.probe.result == 'success'" .github/workflows/watch.yml` matches; the schedule-survival guard `github.event_name == 'schedule'` sits in the same `if`
+- [x] Stale ramp prose gone: `grep -rn "stop-once-4\|2→4 ramp\|2->4->\|~6 calls" scripts/probe-judge.ts .github/workflows/watch.yml .rpiv/guidance/ README.md` returns 0 hits
+- [x] Refusal semantics intact: a refused level still reads `level / 2` and a failed call still returns 0 (the walk body is unchanged apart from the bounds — `classifyDead`'s broken-ramp path untouched)
+
+#### Manual Verification:
+- [ ] A dispatch run's job graph shows probe → watch sequentially (watch waited on probe)
+- [ ] The probe log shows levels doubling past 4 until refusal; a ceiling reading > 4 lands when the endpoint allows it (e.g. `ceiling=8/16/32`), and the same run's watch starts on those readings with no floor warnings
+- [ ] A scheduled 10-minute tick runs watch alone — the probe job is absent from the graph and watch is NOT skipped
+- [ ] A red-gate dispatch reddens the probe AND skips that dispatch's watch (accepted cost: no digest for that dispatch); scheduled ticks unaffected
+
+---
+
 ## Testing Strategy
 
 ### Automated:
 - Per-phase gates (read-only repo-wide): `npm run typecheck`, `npm run lint`, `npm test` after each phase.
 - Scoped suites: `npx tsx --test tests/judge-ceilings.test.ts` (Phase 1), `npx tsx --test tests/judge-rotation.test.ts` (Phase 2 — includes the FRD spread acceptance), `npx tsx --test tests/commit-state-rebase.test.ts` (Phase 3 — includes the two new commit-back pins).
+- Phase 5: the probe script has no offline suite (top-level await entry) — the ramp and serialization land via the Phase 5 greps plus a live dispatch (Manual); `npm run typecheck && npm run lint && npm test` stays the offline gate.
 - Retirement greps per phase scope: code (`src/ tests/`) at Phase 2, workflow + probe at Phase 3, docs at Phase 4.
 - Whole-plan gate: `npm run typecheck && npm run lint && npm test` on the finished tree (owned by `validate`). All three are green at base and stay green per phase.
 
