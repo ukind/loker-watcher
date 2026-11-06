@@ -17,7 +17,9 @@ ci.yml      # push(main)+PRs+dispatch | permissions: contents: read | timeout 10
 watch.yml   # cron */10 + dispatch | permissions: contents: write | concurrency: watch (cancel)
             # job probe: dispatch-only GATE, timeout 10 → npx tsx scripts/probe-judge.ts (LLM_ACCOUNTS only)
             #   → Commit ceilings (state/judge-ceilings.json via scripts/commit-state-rebase.sh; checkout fetch-depth: 0)
-            # job watch: timeout 8 (< the 10-min cron) → npm ci (checkout fetch-depth: 0)
+            # job watch: needs probe (serialization) — schedule ticks skip the probe and
+            #   watch's if keeps them alive on the committed ceilings; timeout 8 (< the 10-min cron)
+            #   → npm ci (checkout fetch-depth: 0)
             #   → ms-playwright cache (lockfile hash) → playwright install --only-shell chromium
             #   → Run watcher (step-scoped secrets) → Commit state (script invocation)
 ```
@@ -102,7 +104,7 @@ State history growth (N017): accepted and documented (2026-11-03). Every match r
 ```yaml
 probe:
   if: github.event_name == 'workflow_dispatch'   # never on the cron tick
-  # Walks EVERY LLM_ACCOUNTS account (2→4 ramp): an auth-dead key or a failed leg fails this job, so a
+  # Walks EVERY LLM_ACCOUNTS account (doubling ramp 2→32): an auth-dead key or a failed leg fails this job, so a
   # rotten key reddens the dispatch run instead of passing unseen. 429-refused legs are busy, not dead —
   # throttling is data; the watch job is the real gate for it. The measured ceilings commit to
   # state/judge-ceilings.json (live-only, BEFORE the dead gate) and Commit ceilings pushes them — the

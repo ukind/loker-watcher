@@ -23,16 +23,16 @@ concurrency:
 jobs:
   probe:
     if: github.event_name == 'workflow_dispatch'
-    # The probe walks EVERY LLM_ACCOUNTS account (stop-once-4 ramp, ~6
-    # calls each): an auth-dead key or a failed leg fails this job, so a
-    # rotten key in the pool reddens the dispatch run instead of passing
-    # unseen. 429-refused legs are reported as busy, not dead — throttling
-    # is data; the watch job is the real gate for it. The measured
-    # per-account ceilings commit to state/judge-ceilings.json (live-only,
-    # before the dead gate) and the Commit ceilings step pushes them — the
-    # watch job's spread consumes that file (src/judge-ceilings.ts). A red
-    # gate skips the commit (fail-fast): the file lands only from a green
-    # probe run.
+    # The probe walks EVERY LLM_ACCOUNTS account (doubling ramp 2→32, ~62
+    # calls worst case each): an auth-dead key or a failed leg fails this
+    # job, so a rotten key in the pool reddens the dispatch run instead of
+    # passing unseen. 429-refused legs are reported as busy, not dead —
+    # throttling is data. The measured per-account ceilings commit to
+    # state/judge-ceilings.json (live-only, before the dead gate) and the
+    # Commit ceilings step pushes them. The watch job NEEDS this job green
+    # on dispatch runs — a fresh maximal reading flows into the same run's
+    # watch; a red gate blocks that dispatch's watch (fail-fast). Scheduled
+    # ticks never gate on it (this job is dispatch-only).
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -77,7 +77,17 @@ jobs:
           bash scripts/commit-state-rebase.sh
 
   watch:
+    needs: [probe]
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || needs.probe.result == 'success') }}
     runs-on: ubuntu-latest
+    # Serialization (2026-11-07): on dispatch runs this job WAITS for a
+    # green probe and starts on the ceilings it just committed — the
+    # fresh maximal reading reaches the same run. On schedule ticks the
+    # probe is skipped (dispatch-only), and this if keeps the tick alive:
+    # the run reads the committed state/judge-ceilings.json as before. A
+    # red probe blocks only the dispatch's watch — the digest for that
+    # dispatch is suppressed (accepted cost); scheduled ticks never gate
+    # on the probe.
     # Judge width is Σ per-account ceilings (probe-measured, committed to
     # state/judge-ceilings.json — src/judge-ceilings.ts): there is no
     # single concurrency knob anymore. The dispatch spread keeps each

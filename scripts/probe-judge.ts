@@ -10,9 +10,9 @@
  * the 19 configured keywords and real Threads captions. The probe now
  * loads the real keyword list from watcher.config.json and judges a
  * fixture set of real captured post texts. It ramps concurrent bulk calls
- * per account, stopping once 4 are verified: Z.AI publishes no concurrency
- * number (tier-based, dynamically adjusted, higher off-peak), and gating
- * every account keeps quota burn low.
+ * per account, doubling 2→4→8→16→32 and stopping at the first refused
+ * level: Z.AI publishes no concurrency number (tier-based, dynamically
+ * adjusted, higher off-peak).
  *
  * Revision 2026-11-06: the measured per-account ceilings no longer feed a
  * single global width knob — the probe commits them to
@@ -21,6 +21,13 @@
  * spreads judge dispatches across the pool under those caps
  * (src/judge-ceilings.ts). A missing entry floors that account at ceiling 1
  * with one warning; nothing here reads the file back.
+ *
+ * Revision 2026-11-07: the old ramp verified only levels 2 and 4, capping
+ * every committed ceiling at 4, so the spread's Σ-ceilings width inherited
+ * that cap. Operator asked for maximal concurrency: the ramp doubles to
+ * the RAMP_MAX safety cap of 32 (worst case 62 verified calls per
+ * account), and the dispatch run serializes probe→watch (watch.yml) so
+ * the same run's watch starts on the fresh maximal readings.
  *
  * Usage:
  *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
@@ -139,17 +146,24 @@ async function rampLevel(
   };
 }
 
+/** Safety cap for the doubling ramp: the probe never fires more than 32
+ *  concurrent calls per account, even against an endpoint that never
+ *  refuses. Overrides the earlier stop-at-4 quota economy (2026-11-07
+ *  operator decision: maximal per-account concurrency requested). Worst
+ *  case is 2+4+8+16+32 = 62 verified calls per account per probe. */
+const RAMP_MAX = 32;
+
 /**
- * Ramp 2 -> 4 and stop: four concurrent verified calls are enough to
- * confirm the ceiling per account — the spread enforces this number per
- * account; there is no global width knob anymore.
+ * Doubling ramp 2 -> 4 -> 8 -> 16 -> 32 (RAMP_MAX): each level fires
+ * `level` concurrent verified bulk calls and the walk stops at the first
+ * level that is not fully clean, so the ceiling reads as high as the
+ * endpoint actually allows.
  * A refused level reads the ceiling below it; a failed call means a
- * broken endpoint, not a ceiling (return 0). The old 2->4->8->16 walk
- * measured one account for tuning; this probe gates every account, and
- * ~6 calls/account keeps quota burn low.
+ * broken endpoint, not a ceiling (return 0). The walk never fires a
+ * level the previous one ruled out.
  */
 async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Promise<number> {
-  for (const level of [2, 4]) {
+  for (let level = 2; level <= RAMP_MAX; level *= 2) {
     const result = await rampLevel(level, payload, account);
     console.log(
       `probe: concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
@@ -163,7 +177,7 @@ async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Pr
       return level / 2;
     }
   }
-  return 4;
+  return RAMP_MAX;
 }
 
 /**

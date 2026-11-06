@@ -19,7 +19,6 @@ probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (
                              #   real payload), buildBulkMessages + resolveJudgeConfig (+ Post type) from src;
                              #   writes state/judge-ceilings.json (writeCeilingsAtomic + JUDGE_CEILINGS_PATH,
                              #   live-only before the dead gate); INSIDE typecheck + lint + lint-staged
-                             #   INSIDE typecheck + lint + lint-staged
 fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect free); exports fetchTick /
                              #   pushPayload / handleLegDeadEpisode / guardCheckout; tick = preflight
                              #   (guardCheckout: branch main + clean porcelain, BEFORE cookies/transport/
@@ -47,12 +46,12 @@ hooks/format-on-edit.js      #   *.ts glob never matches .js; hooks are covered 
 ```typescript
 type ProbeOutcome = { kind: "ok" } | { kind: "refused"; status: number } | { kind: "failed"; message: string };
 // refused (HTTP 429 etc.) is a concurrency SIGNAL; failed (network error, 2xx without JSON) is a BROKEN endpoint.
-for (const level of [2, 4]) {                 // never fires a level the previous one ruled out
+for (let level = 2; level <= RAMP_MAX; level *= 2) {  // doubling walk, never fires a ruled-out level
   /* rampLevel: `level` parallel bulk calls — the exact production prompt (buildBulkMessages), REAL captured captions */
   if (result.failed > 0) return 0;            // broken endpoint → ceiling 0 → probe exits 1
   if (result.ok < level) return level / 2;    // ceiling = last fully-clean level — no floor, no Math.max
 }
-return 4;                                     // only a fully clean 2→4 ramp reads 4
+return RAMP_MAX;                             // only a fully clean 2→32 ramp reads 32
 // per account, after the ramp: the file key is the trimmed baseUrl (resolveCeilings trims both sides)
 ceilings[account.baseUrl.trim()] = ceiling;
 // AFTER the account loop, BEFORE the dead gate — live-only, whole file (no merge, no staleness):
@@ -91,7 +90,7 @@ process.exit(0);                              // allow
 ```
 
 **Caveats:**
-- The probe walks EVERY `LLM_ACCOUNTS` entry (~6 calls each) — a rotten key in the pool fails the gating probe job loudly
+- The probe walks EVERY `LLM_ACCOUNTS` entry (the doubling ramp fires ~62 calls worst case each) — a rotten key in the pool fails the gating probe job loudly
 - Weak success check: a 2xx body counts as ok if it merely `includes("{")` — no verdict parsing
 - Gate regexes are a seatbelt, not a sandbox: `git push -f` evades, `--force-with-lease` is caught, `tee` evades the state-file rule
 
@@ -99,7 +98,7 @@ process.exit(0);                              // allow
 ## Running the Judge Probe and Applying the Reading
 1. Env: `LLM_ACCOUNTS` = JSON array of `{baseUrl, apiKey, model}` (every account is walked; each must pass)
 2. Run: Actions → watch → Run workflow (dispatch runs the probe job), or locally `npx tsx scripts/probe-judge.ts` from the repo root (it loads `watcher.config.json` at startup)
-3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the 2→4 ramp (~6 calls total)
+3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level)
 4. Read each account's summary line `probe: account N (<baseUrl>) — minimal=… bulk=… bulkAgain=… ceiling=N` — no floor; a failed, auth-dead (401/403), or broken-ramp (ceiling 0) account exits 1; 429-refused legs are busy, not dead
 5. Apply: nothing to paste — the probe writes `state/judge-ceilings.json` (whole file, before the gate) and the Commit ceilings step pushes it; a missing entry floors that account at ceiling 1 with one warning
 6. Semantics downstream: `resolveCeilings` trims both sides when matching keys; a red-gate probe skips the commit, so the file keeps the last green reading; the file never fails a run

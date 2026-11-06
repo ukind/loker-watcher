@@ -82,11 +82,15 @@ ceilings).
 
    Judge widths need no tuning: trigger **Actions → watch → Run workflow**
    once and the dispatch-only probe job measures every `LLM_ACCOUNTS`
-   account (a per-account `ceiling=N` summary line; a dead account — failed
-   leg, HTTP 401/403, or a broken ramp — fails the probe job), writes
-   `state/judge-ceilings.json`, and commits it. Nothing to paste: the next
-   watch run spreads dispatches under those caps. A green gate commits; a
-   red gate skips the commit, so the file keeps its last green reading.
+   account (a per-account `ceiling=N` summary line; the ramp doubles
+   concurrent calls 2→32 per account and stops when the endpoint refuses;
+   a dead account — failed leg, HTTP 401/403, or a broken ramp — fails the
+   probe job), writes `state/judge-ceilings.json`, and commits it. On a
+   dispatch run the watch job waits for the green probe and starts on
+   those fresh ceilings; scheduled 10-minute runs skip the probe and read
+   the committed file. Nothing to paste: watch spreads dispatches under
+   those caps. A green gate commits; a red gate skips the commit and the
+   dispatch's watch, so the file keeps its last green reading.
    Rolling the code back past v2 requires reverting
    `state/seen-posts.json` in the same commit — v1 code fails visibly with
    `unsupported schema version: 2`.
