@@ -149,7 +149,7 @@ async function makeScratch(name: string): Promise<Scratch> {
 async function advanceOrigin(
   root: string,
   origin: string,
-  edits: { stateIds?: Record<string, string>; notes?: string },
+  edits: { stateIds?: Record<string, string>; notes?: string; ceilings?: string },
 ): Promise<void> {
   const other = join(root, "other");
   git(root, ["clone", "--quiet", origin, "other"]);
@@ -158,6 +158,10 @@ async function advanceOrigin(
   if (edits.stateIds !== undefined) {
     await writeFile(join(other, "state", "seen-posts.json"), stateJson(edits.stateIds), "utf8");
     git(other, ["add", "state/seen-posts.json"]);
+  }
+  if (edits.ceilings !== undefined) {
+    await writeFile(join(other, "state", "judge-ceilings.json"), edits.ceilings, "utf8");
+    git(other, ["add", "state/judge-ceilings.json"]);
   }
   if (edits.notes !== undefined) {
     await writeFile(join(other, "notes.md"), edits.notes, "utf8");
@@ -334,6 +338,72 @@ describe("commit-state-rebase script", () => {
           version: 2,
           seenPostIds: { a: T0, b: T1 },
         });
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "skips a judge-ceilings conflict (the probe job's commit-back): exit 0, origin keeps its ceilings",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("ceilings-skip");
+      try {
+        // The probe-job head this suite mimics: add + commit the ceilings
+        // file only.
+        await writeFile(
+          join(work, "state", "judge-ceilings.json"),
+          '{"https://account-one.api/v1": 4}\n',
+          "utf8",
+        );
+        git(work, ["add", "state/judge-ceilings.json"]);
+        git(work, ["commit", "-m", "judge: probe-measured ceilings"]);
+        // The human push: a DIFFERENT ceilings reading lands on origin
+        // first (add/add conflict — the file did not exist at the merge
+        // base).
+        await advanceOrigin(root, origin, { ceilings: '{"https://account-one.api/v1": 2}\n' });
+        const run = runScript(work);
+        assert.equal(run.status, 0, `status ${String(run.status)}: ${run.stderr}`);
+        // The accepted skip cost, pinned for the second state file: origin
+        // keeps ITS reading; the next green probe run overwrites.
+        assert.match(git(origin, ["show", "main:state/judge-ceilings.json"]), /: 2\}/);
+        assert.doesNotMatch(run.stdout, /non-state conflict/);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "aborts a two-line conflict when one path is outside the state set: exit 1",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("mixed-conflict");
+      try {
+        // Our commit touches one state file AND one non-state file.
+        await writeFile(
+          join(work, "state", "judge-ceilings.json"),
+          '{"https://account-one.api/v1": 4}\n',
+          "utf8",
+        );
+        await writeFile(join(work, "notes.md"), "work side\n", "utf8");
+        git(work, ["add", "state/judge-ceilings.json", "notes.md"]);
+        git(work, ["commit", "-m", "ceilings + notes"]);
+        // Origin moved BOTH paths: the conflict list has two lines, one
+        // in the skip set, one outside — the outside line fails the
+        // attempt whole; nothing is skipped piecemeal.
+        await advanceOrigin(root, origin, {
+          ceilings: '{"https://account-one.api/v1": 2}\n',
+          notes: "origin side\n",
+        });
+        const before = git(work, ["rev-parse", "HEAD"]).trim();
+        const run = runScript(work);
+        assert.equal(run.status, 1, `status ${String(run.status)}: ${run.stderr}`);
+        assert.match(run.stdout, /non-state conflict in: notes\.md/);
+        // The abort actually unwound: no rebase in flight, HEAD unmoved.
+        await assert.rejects(() => access(join(work, ".git", "rebase-merge")), /ENOENT/);
+        assert.equal(git(work, ["rev-parse", "HEAD"]).trim(), before);
       } finally {
         await rm(root, { recursive: true, force: true });
       }

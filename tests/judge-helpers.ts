@@ -17,6 +17,16 @@ export const singleAccount: LlmAccount[] = [
   { baseUrl: "https://mock.api/v1", apiKey: "test-key", model: "test-model" },
 ];
 
+/** Five-account pool with distinct hosts — the spread acceptance test's
+ *  "first N calls hit N distinct accounts" needs five rungs. */
+export const fiveAccounts: LlmAccount[] = [
+  { baseUrl: "https://account-one.api/v1", apiKey: "key-1", model: "model-1" },
+  { baseUrl: "https://account-two.api/v1", apiKey: "key-2", model: "model-2" },
+  { baseUrl: "https://account-three.api/v1", apiKey: "key-3", model: "model-3" },
+  { baseUrl: "https://account-four.api/v1", apiKey: "key-4", model: "model-4" },
+  { baseUrl: "https://account-five.api/v1", apiKey: "key-5", model: "model-5" },
+];
+
 /** Chat-completions success body carrying one message content string. */
 export function ok(content: string): Response {
   return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {

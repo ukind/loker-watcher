@@ -2,14 +2,26 @@
  * Account-pool rotation primitives for the LLM judge (F010): the cooldown
  * map state, the tagged exhaustion error, and the park helper — moved
  * verbatim from judge.ts. Behavior is unchanged; only module ownership and
- * visibility differ (the four helpers gain export).
+ * visibility differ (the helpers gain export).
  *
- * Model: an HTTP 429 is account-local. The account cools for a flat 60
- * seconds (first-write-wins) and every dispatch scans the pool from
- * account 1, skipping accounts that are still cooling — there is no sticky
- * pointer. When every account is cooling the caller parks through a shared
- * wait budget and, once the budget is spent, converts to the tagged
- * RotationExhausted error carrying a pool-ordered failure record.
+ * Cooldown model: an HTTP 429 is account-local. The account cools for a
+ * flat 60 seconds (first-write-wins) and every dispatch skips accounts
+ * that are still cooling — there is no sticky pointer. When every account
+ * is cooling the caller parks through a shared wait budget and, once the
+ * budget is spent, converts to the tagged RotationExhausted error carrying
+ * a pool-ordered failure record.
+ *
+ * Spread model (D1/D6): the pick starts at the dispatch dial
+ * (dispatchCounter % pool size) and skips cooling AND at-ceiling accounts,
+ * so consecutive claims land on consecutive accounts — the first N
+ * dispatches of a run hit N distinct hosts up to the pool's ceilings. A
+ * claim moves the dial just past the claimed account; an undefined pick
+ * never moves it. An all-at-ceiling pick (nothing cooling) parks its
+ * dispatcher on the release-waiter queue at ZERO budget charge: the shared
+ * park budget and the exhaustion alarm stay exclusive to cooldown parks
+ * (D4). A fresh cooldown stamp also wakes the queue — it shrinks effective
+ * capacity — while a first-write-wins re-stamp changes nothing and wakes
+ * nobody.
  */
 // Type-only import (D5): verbatimModuleSyntax erases it, so judge.ts can
 // import this module's runtime symbols with no runtime cycle.
@@ -34,14 +46,31 @@ const WAKE_JITTER_MS = 500;
  * Run-level rotation state, owned by judgePosts and shared by reference with
  * every worker — the same closure-shared mutable pattern as the `next` batch
  * cursor (read and advance with no await between). There is no sticky
- * pointer: every dispatch scans the pool from account 1 and skips accounts
- * that are still cooling, so a batch that starts after an account's cooldown
- * expires lands back on account 1.
+ * pointer: every dispatch scans FROM the dispatch dial (dispatchCounter %
+ * poolSize), skipping accounts that are cooling OR at their in-flight
+ * ceiling; a claim moves the dial just past the claimed account, so
+ * consecutive dispatches land on consecutive hosts.
  */
 export interface RotationState {
   readonly accounts: readonly LlmAccount[];
   /** 0-based account index -> expiry reading from the injected `now`. */
   readonly cooldownUntil: Map<number, number>;
+  /** 0-based account index -> probe-measured in-flight ceiling (>= 1;
+   *  resolveCeilings floors every pool account at 1). Read-only here —
+   *  writing the file is the probe's job, the run only enforces. */
+  readonly ceilings: ReadonlyMap<number, number>;
+  /** 0-based account index -> dispatched-and-unfinished calls. A claim
+   *  increments before the request leaves; the attempt's finally releases,
+   *  so every exit path frees its slot exactly once. */
+  readonly inFlight: Map<number, number>;
+  /** Dispatch dial: the pick scans from dispatchCounter % poolSize; a
+   *  claim moves it just past the claimed account (D6: an undefined pick
+   *  never moves it). Zero starts the run at account 1. */
+  dispatchCounter: number;
+  /** Resolve fns of dispatches parked on an all-at-ceiling pick. The next
+   *  release (or a fresh cool-down) resolves every waiter; each re-picks
+   *  and the losers re-park — zero budget charge (D4). */
+  readonly ceilingWaiters: Array<() => void>;
   /** Shared park budget: the total wait both judge phases may draw before
    *  the run converts to the exhaustion alarm. */
   waitBudgetRemainingMs: number;
@@ -75,21 +104,36 @@ export function isRotationExhausted(error: unknown): error is RotationExhausted 
 }
 
 /**
- * First dispatchable account, scanning the pool in order from account 1 —
- * the batch-local cursor. A missing or expired entry makes an account
- * dispatchable; an active cooldown (expiry > now) skips it. Synchronous and
- * pre-await: the caller dispatches inside the same sync window as the old
- * pointer read.
+ * First dispatchable account, scanning FROM the dispatch dial —
+ * dispatchCounter % pool size — wrapping the pool once. The proactive
+ * spread: consecutive claims land on consecutive accounts, so the first
+ * N dispatches of a run hit N distinct hosts. An account is dispatchable
+ * when it is neither cooling (expiry > nowMs) nor at its in-flight
+ * ceiling. Synchronous and pre-await: the caller claims inside the same
+ * sync window as this read. The pick NEVER advances the dial (D6) —
+ * claimAccount does, and only for a fresh claim.
+ *
+ * startAt pins the scan's FIRST seat (the same-account 5xx retry): a
+ * start hint, not a guarantee — a cooling or at-ceiling pinned seat is
+ * skipped like any other, and an undefined pick still leaves the dial
+ * untouched.
  */
 export function pickEligibleAccount(
   state: RotationState,
   nowMs: number,
+  startAt?: number,
 ): { index: number; account: LlmAccount } | undefined {
-  for (const [index, account] of state.accounts.entries()) {
+  const poolSize = state.accounts.length;
+  const start = startAt ?? state.dispatchCounter % poolSize;
+  for (let offset = 0; offset < poolSize; offset += 1) {
+    const index = (start + offset) % poolSize;
+    const account = state.accounts[index];
+    if (account === undefined) continue;
     const expiry = state.cooldownUntil.get(index);
-    if (expiry === undefined || expiry <= nowMs) {
-      return { index, account };
-    }
+    if (expiry !== undefined && expiry > nowMs) continue;
+    const ceiling = state.ceilings.get(index) ?? 1;
+    if ((state.inFlight.get(index) ?? 0) >= ceiling) continue;
+    return { index, account };
   }
   return undefined;
 }
@@ -104,7 +148,86 @@ export function coolAccount(state: RotationState, accountIndex: number, nowMs: n
   const existing = state.cooldownUntil.get(accountIndex);
   if (existing === undefined || existing <= nowMs) {
     state.cooldownUntil.set(accountIndex, nowMs + COOLDOWN_MS);
+    // D4: a fresh 429 shrinks effective capacity — parked ceiling waiters
+    // re-pick against the new landscape and re-route into the budget park
+    // when a cooldown now blocks them. An already-cooling account changes
+    // nothing (first-write-wins), so it wakes nobody.
+    wakeCeilingWaiters(state);
   }
+}
+
+/**
+ * Resolve every parked ceiling waiter: a release or a fresh cool-down
+ * changed the pick landscape. Wake is a re-pick OPPORTUNITY, not a
+ * guaranteed slot — the losers re-park through waitCeilingSlot. Private:
+ * wake sites are exactly releaseAccount and coolAccount's fresh stamp.
+ */
+function wakeCeilingWaiters(state: RotationState): void {
+  const waiters = state.ceilingWaiters.splice(0);
+  for (const resolve of waiters) resolve();
+}
+
+/**
+ * Claim a picked account in the caller's sync window: the in-flight count
+ * rises BEFORE the request leaves, and the dial moves just past this
+ * account so the next scan starts on the next seat (the spread). Pair
+ * every claim with a releaseAccount in a finally — the release gate is
+ * what keeps the counts honest across every exit path (D7).
+ */
+export function claimAccount(state: RotationState, accountIndex: number): void {
+  const current = state.inFlight.get(accountIndex) ?? 0;
+  state.inFlight.set(accountIndex, current + 1);
+  state.dispatchCounter = accountIndex + 1;
+}
+
+/**
+ * Release a claimed account: the in-flight count falls and every ceiling
+ * waiter wakes to re-pick the freed landscape. The clamp keeps a
+ * bookkeeping bug from driving the count negative; it must stay a clamp —
+ * release runs in a finally, where a throw would replace the caller's
+ * original error.
+ */
+export function releaseAccount(state: RotationState, accountIndex: number): void {
+  const current = state.inFlight.get(accountIndex) ?? 0;
+  state.inFlight.set(accountIndex, Math.max(0, current - 1));
+  wakeCeilingWaiters(state);
+}
+
+/**
+ * Park one dispatch until the next release (or fresh cool-down) changes
+ * the pick landscape. ZERO budget charge: an all-at-ceiling pick has no
+ * expiry to wait on, so this wait never draws the shared park budget and
+ * can never convert to the exhaustion alarm (D4). The caller registers
+ * inside the same sync window as the pick-undefined observation — the
+ * push lands before the first await, so no release can slip past
+ * unobserved. Steady state is safe: an all-at-ceiling scan proves claims
+ * are outstanding (in-flight >= ceiling somewhere), and every claim's
+ * release wakes the queue, so the wait resolves on real network events —
+ * no timer, no polling.
+ */
+export function waitCeilingSlot(state: RotationState): Promise<void> {
+  return new Promise((resolve) => {
+    state.ceilingWaiters.push(resolve);
+  });
+}
+
+/**
+ * Earliest ACTIVE cooldown expiry (> nowMs), or undefined when nothing is
+ * cooling — the caller's flavor split for an undefined pick (D4): an
+ * expiry here means park on the shared budget (the cooldown path, the
+ * only road to the exhaustion terminal); no expiry means every account is
+ * merely at its ceiling (the zero-charge ceiling wait). parkUntilEligible
+ * reads the same computation.
+ */
+export function earliestCooldown(state: RotationState, nowMs: number): number | undefined {
+  let earliest: number | undefined;
+  for (const expiry of state.cooldownUntil.values()) {
+    if (expiry <= nowMs) continue;
+    if (earliest === undefined || expiry < earliest) {
+      earliest = expiry;
+    }
+  }
+  return earliest;
 }
 
 /**
@@ -128,11 +251,12 @@ export function failuresFromCooldowns(state: RotationState): AccountFailure[] {
 }
 
 /**
- * Wait until the earliest cooldown expiry (plus jitter), charging the
- * shared wait budget. Returns true when the park ran and the caller may
- * re-pick; false when the budget is already spent — the caller converts
- * to its terminal outcome. Never throws: the park runs at the loop top,
- * OUTSIDE the try, so a wait can never be misrouted through a catch.
+ * Wait until the earliest ACTIVE cooldown expiry (plus jitter), charging
+ * the shared wait budget. Returns true when the park ran and the caller
+ * may re-pick; false when the budget is already spent (or, typed-only,
+ * when no cooldown is active — the caller's flavor split makes that
+ * unreachable). Never throws: the park runs at the loop top, OUTSIDE the
+ * try, so a wait can never be misrouted through a catch.
  *
  * Charge-before-sleep: the full pessimistic wait comes off the budget
  * up front, so peers parking concurrently see the remaining budget, not
@@ -149,12 +273,12 @@ export async function parkUntilEligible(
     return false;
   }
   const startedAt = now();
-  // Called only when the pick found nothing, so the map is non-empty.
-  let earliest = Number.POSITIVE_INFINITY;
-  for (const expiry of state.cooldownUntil.values()) {
-    if (expiry < earliest) {
-      earliest = expiry;
-    }
+  // The caller parks only on an undefined pick WITH an active cooldown,
+  // so earliest is defined at this point; the typed fallback keeps the
+  // function total — it reads as a spent budget, the conservative terminal.
+  const earliest = earliestCooldown(state, startedAt);
+  if (earliest === undefined) {
+    return false;
   }
   const waitMs = Math.max(0, earliest + WAKE_JITTER_MS - startedAt);
   const charge = Math.min(waitMs, state.waitBudgetRemainingMs);

@@ -6,7 +6,6 @@ import {
   buildBulkMessages,
   judgePost,
   judgePosts,
-  parseJudgeConcurrency,
   parseLlmAccounts,
   resolveJudgeConfig,
 } from "../src/judge.js";
@@ -18,7 +17,17 @@ import { KEYWORDS, bulkContent, bulkPost, id19, ok, singleAccount } from "./judg
  * file cannot be imported. */
 function freshState(accounts: LlmAccount[]): RotationState {
   // waitBudgetRemainingMs mirrors the module-private 3-minute WAIT_BUDGET_MS.
-  return { accounts, cooldownUntil: new Map(), waitBudgetRemainingMs: 180_000 };
+  // ceilings default: an empty map reads as ceiling 1 per account (the
+  // pick's floor) — the same degrade as an absent ceilings file.
+  return {
+    accounts,
+    cooldownUntil: new Map(),
+    ceilings: new Map(),
+    inFlight: new Map(),
+    dispatchCounter: 0,
+    ceilingWaiters: [],
+    waitBudgetRemainingMs: 180_000,
+  };
 }
 
 describe("resolveJudgeConfig", () => {
@@ -85,28 +94,6 @@ describe("parseLlmAccounts", () => {
     assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: missing }), /LLM_ACCOUNTS\[0\]\.model/);
     const blank = JSON.stringify([{ baseUrl: "https://a", apiKey: "  ", model: "m" }]);
     assert.throws(() => parseLlmAccounts({ LLM_ACCOUNTS: blank }), /LLM_ACCOUNTS\[0\]\.apiKey/);
-  });
-});
-
-describe("parseJudgeConcurrency", () => {
-  it("defaults to 4 when the variable is absent", () => {
-    assert.equal(parseJudgeConcurrency(undefined), 4);
-  });
-
-  it("defaults to 4 when the variable is blank", () => {
-    assert.equal(parseJudgeConcurrency(""), 4);
-    assert.equal(parseJudgeConcurrency("   "), 4);
-  });
-
-  it("parses a positive integer with surrounding whitespace", () => {
-    assert.equal(parseJudgeConcurrency("8"), 8);
-    assert.equal(parseJudgeConcurrency(" 16 "), 16);
-  });
-
-  it("throws naming the variable for zero, negative, fractional, or non-numeric values", () => {
-    for (const bad of ["0", "-2", "2.5", "abc", "4px"]) {
-      assert.throws(() => parseJudgeConcurrency(bad), /JUDGE_CONCURRENCY/);
-    }
   });
 });
 
@@ -340,9 +327,8 @@ describe("judgePosts", () => {
     assert.ok(bodies[1]?.includes("next.js")); // and the fallback system message
   });
 
-  it("peaks at exactly the configured concurrency for a 280-post backlog", async () => {
+  it("peaks at exactly the Σ-ceilings width for a 280-post backlog", async () => {
     const posts = Array.from({ length: 280 }, (_, i) => bulkPost(id19(i + 1))); // 28 batches
-    const width = 4;
     const state = { inFlight: 0, peak: 0 };
     const mockFetch = measuredFetch(state);
 
@@ -352,16 +338,15 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      width,
+      new Map([[0, 4]]),
     );
-    assert.equal(state.peak, width); // exactly the passed width, never more
+    assert.equal(state.peak, 4); // exactly Σ ceilings, never more
     assert.equal(result.judged.length, 280);
     assert.deepEqual(result.skippedPostIds, []);
   });
 
-  it("peaks at min(concurrency, batches) in-flight calls for a short list", async () => {
+  it("peaks at min(Σ-ceilings, batches) in-flight calls for a short list", async () => {
     const posts = Array.from({ length: 25 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
-    const width = 2;
     const batchCount = Math.ceil(posts.length / 10); // BATCH_SIZE mirror
     const state = { inFlight: 0, peak: 0 };
     const mockFetch = measuredFetch(state);
@@ -372,15 +357,14 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      width,
+      new Map([[0, 2]]),
     );
-    assert.equal(state.peak, Math.min(width, batchCount));
+    assert.equal(state.peak, Math.min(2, batchCount));
     assert.equal(result.judged.length, 25);
   });
 
-  it("drains fallback-needed posts through a pool at the configured width, in input order", async () => {
+  it("drains fallback-needed posts through a pool at the Σ-ceilings width, in input order", async () => {
     const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches
-    const width = 3;
     const state = { inFlight: 0, peak: 0, calls: 0 };
     const mockFetch = bulkMissThenAnswer(state);
 
@@ -390,12 +374,12 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      width,
+      new Map([[0, 3]]),
     );
 
     // The bulk phase peaks at 2 (two batches) — only the fallback pool can
-    // reach the configured width.
-    assert.equal(state.peak, width);
+    // reach the pool width.
+    assert.equal(state.peak, 3);
     assert.equal(state.calls, 2 + 20); // 2 bulk + 20 single-post calls
     assert.equal(result.judged.length, 20);
     assert.deepEqual(
@@ -456,6 +440,8 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      "medium",
+      new Map([[0, 4]]),
     );
 
     assert.equal(result.judged.length, 9);
@@ -468,7 +454,6 @@ describe("judgePosts", () => {
 
   it("defers K in-flight batches whole when a burst demotes the first wave at width > 1 (1d4faed)", async () => {
     const posts = Array.from({ length: 30 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
-    const width = 2;
     const state = { inFlight: 0, peak: 0 };
     // Mirror of the suite's spent-backoff defer pin: bulk calls for the
     // first wave's batches always fail retryable, so both batches exhaust
@@ -505,13 +490,13 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      width,
+      new Map([[0, 2]]),
     );
 
     // The burst defers BOTH first-wave batches whole: their 20 posts are
     // skipped in input order, none is judged, and the surviving batch
     // reassembles in input order.
-    assert.ok(state.peak <= width);
+    assert.ok(state.peak <= 2);
     assert.equal(result.judged.length, 10);
     assert.deepEqual(
       result.judged.map((j) => j.post.id),
@@ -535,6 +520,8 @@ describe("judgePosts", () => {
       singleAccount,
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
+      "medium",
+      new Map([[0, 4]]),
     );
     // Wait until all four workers have parked their batch call.
     await new Promise<void>((resolveQueued) => {

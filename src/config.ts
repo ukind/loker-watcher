@@ -18,7 +18,6 @@ export const ENV_NAMES = {
   curlImpersonateBin: "CURL_IMPERSONATE_BIN",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
-  judgeConcurrency: "JUDGE_CONCURRENCY",
   gmailUser: "GMAIL_USER",
   gmailAppPassword: "GMAIL_APP_PASSWORD",
 } as const;
@@ -60,6 +59,19 @@ export const STATE_PATH = "state/seen-posts.json";
  * disciplines can never lose each other's commits.
  */
 export const LINKEDIN_PAYLOAD_PATH = "state/linkedin-posts.json";
+
+/**
+ * Probe-measured per-account judge ceilings (single-writer doctrine, the
+ * LINKEDIN_PAYLOAD_PATH shape): the probe job is the ONLY writer — it
+ * commits live-only readings before its dead-account gate — and the watch
+ * run is the only reader (src/judge-ceilings.ts). A flat {baseUrl: ceiling}
+ * map with no version or timestamp: the probe runs dispatch-only, so
+ * readings legitimately age for days, and the 429 rotation remains the
+ * correctness net (a stale optimistic ceiling costs throughput, never
+ * correctness). A missing entry floors that account at ceiling 1 with one
+ * warning; the file never fails a run (src/judge-ceilings.ts).
+ */
+export const JUDGE_CEILINGS_PATH = "state/judge-ceilings.json";
 
 /**
  * Location of the JSON source of truth for surfaces, keywords, candidate

@@ -10,9 +10,24 @@
  * the 19 configured keywords and real Threads captions. The probe now
  * loads the real keyword list from watcher.config.json and judges a
  * fixture set of real captured post texts. It ramps concurrent bulk calls
- * per account, stopping once 4 are verified: Z.AI publishes no concurrency
- * number (tier-based, dynamically adjusted, higher off-peak), and gating
- * every account keeps quota burn low — the shipped JUDGE_CONCURRENCY is 4.
+ * per account, doubling 2→4→8→16→32 and stopping at the first refused
+ * level: Z.AI publishes no concurrency number (tier-based, dynamically
+ * adjusted, higher off-peak).
+ *
+ * Revision 2026-11-06: the measured per-account ceilings no longer feed a
+ * single global width knob — the probe commits them to
+ * state/judge-ceilings.json (writeCeilingsAtomic, live-only, BEFORE the
+ * dead gate: even a red run records what it measured) and the dispatch run
+ * spreads judge dispatches across the pool under those caps
+ * (src/judge-ceilings.ts). A missing entry floors that account at ceiling 1
+ * with one warning; nothing here reads the file back.
+ *
+ * Revision 2026-11-07: the old ramp verified only levels 2 and 4, capping
+ * every committed ceiling at 4, so the spread's Σ-ceilings width inherited
+ * that cap. Operator asked for maximal concurrency: the ramp doubles to
+ * the RAMP_MAX safety cap of 32 (worst case 62 verified calls per
+ * account), and the dispatch run serializes probe→watch (watch.yml) so
+ * the same run's watch starts on the fresh maximal readings.
  *
  * Usage:
  *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
@@ -22,6 +37,8 @@
  * watch job itself is the real gate for throttling.
  */
 import { loadWatcherConfig } from "../src/config-file.js";
+import { JUDGE_CEILINGS_PATH } from "../src/config.js";
+import { writeCeilingsAtomic } from "../src/judge-ceilings.js";
 import { type LlmAccount, buildBulkMessages, resolveJudgeConfig } from "../src/judge.js";
 import type { Post } from "../src/types.js";
 
@@ -129,16 +146,24 @@ async function rampLevel(
   };
 }
 
+/** Safety cap for the doubling ramp: the probe never fires more than 32
+ *  concurrent calls per account, even against an endpoint that never
+ *  refuses. Overrides the earlier stop-at-4 quota economy (2026-11-07
+ *  operator decision: maximal per-account concurrency requested). Worst
+ *  case is 2+4+8+16+32 = 62 verified calls per account per probe. */
+const RAMP_MAX = 32;
+
 /**
- * Ramp 2 -> 4 and stop: the shipped JUDGE_CONCURRENCY is 4, so four
- * concurrent verified calls are enough to confirm the width per account.
+ * Doubling ramp 2 -> 4 -> 8 -> 16 -> 32 (RAMP_MAX): each level fires
+ * `level` concurrent verified bulk calls and the walk stops at the first
+ * level that is not fully clean, so the ceiling reads as high as the
+ * endpoint actually allows.
  * A refused level reads the ceiling below it; a failed call means a
- * broken endpoint, not a ceiling (return 0). The old 2->4->8->16 walk
- * measured one account for tuning; this probe gates every account, and
- * ~6 calls/account keeps quota burn low.
+ * broken endpoint, not a ceiling (return 0). The walk never fires a
+ * level the previous one ruled out.
  */
 async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Promise<number> {
-  for (const level of [2, 4]) {
+  for (let level = 2; level <= RAMP_MAX; level *= 2) {
     const result = await rampLevel(level, payload, account);
     console.log(
       `probe: concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
@@ -152,7 +177,7 @@ async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Pr
       return level / 2;
     }
   }
-  return 4;
+  return RAMP_MAX;
 }
 
 /**
@@ -187,6 +212,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const ceilings: Record<string, number> = {};
   const dead: string[] = [];
   for (const [index, account] of accounts.entries()) {
     const label = `account ${index + 1} (${account.baseUrl})`;
@@ -218,6 +244,10 @@ async function main(): Promise<void> {
     const again = await timed(`${label} bulk call again (variance check)`, bulkPayload, account);
 
     const ceiling = await findConcurrencyCeiling(bulkPayload, account);
+    // File key = trimmed baseUrl (resolveCeilings trims both sides). Twins
+    // sharing a baseUrl share one reading — last write wins; one entry per
+    // endpoint is the file's shape.
+    ceilings[account.baseUrl.trim()] = ceiling;
     const probe: AccountProbe = {
       position: index + 1,
       label,
@@ -234,6 +264,16 @@ async function main(): Promise<void> {
       `probe: ${label} — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
     );
   }
+
+  // Live-only persistence BEFORE the dead gate: this run's readings ARE the
+  // whole file — no merge with previous content, no staleness logic (the
+  // probe runs dispatch-only, so readings legitimately age for days). A
+  // dead account's 0 (broken ramp) floors at 1 in the reader with a
+  // warning — the honest signal for a rotten key.
+  await writeCeilingsAtomic(ceilings, JUDGE_CEILINGS_PATH);
+  console.log(
+    `probe: committed ${Object.keys(ceilings).length} ceiling(s) to ${JUDGE_CEILINGS_PATH}`,
+  );
 
   if (dead.length > 0) {
     console.error("probe: DEAD account(s) — failing the gating probe:");
