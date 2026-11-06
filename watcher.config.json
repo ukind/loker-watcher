@@ -102,14 +102,6 @@
          "value":"https://www.threads.com/search?q=techthreads&serp_type=tags&filter=recent"
       },
       {
-         "type":"linkedin",
-         "value":"#hiring react"
-      },
-      {
-         "type":"linkedin",
-         "value":"#hiring"
-      },
-      {
          "type":"url",
          "value":"https://www.threads.com/search?exact_match=false&q=techthreads&serp_type=tags&filter=recent"
       },
@@ -119,7 +111,31 @@
       },
       {
          "type":"linkedin",
-         "value":"#hiring frontend developer indonesia"
+         "value":"hiring react"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring react jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring engineer jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring developer jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring engineer indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring developer indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring react indonesia"
       }
    ],
    "recencyHours":72
