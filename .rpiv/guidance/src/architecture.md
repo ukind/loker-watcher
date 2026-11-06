@@ -11,8 +11,9 @@ The entire application: a single-shot CLI pipeline that fetches job posts from T
 ## Module Structure (role groups; imports point downward only)
 ```
 index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
-types.ts, config.ts, config-file.ts      # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json validation
-                                         #   (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds, reasoningEffort)
+types.ts, config.ts, config-file.ts,     # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json
+judge-ceilings.ts                        #   validation (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds,
+                                         #   reasoningEffort) | the committed judge ceilings reader/writer
 env-file.ts                              # PC-script support: <cwd>/.env auto-load (fills ONLY unset keys, real env wins)
                                          #   + the shared .env line writer upsertDotEnvLine (hoisted here Phase 9;
                                          #   login-linkedin + setup-curl-impersonate import it)
@@ -56,11 +57,23 @@ throw new Error(`config: \${filePath} has unknown key "\${key}" — allowed: \${
 // Payload: unknown → T | null at every edge (ids stay strings; Map for verdict keys).
 ```
 
-## Judge rotation: 429 cools the account, calls park past cooldowns, budget-bounded
+## Judge rotation: dispatch dial + per-account ceilings; 429 cools the account; cooldown parks stay budget-bounded
 ```typescript
-const state: RotationState = { accounts, cooldownUntil: new Map(), waitBudgetRemainingMs: WAIT_BUDGET_MS };
-// NO sticky pointer — every dispatch scans from account 1; coolAccount(state, i, now) sets cooldownUntil[i] =
-// now + 60s, first-write-wins. All cooling ⇒ parkUntilEligible charges the 180s budget (wake at earliest expiry + 500ms jitter, false when spent). 429 → cool + re-pick (no backoff); 5xx → same account, [1s,2s,4s]; transport error → batch deferred whole.
+const state: RotationState = { accounts, cooldownUntil: new Map(), ceilings, inFlight: new Map(),
+  dispatchCounter: 0, ceilingWaiters: [], waitBudgetRemainingMs: WAIT_BUDGET_MS };
+// NO sticky pointer — every dispatch scans FROM the dial (dispatchCounter % poolSize), skipping cooling AND
+// at-ceiling accounts; a claim moves the dial just past the claimed account, so consecutive claims land on
+// consecutive hosts (the first N dispatches of a run hit N distinct accounts). claim/release brackets every
+// HTTP attempt; release runs in the attempt's finally, so every exit path frees its slot exactly once.
+// coolAccount(state, i, now) sets cooldownUntil[i] = now + 60s, first-write-wins; a FRESH stamp also wakes
+// parked ceiling waiters (capacity shrank). An all-at-ceiling pick (nothing cooling) parks on the
+// release-waiter queue at ZERO budget charge; ONLY cooldown parks draw the 180s budget (parkUntilEligible:
+// charge-before-sleep, wake at earliest active expiry + 500ms jitter, false when spent) and can convert to
+// the exhaustion alarm. 429 → cool + rewind (no backoff); 5xx → same account [1s,2s,4s] via the frame-local
+// pinnedStart seat (the backoff sleep runs with the slot released); transport error → batch deferred whole.
+// Pool width = Σ per-account ceilings. The ceilings come from state/judge-ceilings.json — the committed,
+// degrade-everything reader (src/judge-ceilings.ts loadAccountCeilings: absent/malformed floors every
+// account at ceiling 1 with one warning naming the baseUrl; it never fails a run).
 // Terminal RETURNED, never thrown in the core; judgePosts drains, then throws AFTER Promise.all: ONE alarm email, exit(1).
 ```
 
@@ -148,9 +161,9 @@ function stateTempPath(dir: string, nowMs = Date.now()): string {
 
 <important if="you are adding an LLM account to the judge pool">
 ## Adding an LLM Account
-1. Edit the `LLM_ACCOUNTS` GitHub secret: JSON array of `{baseUrl, apiKey, model}` — array order IS trial order, most reliable first
-2. No code change: `parseLlmAccounts` validates shape fail-visibly (`LLM_ACCOUNTS[i].<field>` in the error); rotation picks the pool up automatically; each dispatch scans from account 1
-3. Optionally re-measure: run the probe — see `.rpiv/guidance/scripts/architecture.md` — and paste the reading into `JUDGE_CONCURRENCY` in watch.yml
+1. Edit the `LLM_ACCOUNTS` GitHub secret: JSON array of `{baseUrl, apiKey, model}` — the dispatch dial starts each call at the next account, so pool order is a starting seat, not a trial order
+2. No code change: `parseLlmAccounts` validates shape fail-visibly (`LLM_ACCOUNTS[i].<field>` in the error); rotation picks the pool up automatically; a new account without a committed reading is capped at ceiling 1 until the next probe
+3. Optionally re-measure: dispatch the probe — it writes `state/judge-ceilings.json` and the probe job commits it (see `.rpiv/guidance/scripts/architecture.md`, "Running the Judge Probe and Applying the Reading")
 4. Failure signature: the exhaustion alarm lists a dead account as `account N (<baseUrl>)` (1-based position)
 </important if>
 

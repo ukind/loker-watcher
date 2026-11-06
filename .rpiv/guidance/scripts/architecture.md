@@ -1,10 +1,10 @@
 # scripts/ — production commit-back script, endpoint probe + agent hooks
 
 ## Responsibility
-Eight files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of watch.yml's Commit state step, executed by the only hosted write path; `probe-judge.ts` measures the LLM endpoint's latency and concurrency ceiling from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `setup-curl-impersonate.ts` is the one-command curl-impersonate setup (checksum-pinned download + .env wire); `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
+Eight files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of BOTH commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `setup-curl-impersonate.ts` is the one-command curl-impersonate setup (checksum-pinned download + .env wire); `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
 
 ## Invokers
-- **commit-state-rebase.sh**: watch.yml's Commit state step only — invoked EXACTLY ONCE (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
+- **commit-state-rebase.sh**: TWO invokers, one call each — watch.yml's Commit state step and the probe job's Commit ceilings step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
 - **probe-judge.ts**: the dispatch-only `probe` GATE job in watch.yml, or locally `npx tsx scripts/probe-judge.ts` (needs `LLM_ACCOUNTS`; loads `watcher.config.json` at startup, so run from the repo root)
 - **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts / setup-curl-impersonate.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` / `setup-curl` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm, loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session, setup-curl = exit 1 on any failure (every message names the playwright escape hatch)
 - **hooks/**: `.claude/settings.json` only — PreToolUse matcher `Bash` → gate, PostToolUse matcher `Edit|Write` → formatter. NOT husky: husky runs only `lint-staged`
@@ -13,9 +13,12 @@ Eight files, deliberately separate from src/ (the production watcher): `commit-s
 ```
 commit-state-rebase.sh       # bash, set -e self-owned; OUTSIDE typecheck + lint + lint-staged
                              #   (biome never sees .sh); LF-pinned by .gitattributes; offline
-                             #   spawnSync-tested by tests/commit-state-rebase.test.ts
+                             #   spawnSync-tested by tests/commit-state-rebase.test.ts; conflict
+                             #   skips = set membership over the two committed state files
 probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (keywords + reasoningEffort for the
                              #   real payload), buildBulkMessages + resolveJudgeConfig (+ Post type) from src;
+                             #   writes state/judge-ceilings.json (writeCeilingsAtomic + JUDGE_CEILINGS_PATH,
+                             #   live-only before the dead gate); INSIDE typecheck + lint + lint-staged
                              #   INSIDE typecheck + lint + lint-staged
 fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect free); exports fetchTick /
                              #   pushPayload / handleLegDeadEpisode / guardCheckout; tick = preflight
@@ -50,13 +53,19 @@ for (const level of [2, 4]) {                 // never fires a level the previou
   if (result.ok < level) return level / 2;    // ceiling = last fully-clean level — no floor, no Math.max
 }
 return 4;                                     // only a fully clean 2→4 ramp reads 4
+// per account, after the ramp: the file key is the trimmed baseUrl (resolveCeilings trims both sides)
+ceilings[account.baseUrl.trim()] = ceiling;
+// AFTER the account loop, BEFORE the dead gate — live-only, whole file (no merge, no staleness):
+await writeCeilingsAtomic(ceilings, JUDGE_CEILINGS_PATH);
+if (dead.length > 0) process.exit(1);         // a red gate skips the Commit ceilings step
 ```
 
 ## Exit-code contracts are the interface
 ```
-commit-state-rebase.sh      exit 0 = pushed; exit 1 = non-state conflict abort or second push
-                            failure — watch.yml's step shell consumes it with no wrapper
-probe-judge.ts              exit 1 on any failed leg, auth-dead 401/403, or ceiling < 1 — the probe job is a gate, so this reddens the dispatch run
+commit-state-rebase.sh      exit 0 = pushed; exit 1 = a conflict outside the committed state set
+                            (state/seen-posts.json, state/judge-ceilings.json) or a second push
+                            failure — BOTH invokers' step shells consume it with no wrapper
+probe-judge.ts              exit 1 on any failed leg, auth-dead 401/403, or ceiling < 1 — the probe job is a gate, so this reddens the dispatch run; the ceilings write happens BEFORE the gate, so even a red run recorded its readings
 fetch-linkedin.ts           exit 1 on a mis-homed checkout (branch ≠ main or dirty tree — guardCheckout, BEFORE
                             any fetch), on leg-dead (after the ONE episode alarm), or a failed push — the one-off entry
 curl/watch entries          watch-linkedin.ts never exits on leg-dead; probe-linkedin.ts exits 1 on leg-dead/short/fault (gate)
@@ -86,14 +95,14 @@ process.exit(0);                              // allow
 - Weak success check: a 2xx body counts as ok if it merely `includes("{")` — no verdict parsing
 - Gate regexes are a seatbelt, not a sandbox: `git push -f` evades, `--force-with-lease` is caught, `tee` evades the state-file rule
 
-<important if="you are running the judge probe or changing judge concurrency">
+<important if="you are running the judge probe or changing judge ceilings">
 ## Running the Judge Probe and Applying the Reading
 1. Env: `LLM_ACCOUNTS` = JSON array of `{baseUrl, apiKey, model}` (every account is walked; each must pass)
 2. Run: Actions → watch → Run workflow (dispatch runs the probe job), or locally `npx tsx scripts/probe-judge.ts` from the repo root (it loads `watcher.config.json` at startup)
 3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the 2→4 ramp (~6 calls total)
 4. Read each account's summary line `probe: account N (<baseUrl>) — minimal=… bulk=… bulkAgain=… ceiling=N` — no floor; a failed, auth-dead (401/403), or broken-ramp (ceiling 0) account exits 1; 429-refused legs are busy, not dead
-5. Apply: paste N into the quoted `JUDGE_CONCURRENCY` literal in watch.yml's Run watcher step, updating its `probe run <id>` evidence comment
-6. Semantics downstream: `parseJudgeConcurrency` — absent/blank → 4, present-but-invalid → throws (fail-visible)
+5. Apply: nothing to paste — the probe writes `state/judge-ceilings.json` (whole file, before the gate) and the Commit ceilings step pushes it; a missing entry floors that account at ceiling 1 with one warning
+6. Semantics downstream: `resolveCeilings` trims both sides when matching keys; a red-gate probe skips the commit, so the file keeps the last green reading; the file never fails a run
 </important if>
 
 <important if="you are adding a hook script">

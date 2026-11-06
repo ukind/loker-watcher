@@ -12,14 +12,16 @@ keywords, and emails new matches as a plain-text digest.
 LinkedIn posts come from an always-on loop on the developer's PC (`npm run
 watch-linkedin`), which fetches the voyager search API and pushes
 `state/linkedin-posts.json`; the hosted run reads that payload.
-The only persistence is `state/seen-posts.json`, which the workflow commits
-back after match runs.
+Committed state is two files, one writer each: `state/seen-posts.json`
+(committed back by the workflow after match runs) and
+`state/judge-ceilings.json` (probe-measured judge ceilings, committed by
+the probe job).
 
 ## Commands
 
 - `npm test` - unit tests (node:test runner via tsx, offline and deterministic)
 - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
-- `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, and ramp concurrent calls to find the concurrency ceiling (needs `LLM_*` env vars)
+- `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, ramp concurrent calls to find each account's ceiling, and write `state/judge-ceilings.json` (the probe job commits it; needs `LLM_*` env vars)
 - `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, `scripts/fetch-linkedin.ts`, `scripts/watch-linkedin.ts`, `scripts/probe-linkedin.ts`, `scripts/login-linkedin.ts`, and `scripts/hooks`
 - `npm run format` - Biome format in place
 - `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars;
@@ -102,12 +104,20 @@ against the configured keywords, email digest, commit state.
   cooling accounts; when all are cooling, calls park up to a shared 180s
   wait budget before the pool converts to exhaustion; 5xx retries the same
   account with backoff; an exhausted pool throws a typed error that sends
-  one alarm email and exits 1), up to `JUDGE_CONCURRENCY` batches run at
-  once, bulk misses fall back to single-post calls, and a batch the
+  one alarm email and exits 1), dispatches spread across the pool — each
+  starts at the next account and every account is capped at its
+  probe-measured ceiling from `state/judge-ceilings.json` — so batches
+  drain through a pool as wide as the ceilings sum; bulk misses fall back
+  to single-post calls, and a batch the
   endpoint does not answer is deferred whole; returns
   `{relevant, locationOk}` per post
 - `src/judge-rotation.ts` - account-pool rotation primitives: the cooldown
-  map state, the tagged exhaustion error, and the park helper
+  + in-flight + ceilings state, the dispatch dial (claim/release, ceiling
+  waiters), the tagged exhaustion error, and the park helper
+- `src/judge-ceilings.ts` - the committed ceilings file reader
+  (degrade-everything: absent or malformed `state/judge-ceilings.json`
+  floors every account at ceiling 1 with one warning, never fails a run)
+  and the probe's atomic writer
 - `src/judge-parse.ts` - verdict parsers for the judge's responses
   (single-post and bulk)
 - `src/pool.ts` - shared bounded worker pool (`runPool`) used by the judge
