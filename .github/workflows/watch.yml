@@ -27,11 +27,21 @@ jobs:
     # calls each): an auth-dead key or a failed leg fails this job, so a
     # rotten key in the pool reddens the dispatch run instead of passing
     # unseen. 429-refused legs are reported as busy, not dead — throttling
-    # is data; the watch job is the real gate for it.
+    # is data; the watch job is the real gate for it. The measured
+    # per-account ceilings commit to state/judge-ceilings.json (live-only,
+    # before the dead gate) and the Commit ceilings step pushes them — the
+    # watch job's spread consumes that file (src/judge-ceilings.ts). A red
+    # gate skips the commit (fail-fast): the file lands only from a green
+    # probe run.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        # The Commit ceilings step rebases onto main (the same
+        # commit-state-rebase.sh body as the watch job): a shallow clone
+        # cannot find the merge base and add/add-conflicts the whole tree.
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -45,14 +55,38 @@ jobs:
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
         run: npx tsx scripts/probe-judge.ts
 
+      - name: Commit ceilings
+        # The F021 head shape from the watch job's Commit state step,
+        # minus the jq delta (the ceilings write is whole-file): bot
+        # identity, the ceilings-file-only add, the no-op guard, then the
+        # tested script — rebase, committed-state conflict skips, lease
+        # push, single retry. The [-f] guard covers a probe that died
+        # before its write (the probe step already failed the job; this
+        # step cannot normally run on a red gate).
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f state/judge-ceilings.json ]; then
+            git add state/judge-ceilings.json
+          fi
+          if git diff --cached --quiet; then
+            echo "ceilings unchanged; nothing to commit"
+            exit 0
+          fi
+          git commit -m "judge: probe-measured ceilings"
+          bash scripts/commit-state-rebase.sh
+
   watch:
     runs-on: ubuntu-latest
-    # Width-4 judge (the probe job's reading): 30 bulk calls clear in ~8
-    # waves, and the 40-call fallback budget adds about a minute. Measured
-    # 2026-10-27: 8-wide bursts drew HTTP 429s from the endpoint, 4-wide
-    # ran clean. The 8-minute cap keeps a hung run under the 10-minute
-    # cron interval — it dies before the next tick queues (cancel-in-
-    # progress now drops a superseded run instead of queueing it).
+    # Judge width is Σ per-account ceilings (probe-measured, committed to
+    # state/judge-ceilings.json — src/judge-ceilings.ts): there is no
+    # single concurrency knob anymore. The dispatch spread keeps each
+    # account at its own cap, the 429 rotation stays the correctness net,
+    # and an absent ceilings file floors every account at 1 — correct but
+    # slow until the next probe dispatch commits readings. The 8-minute
+    # cap keeps a hung run under the 10-minute cron interval — it dies
+    # before the next tick queues (cancel-in-progress now drops a
+    # superseded run instead of queueing it).
     # Timeout envelope arithmetic (F023): 480s job cap - 60-100s setup
     # prologue (checkout + npm ci + Playwright install; the ms-playwright
     # cache removes 30-60s of it) - 60s abort tail leaves ~320-360s for the
@@ -99,7 +133,6 @@ jobs:
 
       - name: Run watcher
         env:
-          JUDGE_CONCURRENCY: "4"   # probe run 40455686221 reading, z.ai burst-verified — paste a fresh measuring run's reading
           HEARTBEAT_ENABLED: ${{ vars.HEARTBEAT_ENABLED }}   # zero-match status email kill switch; unset = enabled
           THREADS_SESSION_STATE: ${{ secrets.THREADS_SESSION_STATE }}
           # The LinkedIn leg needs no secret here: the PC loop pushes

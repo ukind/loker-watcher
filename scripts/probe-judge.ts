@@ -12,7 +12,15 @@
  * fixture set of real captured post texts. It ramps concurrent bulk calls
  * per account, stopping once 4 are verified: Z.AI publishes no concurrency
  * number (tier-based, dynamically adjusted, higher off-peak), and gating
- * every account keeps quota burn low — the shipped JUDGE_CONCURRENCY is 4.
+ * every account keeps quota burn low.
+ *
+ * Revision 2026-11-06: the measured per-account ceilings no longer feed a
+ * single global width knob — the probe commits them to
+ * state/judge-ceilings.json (writeCeilingsAtomic, live-only, BEFORE the
+ * dead gate: even a red run records what it measured) and the dispatch run
+ * spreads judge dispatches across the pool under those caps
+ * (src/judge-ceilings.ts). A missing entry floors that account at ceiling 1
+ * with one warning; nothing here reads the file back.
  *
  * Usage:
  *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
@@ -22,6 +30,8 @@
  * watch job itself is the real gate for throttling.
  */
 import { loadWatcherConfig } from "../src/config-file.js";
+import { JUDGE_CEILINGS_PATH } from "../src/config.js";
+import { writeCeilingsAtomic } from "../src/judge-ceilings.js";
 import { type LlmAccount, buildBulkMessages, resolveJudgeConfig } from "../src/judge.js";
 import type { Post } from "../src/types.js";
 
@@ -130,8 +140,9 @@ async function rampLevel(
 }
 
 /**
- * Ramp 2 -> 4 and stop: the shipped JUDGE_CONCURRENCY is 4, so four
- * concurrent verified calls are enough to confirm the width per account.
+ * Ramp 2 -> 4 and stop: four concurrent verified calls are enough to
+ * confirm the ceiling per account — the spread enforces this number per
+ * account; there is no global width knob anymore.
  * A refused level reads the ceiling below it; a failed call means a
  * broken endpoint, not a ceiling (return 0). The old 2->4->8->16 walk
  * measured one account for tuning; this probe gates every account, and
@@ -187,6 +198,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const ceilings: Record<string, number> = {};
   const dead: string[] = [];
   for (const [index, account] of accounts.entries()) {
     const label = `account ${index + 1} (${account.baseUrl})`;
@@ -218,6 +230,10 @@ async function main(): Promise<void> {
     const again = await timed(`${label} bulk call again (variance check)`, bulkPayload, account);
 
     const ceiling = await findConcurrencyCeiling(bulkPayload, account);
+    // File key = trimmed baseUrl (resolveCeilings trims both sides). Twins
+    // sharing a baseUrl share one reading — last write wins; one entry per
+    // endpoint is the file's shape.
+    ceilings[account.baseUrl.trim()] = ceiling;
     const probe: AccountProbe = {
       position: index + 1,
       label,
@@ -234,6 +250,16 @@ async function main(): Promise<void> {
       `probe: ${label} — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
     );
   }
+
+  // Live-only persistence BEFORE the dead gate: this run's readings ARE the
+  // whole file — no merge with previous content, no staleness logic (the
+  // probe runs dispatch-only, so readings legitimately age for days). A
+  // dead account's 0 (broken ramp) floors at 1 in the reader with a
+  // warning — the honest signal for a rotten key.
+  await writeCeilingsAtomic(ceilings, JUDGE_CEILINGS_PATH);
+  console.log(
+    `probe: committed ${Object.keys(ceilings).length} ceiling(s) to ${JUDGE_CEILINGS_PATH}`,
+  );
 
   if (dead.length > 0) {
     console.error("probe: DEAD account(s) — failing the gating probe:");
