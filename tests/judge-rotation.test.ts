@@ -9,11 +9,25 @@ import { describe, it } from "node:test";
 import {
   type RotationExhausted,
   type RotationState,
+  claimAccount,
+  coolAccount,
+  earliestCooldown,
   isRotationExhausted,
+  pickEligibleAccount,
+  releaseAccount,
+  waitCeilingSlot,
 } from "../src/judge-rotation.js";
 import { type LlmAccount, judgePost, judgePosts } from "../src/judge.js";
 import type { Post } from "../src/types.js";
-import { KEYWORDS, bulkContent, bulkPost, id19, ok, singleAccount } from "./judge-helpers.js";
+import {
+  KEYWORDS,
+  bulkContent,
+  bulkPost,
+  fiveAccounts,
+  id19,
+  ok,
+  singleAccount,
+} from "./judge-helpers.js";
 
 /** Two-account pool with distinct hosts — tests branch on URL, never call order. */
 function twoAccounts(): LlmAccount[] {
@@ -34,13 +48,22 @@ function threeAccounts(): LlmAccount[] {
 }
 
 /** Fresh run-level state for direct judgePost calls. Canonical copy — the
- * waitBudgetRemainingMs literal mirrors the module-private WAIT_BUDGET_MS.
- * tests/judge.test.ts keeps a
- * mirroring copy for the residual its that call it directly (the two
- * reasoning_effort cases and the F022 single-post case). */
-function freshState(accounts: LlmAccount[]): RotationState {
-  // waitBudgetRemainingMs mirrors the module-private 3-minute WAIT_BUDGET_MS.
-  return { accounts, cooldownUntil: new Map(), waitBudgetRemainingMs: 180_000 };
+ *  waitBudgetRemainingMs literal mirrors the module-private WAIT_BUDGET_MS.
+ *  ceilings default: an empty map reads as ceiling 1 per account (the
+ *  pick's ?? 1 floor) — the same degrade as an absent ceilings file. */
+function freshState(
+  accounts: LlmAccount[],
+  ceilings: ReadonlyMap<number, number> = new Map(),
+): RotationState {
+  return {
+    accounts,
+    cooldownUntil: new Map(),
+    ceilings,
+    inFlight: new Map(),
+    dispatchCounter: 0,
+    ceilingWaiters: [],
+    waitBudgetRemainingMs: 180_000,
+  };
 }
 
 /**
@@ -344,7 +367,10 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         KEYWORDS,
         mockFetch,
         "medium",
-        4,
+        new Map([
+          [0, 2],
+          [1, 2],
+        ]),
         Date.now,
         inertSleep,
       );
@@ -428,7 +454,10 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       KEYWORDS,
       mockFetch,
       "medium",
-      4,
+      new Map([
+        [0, 2],
+        [1, 2],
+      ]),
       Date.now,
       inertSleep,
     );
@@ -454,7 +483,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
     assert.equal(auths.length, 1); // zero retries
     assert.match(auths[0] ?? "", /key-1$/); // the scan never moved — nothing cooled
   });
-  it("cools each account once under concurrent 429s and keeps the record pool-ordered", async () => {
+  it("caps the burst: one dispatch per account at ceiling 1, record stays pool-ordered", async () => {
     const posts = Array.from({ length: 40 }, (_, i) => bulkPost(id19(i + 1))); // 4 batches
     const auths: string[] = [];
     const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
@@ -472,7 +501,11 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         KEYWORDS,
         mockFetch,
         "medium",
-        4,
+        new Map([
+          [0, 1],
+          [1, 1],
+          [2, 1],
+        ]),
         Date.now,
         inertSleep,
       );
@@ -482,61 +515,34 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
 
     assert.ok(isRotationExhausted(caught));
     const failures = (caught as RotationExhausted).failures;
-    // The synthesizer's proof: exactly one record per account, in pool
-    // order — the map collapsed every concurrent 429 into one cooling
-    // window per account, and every account was still cooling at the
-    // terminal conversion.
     assert.deepEqual(
       failures.map((f) => f.account),
       [1, 2, 3],
     );
     assert.ok(failures.every((f) => f.reason === "HTTP 429"));
-    // The dispatch cascade still visited later accounts from more than one
-    // worker: a vacuous scan (one worker walking the pool alone) would
-    // serialize the burst behind a single worker.
+    // Ceiling-1 caps bind: each account dispatched EXACTLY once before the
+    // pool went fully cooling — the surplus workers parked on the release
+    // queue at zero budget charge, then re-routed into the budget park.
     const count = (key: string): number => auths.filter((auth) => auth.includes(key)).length;
-    assert.ok(count("key-2") >= 2, `account 2 dispatched ${count("key-2")} time(s)`);
-    assert.ok(count("key-3") >= 2, `account 3 dispatched ${count("key-3")} time(s)`);
-    // Per-worker monotonicity: no call on a lower account's key after the
-    // first call on a higher one — cooling windows outlive the burst.
-    const firstKey2 = auths.findIndex((auth) => auth.includes("key-2"));
-    const lastKey1 = auths.map((auth) => auth.includes("key-1")).lastIndexOf(true);
-    assert.ok(firstKey2 > lastKey1);
-    const firstKey3 = auths.findIndex((auth) => auth.includes("key-3"));
-    const lastKey2 = auths.map((auth) => auth.includes("key-2")).lastIndexOf(true);
-    assert.ok(firstKey3 > lastKey2);
+    assert.equal(count("key-1"), 1);
+    assert.equal(count("key-2"), 1);
+    assert.equal(count("key-3"), 1);
   });
-  it("restarts at account 1 once the cooldown expires (batch-local scan)", async () => {
-    const posts = Array.from({ length: 30 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
+  it("cycles the dispatch dial back to account 1 after a full lap — consecutive dispatches land on consecutive accounts", async () => {
+    const state = freshState(twoAccounts());
     const auths: string[] = [];
-    let tick = 0;
-    const now = (): number => tick;
     const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
       const headers = (options as { headers: Record<string, string> }).headers;
       auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-      const body = JSON.parse((options as { body: string }).body) as {
-        messages: Array<{ content: string }>;
-      };
-      const content = body.messages[1]?.content ?? "";
-      const firstId = content.match(/\b\d{16,}\b/)?.[0] ?? "";
-      const batch = Math.floor(posts.findIndex((p) => p.id === firstId) / 10);
-      if (String(url).includes("account-one") && batch === 0) {
-        tick = 1_000; // the 429 lands at t=1s; account 1 cools until t=61s
-        return new Response("Too Many Requests", { status: 429 });
-      }
-      // Each answered call completes later in wall-clock time: batch 0's
-      // answer still lands inside the cooldown window, batch 1's lands
-      // after it — so batch 2's dispatch scan finds account 1 eligible.
-      tick = batch === 0 ? 2_000 : 62_000;
-      const ids = [...content.matchAll(/id (\d+) by @/g)].map((match) => match[1] ?? "");
-      return ok(bulkContent(ids));
+      return ok('{"relevant": true, "locationOk": true}');
     }) as unknown as typeof fetch;
-    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", 1, now);
-    assert.equal(result.judged.length, 30);
-    assert.match(auths[0] ?? "", /key-1$/); // batch 0 first try
-    assert.match(auths[1] ?? "", /key-2$/); // batch 0 retry after the 429
-    assert.match(auths[2] ?? "", /key-2$/); // batch 1 at t=2s — account 1 still cooling
-    assert.match(auths[3] ?? "", /key-1$/); // batch 2 at t=62s — scan restarts at account 1
+    await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch, "medium", Date.now);
+    await judgePost(bulkPost(id19(2)), state, KEYWORDS, mockFetch, "medium", Date.now);
+    await judgePost(bulkPost(id19(3)), state, KEYWORDS, mockFetch, "medium", Date.now);
+    assert.match(auths[0] ?? "", /key-1$/);
+    assert.match(auths[1] ?? "", /key-2$/);
+    assert.match(auths[2] ?? "", /key-1$/); // the dial wrapped after a full lap
+    assert.equal(state.dispatchCounter, 3 % 2); // the dial sits just past the last claim
   });
   it("parks through an all-cooling window and completes the backlog with zero real delay", async () => {
     const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches
@@ -569,7 +575,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       KEYWORDS,
       mockFetch,
       "medium",
-      1,
+      new Map([[0, 1]]),
       now,
       inertSleep,
     );
@@ -606,7 +612,16 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
 
     let caught: unknown;
     try {
-      await judgePosts(posts, singleAccount, KEYWORDS, mockFetch, "medium", 4, now, inertSleep);
+      await judgePosts(
+        posts,
+        singleAccount,
+        KEYWORDS,
+        mockFetch,
+        "medium",
+        new Map([[0, 4]]),
+        now,
+        inertSleep,
+      );
     } catch (error) {
       caught = error;
     }
@@ -616,5 +631,230 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       (caught as RotationExhausted).failures.map((f) => f.account),
       [1],
     );
+  });
+});
+
+describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait", () => {
+  /** Recording fetch: pushes "host key", answers bulk by echoing listed ids. */
+  function spreadAnswering(auths: string[]): typeof fetch {
+    return (async (url: unknown, options?: unknown): Promise<Response> => {
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
+        (match) => match[1] ?? "",
+      );
+      return ok(bulkContent(ids));
+    }) as unknown as typeof fetch;
+  }
+
+  it("first 5 judge calls of a 50-post run hit 5 distinct accounts (FRD acceptance)", async () => {
+    const posts = Array.from({ length: 50 }, (_, i) => bulkPost(id19(i + 1))); // 5 batches
+    const auths: string[] = [];
+    const result = await judgePosts(
+      posts,
+      fiveAccounts,
+      KEYWORDS,
+      spreadAnswering(auths),
+      "medium",
+      new Map(fiveAccounts.map((_, i) => [i, 1] as const)),
+    );
+    assert.equal(result.judged.length, 50);
+    assert.deepEqual(result.skippedPostIds, []);
+    assert.equal(new Set(auths.slice(0, 5)).size, 5);
+  });
+
+  it("per-account peaks stay at or under the ceilings across both judge phases", async () => {
+    const posts = Array.from({ length: 30 }, (_, i) => bulkPost(id19(i + 1))); // 3 batches
+    const peaks = new Map<number, number>([
+      [0, 0],
+      [1, 0],
+    ]);
+    const inFlight = new Map<number, number>([
+      [0, 0],
+      [1, 0],
+    ]);
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const index = String(url).includes("account-one") ? 0 : 1;
+      const current = (inFlight.get(index) ?? 0) + 1;
+      inFlight.set(index, current);
+      peaks.set(index, Math.max(peaks.get(index) ?? 0, current));
+      await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
+      inFlight.set(index, (inFlight.get(index) ?? 1) - 1);
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      if (content.includes("Judge each post below")) {
+        return ok("{}"); // bulk answers empty — every post falls back
+      }
+      return ok('{"relevant": true, "locationOk": true}');
+    }) as unknown as typeof fetch;
+    const result = await judgePosts(
+      posts,
+      twoAccounts(),
+      KEYWORDS,
+      mockFetch,
+      "medium",
+      new Map([
+        [0, 2],
+        [1, 1],
+      ]),
+    );
+    assert.equal(result.judged.length, 30);
+    assert.deepEqual(result.skippedPostIds, []);
+    // Both hosts used (the dial spread), neither host over its ceiling.
+    assert.ok((peaks.get(0) ?? 0) >= 1);
+    assert.ok((peaks.get(1) ?? 0) >= 1);
+    assert.ok((peaks.get(0) ?? 0) <= 2, `account 1 peaked at ${peaks.get(0)} > ceiling 2`);
+    assert.ok((peaks.get(1) ?? 0) <= 1, `account 2 peaked at ${peaks.get(1)} > ceiling 1`);
+  });
+
+  it("an all-at-ceiling pick parks with ZERO budget charge and wakes on release", async () => {
+    const state = freshState(singleAccount, new Map([[0, 1]]));
+    let releaseFirst!: (response: Response) => void;
+    const gate = new Promise<Response>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let calls = 0;
+    const mockFetch = (async (): Promise<Response> => {
+      calls += 1;
+      if (calls === 1) return gate;
+      return ok('{"relevant": true, "locationOk": true}');
+    }) as unknown as typeof fetch;
+    const sleeps: number[] = [];
+    const inertSleep = (ms: number): Promise<void> => {
+      sleeps.push(ms);
+      return Promise.resolve();
+    };
+
+    const first = judgePost(
+      bulkPost(id19(1)),
+      state,
+      KEYWORDS,
+      mockFetch,
+      "medium",
+      Date.now,
+      inertSleep,
+    );
+    const second = judgePost(
+      bulkPost(id19(2)),
+      state,
+      KEYWORDS,
+      mockFetch,
+      "medium",
+      Date.now,
+      inertSleep,
+    );
+    await new Promise<void>((resolve) => setTimeout(resolve, 1)); // first in flight; second parked
+
+    assert.equal(state.waitBudgetRemainingMs, 180_000); // zero budget charge
+    assert.deepEqual(sleeps, []); // no park sleep fired
+    assert.equal(state.ceilingWaiters.length, 1);
+
+    releaseFirst(ok('{"relevant": true, "locationOk": true}'));
+    assert.deepEqual(await first, { relevant: true, locationOk: true });
+    assert.deepEqual(await second, { relevant: true, locationOk: true });
+    assert.equal(state.waitBudgetRemainingMs, 180_000); // still untouched after the wake
+    assert.equal(state.ceilingWaiters.length, 0);
+  });
+
+  it("skips the designated account when the dial lands on the cooling one", async () => {
+    const state = freshState(twoAccounts());
+    const auths: string[] = [];
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const headers = (options as { headers: Record<string, string> }).headers;
+      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      return ok('{"relevant": true, "locationOk": true}');
+    }) as unknown as typeof fetch;
+    state.cooldownUntil.set(0, Date.now() + 60_000); // the DESIGNATED seat (dial 0) is cooling
+    const verdict = await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch, "medium");
+    assert.deepEqual(verdict, { relevant: true, locationOk: true });
+    assert.match(auths[0] ?? "", /key-2$/); // the scan skipped past the cooling designated seat
+    assert.equal(state.dispatchCounter, 2); // the claim moved the dial past account 2
+  });
+});
+
+describe("rotation primitives: dial, claim/release, ceiling waiters", () => {
+  it("pick starts at the dial and wraps; claim moves the dial past the claimed account", () => {
+    const state = freshState(threeAccounts());
+    state.dispatchCounter = 4; // 4 % 3 = 1 — the scan starts at account 2
+    const picked = pickEligibleAccount(state, 0);
+    assert.equal(picked?.index, 1);
+    claimAccount(state, 1);
+    assert.equal(state.dispatchCounter, 2);
+    assert.equal(state.inFlight.get(1), 1);
+  });
+
+  it("an undefined pick never moves the dial (D6)", () => {
+    const state = freshState(twoAccounts());
+    state.dispatchCounter = 1;
+    state.cooldownUntil.set(0, 10_000);
+    state.cooldownUntil.set(1, 20_000);
+    assert.equal(pickEligibleAccount(state, 5_000), undefined);
+    assert.equal(state.dispatchCounter, 1);
+  });
+
+  it("the pick skips at-ceiling accounts even when they are not cooling", () => {
+    const state = freshState(
+      twoAccounts(),
+      new Map([
+        [0, 1],
+        [1, 1],
+      ]),
+    );
+    state.inFlight.set(0, 1);
+    const picked = pickEligibleAccount(state, 0);
+    assert.equal(picked?.index, 1);
+  });
+
+  it("release decrements, wakes the queue, and clamps at zero", async () => {
+    const state = freshState(singleAccount);
+    claimAccount(state, 0);
+    const woke = waitCeilingSlot(state);
+    let resolved = false;
+    void woke.then(() => {
+      resolved = true;
+    });
+    releaseAccount(state, 0);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    assert.equal(resolved, true);
+    assert.equal(state.inFlight.get(0), 0);
+    releaseAccount(state, 0); // double release: clamp, no crash
+    assert.equal(state.inFlight.get(0), 0);
+  });
+
+  it("waitCeilingSlot resolves on a fresh coolAccount stamp, not on a re-stamp", async () => {
+    const state = freshState(twoAccounts());
+    const first = waitCeilingSlot(state);
+    let firstWoke = false;
+    void first.then(() => {
+      firstWoke = true;
+    });
+    coolAccount(state, 0, 1_000); // fresh stamp wakes the queue (D4)
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    assert.equal(firstWoke, true);
+
+    const second = waitCeilingSlot(state);
+    let secondWoke = false;
+    void second.then(() => {
+      secondWoke = true;
+    });
+    coolAccount(state, 0, 2_000); // already cooling: first-write-wins, no wake
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    assert.equal(secondWoke, false);
+    releaseAccount(state, 0); // wake the parked waiter so no handle dangles
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  });
+
+  it("earliestCooldown returns the earliest active expiry and ignores expired ones", () => {
+    const state = freshState(threeAccounts());
+    state.cooldownUntil.set(0, 5_000);
+    state.cooldownUntil.set(2, 3_000);
+    state.cooldownUntil.set(1, 1_000); // expired at now 2_000
+    assert.equal(earliestCooldown(state, 2_000), 3_000);
+    assert.equal(earliestCooldown(state, 6_000), undefined);
   });
 });

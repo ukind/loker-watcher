@@ -7,13 +7,7 @@ import {
   loadWatcherConfig,
   resolveSurfaces,
 } from "./config-file.js";
-import {
-  ENV_NAMES,
-  LINKEDIN_PAYLOAD_PATH,
-  STATE_PATH,
-  isHeartbeatEnabled,
-  runUrlFromEnv,
-} from "./config.js";
+import { LINKEDIN_PAYLOAD_PATH, STATE_PATH, isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
 import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js";
 /**
  * CLI entry point: the full pipeline (FRD #1-#9; fast-workflow-runtime
@@ -36,11 +30,12 @@ import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js"
 import { extractPosts } from "./extract.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
+import { loadAccountCeilings } from "./judge-ceilings.js";
 import { isRotationExhausted } from "./judge-rotation.js";
 import {
   type JudgedPost,
+  type LlmAccount,
   judgePosts,
-  parseJudgeConcurrency,
   resolveJudgeConfig,
   sleep,
 } from "./judge.js";
@@ -115,6 +110,11 @@ export interface WatcherDeps {
   readonly contextFactory?: ContextFactory;
   /** LinkedIn payload reader (D6 seam). Default: readPayloadPosts — the module owns its degrade contract (D13). */
   readonly linkedinFetch?: (payloadPath: string, now: () => number) => Promise<PayloadRead>;
+  /** Judge ceiling resolver (D3 seam, the linkedinFetch shape). Default:
+   *  loadAccountCeilings — the module owns its degrade contract (an absent
+   *  or malformed ceilings file floors every account at ceiling 1 with one
+   *  warning per account; it never fails the run). */
+  readonly judgeCeilings?: (accounts: readonly LlmAccount[]) => Promise<Map<number, number>>;
   /** LLM HTTP transport. Default: global fetch. */
   readonly fetchFn?: typeof fetch;
   /** SMTP transport for the digest and the heartbeat. Default: nodemailer. */
@@ -266,18 +266,24 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   }
   console.log(`state: ${newPosts.length} unseen post(s)`);
 
-  const { value: judgeOutcome, durationMs: judgeMs } = await timeStage(() =>
-    judgePosts(
+  const { value: judgeOutcome, durationMs: judgeMs } = await timeStage(async () => {
+    const judgeAccounts = resolveJudgeConfig(env);
+    // D3 seam: the ceilings resolver mirrors linkedinFetch — injected in
+    // tests, the fs-reading default in production. Its degrade contract
+    // (never throws) keeps an absent state/judge-ceilings.json a quiet
+    // floor-at-1 run.
+    const ceilings = await (deps.judgeCeilings ?? loadAccountCeilings)(judgeAccounts);
+    return judgePosts(
       newPosts,
-      resolveJudgeConfig(env),
+      judgeAccounts,
       config.keywords,
       deps.fetchFn,
       config.reasoningEffort,
-      parseJudgeConcurrency(env[ENV_NAMES.judgeConcurrency]),
+      ceilings,
       now,
       sleepFn,
-    ),
-  );
+    );
+  });
   console.log(`timing: judge ${judgeMs}ms`);
   const { judged, skippedPostIds } = judgeOutcome;
   const matches = judged

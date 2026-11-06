@@ -14,15 +14,19 @@
  * the bulk response fall back to the single-post judgePost (2 attempts).
  * HTTP 429 is account-local: the account cools for a flat 60 seconds
  * (first-write-wins — a 429 costs 60 seconds, not more) and every dispatch
- * scans the pool from account 1, skipping accounts that are still cooling.
- * A 5xx is retried on the same account with bounded backoff before the
- * batch is deferred; a transport error defers immediately without cooling
- * anything. When every account is cooling the run parks in-loop (a shared
- * 3-minute wait budget — ride out rate limits per batch) and, when the
- * budget is spent, throws the tagged RotationExhausted error with a
- * pool-ordered record (one exhaustion email, exit 1 — surfaced by
- * index.ts). Batches drain through a bounded pool of workers
- * sized by the concurrency argument (JUDGE_CONCURRENCY, absent 4) and
+ * starts at the dispatch dial — the next account after the last claim —
+ * skipping accounts that are cooling or at their probe-measured in-flight
+ * ceiling, so the first N dispatches of a run land on N distinct hosts.
+ * An all-at-ceiling pick (nothing cooling) waits for the next release at
+ * ZERO budget charge; only cooldown parks draw the shared 3-minute wait
+ * budget and can convert to the exhaustion alarm. A 5xx is retried on the
+ * same account with bounded backoff before the batch is deferred; a
+ * transport error defers immediately without cooling anything. When every
+ * account is cooling and the budget is spent, the run throws the tagged
+ * RotationExhausted error with a pool-ordered record (one exhaustion
+ * email, exit 1 — surfaced by index.ts). Batches drain through a bounded
+ * pool of workers sized by the pool's total in-flight budget (the sum of
+ * the per-account ceilings, resolved by index.ts and passed in) and
  * reassemble in input order. Posts the bulk response misses fall back to
  * the single-post judgePost through a second pool at the same width, under
  * a per-run FALLBACK_CALL_BUDGET on single-post calls. A post that fails
@@ -35,12 +39,16 @@ import { ENV_NAMES } from "./config.js";
 import { parseBulkVerdicts, parseVerdict } from "./judge-parse.js";
 import {
   type RotationState,
+  claimAccount,
   coolAccount,
+  earliestCooldown,
   failuresFromCooldowns,
   isRotationExhausted,
   parkUntilEligible,
   pickEligibleAccount,
+  releaseAccount,
   rotationExhausted,
+  waitCeilingSlot,
 } from "./judge-rotation.js";
 import { runPool } from "./pool.js";
 import type { JudgeVerdict, Post } from "./types.js";
@@ -55,18 +63,6 @@ const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Posts per bulk judge call. Module constant by design — no config key. */
 const BATCH_SIZE = 10;
-
-/**
- * Bulk calls in flight at once when the caller passes no width. Ships at
- * 4 - the agreed floor, low enough for the lowest documented Z.AI tier.
- * The probe's ramp reads the real ceiling; paste that reading into
- * JUDGE_CONCURRENCY in .github/workflows/watch.yml. Z.AI publishes no
- * number and adjusts the limit dynamically, so the 429 account rotation
- * below is what keeps a stale or optimistic value from costing a run its
- * digest.
- */
-const DEFAULT_JUDGE_CONCURRENCY = 4;
-
 /**
  * Single-post fallback calls one run may spend. Advisor-fixed: the
  * historical cascade (run 40264368939) burned 6.5 job-minutes walking
@@ -183,28 +179,6 @@ export interface JudgeBatchResult {
 }
 
 /**
- * Parse JUDGE_CONCURRENCY (the repo's first numeric env read).
- *
- * Absent or blank -> DEFAULT_JUDGE_CONCURRENCY: local runs and the probe
- * job never set the variable, and watch.yml carries the probe-measured
- * value for production. Present but not a positive integer -> throw naming
- * the variable: a typo must not silently run at the default width
- * (fail-visible - same rule as parseLlmAccounts above).
- */
-export function parseJudgeConcurrency(raw: string | undefined): number {
-  if (raw === undefined || raw.trim().length === 0) {
-    return DEFAULT_JUDGE_CONCURRENCY;
-  }
-  const value = Number(raw.trim());
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(
-      `judge: ${ENV_NAMES.judgeConcurrency} must be a positive integer, got "${raw}"`,
-    );
-  }
-  return value;
-}
-
-/**
  * Resolve the LLM account pool from the environment dictionary.
  * Delegates to parseLlmAccounts — throws naming LLM_ACCOUNTS when the
  * variable is missing, blank, unparsable, or fails any per-account rule.
@@ -302,6 +276,23 @@ type DispatchOutcome<T> =
   | { status: "attemptsExhausted" };
 
 /**
+ * One attempt's decision, returned from inside the release-guarded try so
+ * the finally frees the slot BEFORE the loop acts (D7: the ceiling counts
+ * HTTP requests in flight, not backoff waits — the 5xx sleep and the 429
+ * rewind both run with the slot released). "rewind" re-picks WITHOUT
+ * spending an attempt (a 429 cooled the account); "retry" spends one
+ * (the post ladder's non-retryable status, its transport error, and its
+ * content retry); "backoff" sleeps delayMs after the release, then
+ * retries the same account.
+ */
+type AttemptDirective<T> =
+  | { action: "answered"; value: T }
+  | { action: "defer" }
+  | { action: "rewind" }
+  | { action: "backoff"; delayMs: number }
+  | { action: "retry" };
+
+/**
  * The dispatcher's warn events. Strings are wrapper-owned (D2: byte-exact
  * operator-log compatibility); the core owns only WHEN each fires.
  * accountNo and attemptNo are 1-based display numbers.
@@ -320,14 +311,21 @@ interface DispatchWarns {
 /**
  * The shared HTTP retry loop behind judgeBatch and judgePost (F008).
  * Per attempt, in order: pool scan at the loop top BEFORE the first await
- * (the same sync window as the old pointer read); park-and-re-pick when
- * every account is cooling (a spent shared budget returns "exhausted" at
- * the loop top, OUTSIDE the try — D6); payload built fresh per attempt (a
- * 429 rotation swaps the account mid-loop); fetch with the request
- * timeout; then the status ladder — 429 cools the account and rewinds (no
- * attempt spent), a 5xx backs off on the SAME account when backoff5xx is
- * set, and every other non-ok status goes to the wrapper's statusFailure
- * warn before the core defers (batch) or retries (post).
+ * (starting at the dispatch dial — or the pinned 5xx seat — skipping
+ * cooling AND at-ceiling accounts); on an undefined pick, split the two
+ * blocked flavors (D4) — an active cooldown parks through the shared
+ * budget (a spent budget returns "exhausted" at the loop top, OUTSIDE the
+ * try — D6), and an all-at-ceiling pick waits on the release queue at
+ * ZERO budget charge; then claim in the same sync window as the pick and
+ * run the attempt inside a release-guarded try (the finally covers every
+ * exit: answered, deferred, rewind, backoff, retry, transport, throw).
+ * The status ladder — 429 cools the account and rewinds, a 5xx backs off
+ * on the SAME account when backoff5xx is set (the handler pins the seat —
+ * the post-sleep re-pick starts there, so a 5xx never rotates), and every
+ * other non-ok status goes to the wrapper's statusFailure warn — returns
+ * an AttemptDirective instead of acting, so the finally releases the slot
+ * BEFORE the backoff sleep runs and BEFORE the rewind re-picks (D7: the
+ * ceiling counts HTTP requests in flight, not backoff waits).
  *
  * Wrapper-owned divergence (the eight analyzer-inventoried axes): the
  * payload (response_format rides the bulk path only), the attempt bound,
@@ -370,100 +368,144 @@ async function dispatchLlmCall<T>(options: {
     warns,
     onContent,
   } = options;
+  // A 5xx backoff pins its seat: after the sleep the retry re-picks
+  // STARTING at the backed-off account — a 5xx never rotates (the
+  // endpoint was busy; the account is not the problem). Cleared by the
+  // very next pick.
+  let pinnedStart: number | undefined;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     // Pool scan at the top of every attempt, BEFORE the first await — the
     // same sync window as the old pointer read. attemptIndex is the
-    // dispatch-time observation — the account this call actually hit — and
-    // is what the cool guard stamps when the 429 comes back.
-    const picked = pickEligibleAccount(state, now());
+    // dispatch-time observation — the account this call actually hit —
+    // and is what the cool guard stamps and the finally releases.
+    const picked = pickEligibleAccount(state, now(), pinnedStart);
+    pinnedStart = undefined;
     if (picked === undefined) {
-      // Every account is cooling: park until the earliest expiry (charging
-      // the shared wait budget) and re-pick; a spent budget converts to the
-      // terminal outcome here at the loop top, OUTSIDE the try below — a
+      // Every account is cooling or at its ceiling — split the flavors
+      // (D4): an active cooldown parks through the shared budget (the
+      // only road to the exhaustion terminal, OUTSIDE the try below — a
       // throw here would be swallowed by the catch and misread as a
-      // transport error (D6: the wrapper maps this member).
-      if (!(await parkUntilEligible(state, now, sleepFn))) {
-        return { status: "exhausted" };
+      // transport error); an all-at-ceiling pick has no expiry, so it
+      // waits on the release queue at ZERO budget charge — a healthy
+      // backlog can never false-trip the alarm.
+      if (earliestCooldown(state, now()) !== undefined) {
+        if (!(await parkUntilEligible(state, now, sleepFn))) {
+          return { status: "exhausted" };
+        }
+      } else {
+        await waitCeilingSlot(state);
       }
-      attempt -= 1; // the park is a wait, not a retry — do not spend an attempt
+      attempt -= 1; // the wait is not a retry — do not spend an attempt
       continue;
     }
     const { index: attemptIndex, account } = picked;
-    try {
-      const response = await fetchFn(normalizeEndpoint(account.baseUrl), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${account.apiKey}`,
-        },
-        body: JSON.stringify(buildPayload(account)),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+    // Claim in the same sync window as the pick (no await between): the
+    // in-flight count rises before the request leaves, and the dial moves
+    // to the next account — the proactive spread (D1/D6). The matching
+    // release runs in the finally below, so every exit path frees the
+    // slot exactly once.
+    claimAccount(state, attemptIndex);
+    const directive = await (async (): Promise<AttemptDirective<T>> => {
+      try {
+        const response = await fetchFn(normalizeEndpoint(account.baseUrl), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${account.apiKey}`,
+          },
+          body: JSON.stringify(buildPayload(account)),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          coolAccount(state, attemptIndex, now());
-          warns.cooling(attemptIndex + 1);
-          // Rewind: the retry re-picks past every cooling account. The pick
-          // cannot return a cooling account, so each 429 iteration cools a
-          // distinct account and the loop stays bounded by the pool size
-          // (re-arming an expired entry mid-call needs a full 60s stall,
-          // which the request timeout bounds per attempt).
-          attempt -= 1;
-          continue;
-        }
-        if (
-          backoff5xx &&
-          RETRYABLE_STATUSES.has(response.status) &&
-          attempt < RETRY_DELAYS_MS.length
-        ) {
-          // Busy upstream, same account, bounded backoff.
-          const delay = RETRY_DELAYS_MS[attempt] ?? 0;
-          warns.backingOff?.(attemptIndex + 1, response.status, delay, attempt + 1);
-          await sleepFn(delay);
-          continue;
-        }
-        warns.statusFailure(attemptIndex + 1, attempt + 1, response.status, response.statusText);
-        if (backoff5xx) {
+        if (!response.ok) {
+          if (response.status === 429) {
+            coolAccount(state, attemptIndex, now());
+            warns.cooling(attemptIndex + 1);
+            // Rewind AFTER the finally frees the slot (D7). The pick
+            // cannot return a cooling account, so each 429 iteration
+            // cools a distinct account; once the pool is fully cooling-
+            // or-at-ceiling the loop-top flavor split takes over, bounded
+            // by the park budget or by release wakes (the request timeout
+            // bounds every wait).
+            return { action: "rewind" };
+          }
+          if (
+            backoff5xx &&
+            RETRYABLE_STATUSES.has(response.status) &&
+            attempt < RETRY_DELAYS_MS.length
+          ) {
+            // Busy upstream, same account: report the backoff, sleep
+            // AFTER the finally frees the slot (D7).
+            const delay = RETRY_DELAYS_MS[attempt] ?? 0;
+            warns.backingOff?.(attemptIndex + 1, response.status, delay, attempt + 1);
+            return { action: "backoff", delayMs: delay };
+          }
+          warns.statusFailure(attemptIndex + 1, attempt + 1, response.status, response.statusText);
           // Spent backoff or a non-retryable status: defer the batch whole
-          // (its posts stay unseen and retry next run).
-          return { status: "unanswered" };
+          // (its posts stay unseen and retry next run); the post ladder
+          // spends the attempt instead.
+          return backoff5xx ? { action: "defer" } : { action: "retry" };
         }
-        continue;
-      }
 
-      const data = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-      const decision = onContent(
-        data.choices?.[0]?.message?.content,
-        attemptIndex + 1,
-        attempt + 1,
-      );
-      if (decision.action === "resolve") {
-        return { status: "answered", value: decision.value };
+        const data = (await response.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const decision = onContent(
+          data.choices?.[0]?.message?.content,
+          attemptIndex + 1,
+          attempt + 1,
+        );
+        if (decision.action === "resolve") {
+          return { action: "answered", value: decision.value };
+        }
+        if (decision.action === "defer") {
+          return { action: "defer" };
+        }
+        // "retry": spend another attempt — only where the wrapper said so.
+        return { action: "retry" };
+      } catch (error) {
+        // A transport error is not an account problem: nothing cools. The
+        // batch defers the whole call (a dead socket predicts a dead
+        // fallback); the post spends an attempt and retries.
+        const message = error instanceof Error ? error.message : String(error);
+        warns.transportError(attemptIndex + 1, attempt + 1, message);
+        return deferOnTransport ? { action: "defer" } : { action: "retry" };
+      } finally {
+        // The release gate: freed on answered, deferred, rewind, backoff,
+        // retry, and thrown — every claim terminates here.
+        releaseAccount(state, attemptIndex);
       }
-      if (decision.action === "defer") {
-        return { status: "unanswered" };
-      }
-      // "retry": spend another attempt — only where the wrapper said so.
-    } catch (error) {
-      // A transport error is not an account problem: nothing cools. The
-      // batch defers the whole call (a dead socket predicts a dead
-      // fallback); the post spends an attempt and retries.
-      const message = error instanceof Error ? error.message : String(error);
-      warns.transportError(attemptIndex + 1, attempt + 1, message);
-      if (deferOnTransport) {
-        return { status: "unanswered" };
-      }
+    })();
+    // Act on the directive OUTSIDE the release gate: the slot is free
+    // while the backoff sleeps and while the rewind re-picks (D7).
+    if (directive.action === "answered") {
+      return { status: "answered", value: directive.value };
     }
+    if (directive.action === "defer") {
+      return { status: "unanswered" };
+    }
+    if (directive.action === "rewind") {
+      attempt -= 1;
+      continue;
+    }
+    if (directive.action === "backoff") {
+      await sleepFn(directive.delayMs);
+      // Pin the seat for the retry (same-account 5xx): the sleep ran with
+      // the slot free (D7); the re-pick starts here, and if a concurrent
+      // 429 cooled the seat or its ceiling filled during the sleep, the
+      // scan skips it like any other blocked account. The attempt is
+      // spent — the RETRY_DELAYS_MS bound gates exactly as before.
+      pinnedStart = attemptIndex;
+    }
+    // "retry" (and the spent backoff above): the attempt is spent — fall
+    // through to the next attempt.
   }
   return { status: "attemptsExhausted" };
 }
 
 /**
- * One bulk call for up to BATCH_SIZE posts against the first dispatchable
- * account.
+ * One bulk call for up to BATCH_SIZE posts against the next dispatchable
+ * account (the dial scan).
  *
  * HTTP 429 is account-local: the account cools for COOLDOWN_MS
  * (first-write-wins) and the same call re-picks past every cooling account
@@ -663,20 +705,22 @@ export async function judgePost(
  * so the carried failure record is complete). Every other LLM failure still
  * lands in skippedPostIds, so a flaky endpoint cannot kill the run.
  *
- * Batches drain through a bounded pool of `concurrency` workers, and each
- * result slot is indexed by batch number so the output reassembles in
- * input order even when batches finish out of order. Bulk misses drain
- * through a second `concurrency`-wide fallback pool under a per-run
- * FALLBACK_CALL_BUDGET; the cursor claims work in input order, so budget
- * exhaustion starves the tail. Both result lists come out in candidate
- * input order.
+ * Batches drain through a bounded pool of `width` workers — the pool's
+ * total in-flight budget, the sum of the per-account ceilings passed in —
+ * and each result slot is indexed by batch number so the output reassembles
+ * in input order even when batches finish out of order. Bulk misses drain
+ * through a second fallback pool at the same width under a per-run
+ * FALLBACK_CALL_BUDGET on single-post calls; the cursor claims work in
+ * input order, so budget exhaustion starves the tail. Both result lists
+ * come out in candidate input order.
  *
- * Rotation state lives in this frame: a cooldown map plus the shared park
- * budget, shared by reference with every worker exactly like the next
- * cursor below — all reads and writes are synchronous, so four workers
- * stay coherent without locks. There is no sticky pointer: every dispatch
- * scans from account 1 and skips cooling accounts, so a batch that starts
- * after an account's cooldown expires lands back on account 1.
+ * Rotation state lives in this frame: cooldowns, the per-account in-flight
+ * counts under the passed ceilings, and the dispatch dial, shared by
+ * reference with every worker exactly like the next cursor below — all
+ * claim and release mutations are synchronous, so the workers stay
+ * coherent without locks. There is no sticky pointer: every dispatch
+ * starts at the dial and skips cooling or at-ceiling accounts, and a claim
+ * moves the dial to the next account (the proactive spread, D1/D6).
  */
 export async function judgePosts(
   candidates: readonly Post[],
@@ -684,13 +728,17 @@ export async function judgePosts(
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
   reasoningEffort: ReasoningEffort = "medium",
-  concurrency: number = DEFAULT_JUDGE_CONCURRENCY,
+  ceilings: ReadonlyMap<number, number> = new Map(),
   now: () => number = Date.now,
   sleepFn: SleepFn = sleep,
 ): Promise<JudgeBatchResult> {
   const state: RotationState = {
     accounts,
     cooldownUntil: new Map(),
+    ceilings,
+    inFlight: new Map(),
+    dispatchCounter: 0,
+    ceilingWaiters: [],
     waitBudgetRemainingMs: WAIT_BUDGET_MS,
   };
 
@@ -699,13 +747,24 @@ export async function judgePosts(
     batches.push(candidates.slice(i, i + BATCH_SIZE));
   }
 
+  // Pool width = the pool's total in-flight budget: the sum of the
+  // per-account ceilings. No overall clamp (D1) — the caps ARE the width —
+  // and the floor keeps a hand-built empty map (tests) from spawning zero
+  // workers. The new Map() default is the same degrade as an absent
+  // ceilings file: every account floors at 1 (the pick's ?? 1 floor);
+  // index.ts always passes the resolved map.
+  const width = Math.max(
+    1,
+    [...ceilings.values()].reduce((sum, ceiling) => sum + ceiling, 0),
+  );
+
   // One result slot per batch, filled by whichever worker takes it. Indexing
   // by slot (not pushing) is what keeps the output in input order once the
   // batches finish out of order.
   const outcomes: Array<BatchOutcome | undefined> = Array.from({ length: batches.length });
   // Cursor, width clamp, and join live in runPool (F007); the worker stays
   // total — judgeBatch resolves an outcome union, never throws.
-  await runPool(batches, concurrency, async (batch, index) => {
+  await runPool(batches, width, async (batch, index) => {
     outcomes[index] = await judgeBatch(
       batch,
       state,
@@ -760,7 +819,7 @@ export async function judgePosts(
   }
 
   // Parallel capped fallback: the slot-array + shared-cursor pool idiom,
-  // `concurrency` wide, under a per-run FALLBACK_CALL_BUDGET. The cursor
+  // `width` wide, under a per-run FALLBACK_CALL_BUDGET. The cursor
   // claims work in input order, so a spent budget starves the tail —
   // never a random middle. A RotationExhausted throw from judgePost stops
   // the workers (drain-then-throw): the join below re-throws the tagged
@@ -774,7 +833,7 @@ export async function judgePosts(
     // window as the claim, so no call starts after exhaustion is flagged.
     // The slot write keeps the CARRIED index (item.slot), never runPool's
     // claim index — reassembly order comes from the join-then-walk below.
-    await runPool(fallbackWork, concurrency, async (item) => {
+    await runPool(fallbackWork, width, async (item) => {
       if (exhausted) return; // stop claiming; the join re-throws below
       if (budget <= 0) return; // budget spent — surplus posts stay unseen (D3)
       budget -= 1;
