@@ -60,7 +60,7 @@ README documents an external cron dispatching watch.yml by filename — a wrong-
 ```
 Secrets exist only inside this step; the commit-back step runs secret-free. Playwright installs with `--only-shell` — headless-only, the runner image carries the chromium shared libs. The `ms-playwright` cache step (lockfile-hash key) sits ahead of the install, which stays UNCONDITIONAL: a miss self-heals, a hit is a fast no-op.
 
-## Commit-back: two invokers (Commit state, Commit ceilings); bot identity, no-op guard, deltas, state-set rebase skips, lease push
+## Commit-back: three invokers (Commit state, Commit ceilings, Commit health); bot identity, no-op guard, deltas, state-set rebase skips, lease push
 ```yaml
 - name: Commit state
   run: |
@@ -95,8 +95,32 @@ Secrets exist only inside this step; the commit-back step runs secret-free. Play
 ```
 A red gate skips this step (fail-fast): the ceilings file lands only from a green probe run.
 
-The script re-establishes errexit itself and exits 0 on push, 1 on a conflict outside the committed state set (`state/seen-posts.json`, `state/judge-ceilings.json`) or a second push failure. Each invoker calls it once; the single retry lives inside it. Any conflicted path outside that set aborts the run loudly.
-Accepted cost (F021): a skipped state conflict means the next run re-judges — or the next green probe overwrites the ceilings; the audit tolerates one duplicate digest or one stale-ceiling stretch. The commit-back steps are the only production writers to `state/`, one file each: the watch job owns `state/seen-posts.json`, the probe job owns `state/judge-ceilings.json`.
+```yaml
+- name: Commit health
+  # The FR7 failure-path commit: the exhaustion exit skips every later step, so this one rides
+  # `always() && failure()` — the Commit ceilings head shape (bot identity, the -f-guarded add of
+  # ONLY state/judge-health.json, the no-op guard, the fixed message "judge: provider health marks",
+  # then the tested script). The [-f] guard covers a run that died before the flush (the file is
+  # absent from every checkout until the first live run commits it).
+  if: always() && failure()
+  run: |
+    git config user.name "github-actions[bot]"
+    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    if [ -f state/judge-health.json ]; then
+      git add state/judge-health.json
+    fi
+    if git diff --cached --quiet; then
+      echo "health unchanged; nothing to commit"
+      exit 0
+    fi
+    git commit -m "judge: provider health marks"
+    bash scripts/commit-state-rebase.sh   # third invocation — same body, no jq delta
+```
+The skip-set grows to the three committed state files
+(`state/seen-posts.json`, `state/judge-ceilings.json`, `state/judge-health.json`).
+
+The script re-establishes errexit itself and exits 0 on push, 1 on a conflict outside the committed state set (`state/seen-posts.json`, `state/judge-ceilings.json`, `state/judge-health.json`) or a second push failure. Each invoker calls it once; the single retry lives inside it. Any conflicted path outside that set aborts the run loudly.
+Accepted cost (F021): a skipped state conflict means the next run re-judges — or the next green probe overwrites the ceilings; the audit tolerates one duplicate digest or one stale-ceiling stretch. The commit-back steps are the only production writers to `state/`: the watch job owns `state/seen-posts.json` AND `state/judge-health.json` (success path + the guarded failure-path step), the probe job owns `state/judge-ceilings.json`.
 
 State history growth (N017): accepted and documented (2026-11-03). Every match run rewrites the ~1.6 MB seen-state file; prune keeps the file bounded to the 72h window, but git history accumulates one near-full-file rewrite per run, so clone size and CI checkout cost grow without bound. The policy is (a) accept and document. Revisit when clone size or checkout time becomes a visible cost: (b) periodic squash of state/ commits via git-filter-repo, or (c) move seen-state out of git (cache/artifact; a redesign).
 

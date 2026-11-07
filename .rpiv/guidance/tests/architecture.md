@@ -29,6 +29,10 @@ index.ts           → index.test.ts           # full offline runWatcher runs vi
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins
 judge-parse.ts     → judge-parse.test.ts     # verdict parsers — pure string-in/string-out
 judge-rotation.ts  → judge-rotation.test.ts  # cooldown, park budget, exhaustion suites
+judge-ceilings.ts  → judge-ceilings.test.ts  # committed ceilings: resolver matrix, never-throw reader
+#                                              #   degrade lattice, atomic writer round-trip
+judge-health.ts    → judge-health.test.ts    # committed health: reader degrade matrix, tick-merge matrix,
+#                                              #   byte-stability gate, episode lifecycle, one-alarm gate
 judge-helpers.ts, pool.ts — no test (shared pure fixtures, not *.test.ts, never executed | exercised transitively)
 recency.ts         → recency.test.ts
 state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
