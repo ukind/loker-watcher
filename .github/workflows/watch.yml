@@ -37,7 +37,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        # The Commit ceilings step rebases onto main (the same
+        # The Commit ceilings step rebases onto the checkout branch's remote
+        # head (the same
         # commit-state-rebase.sh body as the watch job): a shallow clone
         # cannot find the merge base and add/add-conflicts the whole tree.
         with:
@@ -114,7 +115,8 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-        # The Commit state step rebases onto main; a shallow clone cannot
+        # The Commit state step rebases onto the checkout branch's remote
+        # head; a shallow clone cannot
         # find the merge base and add/add-conflicts the whole tree.
         with:
           fetch-depth: 0

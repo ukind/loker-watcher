@@ -1,12 +1,17 @@
 #!/bin/bash
 #
 # Commit-back body for watch.yml's "Commit state" step (F021) and the
-# probe job's "Commit ceilings" step: rebase onto main, skip conflicts in
+# probe job's "Commit ceilings" step: rebase onto the checkout branch's
+# remote head, skip conflicts in
 # the committed state files (bounded), lease-push, retry once.
 #
 # The Actions queue serializes watcher runs, but a human push can land
 # between this run's checkout and its commit-back, so the push rebases onto
-# main first. The rebase rewrites SHAs whenever main moved mid-run, making
+# the checkout branch's own remote head first (schedule ticks: that IS main;
+# dispatch runs of a feature branch: that branch, whose head the sibling
+# probe job may have advanced past the checkout's pinned github.sha — run
+# 885, 2026-11-07). The rebase rewrites SHAs whenever the target moved
+# mid-run, making
 # the push non-fast-forward by construction; --force-with-lease still
 # rejects a concurrent push the local fetch has not seen. A state commit
 # that conflicts against main's own lines for a committed state file
@@ -35,7 +40,12 @@
 # single-literal equality to set membership over the committed state
 # files. Third deviation (2026-11-07, provider health): the skip set grew
 # to the three committed state files — the health file joins seen-posts
-# and judge-ceilings. Everything else is a verbatim move of watch.yml's
+# and judge-ceilings. Fourth deviation (2026-11-07, dispatch-run
+# commit-back): the rebase target grew from main to the checkout branch's
+# own remote head (run 885: the sibling probe job's push advanced the
+# dispatched branch past the checkout's pinned github.sha; the
+# main-targeted pull never learned it and both lease pushes died "stale
+# info"). Everything else is a verbatim move of watch.yml's
 # former :123-167.
 #
 # The 50-skip bound is a runaway guard, not a tuning knob: a replayed
@@ -45,12 +55,19 @@
 
 set -e
 
-# One commit-back attempt: rebase onto main (skipping state-only conflicts
+# One commit-back attempt: rebase onto the checkout branch's remote head
+# (skipping state-only conflicts
 # up to the bound), then lease-push; exit 0 the moment a push succeeds.
 # The skip budget resets on every call — each attempt starts fresh (the
 # former YAML body reset skips=0 the same way before each loop).
 attempt() {
-  if ! git pull --rebase origin main; then
+  # The checkout branch IS the rebase target — named in every caller
+  # (schedule checks out main, dispatch checks out the dispatched branch),
+  # so `git branch --show-current` is always non-empty here. Pulling the
+  # branch's own remote head is what lets a dispatch run's commit-back see
+  # the sibling probe job's push; a main-targeted pull never learns it.
+  branch=$(git branch --show-current)
+  if ! git pull --rebase origin "$branch"; then
     echo "state rebase conflicted; skipping conflicting state commits"
     skips=0
     while test -d .git/rebase-merge && [ "$skips" -lt 50 ]; do
@@ -92,7 +109,7 @@ EOF
 }
 
 attempt
-echo "state push rejected; rebasing onto main and retrying once"
+echo "state push rejected; rebasing onto the branch remote and retrying once"
 attempt
 echo "state push failed twice; failing the run"
 exit 1
