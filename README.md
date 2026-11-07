@@ -6,9 +6,10 @@ has an LLM judge posts against the configured keywords (Indonesia or remote
 roles), and emails new matches as a plain-text digest. LinkedIn posts ride a
 separate always-on loop on the developer's PC: it fetches the voyager search
 API and pushes `state/linkedin-posts.json`, which the hosted run reads. No
-web UI; persistence is two committed state files — `state/seen-posts.json`
-(seen ids) and `state/judge-ceilings.json` (the judge's per-account
-ceilings).
+web UI; persistence is three committed state files — `state/seen-posts.json`
+(seen ids), `state/judge-ceilings.json` (the judge's per-account ceilings),
+and `state/judge-health.json` (per-account provider health: hard-failure
+streaks and the outage-episode bit).
 
 ## Pipeline
 
@@ -39,6 +40,19 @@ ceilings).
    in-flight ceiling, and as many batches run at once as the ceilings add
    up to (`state/judge-ceilings.json`; an account without a reading is
    capped at 1 until the next probe run).
+
+   An account that hard-fails (HTTP 5xx after backoff, 401/403, or a
+   network error — never a 429) on two consecutive runs is capped at one
+   request per run: the next run's single dispatch is a half-open probe,
+   and a success restores its full ceiling for the rest of that run. The
+   marks live in `state/judge-health.json` and self-heal — a stale mark
+   costs at most the one-request probe until the first success clears it.
+   While any account is capped, the digest and the zero-match status email
+   each carry one `Degraded LLM account(s):` line, and an exhausted pool's
+   alarm names each account's real cause (`HTTP 503`, `HTTP 401 — key
+   dead`, `network error: …`) instead of a blanket 429. One alarm per
+   outage: the episode bit rides the health file, so a second all-dead run
+   stays quiet in the log and still fails the run.
 7. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
    fails is skipped — the post stays unseen and retries on the next run.
 8. New relevant + located posts are emailed as the job digest; LinkedIn
@@ -91,6 +105,13 @@ ceilings).
    the committed file. Nothing to paste: watch spreads dispatches under
    those caps. A green gate commits; a red gate skips the commit and the
    dispatch's watch, so the file keeps its last green reading.
+
+   Provider health needs no setup: the watch run writes
+   `state/judge-health.json` (on the success path and, best-effort, from
+   the failed run's own commit-back step) and the workflow commits it
+   back. The file is absent from every checkout until the first live run
+   creates it; a missing or malformed file reads as "everything healthy"
+   and never fails a run.
    Rolling the code back past v2 requires reverting
    `state/seen-posts.json` in the same commit — v1 code fails visibly with
    `unsupported schema version: 2`.

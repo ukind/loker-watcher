@@ -46,6 +46,9 @@ export interface HeartbeatStats {
   runUrl?: string;
   /** LinkedIn leg state (D6): attached only when the payload reader ran this run. */
   linkedinLeg?: LegLine;
+  /** Degraded-accounts line from the health circuit; attached only when an
+   *  account is capped (the absent state is the quiet default). */
+  degradedAccounts?: string;
 }
 
 /** One candidate post plus why it is in the list. */
@@ -140,6 +143,7 @@ export function buildHeartbeatBody(
     `  ${stats.relevantLocated} relevant + located`,
     `  ${stats.skipped} skipped by the judge`,
     ...(stats.linkedinLeg !== undefined ? [`  ${linkedinLegLine(stats.linkedinLeg)}`] : []),
+    ...(stats.degradedAccounts !== undefined ? [`  ${stats.degradedAccounts}`] : []),
     "",
   ];
 

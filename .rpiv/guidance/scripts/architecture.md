@@ -1,10 +1,10 @@
 # scripts/ — production commit-back script, endpoint probe + agent hooks
 
 ## Responsibility
-Eight files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of BOTH commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `setup-curl-impersonate.ts` is the one-command curl-impersonate setup (checksum-pinned download + .env wire); `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
+Eight files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings, and watch.yml's Commit health), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `setup-curl-impersonate.ts` is the one-command curl-impersonate setup (checksum-pinned download + .env wire); `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
 
 ## Invokers
-- **commit-state-rebase.sh**: TWO invokers, one call each — watch.yml's Commit state step and the probe job's Commit ceilings step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
+- **commit-state-rebase.sh**: THREE invokers, one call each — watch.yml's Commit state step, the probe job's Commit ceilings step, and watch.yml's Commit health step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
 - **probe-judge.ts**: the dispatch-only `probe` GATE job in watch.yml, or locally `npx tsx scripts/probe-judge.ts` (needs `LLM_ACCOUNTS`; loads `watcher.config.json` at startup, so run from the repo root)
 - **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts / setup-curl-impersonate.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` / `setup-curl` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm, loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session, setup-curl = exit 1 on any failure (every message names the playwright escape hatch)
 - **hooks/**: `.claude/settings.json` only — PreToolUse matcher `Bash` → gate, PostToolUse matcher `Edit|Write` → formatter. NOT husky: husky runs only `lint-staged`
@@ -14,7 +14,7 @@ Eight files, deliberately separate from src/ (the production watcher): `commit-s
 commit-state-rebase.sh       # bash, set -e self-owned; OUTSIDE typecheck + lint + lint-staged
                              #   (biome never sees .sh); LF-pinned by .gitattributes; offline
                              #   spawnSync-tested by tests/commit-state-rebase.test.ts; conflict
-                             #   skips = set membership over the two committed state files
+                             #   skips = set membership over the three committed state files
 probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (keywords + reasoningEffort for the
                              #   real payload), buildBulkMessages + resolveJudgeConfig (+ Post type) from src;
                              #   writes state/judge-ceilings.json (writeCeilingsAtomic + JUDGE_CEILINGS_PATH,
@@ -62,8 +62,8 @@ if (dead.length > 0) process.exit(1);         // a red gate skips the Commit cei
 ## Exit-code contracts are the interface
 ```
 commit-state-rebase.sh      exit 0 = pushed; exit 1 = a conflict outside the committed state set
-                            (state/seen-posts.json, state/judge-ceilings.json) or a second push
-                            failure — BOTH invokers' step shells consume it with no wrapper
+                            (state/seen-posts.json, state/judge-ceilings.json, state/judge-health.json) or a second push
+                            failure — ALL THREE invokers' step shells consume it with no wrapper
 probe-judge.ts              exit 1 on any failed leg, auth-dead 401/403, or ceiling < 1 — the probe job is a gate, so this reddens the dispatch run; the ceilings write happens BEFORE the gate, so even a red run recorded its readings
 fetch-linkedin.ts           exit 1 on a mis-homed checkout (branch ≠ main or dirty tree — guardCheckout, BEFORE
                             any fetch), on leg-dead (after the ONE episode alarm), or a failed push — the one-off entry
@@ -98,7 +98,7 @@ process.exit(0);                              // allow
 ## Running the Judge Probe and Applying the Reading
 1. Env: `LLM_ACCOUNTS` = JSON array of `{baseUrl, apiKey, model}` (every account is walked; each must pass)
 2. Run: Actions → watch → Run workflow (dispatch runs the probe job), or locally `npx tsx scripts/probe-judge.ts` from the repo root (it loads `watcher.config.json` at startup)
-3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level)
+3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level) — and all accounts are probed concurrently, so wall time is the slowest account, not the sum
 4. Read each account's summary line `probe: account N (<baseUrl>) — minimal=… bulk=… bulkAgain=… ceiling=N` — no floor; a failed, auth-dead (401/403), or broken-ramp (ceiling 0) account exits 1; 429-refused legs are busy, not dead
 5. Apply: nothing to paste — the probe writes `state/judge-ceilings.json` (whole file, before the gate) and the Commit ceilings step pushes it; a missing entry floors that account at ceiling 1 with one warning
 6. Semantics downstream: `resolveCeilings` trims both sides when matching keys; a red-gate probe skips the commit, so the file keeps the last green reading; the file never fails a run

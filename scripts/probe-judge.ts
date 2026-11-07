@@ -128,15 +128,18 @@ async function timed(label: string, payload: unknown, account: LlmAccount): Prom
   }
 }
 
-/** Fire `count` bulk calls at once and classify each outcome. */
+/** Fire `count` bulk calls at once and classify each outcome; each call's
+ *  label names the account ("<account label> ramp L<count>") so interleaved
+ *  peer output stays attributable. */
 async function rampLevel(
   count: number,
   payload: unknown,
   account: LlmAccount,
+  label: string,
 ): Promise<{ ok: number; refused: number; failed: number; ms: number }> {
   const started = Date.now();
   const results = await Promise.all(
-    Array.from({ length: count }, () => timed("ramp", payload, account)),
+    Array.from({ length: count }, () => timed(`${label} ramp L${count}`, payload, account)),
   );
   return {
     ok: results.filter((result) => result.kind === "ok").length,
@@ -162,18 +165,24 @@ const RAMP_MAX = 32;
  * broken endpoint, not a ceiling (return 0). The walk never fires a
  * level the previous one ruled out.
  */
-async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Promise<number> {
+async function findConcurrencyCeiling(
+  payload: unknown,
+  account: LlmAccount,
+  label: string,
+): Promise<number> {
   for (let level = 2; level <= RAMP_MAX; level *= 2) {
-    const result = await rampLevel(level, payload, account);
+    const result = await rampLevel(level, payload, account, label);
     console.log(
-      `probe: concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
+      `probe: ${label} — concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
     );
     if (result.failed > 0) {
-      console.log("probe: a ramp call failed — broken endpoint, not a concurrency ceiling");
+      console.log(
+        `probe: ${label} — a ramp call failed — broken endpoint, not a concurrency ceiling`,
+      );
       return 0;
     }
     if (result.ok < level) {
-      console.log(`probe: concurrency ceiling is below ${level}`);
+      console.log(`probe: ${label} — concurrency ceiling is below ${level}`);
       return level / 2;
     }
   }
@@ -202,6 +211,62 @@ function classifyDead(probe: AccountProbe): string | null {
   return null;
 }
 
+/**
+ * One account's full probe, run concurrently with its peers: the minimal
+ * call, the 10-post bulk call twice (variance), then the ramp — the
+ * production order, unchanged. The ramp levels stay SEQUENTIAL within the
+ * account because each level's verdict gates the next. Every line this
+ * prints carries the account label, so interleaved peer output stays
+ * attributable; the per-account summary line prints here so output streams
+ * as each account progresses.
+ */
+async function probeAccount(
+  index: number,
+  account: LlmAccount,
+): Promise<{ probe: AccountProbe; ceiling: number }> {
+  const label = `account ${index + 1} (${account.baseUrl})`;
+  console.log(`probe: === ${label} ===`);
+
+  const minimal = await timed(
+    `${label} minimal call`,
+    {
+      model: account.model,
+      messages: [{ role: "user", content: "Reply with the single word: ok" }],
+      temperature: 0,
+    },
+    account,
+  );
+
+  const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
+  const bulkPayload = {
+    model: account.model,
+    messages: buildBulkMessages(ten, CONFIG.keywords),
+    temperature: 0,
+    reasoning_effort: CONFIG.reasoningEffort,
+    response_format: { type: "json_object" },
+  };
+  const bulk = await timed(
+    `${label} bulk call (10 posts, production prompt shape)`,
+    bulkPayload,
+    account,
+  );
+  const again = await timed(`${label} bulk call again (variance check)`, bulkPayload, account);
+
+  const ceiling = await findConcurrencyCeiling(bulkPayload, account, label);
+  const probe: AccountProbe = {
+    position: index + 1,
+    label,
+    minimal,
+    bulk,
+    bulkAgain: again,
+    ceiling,
+  };
+  console.log(
+    `probe: ${label} — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
+  );
+  return { probe, ceiling };
+}
+
 async function main(): Promise<void> {
   let accounts: LlmAccount[];
   try {
@@ -212,57 +277,34 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // All accounts probe CONCURRENTLY (2026-11-07, Actions run 42354544399):
+  // wall time is the slowest single account, not the sum. Ramping levels
+  // stay sequential within an account (probeAccount); only the accounts
+  // interleave. `timed` converts network failures to failed outcomes, so a
+  // rejection here is an unexpected bug — containment keeps the other
+  // accounts' readings alive.
+  const settled = await Promise.allSettled(
+    accounts.map((account, index) => probeAccount(index, account)),
+  );
   const ceilings: Record<string, number> = {};
   const dead: string[] = [];
   for (const [index, account] of accounts.entries()) {
     const label = `account ${index + 1} (${account.baseUrl})`;
-    console.log(`probe: === ${label} ===`);
-
-    const minimal = await timed(
-      `${label} minimal call`,
-      {
-        model: account.model,
-        messages: [{ role: "user", content: "Reply with the single word: ok" }],
-        temperature: 0,
-      },
-      account,
-    );
-
-    const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
-    const bulkPayload = {
-      model: account.model,
-      messages: buildBulkMessages(ten, CONFIG.keywords),
-      temperature: 0,
-      reasoning_effort: CONFIG.reasoningEffort,
-      response_format: { type: "json_object" },
-    };
-    const bulk = await timed(
-      `${label} bulk call (10 posts, production prompt shape)`,
-      bulkPayload,
-      account,
-    );
-    const again = await timed(`${label} bulk call again (variance check)`, bulkPayload, account);
-
-    const ceiling = await findConcurrencyCeiling(bulkPayload, account);
+    const outcome = settled[index];
+    if (outcome?.status !== "fulfilled") {
+      const reason = outcome?.status === "rejected" ? String(outcome.reason) : "missing result";
+      dead.push(`${label} — probe crashed: ${reason}`);
+      continue;
+    }
+    const { probe, ceiling } = outcome.value;
     // File key = trimmed baseUrl (resolveCeilings trims both sides). Twins
     // sharing a baseUrl share one reading — last write wins; one entry per
     // endpoint is the file's shape.
     ceilings[account.baseUrl.trim()] = ceiling;
-    const probe: AccountProbe = {
-      position: index + 1,
-      label,
-      minimal,
-      bulk,
-      bulkAgain: again,
-      ceiling,
-    };
     const cause = classifyDead(probe);
     if (cause !== null) {
       dead.push(`${label} — ${cause}`);
     }
-    console.log(
-      `probe: ${label} — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
-    );
   }
 
   // Live-only persistence BEFORE the dead gate: this run's readings ARE the

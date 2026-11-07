@@ -1,8 +1,9 @@
 # Project Overview
 
-loker-watcher: a TypeScript ESM pipeline (Node >= 22, strict TS) that watches Indonesian job-hunting surfaces on Threads and LinkedIn every 10 minutes from GitHub Actions, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM (an account pool where a 429 cools the account and calls park past cooldowns on a shared wait budget), and emails new matches as a plain-text digest. Committed state is two files, one writer each:
-`state/seen-posts.json` (the watch job commits it back after match runs) and
-`state/judge-ceilings.json` (probe-measured judge ceilings, committed by the probe job).
+loker-watcher: a TypeScript ESM pipeline (Node >= 22, strict TS) that watches Indonesian job-hunting surfaces on Threads and LinkedIn every 10 minutes from GitHub Actions, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM (an account pool where a 429 cools the account and calls park past cooldowns on a shared wait budget), and emails new matches as a plain-text digest. Committed state is three files, one writer each:
+`state/seen-posts.json` (committed back by the watch job after match runs),
+`state/judge-ceilings.json` (probe-measured judge ceilings, committed by the probe job), and
+`state/judge-health.json` (per-account provider health, written by the watch run's flush, committed back by the watch job — success path and the failure-path Commit health step).
 
 ## Architecture
 
@@ -10,10 +11,10 @@ loker-watcher: a TypeScript ESM pipeline (Node >= 22, strict TS) that watches In
 .github/workflows/  # ci.yml gate + watch.yml: cron */10 → npx tsx src/index.ts → state commit-back via scripts/commit-state-rebase.sh (+ dispatch-only probe job)
 src/                # the pipeline: fetch (threads Playwright walks + the PC-linked linkedin payload read) → extract → dedupe → recency → seen → judge → notify → persist
 tests/              # offline unit suite (node:test via tsx), ~1:1 with src module names + hook subprocess tests
-scripts/            # commit-state-rebase.sh (commit-back body for BOTH state files: rebase + skip + push + one internal retry), probe-judge.ts (measures the LLM endpoint, writes state/judge-ceilings.json live-only) + Claude Code hooks
+scripts/            # commit-state-rebase.sh (commit-back body for ALL THREE state files: rebase + skip + push + one internal retry), probe-judge.ts (measures the LLM endpoint, writes state/judge-ceilings.json live-only) + Claude Code hooks
 .claude/, .cursor/, # agent meta: hook registration + agents/commands/skills | editor rules | husky pre-commit
 .husky/             #   (lint-staged)
-state/              # runtime state only: seen-posts.json (watch job) + judge-ceilings.json (probe job); written by the run/job, committed back by the workflow
+state/              # runtime state only: seen-posts.json (watch job) + judge-ceilings.json (probe job) + judge-health.json (watch job); written by the run/job, committed back by the workflow
 ```
 
 Untracked by decision: `.rpiv/tmp/` scratch and `.codebase-memory/graph.db.zst` (the local graph index, rewritten on reindex) must not be re-added. `.rpiv/artifacts/` stays tracked.

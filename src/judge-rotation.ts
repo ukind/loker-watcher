@@ -22,9 +22,20 @@
  * (D4). A fresh cooldown stamp also wakes the queue — it shrinks effective
  * capacity — while a first-write-wins re-stamp changes nothing and wakes
  * nobody.
+ *
+ * Health circuit (the provider-health boundary): the state carries the
+ * health marks, the per-tick probe ledger, and the outcome ledger as plain
+ * fields — the outcome shape is a plain inline union structurally equal to
+ * the judge-health module's AccountTickOutcome, and NO import of that
+ * module exists, keeping this module's zero-runtime-import identity. The
+ * pick applies the cap and the half-open probe INLINE as plain field
+ * reads; the cap threshold pairs with that module's
+ * HARD_FAIL_TICKS_TO_CAP via the local HEALTH_CAP_STREAK constant (the
+ * two MUST stay equal).
  */
 // Type-only import (D5): verbatimModuleSyntax erases it, so judge.ts can
 // import this module's runtime symbols with no runtime cycle.
+import type { TickOutcomes } from "./judge-health.js";
 import type { LlmAccount, SleepFn } from "./judge.js";
 import type { AccountFailure } from "./types.js";
 
@@ -41,6 +52,14 @@ const COOLDOWN_MS = 60_000;
  * that. Unmeasured value stays a constant.
  */
 const WAKE_JITTER_MS = 500;
+
+/**
+ * Consecutive hard-failed ticks that cap an account at ceiling 1 — the
+ * paired twin of the judge-health module's HARD_FAIL_TICKS_TO_CAP (no
+ * import exists: this module reads plain state fields only, the D5
+ * boundary). The two MUST stay equal; both doc sites say so.
+ */
+const HEALTH_CAP_STREAK = 2;
 
 /**
  * Run-level rotation state, owned by judgePosts and shared by reference with
@@ -63,6 +82,23 @@ export interface RotationState {
    *  increments before the request leaves; the attempt's finally releases,
    *  so every exit path frees its slot exactly once. */
   readonly inFlight: Map<number, number>;
+  /** 0-based account index -> hard-failed streak, seeded by index.ts from
+   *  the health file. MUTABLE in-run: a successful probe DELETES the entry
+   *  so the account rejoins at its committed ceiling for the rest of the
+   *  tick (the judge-health stampSuccess helper). The pick reads it here;
+   *  only the end-of-tick flush writes the FILE. */
+  readonly healthMarks: Map<number, number>;
+  /** Accounts already probe-dispatched this tick (the half-open gate):
+   *  a capped account is dispatchable until its first claim registers it
+   *  here, then blocked until a success frees it. Resets naturally per
+   *  judgePosts call — one tick. */
+  readonly probedThisTick: Set<number>;
+  /** 0-based account index -> the account's LAST dispatch outcome this
+   *  tick. The judge core stamps hard failures with their real cause and
+   *  successes (the judge-health stamp helpers, Phase 4 call sites); the
+   *  unified exhaustion record and the end-of-tick flush derive from it.
+   *  Plain union — structurally the judge-health AccountTickOutcome. */
+  readonly outcomeLedger: Map<number, { kind: "ok" } | { kind: "hard-failed"; reason: string }>;
   /** Dispatch dial: the pick scans from dispatchCounter % poolSize; a
    *  claim moves it just past the claimed account (D6: an undefined pick
    *  never moves it). Zero starts the run at account 1. */
@@ -84,10 +120,17 @@ export interface RotationExhausted extends Error {
   name: typeof ROTATION_EXHAUSTED;
   /** One entry per account that failed, in the order rotation left them. */
   failures: AccountFailure[];
+  /** The tick's per-account outcomes — the health flush rides the error to
+   *  main's catch. Absent when the error was built without one (standalone
+   *  judgePost exhaustion; tests constructing the type bare). */
+  health?: TickOutcomes;
 }
 
 /** Build a pool-exhausted error carrying the per-account record. */
-export function rotationExhausted(failures: readonly AccountFailure[]): RotationExhausted {
+export function rotationExhausted(
+  failures: readonly AccountFailure[],
+  health?: TickOutcomes,
+): RotationExhausted {
   const error = new Error(
     `judge: all ${failures.length} LLM_ACCOUNTS account(s) exhausted — ${failures
       .map((f) => `account ${f.account} (${f.baseUrl}): ${f.reason}`)
@@ -95,6 +138,9 @@ export function rotationExhausted(failures: readonly AccountFailure[]): Rotation
   ) as RotationExhausted;
   error.name = ROTATION_EXHAUSTED;
   error.failures = [...failures];
+  if (health !== undefined) {
+    error.health = health;
+  }
   return error;
 }
 
@@ -131,7 +177,14 @@ export function pickEligibleAccount(
     if (account === undefined) continue;
     const expiry = state.cooldownUntil.get(index);
     if (expiry !== undefined && expiry > nowMs) continue;
-    const ceiling = state.ceilings.get(index) ?? 1;
+    // Health circuit, INLINE plain-field reads (no judge-health import):
+    // a capped account runs at effective ceiling 1 and is half-open — its
+    // first dispatch of the tick is the probe; further picks stay blocked
+    // until a success frees it (stampSuccess deletes the mark AND the
+    // probe slot, rejoining at the COMMITTED ceiling).
+    const capped = (state.healthMarks.get(index) ?? 0) >= HEALTH_CAP_STREAK;
+    if (capped && state.probedThisTick.has(index)) continue;
+    const ceiling = capped ? 1 : (state.ceilings.get(index) ?? 1);
     if ((state.inFlight.get(index) ?? 0) >= ceiling) continue;
     return { index, account };
   }
@@ -178,6 +231,13 @@ export function claimAccount(state: RotationState, accountIndex: number): void {
   const current = state.inFlight.get(accountIndex) ?? 0;
   state.inFlight.set(accountIndex, current + 1);
   state.dispatchCounter = accountIndex + 1;
+  // The half-open probe ledger: a capped account's dispatch IS its probe
+  // for this tick. Registered at claim time in the same sync window as
+  // the pick; a later success deletes the entry, freeing the rest of the
+  // tick at the committed ceiling (the judge-health stampSuccess).
+  if ((state.healthMarks.get(accountIndex) ?? 0) >= HEALTH_CAP_STREAK) {
+    state.probedThisTick.add(accountIndex);
+  }
 }
 
 /**
@@ -228,26 +288,6 @@ export function earliestCooldown(state: RotationState, nowMs: number): number | 
     }
   }
   return earliest;
-}
-
-/**
- * Build the exhaustion record from the cooldown map, in pool order — one
- * AccountFailure per cooldown-map entry, 1-based `account` per src/types.ts.
- * Entry existence (not current expiry) is the criterion: a map entry proves
- * the account was rate-limited THIS run, and drain-then-throw can outlive a
- * 60s window, so a freshness filter could shrink or empty the record and
- * revive the empty-record email-silent path in src/email.ts. Throw sites
- * fire only when the pick found nothing — every account carries an entry —
- * so the record is non-empty by construction.
- */
-export function failuresFromCooldowns(state: RotationState): AccountFailure[] {
-  const failures: AccountFailure[] = [];
-  for (const [index, account] of state.accounts.entries()) {
-    if (state.cooldownUntil.has(index)) {
-      failures.push({ account: index + 1, baseUrl: account.baseUrl, reason: "HTTP 429" });
-    }
-  }
-  return failures;
 }
 
 /**

@@ -149,7 +149,12 @@ async function makeScratch(name: string): Promise<Scratch> {
 async function advanceOrigin(
   root: string,
   origin: string,
-  edits: { stateIds?: Record<string, string>; notes?: string; ceilings?: string },
+  edits: {
+    stateIds?: Record<string, string>;
+    notes?: string;
+    ceilings?: string;
+    health?: string;
+  },
 ): Promise<void> {
   const other = join(root, "other");
   git(root, ["clone", "--quiet", origin, "other"]);
@@ -162,6 +167,10 @@ async function advanceOrigin(
   if (edits.ceilings !== undefined) {
     await writeFile(join(other, "state", "judge-ceilings.json"), edits.ceilings, "utf8");
     git(other, ["add", "state/judge-ceilings.json"]);
+  }
+  if (edits.health !== undefined) {
+    await writeFile(join(other, "state", "judge-health.json"), edits.health, "utf8");
+    git(other, ["add", "state/judge-health.json"]);
   }
   if (edits.notes !== undefined) {
     await writeFile(join(other, "notes.md"), edits.notes, "utf8");
@@ -333,7 +342,10 @@ describe("commit-state-rebase script", () => {
         // The one-shot rejection was consumed on push #1.
         await assert.rejects(() => access(join(hooksDir, "reject-first")), /ENOENT/);
         // The retry echo proves attempt #2 ran the full body again.
-        assert.match(run.stdout, /state push rejected; rebasing onto main and retrying once/);
+        assert.match(
+          run.stdout,
+          /state push rejected; rebasing onto the branch remote and retrying once/,
+        );
         assert.deepEqual(JSON.parse(originState(origin)), {
           version: 2,
           seenPostIds: { a: T0, b: T1 },
@@ -395,6 +407,135 @@ describe("commit-state-rebase script", () => {
         // attempt whole; nothing is skipped piecemeal.
         await advanceOrigin(root, origin, {
           ceilings: '{"https://account-one.api/v1": 2}\n',
+          notes: "origin side\n",
+        });
+        const before = git(work, ["rev-parse", "HEAD"]).trim();
+        const run = runScript(work);
+        assert.equal(run.status, 1, `status ${String(run.status)}: ${run.stderr}`);
+        assert.match(run.stdout, /non-state conflict in: notes\.md/);
+        // The abort actually unwound: no rebase in flight, HEAD unmoved.
+        await assert.rejects(() => access(join(work, ".git", "rebase-merge")), /ENOENT/);
+        assert.equal(git(work, ["rev-parse", "HEAD"]).trim(), before);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "skips a judge-health conflict (the watch job's failure-path commit-back): exit 0, origin keeps its marks",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("health-skip");
+      try {
+        // The Commit health head this suite mimics: add + commit the
+        // health file only.
+        await writeFile(
+          join(work, "state", "judge-health.json"),
+          '{"version": 1, "marks": {"https://account-one.api/v1": 2}, "outageOpen": true}\n',
+          "utf8",
+        );
+        git(work, ["add", "state/judge-health.json"]);
+        git(work, ["commit", "-m", "judge: provider health marks"]);
+        // The human push: a DIFFERENT marks reading lands on origin first
+        // (add/add conflict — the file did not exist at the merge base).
+        await advanceOrigin(root, origin, {
+          health:
+            '{"version": 1, "marks": {"https://account-one.api/v1": 1}, "outageOpen": false}\n',
+        });
+        const run = runScript(work);
+        assert.equal(run.status, 0, `status ${String(run.status)}: ${run.stderr}`);
+        // The accepted skip cost, pinned for the third state file: origin
+        // keeps ITS reading; the next run overwrites.
+        assert.match(git(origin, ["show", "main:state/judge-health.json"]), /: 1\}/);
+        assert.doesNotMatch(run.stdout, /non-state conflict/);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "recovers a dispatch-run commit-back when the sibling job advanced the branch: exit 0, both commits land",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("dispatch-branch-race");
+      try {
+        // The dispatch shape (run 885, 2026-11-07): the watch job checks
+        // out github.sha — the branch head at DISPATCH time — so the
+        // sibling probe job's later push is invisible to it. Work happens
+        // on a feature branch, not main.
+        git(work, ["checkout", "-b", "judge-provider-health"]);
+        git(work, ["push", "-u", "origin", "judge-provider-health"]);
+        // The watch job's local commit (seen-posts + the health file).
+        await writeFile(
+          join(work, "state", "seen-posts.json"),
+          stateJson({ a: T0, b: T1 }),
+          "utf8",
+        );
+        await writeFile(
+          join(work, "state", "judge-health.json"),
+          '{"version": 1, "marks": {}, "outageOpen": false}\n',
+          "utf8",
+        );
+        git(work, ["add", "state/seen-posts.json", "state/judge-health.json"]);
+        git(work, ["commit", "-m", "state: 1 new seen post ids"]);
+        // The probe job's ceilings commit lands on the branch AFTER the
+        // watch checkout pinned its SHA — the exact run-885 race.
+        const probe = join(root, "probe");
+        git(root, ["clone", "--quiet", "-b", "judge-provider-health", origin, "probe"]);
+        git(probe, ["config", "user.name", "probe job"]);
+        git(probe, ["config", "user.email", "probe@loker-watcher.invalid"]);
+        await writeFile(
+          join(probe, "state", "judge-ceilings.json"),
+          '{"https://account-one.api/v1": 4}\n',
+          "utf8",
+        );
+        git(probe, ["add", "state/judge-ceilings.json"]);
+        git(probe, ["commit", "-m", "judge: probe-measured ceilings"]);
+        git(probe, ["push", "origin", "judge-provider-health"]);
+
+        const run = runScript(work);
+        assert.equal(run.status, 0, `status ${String(run.status)}: ${run.stderr}`);
+        // The old failure mode pinned dead: BOTH commits on the branch —
+        // the probe's ceilings untouched (disjoint files, no skip needed),
+        // the state commit replayed on top of it.
+        assert.match(
+          git(origin, ["show", "judge-provider-health:state/judge-ceilings.json"]),
+          /: 4\}/,
+        );
+        assert.deepEqual(
+          JSON.parse(git(origin, ["show", "judge-provider-health:state/seen-posts.json"])),
+          { version: 2, seenPostIds: { a: T0, b: T1 } },
+        );
+        assert.doesNotMatch(run.stdout, /non-state conflict/);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "aborts a two-line conflict when one path is outside the state set (health + notes): exit 1",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("health-mixed");
+      try {
+        // Our commit touches the health file AND one non-state file.
+        await writeFile(
+          join(work, "state", "judge-health.json"),
+          '{"version": 1, "marks": {}, "outageOpen": false}\n',
+          "utf8",
+        );
+        await writeFile(join(work, "notes.md"), "work side\n", "utf8");
+        git(work, ["add", "state/judge-health.json", "notes.md"]);
+        git(work, ["commit", "-m", "health + notes"]);
+        // Origin moved BOTH paths: the conflict list has two lines, one
+        // in the skip set, one outside — the outside line fails the
+        // attempt whole; nothing is skipped piecemeal.
+        await advanceOrigin(root, origin, {
+          health:
+            '{"version": 1, "marks": {"https://account-one.api/v1": 3}, "outageOpen": true}\n',
           notes: "origin side\n",
         });
         const before = git(work, ["rev-parse", "HEAD"]).trim();

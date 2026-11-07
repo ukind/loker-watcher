@@ -63,6 +63,9 @@ function freshState(
     dispatchCounter: 0,
     ceilingWaiters: [],
     waitBudgetRemainingMs: 180_000,
+    healthMarks: new Map(),
+    probedThisTick: new Set(),
+    outcomeLedger: new Map(),
   };
 }
 
@@ -856,5 +859,56 @@ describe("rotation primitives: dial, claim/release, ceiling waiters", () => {
     state.cooldownUntil.set(1, 1_000); // expired at now 2_000
     assert.equal(earliestCooldown(state, 2_000), 3_000);
     assert.equal(earliestCooldown(state, 6_000), undefined);
+  });
+});
+
+describe("health-circuit pick: the inline half-open probe", () => {
+  it("a capped account is dispatchable until its probe claims it, then blocked", () => {
+    const state = freshState(twoAccounts());
+    state.healthMarks.set(0, 2);
+    const first = pickEligibleAccount(state, 0);
+    assert.equal(first?.index, 0); // the probe seat is open
+    claimAccount(state, 0);
+    assert.equal(state.probedThisTick.has(0), true);
+    state.cooldownUntil.set(1, 10_000); // block the only other seat
+    assert.equal(pickEligibleAccount(state, 0), undefined); // half-open: probe spent
+  });
+
+  it("a successful probe frees the tick — the account rejoins at its COMMITTED ceiling", () => {
+    const state = freshState(twoAccounts(), new Map([[0, 8]]));
+    state.healthMarks.set(0, 2);
+    claimAccount(state, 0); // the probe
+    assert.equal(state.probedThisTick.has(0), true);
+    // stampSuccess's in-run effect (the judge-health helper, Phase 4 call
+    // sites): the mark and the probe slot delete together.
+    state.healthMarks.delete(0);
+    state.probedThisTick.delete(0);
+    state.cooldownUntil.set(1, 10_000); // block the other seat — the loop measures seat 0 only
+    // Rejoined at the committed ceiling 8: the pick keeps returning the
+    // seat until inFlight reaches 8.
+    let claims = 1; // the probe claim already sits in inFlight
+    while (pickEligibleAccount(state, 0) !== undefined) {
+      claimAccount(state, 0);
+      claims += 1;
+    }
+    assert.equal(claims, 8);
+    assert.equal(state.inFlight.get(0), 8);
+  });
+
+  it("an uncapped account ignores the probe ledger entirely", () => {
+    const state = freshState(twoAccounts());
+    state.probedThisTick.add(0); // dispatched earlier this tick, NOT capped
+    const picked = pickEligibleAccount(state, 0);
+    assert.equal(picked?.index, 0);
+  });
+
+  it("the cap reads at HEALTH_CAP_STREAK — a streak of 1 neither caps nor registers a probe", () => {
+    const state = freshState(twoAccounts(), new Map([[0, 2]]));
+    state.healthMarks.set(0, 1);
+    claimAccount(state, 0);
+    assert.equal(state.probedThisTick.has(0), false); // below the threshold: no probe registered
+    state.cooldownUntil.set(1, 10_000); // block the other seat
+    const picked = pickEligibleAccount(state, 0);
+    assert.equal(picked?.index, 0); // still dispatchable at the committed ceiling
   });
 });

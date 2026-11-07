@@ -12,8 +12,8 @@ The entire application: a single-shot CLI pipeline that fetches job posts from T
 ```
 index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
 types.ts, config.ts, config-file.ts,     # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json
-judge-ceilings.ts                        #   validation (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds,
-                                         #   reasoningEffort) | the committed judge ceilings reader/writer
+judge-ceilings.ts, judge-health.ts       #   validation (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds,
+                                         #   reasoningEffort) | the committed judge ceilings + provider health reader/writer
 env-file.ts                              # PC-script support: <cwd>/.env auto-load (fills ONLY unset keys, real env wins)
                                          #   + the shared .env line writer upsertDotEnvLine (hoisted here Phase 9;
                                          #   login-linkedin + setup-curl-impersonate import it)
@@ -76,6 +76,19 @@ const state: RotationState = { accounts, cooldownUntil: new Map(), ceilings, inF
 // account at ceiling 1 with one warning naming the baseUrl; it never fails a run).
 // Terminal RETURNED, never thrown in the core; judgePosts drains, then throws AFTER Promise.all: ONE alarm email, exit(1).
 ```
+
+Health circuit (the provider-health boundary, 2026-11-07): RotationState carries healthMarks /
+probedThisTick / outcomeLedger as plain fields; the pick applies the cap and the half-open probe
+INLINE (committed ceilings un-merged — a capped account runs at effective ceiling 1 until its probe
+claims it; a success deletes the mark AND the probe slot, rejoining at the committed ceiling for the
+rest of the tick). The dispatch core stamps the ledger at the four branch sites (429 never counts;
+the mid-backoff branch never stamps; a parse-miss resolve stamps nothing — a model failure is not an
+account outcome). An all-health-blocked pick with no active cooldown exhausts immediately
+(progress-aware: an uncapped account never blocks — the zero-charge ceiling wait survives). The
+flush lives on the success path (flushTickHealth, once after the judge stage) and, best-effort, in
+main's entry-module catch (flushExhaustionHealth, episode OPEN, never masking exit 1).
+judge-rotation.ts keeps its ZERO-RUNTIME-IMPORT identity (the type-only TickOutcomes import is the
+D5 idiom; it never imports judge-health at runtime).
 
 ## linkedin-*.ts: the second platform is a PC-local voyager leg (2026-11-04)
 

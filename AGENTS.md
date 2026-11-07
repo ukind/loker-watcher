@@ -12,10 +12,14 @@ keywords, and emails new matches as a plain-text digest.
 LinkedIn posts come from an always-on loop on the developer's PC (`npm run
 watch-linkedin`), which fetches the voyager search API and pushes
 `state/linkedin-posts.json`; the hosted run reads that payload.
-Committed state is two files, one writer each: `state/seen-posts.json`
-(committed back by the workflow after match runs) and
+Committed state is three files, one writer each: `state/seen-posts.json`
+(committed back by the workflow after match runs),
 `state/judge-ceilings.json` (probe-measured judge ceilings, committed by
-the probe job).
+the probe job), and `state/judge-health.json` (per-account provider
+health, written by the watch run's flush — success path and the
+best-effort exhaustion catch — and committed back by the watch job: the
+Commit state step on the success path, the Commit health step on the
+failure path).
 
 ## Commands
 
@@ -118,6 +122,10 @@ against the configured keywords, email digest, commit state.
   (degrade-everything: absent or malformed `state/judge-ceilings.json`
   floors every account at ceiling 1 with one warning, never fails a run)
   and the probe's atomic writer
+- `src/judge-health.ts` - the committed health file's reader/writer, the
+  tick-flush (success + exhaustion), and the episode helpers
+  (degrade-everything: absent or malformed `state/judge-health.json`
+  reads as everything healthy, never fails a run)
 - `src/judge-parse.ts` - verdict parsers for the judge's responses
   (single-post and bulk)
 - `src/pool.ts` - shared bounded worker pool (`runPool`) used by the judge
