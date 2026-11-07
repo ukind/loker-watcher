@@ -1,3 +1,4 @@
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Transporter } from "nodemailer";
 import {
@@ -31,6 +32,14 @@ import { extractPosts } from "./extract.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { loadAccountCeilings } from "./judge-ceilings.js";
+import {
+  type HealthRead,
+  buildDegradedAccountsLine,
+  episodeAlarmDue,
+  flushExhaustionHealth,
+  flushTickHealth,
+  loadAccountHealth,
+} from "./judge-health.js";
 import { isRotationExhausted } from "./judge-rotation.js";
 import {
   type JudgedPost,
@@ -115,6 +124,16 @@ export interface WatcherDeps {
    *  or malformed ceilings file floors every account at ceiling 1 with one
    *  warning per account; it never fails the run). */
   readonly judgeCeilings?: (accounts: readonly LlmAccount[]) => Promise<Map<number, number>>;
+  /** Judge health resolver (the judgeCeilings seam shape). Default:
+   *  loadAccountHealth — the module owns its degrade contract (an absent
+   *  or malformed health file reads as the healthy default and never
+   *  fails the run). */
+  readonly judgeHealth?: (accounts: readonly LlmAccount[]) => Promise<HealthRead>;
+  /** Health file location for the flushes. Default: beside the state file —
+   *  dirname(statePath)/judge-health.json, which equals JUDGE_HEALTH_PATH
+   *  in production. Tests point either knob at a temp dir — the offline
+   *  rule forbids writes inside the repo. */
+  readonly judgeHealthPath?: string;
   /** LLM HTTP transport. Default: global fetch. */
   readonly fetchFn?: typeof fetch;
   /** SMTP transport for the digest and the heartbeat. Default: nodemailer. */
@@ -151,6 +170,11 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const now = deps.now ?? Date.now;
   const sleepFn = deps.sleepFn ?? sleep;
   const statePath = deps.statePath ?? STATE_PATH;
+  // The health file lives beside the state file: dirname(STATE_PATH) is the
+  // committed state/ dir, so the default derives exactly JUDGE_HEALTH_PATH
+  // in production while tests that point statePath at a temp dir keep the
+  // flush inside the temp dir (the offline rule forbids repo writes).
+  const judgeHealthPath = deps.judgeHealthPath ?? join(dirname(statePath), "judge-health.json");
   const startedAt = now();
   const linkedinFetch = deps.linkedinFetch ?? readPayloadPosts;
   // D14: labels come from the RAW config partition, not the resolved
@@ -237,6 +261,26 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   // GITHUB_* variables are present (a local run has none).
   const runUrl = runUrlFromEnv(env);
 
+  // Provider-health resolve (the D3-seam family): hoisted above the gates so
+  // the degraded-accounts line rides every email — a Gate-1 heartbeat
+  // renders marks from PREVIOUS ticks (zero dispatches cannot clear them,
+  // FR7). resolveJudgeConfig hoists with it: the line needs pool size and
+  // stable indexing. The hoist moves a malformed-LLM_ACCOUNTS failure
+  // EARLIER: on a nothing-unseen (Gate-1) tick this flips exit 0 (with a
+  // heartbeat) into exit 1 before it — a recorded, accepted trade.
+  const judgeAccounts = resolveJudgeConfig(env);
+  // The READ defaults to the derived path too (not the bare constant): the
+  // read/write pair must agree, or once a live run commits the file, repo
+  // state leaks into hermetic test runs as phantom degraded lines and caps.
+  const health = await (
+    deps.judgeHealth ??
+    ((accounts: readonly LlmAccount[]) => loadAccountHealth(accounts, judgeHealthPath))
+  )(judgeAccounts);
+  const degradedLine = buildDegradedAccountsLine(judgeAccounts, health.marks);
+  if (degradedLine !== undefined) {
+    console.warn(degradedLine);
+  }
+
   const stats: HeartbeatStats = {
     ranAt: new Date(startedAt).toISOString(),
     unique: posts.length,
@@ -247,6 +291,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     skipped: 0,
     ...(runUrl !== undefined ? { runUrl } : {}),
     ...(linkedinLeg !== undefined ? { linkedinLeg } : {}),
+    ...(degradedLine !== undefined ? { degradedAccounts: degradedLine } : {}),
   };
 
   // Prune-on-load (D6/D7): state entries outside the recency window drop
@@ -267,7 +312,6 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   console.log(`state: ${newPosts.length} unseen post(s)`);
 
   const { value: judgeOutcome, durationMs: judgeMs } = await timeStage(async () => {
-    const judgeAccounts = resolveJudgeConfig(env);
     // D3 seam: the ceilings resolver mirrors linkedinFetch — injected in
     // tests, the fs-reading default in production. Its degrade contract
     // (never throws) keeps an absent state/judge-ceilings.json a quiet
@@ -282,9 +326,14 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       ceilings,
       now,
       sleepFn,
+      health.marks,
     );
   });
   console.log(`timing: judge ${judgeMs}ms`);
+  // Provider-health flush (best-effort — never throws): the tick's outcomes
+  // land in the health file; the episode bit clears only when some account
+  // dispatched ok. Gate 1 never dispatches and never flushes (FR7).
+  await flushTickHealth(judgeAccounts, health.file, judgeOutcome.outcomes, judgeHealthPath);
   const { judged, skippedPostIds } = judgeOutcome;
   const matches = judged
     .filter((j) => j.verdict.relevant && j.verdict.locationOk)
@@ -320,7 +369,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   // The leg state rides the digest whenever it is not ok (D13 — sendDigest
   // renders the line only then; undefined omits it entirely).
   const { durationMs: notifyMs } = await timeStage(() =>
-    sendDigest(matches, resolveEmailConfig(env), deps.transport, linkedinLeg),
+    sendDigest(matches, resolveEmailConfig(env), deps.transport, linkedinLeg, degradedLine),
   );
   console.log(`timing: notify ${notifyMs}ms`);
   const saved = await persistJudged(state, judged, statePath, now());
@@ -397,11 +446,36 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
     // (D3, D8).
     if (isRotationExhausted(error)) {
       console.error(`watch: FAILED — ${error.message}`);
+      let episodeAlreadyOpen = false;
       try {
-        await sendExhaustionEmail(error.failures, resolveEmailConfig(process.env));
-      } catch (emailError) {
-        const emailMessage = emailError instanceof Error ? emailError.message : String(emailError);
-        console.warn(`email: exhaustion alarm not sent — ${emailMessage}`);
+        const bootstrapAccounts = resolveJudgeConfig(process.env);
+        const healthRead = await loadAccountHealth(bootstrapAccounts);
+        // Pre-flush read: the flush below OPENS the bit — an open bit here
+        // means a PREVIOUS run already alarmed (one alarm per episode, the
+        // research's checkpoint 4; the fetch-linkedin episode precedent).
+        episodeAlreadyOpen = !episodeAlarmDue(healthRead.file);
+        const outcomes = error.health ?? { ok: [], failed: new Map<number, string>() };
+        await flushExhaustionHealth(bootstrapAccounts, healthRead.file, outcomes);
+      } catch (healthError) {
+        const healthMessage =
+          healthError instanceof Error ? healthError.message : String(healthError);
+        console.warn(`judge: health flush failed — ${healthMessage}`);
+        // episodeAlreadyOpen stays false → the alarm fires (fail-visible:
+        // a duplicate alarm costs one email, a suppressed alarm costs the
+        // outage).
+      }
+      if (episodeAlreadyOpen) {
+        console.warn(
+          "watch: outage episode already open — exhaustion alarm suppressed (one per episode)",
+        );
+      } else {
+        try {
+          await sendExhaustionEmail(error.failures, resolveEmailConfig(process.env));
+        } catch (emailError) {
+          const emailMessage =
+            emailError instanceof Error ? emailError.message : String(emailError);
+          console.warn(`email: exhaustion alarm not sent — ${emailMessage}`);
+        }
       }
       process.exit(1);
     }

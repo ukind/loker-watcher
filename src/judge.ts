@@ -33,16 +33,32 @@
  * both stages, or never reaches the fallback once the budget is spent, is
  * skipped for this run, logged visibly, and omitted from state (D3: it
  * stays unseen and retries next run).
+ *
+ * Provider health (the circuit): per-attempt outcomes stamp an in-run
+ * ledger — 429s never count (the cooldown map carries them), terminal 5xx /
+ * 401 / 403 / transport errors stamp their real cause, successes stamp ok
+ * (last outcome wins). A capped account (healthMarks streak >= 2) runs at
+ * effective ceiling 1 and is half-open: its first dispatch is the tick's
+ * probe; a success frees it for the rest of the tick. An all-health-blocked
+ * pick with no active cooldown exhausts immediately instead of hanging on
+ * the release queue.
  */
 import type { ReasoningEffort } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
+import {
+  HARD_FAIL_TICKS_TO_CAP,
+  type TickOutcomes,
+  buildFailuresFromLedger,
+  readTickOutcomes,
+  stampFailure,
+  stampSuccess,
+} from "./judge-health.js";
 import { parseBulkVerdicts, parseVerdict } from "./judge-parse.js";
 import {
   type RotationState,
   claimAccount,
   coolAccount,
   earliestCooldown,
-  failuresFromCooldowns,
   isRotationExhausted,
   parkUntilEligible,
   pickEligibleAccount,
@@ -51,7 +67,7 @@ import {
   waitCeilingSlot,
 } from "./judge-rotation.js";
 import { runPool } from "./pool.js";
-import type { JudgeVerdict, Post } from "./types.js";
+import type { AccountFailure, JudgeVerdict, Post } from "./types.js";
 
 /**
  * Per-request timeout. 15s was never validated from a GitHub runner: run
@@ -176,6 +192,10 @@ export interface JudgedPost {
 export interface JudgeBatchResult {
   judged: JudgedPost[];
   skippedPostIds: string[];
+  /** Per-account dispatch outcomes of the run — index.ts flushes them into
+   *  the health file (judge-health flushTickHealth) and the heartbeat/
+   *  digest degraded line reads the capped set. */
+  outcomes: TickOutcomes;
 }
 
 /**
@@ -258,9 +278,12 @@ type BatchOutcome =
  * (retry), or end the call unanswered (defer).
  */
 type ContentDecision<T> =
-  | { action: "resolve"; value: T }
+  | { action: "resolve"; value: T; countsSuccess: boolean }
   | { action: "retry" }
   | { action: "defer" };
+// countsSuccess marks a genuine model answer: a parse-miss resolve counts
+// NEITHER success nor failure — a model failure is not an account outcome
+// (the research's non-health boundary).
 
 /**
  * Outcome of one dispatched LLM call. The all-cooling terminal is RETURNED
@@ -306,6 +329,65 @@ interface DispatchWarns {
   statusFailure: (accountNo: number, attemptNo: number, status: number, statusText: string) => void;
   /** A transport error (dead socket, timeout, unparsable body). */
   transportError: (accountNo: number, attemptNo: number, message: string) => void;
+}
+
+/**
+ * The real-cause string a terminal non-ok status stamps on the ledger.
+ * 401/403 mean the key is dead — the alarm should say so, not just the
+ * status code.
+ */
+function terminalFailureReason(status: number): string {
+  return status === 401 || status === 403 ? `HTTP ${status} — key dead` : `HTTP ${status}`;
+}
+
+/**
+ * True when the pick found nothing BECAUSE of the health circuit. An
+ * uncapped account always makes progress on a release (its claims return
+ * and the queue wakes), so it can never permanently block the pool — this
+ * is what keeps the zero-charge ceiling wait alive for a healthy saturated
+ * pool. A capped account is permanently blocked only when its probe is
+ * spent AND no claim is outstanding that could still succeed and free it.
+ * No cooldown is active at the call site (the flavor split checks that
+ * first). Plain field reads; inline by design (judge-rotation owns no
+ * health concept — the boundary).
+ */
+function allHealthBlocked(state: RotationState): boolean {
+  return state.accounts.every((_, index) => {
+    const capped = (state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP;
+    if (!capped) return false;
+    return state.probedThisTick.has(index) && (state.inFlight.get(index) ?? 0) === 0;
+  });
+}
+
+/**
+ * The exhaustion record with the health fallback: the ledger's real causes
+ * first (cooling-only accounts carry "HTTP 429" inside
+ * buildFailuresFromLedger), then any capped account the ledger cannot
+ * explain appended — a probe that answered unusably stamps nothing, but
+ * the alarm must still name the account. Non-empty at every throw site by
+ * construction: the arm fires only when every account is cooling, ledgered,
+ * or capped (src/email.ts:181-182 renders null on an empty record while
+ * exit 1 still fires — the exact silent-alarm this prevents).
+ */
+function exhaustionRecord(state: RotationState): AccountFailure[] {
+  const record = buildFailuresFromLedger(state);
+  const listed = new Set(record.map((failure) => failure.account));
+  for (const [index, account] of state.accounts.entries()) {
+    const capped = (state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP;
+    if (capped && !listed.has(index + 1)) {
+      record.push({
+        account: index + 1,
+        baseUrl: account.baseUrl,
+        reason: "capped by provider health",
+      });
+    }
+  }
+  // Pool order across BOTH sources: the ledger walk is already in pool
+  // order, but the capped appendix lands after it — the stable sort
+  // re-establishes the pool-ordered record buildFailuresFromLedger's doc
+  // promises (the old cooldown-map builder guaranteed the same).
+  record.sort((a, b) => a.account - b.account);
+  return record;
 }
 
 /**
@@ -387,11 +469,16 @@ async function dispatchLlmCall<T>(options: {
       // throw here would be swallowed by the catch and misread as a
       // transport error); an all-at-ceiling pick has no expiry, so it
       // waits on the release queue at ZERO budget charge — a healthy
-      // backlog can never false-trip the alarm.
+      // backlog can never false-trip the alarm. A health-blocked pool is
+      // the third flavor: every account capped with its probe spent and
+      // drained, no cooldown pending — the release queue would never
+      // wake, so the terminal trips immediately at zero budget charge.
       if (earliestCooldown(state, now()) !== undefined) {
         if (!(await parkUntilEligible(state, now, sleepFn))) {
           return { status: "exhausted" };
         }
+      } else if (allHealthBlocked(state)) {
+        return { status: "exhausted" };
       } else {
         await waitCeilingSlot(state);
       }
@@ -441,6 +528,12 @@ async function dispatchLlmCall<T>(options: {
             return { action: "backoff", delayMs: delay };
           }
           warns.statusFailure(attemptIndex + 1, attempt + 1, response.status, response.statusText);
+          // Terminal for this call: spent backoff or a non-retryable
+          // status. The stamp records the REAL cause (the mid-backoff
+          // branch above never stamps — a 5xx that recovers within backoff
+          // must not count against the account; a success later would
+          // overwrite the ledger anyway, last outcome wins).
+          stampFailure(state, attemptIndex, terminalFailureReason(response.status));
           // Spent backoff or a non-retryable status: defer the batch whole
           // (its posts stay unseen and retry next run); the post ladder
           // spends the attempt instead.
@@ -456,6 +549,14 @@ async function dispatchLlmCall<T>(options: {
           attempt + 1,
         );
         if (decision.action === "resolve") {
+          if (decision.countsSuccess) {
+            // The success stamp flips the ledger to ok (last outcome wins),
+            // frees the half-open probe slot, and lifts the in-run cap — the
+            // account rejoins at its committed ceiling for the rest of the
+            // tick. A parse-miss resolve stamps NOTHING: a model failure is
+            // not an account outcome.
+            stampSuccess(state, attemptIndex);
+          }
           return { action: "answered", value: decision.value };
         }
         if (decision.action === "defer") {
@@ -469,6 +570,7 @@ async function dispatchLlmCall<T>(options: {
         // fallback); the post spends an attempt and retries.
         const message = error instanceof Error ? error.message : String(error);
         warns.transportError(attemptIndex + 1, attempt + 1, message);
+        stampFailure(state, attemptIndex, `network error: ${message}`);
         return deferOnTransport ? { action: "defer" } : { action: "retry" };
       } finally {
         // The release gate: freed on answered, deferred, rewind, backoff,
@@ -590,10 +692,12 @@ async function judgeBatch(
           `judge: batch ${batchIndex} account ${accountNo} (${batch.length} posts) failed to parse bulk verdicts: ${rawContent.slice(0, 100)} — falling back to single-post calls (up to 2 attempts per post)`,
         );
         // A parse miss is a model failure, not a transport one: report the
-        // call answered-empty so the caller falls back per item.
-        return { action: "resolve", value: new Map() };
+        // call answered-empty so the caller falls back per item. It stamps
+        // NOTHING on the health ledger (countsSuccess: false) — a broken
+        // model must not clear a dead account's streak or open the episode.
+        return { action: "resolve", value: new Map(), countsSuccess: false };
       }
-      return { action: "resolve", value: verdicts };
+      return { action: "resolve", value: verdicts, countsSuccess: true };
     },
   });
   if (outcome.status === "answered") {
@@ -679,13 +783,13 @@ export async function judgePost(
         );
         return { action: "retry" };
       }
-      return { action: "resolve", value: verdict };
+      return { action: "resolve", value: verdict, countsSuccess: true };
     },
   });
   if (outcome.status === "exhausted") {
     // D6: thrown at wrapper level, OUTSIDE the core's try — a throw inside
     // would be swallowed by the total transport catches.
-    throw rotationExhausted(failuresFromCooldowns(state));
+    throw rotationExhausted(exhaustionRecord(state));
   }
   if (outcome.status === "answered") {
     return outcome.value;
@@ -731,12 +835,16 @@ export async function judgePosts(
   ceilings: ReadonlyMap<number, number> = new Map(),
   now: () => number = Date.now,
   sleepFn: SleepFn = sleep,
+  healthMarks: ReadonlyMap<number, number> = new Map(),
 ): Promise<JudgeBatchResult> {
   const state: RotationState = {
     accounts,
     cooldownUntil: new Map(),
     ceilings,
     inFlight: new Map(),
+    healthMarks: new Map(healthMarks),
+    probedThisTick: new Set(),
+    outcomeLedger: new Map(),
     dispatchCounter: 0,
     ceilingWaiters: [],
     waitBudgetRemainingMs: WAIT_BUDGET_MS,
@@ -755,7 +863,11 @@ export async function judgePosts(
   // index.ts always passes the resolved map.
   const width = Math.max(
     1,
-    [...ceilings.values()].reduce((sum, ceiling) => sum + ceiling, 0),
+    [...ceilings.entries()].reduce(
+      (sum, [index, ceiling]) =>
+        sum + ((state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP ? 1 : ceiling),
+      0,
+    ),
   );
 
   // One result slot per batch, filled by whichever worker takes it. Indexing
@@ -783,7 +895,7 @@ export async function judgePosts(
   // leaves the unjudged posts unseen — index.ts turns the error into the
   // exhaustion email and exit 1; state is never reached.
   if (outcomes.some((outcome) => outcome?.status === "exhausted")) {
-    throw rotationExhausted(failuresFromCooldowns(state));
+    throw rotationExhausted(exhaustionRecord(state), readTickOutcomes(state));
   }
 
   // Reassembly walk (input order): bulk verdicts fill their slots at once;
@@ -861,7 +973,7 @@ export async function judgePosts(
       }
     });
     if (exhausted) {
-      throw rotationExhausted(failuresFromCooldowns(state));
+      throw rotationExhausted(exhaustionRecord(state), readTickOutcomes(state));
     }
     const starved = Math.max(0, fallbackWork.length - FALLBACK_CALL_BUDGET);
     if (starved > 0) {
@@ -885,5 +997,5 @@ export async function judgePosts(
       skippedPostIds.push(post.id);
     }
   }
-  return { judged, skippedPostIds };
+  return { judged, skippedPostIds, outcomes: readTickOutcomes(state) };
 }

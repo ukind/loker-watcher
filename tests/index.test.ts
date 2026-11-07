@@ -26,6 +26,7 @@ import type {
   ResponseLike,
 } from "../src/fetch-threads.js";
 import { runWatcher, timeStage } from "../src/index.js";
+import { type HealthFile, loadAccountHealth } from "../src/judge-health.js";
 import { isRotationExhausted } from "../src/judge-rotation.js";
 import type { PayloadRead } from "../src/linkedin-payload.js";
 import type { AppState } from "../src/state.js";
@@ -296,6 +297,12 @@ async function tempStatePath(name: string, seed?: AppState): Promise<string> {
     await writeFile(path, `${JSON.stringify(seed, null, 2)}\n`, "utf8");
   }
   return path;
+}
+
+/** Temp health-file path for the flush assertions (same lazy dir). */
+async function tempHealthPath(name: string): Promise<string> {
+  dir ??= await mkdtemp(join(tmpdir(), "lw-index-"));
+  return join(dir, name);
 }
 
 describe("runWatcher", () => {
@@ -692,6 +699,143 @@ describe("runWatcher", () => {
 
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /watch: surfaces: tag\/hiring, linkedin\/#hiring/.test(line)));
+  });
+});
+
+// Provider health (the entry wiring): the resolve above Gate 1, the marks
+// arg into judgePosts, the success-path flush, and the Gate-1 no-flush pin.
+describe("provider health (the entry wiring)", () => {
+  it("acceptance: hard-fail builds a streak, the second tick caps, and a probe success clears and rejoins", async () => {
+    const posts = [
+      { id: id19(20), text: "Hiring: elixir developer, remote" },
+      { id: id19(21), text: "Hiring: react native developer, jakarta" },
+    ];
+    const statePath = await tempStatePath("acceptance-state.json");
+    const healthPath = await tempHealthPath("acceptance-health.json");
+    const { transport, subjects, texts } = recordingTransport();
+    let accountOneOk = false;
+    const auths: string[] = [];
+    const fetchFn = (async (url: unknown): Promise<Response> => {
+      auths.push(new URL(String(url)).host);
+      if (!accountOneOk) {
+        return new Response("Service Unavailable", { status: 503 });
+      }
+      // The recovered endpoint answers the whole batch in one call.
+      return ok(
+        JSON.stringify({
+          [id19(20)]: { relevant: true, locationOk: true },
+          [id19(21)]: { relevant: true, locationOk: true },
+        }),
+      );
+    }) as unknown as typeof fetch;
+    const runOnce = async (): Promise<{
+      judged: number;
+      matches: number;
+      skipped: number;
+      saved: boolean;
+    }> =>
+      runWatcher({
+        env: BASE_ENV,
+        config: CONFIG,
+        contextFactory: singlePageContextFactory(graphqlBody(posts)),
+        fetchFn,
+        transport,
+        statePath,
+        now: () => NOW,
+        sleepFn: () => Promise.resolve(), // inert: the 503 backoffs never wait
+        judgeHealth: (accounts) => loadAccountHealth(accounts, healthPath),
+        judgeHealthPath: healthPath,
+      });
+
+    // Tick 1: the 503 stamps a hard failure — the streak builds to 1 (not yet capped).
+    assert.deepEqual(await runOnce(), { judged: 2, matches: 0, skipped: 2, saved: false });
+    assert.equal(auths.length, 4); // the terminal attempt + the three same-account backoffs
+    let stored = JSON.parse(await readFile(healthPath, "utf8")) as HealthFile;
+    assert.equal(stored.marks["https://mock.api/v1"], 1);
+
+    // Tick 2: the second hard-failed tick — the streak reaches the cap threshold.
+    assert.deepEqual(await runOnce(), { judged: 2, matches: 0, skipped: 2, saved: false });
+    stored = JSON.parse(await readFile(healthPath, "utf8")) as HealthFile;
+    assert.equal(stored.marks["https://mock.api/v1"], 2);
+
+    // Tick 3: capped at 1 request/tick — the probe. The endpoint recovered:
+    // the success clears the mark in-run and the batch answers in that call.
+    auths.length = 0;
+    accountOneOk = true;
+    assert.deepEqual(await runOnce(), { judged: 2, matches: 2, skipped: 0, saved: true });
+    assert.equal(auths.length, 1); // exactly the probe dispatch — half-open
+    // Three emails: two Gate-2 heartbeats, then the match digest — which
+    // still renders the degraded line (the load-time marks were capped).
+    assert.equal(subjects.length, 3);
+    assert.match(subjects[2] ?? "", /2 new job posts/);
+    assert.ok(
+      texts[2]?.includes(
+        "Degraded LLM account(s): #1 https://mock.api/v1 — capped at 1 request/tick",
+      ),
+    );
+    // The flush cleared the mark (the success reset the streak).
+    stored = JSON.parse(await readFile(healthPath, "utf8")) as HealthFile;
+    assert.deepEqual(stored.marks, {});
+    assert.equal(stored.outageOpen, false);
+  });
+
+  it("renders the degraded-accounts line on the Gate 1 heartbeat — marks load above the gate", async () => {
+    const posts = [{ id: id19(22), text: "Hiring: pragma developer, remote" }];
+    const seed: AppState = {
+      version: 2,
+      seenPostIds: { [id19(22)]: iso(NOW - HOUR) },
+    };
+    const statePath = await tempStatePath("gate1-degraded.json", seed);
+    const before = await readFile(statePath, "utf8");
+    const { transport, subjects, texts } = recordingTransport();
+
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeHealth: async () => ({
+        marks: new Map([[0, 2]]),
+        file: { version: 1, marks: { "https://mock.api/v1": 2 }, outageOpen: false },
+      }),
+    });
+
+    assert.deepEqual(run, { judged: 0, matches: 0, skipped: 0, saved: false });
+    assert.equal(await readFile(statePath, "utf8"), before); // Gate 1: state untouched
+    assert.equal(subjects.length, 1); // the Gate 1 heartbeat still fires
+    assert.ok(
+      texts[0]?.includes(
+        "Degraded LLM account(s): #1 https://mock.api/v1 — capped at 1 request/tick",
+      ),
+    );
+  });
+
+  it("never flushes health on Gate 1 — zero dispatches cannot clear marks (FR7)", async () => {
+    const posts = [{ id: id19(23), text: "Hiring: elm developer, remote" }];
+    const seed: AppState = { version: 2, seenPostIds: { [id19(23)]: iso(NOW - HOUR) } };
+    const statePath = await tempStatePath("gate1-no-flush.json", seed);
+    const healthPath = await tempHealthPath("gate1-no-flush-health.json");
+    const { transport } = recordingTransport();
+
+    await runWatcher({
+      env: BASE_ENV,
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeHealth: async () => ({
+        marks: new Map([[0, 2]]),
+        file: { version: 1, marks: { "https://mock.api/v1": 2 }, outageOpen: false },
+      }),
+      judgeHealthPath: healthPath,
+    });
+
+    await assert.rejects(() => readFile(healthPath, "utf8"), /ENOENT/);
   });
 });
 

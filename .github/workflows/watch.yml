@@ -107,6 +107,10 @@ jobs:
     # WAIT_BUDGET_MS (180s, src/judge.ts) caps the parked wait before the
     # exhaustion alarm, so the alarm lands ~1-2 min inside the cap and the
     # run still dies before the next 10-minute tick queues.
+    #
+    # The failure-path Commit health step adds one stat + one git add
+    # inside the envelope: the exhaustion alarm lands ~1-2 min inside the
+    # cap (WAIT_BUDGET_MS), leaving minutes for the commit-back.
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -154,6 +158,32 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: npx tsx src/index.ts
 
+      - name: Commit health
+        # The provider-health file's failure-path commit (the FR7 episode
+        # bit must survive the run that SETS it): the exhaustion exit skips
+        # every later step, so this one rides `always() && failure()` —
+        # the same head shape as the probe job's Commit ceilings (bot
+        # identity, the -f-guarded add of ONLY the health file, the no-op
+        # guard, a fixed-message commit, the tested script). The [-f] guard
+        # covers a run that died before the flush (the health file is
+        # absent from every checkout until the first live run commits it —
+        # an unconditional add of an absent path is fatal under the step's
+        # implicit bash -e). The success path commits the same file through
+        # the Commit state step below.
+        if: always() && failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f state/judge-health.json ]; then
+            git add state/judge-health.json
+          fi
+          if git diff --cached --quiet; then
+            echo "health unchanged; nothing to commit"
+            exit 0
+          fi
+          git commit -m "judge: provider health marks"
+          bash scripts/commit-state-rebase.sh
+
       - name: Commit state
         # F021: the queue serializes watcher runs, but a human push can land
         # between this run's checkout and its commit-back. The rebase, the
@@ -165,6 +195,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add state/seen-posts.json
+          # The health file joins the success-path commit set — guarded: a
+          # Gate-1 tick (nothing unseen) never flushes, so the file can be
+          # absent until the first live run creates it, and an unconditional
+          # add of an absent pathspec is fatal under the step's implicit
+          # bash -e.
+          if [ -f state/judge-health.json ]; then
+            git add state/judge-health.json
+          fi
           if git diff --cached --quiet; then
             echo "state unchanged; nothing to commit"
             exit 0

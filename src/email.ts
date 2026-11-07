@@ -71,8 +71,17 @@ export function buildSubject(posts: readonly Post[]): string | null {
  * not ok — an ok leg is the quiet default, and sendDigest renders the
  * line only then; undefined omits it entirely. The ` — detail` suffix
  * rides the legDetailSuffix helper.
+ *
+ * The degraded-accounts line (provider health): the pre-rendered string
+ * from judge-health's buildDegradedAccountsLine rides ONLY when some
+ * account is capped — absent from healthy emails, never empty (byte
+ * compatibility with the pre-health fixtures).
  */
-export function buildDigest(posts: readonly Post[], leg?: LegLine): string | null {
+export function buildDigest(
+  posts: readonly Post[],
+  leg?: LegLine,
+  degradedAccounts?: string,
+): string | null {
   const subject = buildSubject(posts);
   if (subject === null) return null;
 
@@ -86,7 +95,9 @@ export function buildDigest(posts: readonly Post[], leg?: LegLine): string | nul
     leg !== undefined && leg.status !== "ok"
       ? `\n\nLinkedIn leg: ${leg.status}${legDetailSuffix(leg)}`
       : "";
-  return `${subject}\n\n${items.join("\n\n")}${legLine}\n`;
+  const degradedLine =
+    degradedAccounts !== undefined && degradedAccounts !== "" ? `\n\n${degradedAccounts}` : "";
+  return `${subject}\n\n${items.join("\n\n")}${legLine}${degradedLine}\n`;
 }
 
 /** The ` — detail` suffix for a leg line; empty when no detail rides. */
@@ -144,6 +155,7 @@ export async function sendDigest(
   config: EmailConfig,
   transport?: Transporter,
   leg?: LegLine,
+  degradedAccounts?: string,
 ): Promise<SendDigestResult> {
   if (posts.length === 0) {
     return {
@@ -153,7 +165,7 @@ export async function sendDigest(
   }
 
   const subject = buildSubject(posts);
-  const text = buildDigest(posts, leg);
+  const text = buildDigest(posts, leg, degradedAccounts);
   if (subject === null || text === null) {
     return {
       sent: false,

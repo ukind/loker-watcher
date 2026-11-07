@@ -10,13 +10,17 @@
 # the push non-fast-forward by construction; --force-with-lease still
 # rejects a concurrent push the local fetch has not seen. A state commit
 # that conflicts against main's own lines for a committed state file
-# (state/seen-posts.json, state/judge-ceilings.json) is skipped whole (the
-# next run re-judges, or the next probe run overwrites; one duplicate
-# digest or one stale-ceiling stretch is the accepted cost) instead of
-# failing the run. ANY other conflicted path is real work failing to
-# replay: abort loudly and exit 1.
+# (state/seen-posts.json, state/judge-ceilings.json,
+# state/judge-health.json) is skipped whole (the next run re-judges, or
+# the next probe run overwrites; one duplicate digest or one
+# stale-ceiling stretch is the accepted cost) instead of failing the run.
+# ANY other conflicted path is real work failing to replay: abort loudly
+# and exit 1.
 #
-# Invoked EXACTLY ONCE by watch.yml — the single retry lives here. The step
+# Invoked EXACTLY ONCE per run by watch.yml — three callers, mutually
+# exclusive per run: the watch job's Commit state step (success path), the
+# probe job's Commit ceilings step, and the watch job's Commit health step
+# (failure path). The single retry lives here. The step
 # shell consumes the exit contract with no wrapper: exit 0 = pushed; exit 1
 # = non-state conflict abort or second push failure.
 #
@@ -28,8 +32,11 @@
 # deviation from the moved YAML body is the skip-bound exhaustion echo
 # inside attempt() below (FRD FR2 + TECH_DEBT_AUDIT.md:74). Second
 # deviation (2026-11-06, ceilings commit-back): the skip test grew from a
-# single-literal equality to set membership over the two committed state
-# files. Everything else is a verbatim move of watch.yml's former :123-167.
+# single-literal equality to set membership over the committed state
+# files. Third deviation (2026-11-07, provider health): the skip set grew
+# to the three committed state files — the health file joins seen-posts
+# and judge-ceilings. Everything else is a verbatim move of watch.yml's
+# former :123-167.
 #
 # The 50-skip bound is a runaway guard, not a tuning knob: a replayed
 # commit conflicts at most once per state line, so 50 skips means the
@@ -56,7 +63,7 @@ attempt() {
       all_state=1
       while IFS= read -r path; do
         case "$path" in
-          "" | state/seen-posts.json | state/judge-ceilings.json) ;;
+          "" | state/seen-posts.json | state/judge-ceilings.json | state/judge-health.json) ;;
           *) all_state=0 ;;
         esac
       done <<EOF

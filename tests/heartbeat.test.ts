@@ -250,3 +250,26 @@ describe("sendHeartbeat", () => {
     assert.equal(candidates.length, 1);
   });
 });
+
+describe("buildHeartbeatBody degraded line (provider health)", () => {
+  it("renders the degraded-accounts line inside the funnel block when accounts are capped", () => {
+    const body = buildHeartbeatBody(
+      {
+        ...STATS,
+        degradedAccounts:
+          "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick",
+      },
+      [],
+      NOW,
+    );
+    assert.ok(
+      body.includes(
+        "  Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick",
+      ),
+    );
+  });
+
+  it("omits the degraded-accounts line entirely when absent", () => {
+    assert.ok(!buildHeartbeatBody(STATS, [], NOW).includes("Degraded LLM account"));
+  });
+});

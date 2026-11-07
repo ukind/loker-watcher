@@ -74,6 +74,21 @@ export const LINKEDIN_PAYLOAD_PATH = "state/linkedin-posts.json";
 export const JUDGE_CEILINGS_PATH = "state/judge-ceilings.json";
 
 /**
+ * Per-account provider health marks (single-writer doctrine, the
+ * JUDGE_CEILINGS_PATH shape): the watch run is the ONLY writer — it
+ * flushes the tick's outcome ledger on the success path and, best-effort,
+ * from main's entry-module catch (src/index.ts:393-406) — and the watch
+ * workflow commits the file back (the failure-path Commit health step).
+ * A flat {version, marks, outageOpen} envelope with no timestamp or
+ * staleness bound: marks self-heal (a stale mark costs at most the
+ * 1-request probe per tick until the first success clears it), so the
+ * file stays byte-identical on no-op runs. A missing or malformed file
+ * degrades to no marks (the healthy default) and never fails a run
+ * (src/judge-health.ts).
+ */
+export const JUDGE_HEALTH_PATH = "state/judge-health.json";
+
+/**
  * Location of the JSON source of truth for surfaces, keywords, candidate
  * terms and the recency window. Committed and hand-edited; never written
  * by a run. A missing or malformed file fails the run (src/config-file.ts).

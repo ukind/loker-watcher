@@ -437,3 +437,92 @@ describe("sendExhaustionEmail", () => {
     );
   });
 });
+
+describe("buildDigest degraded line (provider health)", () => {
+  const posts: Post[] = [
+    {
+      platform: "threads",
+      id: "301",
+      text: "Hiring React dev",
+      author: "devteam",
+      permalink: "https://www.threads.com/@devteam/post/301",
+      timestamp: "2026-10-24T00:00:00.000Z",
+    },
+  ];
+  const LINE = "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick";
+
+  it("renders the degraded line after the items when provided", () => {
+    const digest = buildDigest(posts, undefined, LINE);
+    assert.ok(digest !== null);
+    assert.ok(digest.includes(`\n\n${LINE}\n`));
+    assert.ok(digest.endsWith(`${LINE}\n`));
+  });
+
+  it("keeps the body byte-identical when the line is absent", () => {
+    const withRider = buildDigest(posts, undefined, LINE);
+    const without = buildDigest(posts);
+    assert.ok(withRider !== null && without !== null);
+    assert.equal(withRider.startsWith(without), true);
+    assert.ok(!without.includes("Degraded LLM"));
+  });
+
+  it("still renders the leg line when both riders ride (leg first, degraded last)", () => {
+    const digest = buildDigest(posts, { status: "stale", detail: "payload 2h old" }, LINE);
+    assert.ok(digest !== null);
+    const legAt = digest.indexOf("LinkedIn leg: stale");
+    const degradedAt = digest.indexOf("Degraded LLM");
+    assert.ok(legAt >= 0);
+    assert.ok(degradedAt > legAt);
+  });
+});
+
+describe("sendDigest degraded pass-through", () => {
+  const sampleConfig: EmailConfig = {
+    user: "alerts@gmail.com",
+    pass: "app-password",
+    to: "alerts@gmail.com",
+  };
+  const samplePosts: Post[] = [
+    {
+      platform: "threads",
+      id: "201",
+      text: "Hiring React dev",
+      author: "devteam",
+      permalink: "https://www.threads.com/@devteam/post/201",
+      timestamp: "2026-10-24T00:00:00.000Z",
+    },
+  ];
+
+  it("passes the degraded line into the rendered body", async () => {
+    let captured: unknown = null;
+    const mockTransport = {
+      sendMail: async (options: unknown) => {
+        captured = options;
+        return { messageId: "msg-d1" };
+      },
+    } as unknown as Transporter;
+
+    await sendDigest(
+      samplePosts,
+      sampleConfig,
+      mockTransport,
+      undefined,
+      "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick",
+    );
+    const mail = captured as { text: string };
+    assert.ok(mail.text.includes("Degraded LLM account(s)"));
+  });
+});
+
+describe("buildExhaustionText health reasons", () => {
+  it("renders the health reasons verbatim (HTTP 503, key dead, network error)", () => {
+    const text = buildExhaustionText([
+      { account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 503" },
+      { account: 2, baseUrl: "https://api.b.com/v1", reason: "HTTP 401 — key dead" },
+      { account: 3, baseUrl: "https://api.c.com/v1", reason: "network error: socket hang up" },
+    ]);
+    assert.ok(text?.includes("account 1 (https://api.a.com/v1) — HTTP 503"));
+    assert.ok(text?.includes("account 2 (https://api.b.com/v1) — HTTP 401 — key dead"));
+    assert.ok(text?.includes("account 3 (https://api.c.com/v1) — network error: socket hang up"));
+  });
+});
