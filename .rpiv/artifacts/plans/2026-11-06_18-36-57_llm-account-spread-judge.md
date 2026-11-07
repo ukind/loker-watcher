@@ -8,16 +8,17 @@ topic: "Spread LLM judge load across all accounts using probe-measured per-accou
 tags: [plan, judge, judge-rotation, judge-ceilings, probe-judge, watch-workflow]
 status: ready
 parent: ".rpiv/artifacts/designs/2026-11-06_11-44-02_llm-account-spread-judge.md"
-phase_count: 5
+phase_count: 6
 phases:
   - { n: 1, title: "Ceilings module", files: [src/judge-ceilings.ts, tests/judge-ceilings.test.ts, src/config.ts], depends_on: [] }
   - { n: 2, title: "Spread mechanism", files: [src/judge-rotation.ts, src/judge.ts, src/index.ts, src/config.ts, tests/judge-rotation.test.ts, tests/judge.test.ts, tests/judge-helpers.ts], depends_on: [1] }
   - { n: 3, title: "Probe persistence + commit-back", files: [scripts/probe-judge.ts, .github/workflows/watch.yml, scripts/commit-state-rebase.sh, tests/commit-state-rebase.test.ts], depends_on: [2] }
   - { n: 4, title: "Docs sync + validation", files: [.rpiv/guidance/architecture.md, .rpiv/guidance/src/architecture.md, .rpiv/guidance/.github/workflows/architecture.md, .rpiv/guidance/scripts/architecture.md, README.md, AGENTS.md], depends_on: [3] }
   - { n: 5, title: "Deep ramp + sequential dispatch", files: [scripts/probe-judge.ts, .github/workflows/watch.yml, README.md, .rpiv/guidance/.github/workflows/architecture.md, .rpiv/guidance/scripts/architecture.md], depends_on: [3] }
-last_updated: 2026-11-07T06:08:49+0700
+  - { n: 6, title: "Parallel account walk", files: [scripts/probe-judge.ts, .rpiv/guidance/scripts/architecture.md], depends_on: [5] }
+last_updated: 2026-11-07T15:27:13+0700
 last_updated_by: Yogiswara Utama
-last_updated_note: "Phase 5 added (operator decision 2026-11-07): probe ramp doubles to a 32 cap instead of stopping at 4; watch job needs the probe on dispatch runs so fresh maximal ceilings flow into the same run"
+last_updated_note: "Phase 6 added (operator feedback, Actions run 42354544399): probe walks all accounts concurrently (Promise.allSettled) — wall time = the slowest account, not the sum; ramp logs gain the account label"
 ---
 
 # Spread LLM judge load across all accounts using probe-measured per-account ceilings — Implementation Plan
@@ -2521,6 +2522,136 @@ async function findConcurrencyCeiling(payload: unknown, account: LlmAccount): Pr
 
 ---
 
+## Phase 6: Parallel account walk
+
+### Overview
+
+Operator feedback from Actions run 42354544399 (2026-11-07): with 3 `LLM_ACCOUNTS` the probe step took ~7 minutes because `main()` walked the accounts sequentially — account 1's whole sequence (minimal call → 10-post bulk → bulk again → ramp 2→32), then account 2's, then account 3's — so wall time = Σ(per-account time). The per-account probe for ALL accounts now runs concurrently: `main()` maps each account onto its own async probe and awaits `Promise.allSettled`, then collects in pool order. Wall time becomes the slowest single account (~3x faster at 3 accounts). Nothing inside an account changes order — the ramp levels stay sequential because each level's verdict gates the next — and the live-only ceilings write, the exit-1 dead gate, and `RAMP_MAX` are untouched. Requires Phase 5: this parallelizes the account walk over Phase 5's doubling ramp.
+
+### Changes Required:
+
+#### 1. Concurrent per-account probes
+**File**: `scripts/probe-judge.ts`
+**Changes**: the account loop's body moves into `probeAccount(index, account)` — one account's minimal + bulk + bulk-again + `findConcurrencyCeiling` sequence in the production order, plus its `=== label ===` header and per-account summary line (printed from inside the probe so output streams as each account progresses). `main()` maps `accounts` onto `probeAccount` promises, `await Promise.allSettled(...)`, then walks the settled outcomes IN POOL ORDER: fulfilled → record `ceilings[account.baseUrl.trim()]`, run `classifyDead`, push to `dead` on a cause; rejected → push to `dead` with the reason and record NO ceiling (the reader floors that account at 1 with one warning — the honest signal; `timed` already converts network failures to `failed` outcomes, so a rejection here is an unexpected bug, and containment keeps the other accounts' readings alive). `writeCeilingsAtomic` and the dead gate stay after the walk, byte-unchanged in position (live-only, whole file, BEFORE the gate).
+
+```typescript
+// === HUNK 1 — NEW probeAccount: the former loop body (order unchanged;
+// the ramp call gains the label argument; the summary line prints from
+// here so output streams as each account progresses) ===
+async function probeAccount(
+  index: number,
+  account: LlmAccount,
+): Promise<{ probe: AccountProbe; ceiling: number }> {
+  const label = `account ${index + 1} (${account.baseUrl})`;
+  console.log(`probe: === ${label} ===`);
+  // ... minimal / ten / bulkPayload / bulk / again — unchanged ...
+  const ceiling = await findConcurrencyCeiling(bulkPayload, account, label);
+  const probe: AccountProbe = { position: index + 1, label, minimal, bulk, bulkAgain: again, ceiling };
+  console.log(
+    `probe: ${label} — minimal=${minimal.kind} bulk=${bulk.kind} bulkAgain=${again.kind} ceiling=${ceiling}`,
+  );
+  return { probe, ceiling };
+}
+
+// === HUNK 2 — main(): the sequential for-loop is REPLACED by the
+// concurrent walk + pool-order collector; writeCeilingsAtomic and the dead
+// gate below it are byte-unchanged ===
+  const settled = await Promise.allSettled(
+    accounts.map((account, index) => probeAccount(index, account)),
+  );
+  const ceilings: Record<string, number> = {};
+  const dead: string[] = [];
+  for (const [index, account] of accounts.entries()) {
+    const label = `account ${index + 1} (${account.baseUrl})`;
+    const outcome = settled[index];
+    if (outcome?.status !== "fulfilled") {
+      const reason = outcome?.status === "rejected" ? String(outcome.reason) : "missing result";
+      dead.push(`${label} — probe crashed: ${reason}`);
+      continue;
+    }
+    const { probe, ceiling } = outcome.value;
+    // File key = trimmed baseUrl (resolveCeilings trims both sides). Twins
+    // sharing a baseUrl share one reading — last write wins; one entry per
+    // endpoint is the file's shape.
+    ceilings[account.baseUrl.trim()] = ceiling;
+    const cause = classifyDead(probe);
+    if (cause !== null) {
+      dead.push(`${label} — ${cause}`);
+    }
+  }
+```
+
+#### 2. Account-labeled ramp logs
+**File**: `scripts/probe-judge.ts`
+**Changes**: interleaved output must stay attributable — today's ramp lines are label-free (`probe: concurrency 8 — ...`) and `rampLevel` fires its calls under the bare label `"ramp"`. `findConcurrencyCeiling` gains a trailing `label: string` parameter and prefixes every line it prints; `rampLevel` gains the same parameter and composes the per-call label as `${label} ramp L${level}`. `timed` is unchanged (the label arrives composed). Now that account probes interleave, EVERY line between a header and its summary names its account.
+
+```typescript
+// === HUNK — findConcurrencyCeiling + rampLevel: label threaded through ===
+async function rampLevel(
+  count: number,
+  payload: unknown,
+  account: LlmAccount,
+  label: string,
+): Promise<{ ok: number; refused: number; failed: number; ms: number }> {
+  // ... const results = await Promise.all(
+  //       Array.from({ length: count }, () => timed(`${label} ramp L${count}`, payload, account))) ...
+}
+
+async function findConcurrencyCeiling(
+  payload: unknown,
+  account: LlmAccount,
+  label: string,
+): Promise<number> {
+  for (let level = 2; level <= RAMP_MAX; level *= 2) {
+    const result = await rampLevel(level, payload, account, label);
+    console.log(
+      `probe: ${label} — concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
+    );
+    if (result.failed > 0) {
+      console.log(`probe: ${label} — a ramp call failed — broken endpoint, not a concurrency ceiling`);
+      return 0;
+    }
+    if (result.ok < level) {
+      console.log(`probe: ${label} — concurrency ceiling is below ${level}`);
+      return level / 2;
+    }
+  }
+  return RAMP_MAX;
+}
+```
+
+#### 3. Docs: the probe walks accounts concurrently
+**File**: `.rpiv/guidance/scripts/architecture.md`
+**Changes**: the important-if step 3 gains the concurrency fact (one sentence). Every other probe mention stays true word-for-word ("measures every LLM_ACCOUNTS account" needs no edit).
+
+```markdown
+// === HUNK — important-if step 3: the walk is concurrent ===
+-3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level)
++3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level) — and all accounts are probed concurrently, so wall time is the slowest account, not the sum
+```
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Whole-plan gate green: `npm run typecheck && npm run lint && npm test`
+- [x] Concurrent walk wired: `grep -n "Promise.allSettled" scripts/probe-judge.ts` matches; exactly one `findConcurrencyCeiling` call site, inside probeAccount (`grep -c "await findConcurrencyCeiling" scripts/probe-judge.ts` prints 1)
+- [x] Pool-order collection: the collector walks `accounts.entries()` over the settled outcomes, so ceilings keys and dead lines stay in pool order regardless of finish order
+- [x] Every ramp line names its account: `grep -n "ramp L" scripts/probe-judge.ts` matches (the composed timed label); the per-level concurrency line interpolates the label in the same template
+- [x] Ordering pin intact: `writeCeilingsAtomic` still sits BEFORE the dead gate (`grep -n "writeCeilingsAtomic\|DEAD account" scripts/probe-judge.ts`)
+- [x] Containment pin: a rejected probeAccount lands in `dead` (exit 1) and records NO ceiling; `classifyDead` untouched (refused/failed semantics unchanged)
+
+#### Manual Verification:
+- [ ] A dispatch run's probe step shows the accounts' `===` headers and ramp lines interleaved, and total probe duration ≈ the slowest single account (3 accounts: ~2.5–3 min, not ~7)
+- [ ] One summary line per account (`minimal=... ceiling=N`) still prints, and the committed-count line follows it
+- [ ] A dead account under the parallel walk still exits 1 naming it; the other accounts' readings still land in the committed file (write-before-gate)
+- [ ] Interleaved logs stay attributable: every line between an account's header and its summary carries that account's label
+
+### Accepted trade (recorded):
+
+A host's minimal/bulk latency numbers are measured while peer accounts load their own endpoints — runner-side contention can inflate those informational numbers slightly. Ceiling readings are refusal-driven (HTTP 429 from the account's OWN endpoint) and unaffected. Operator asked for speed over latency precision.
+
+---
+
 ## Testing Strategy
 
 ### Automated:
@@ -2570,3 +2701,11 @@ _Independent post-finalization review by artifact-code-reviewer and artifact-cov
 - Discover (FRD): `.rpiv/artifacts/discover/2026-11-06_09-41-50_llm-account-spread-judge.md` (acceptance criteria, settled decisions, non-goals)
 - Precedent plan: `.rpiv/artifacts/plans/2026-10-27_17-55-19_per-batch-llm-rotation.md` (four invariants, the RotationState reshape precedent)
 - Precedent designs: `.rpiv/artifacts/designs/2026-10-26_16-31-46_fast-workflow-runtime.md` (peak-recorder test precedent), `.rpiv/artifacts/designs/2026-10-29_13-19-57_tech-debt-audit-remediation.md` (F010 split manifest, live-dispatch validation doctrine)
+
+## Follow-ups
+
+_Timestamped revision history. Prior phase decisions stay visible above; each revise call appends here._
+
+### 2026-11-07_15-27-13 — Phase 6 added: parallel account walk (plan only, no code)
+
+Operator feedback (Actions run 42354544399, probe job ~7 min on 3 accounts): `main()` walked accounts sequentially, so wall time = Σ(per-account). Phase 6 extracts the per-account probe (`probeAccount`) and runs all accounts concurrently (`Promise.allSettled`), collecting in pool order; ramp levels stay sequential WITHIN an account (each level's verdict gates the next); ramp/concurrency log lines gain the account label so interleaved output stays attributable; the live-only ceilings write, the exit-1 dead gate, and `RAMP_MAX` are unchanged. Accepted trade: per-host latency lines can inflate slightly under concurrent cross-account load (ceilings are refusal-driven, unaffected). Next: `/skill:implement .rpiv/artifacts/plans/2026-11-06_18-36-57_llm-account-spread-judge.md Phase 6`.

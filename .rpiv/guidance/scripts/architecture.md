@@ -98,7 +98,7 @@ process.exit(0);                              // allow
 ## Running the Judge Probe and Applying the Reading
 1. Env: `LLM_ACCOUNTS` = JSON array of `{baseUrl, apiKey, model}` (every account is walked; each must pass)
 2. Run: Actions → watch → Run workflow (dispatch runs the probe job), or locally `npx tsx scripts/probe-judge.ts` from the repo root (it loads `watcher.config.json` at startup)
-3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level)
+3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level) — and all accounts are probed concurrently, so wall time is the slowest account, not the sum
 4. Read each account's summary line `probe: account N (<baseUrl>) — minimal=… bulk=… bulkAgain=… ceiling=N` — no floor; a failed, auth-dead (401/403), or broken-ramp (ceiling 0) account exits 1; 429-refused legs are busy, not dead
 5. Apply: nothing to paste — the probe writes `state/judge-ceilings.json` (whole file, before the gate) and the Commit ceilings step pushes it; a missing entry floors that account at ceiling 1 with one warning
 6. Semantics downstream: `resolveCeilings` trims both sides when matching keys; a red-gate probe skips the commit, so the file keeps the last green reading; the file never fails a run
