@@ -1,21 +1,24 @@
 # .github/workflows/ — CI gate + scheduled production run
 
 ## Responsibility
-Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, no secrets); `watch.yml` runs the pipeline every 10 minutes with secrets, then commits `state/seen-posts.json` back as `github-actions[bot]`. A dispatch-only `probe` job inside watch.yml measures the LLM endpoint and commits `state/judge-ceilings.json`.
+Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, no secrets); `watch.yml` runs the pipeline every 10 minutes with secrets, then commits `state/seen-posts.json` (+ the health file) back as `github-actions[bot]`. A dispatch-only `probe` job inside watch.yml measures the LLM endpoint and commits `state/judge-ceilings.json`.
 
 ## Sync points (break these and the workflow silently misbehaves)
 - Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — watch.yml maps 5 of the 8 ENV_NAMES (`HEARTBEAT_ENABLED` via `vars.` — the one non-secret knob); the LinkedIn trio (`LINKEDIN_COOKIES_FILE`, `LINKEDIN_TRANSPORT`, `CURL_IMPERSONATE_BIN`) is deliberately NOT mapped — PC-only, never enters Actions; unset means enabled
 - `jq '.seenPostIds | length'` ↔ `AppState.seenPostIds` in `src/state.ts` — renaming the field would silently read as "0 new"; jq `length` counts KEYS, so it is shape-agnostic across the v2 map (and v1 arrays)
 - `node-version: 22` ↔ `engines.node` in package.json
 - `state/judge-ceilings.json` keys ↔ the pool's trimmed `baseUrl`s (`resolveCeilings` trims both sides; twin accounts sharing one baseUrl share one reading)
+- `state/judge-ceilings.json`'s `probedAt` ↔ BOTH its writer and its reader-gate: scripts/probe-judge.ts stamps it on every successful probe, the Freshness gate reads `jq -r '.probedAt // 0'`, and `src/judge-ceilings.ts` skips the key when resolving — renaming either side silently kills the clock
+- `inputs.force` ↔ the typed `workflow_dispatch` input name — the gate reads the literal string
 - `fetch-depth: 0` sits in BOTH commit-back jobs (Commit state, Commit ceilings) — a shallow clone cannot find the merge base and add/add-conflicts the whole tree
 
 ## Structure
 ```
 ci.yml      # push(main)+PRs+dispatch | permissions: contents: read | timeout 10
             # checkout@v4 → setup-node@v4 (node 22, npm cache) → npm ci → typecheck → lint → test
-watch.yml   # cron */10 + dispatch | permissions: contents: write | concurrency: watch (cancel)
-            # job probe: dispatch-only GATE, timeout 10 → npx tsx scripts/probe-judge.ts (LLM_ACCOUNTS only)
+watch.yml   # cron */10 + dispatch (typed input: force — re-probe ignoring the freshness window)
+            # | permissions: contents: write | concurrency: watch (cancel)
+            # job probe: dispatch-only GATE, timeout 10, behind the Freshness gate (8h)
             #   → Commit ceilings (state/judge-ceilings.json via scripts/commit-state-rebase.sh; checkout fetch-depth: 0)
             # job watch: needs probe (serialization) — schedule ticks skip the probe and
             #   watch's if keeps them alive on the committed ceilings; timeout 8 (< the 10-min cron)
@@ -29,7 +32,11 @@ watch.yml   # cron */10 + dispatch | permissions: contents: write | concurrency:
 on:
   schedule:
     - cron: "*/10 * * * *"     # UTC; every duration below is sized against this interval
-  workflow_dispatch: {}        # the only way to test without waiting for the cron
+  workflow_dispatch:
+    inputs:
+      force:                   # re-probe now, ignoring the 8-hour freshness window
+        type: boolean
+        default: false
 permissions:
   contents: write              # ci.yml gets contents: read — the gate never writes
 concurrency:
@@ -66,14 +73,20 @@ Secrets exist only inside this step; the commit-back step runs secret-free. Play
   run: |
     git config user.name "github-actions[bot]"
     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-    git add state/seen-posts.json                                  # ONLY the state file
+    git add state/seen-posts.json                                  # the jq-delta subject file
+    # The health file joins the success-path commit set — guarded: a Gate-1 tick (nothing unseen)
+    # never flushes, so the file can be absent until the first live run creates it, and an
+    # unconditional add of an absent pathspec is fatal under the step's implicit bash -e.
+    if [ -f state/judge-health.json ]; then
+      git add state/judge-health.json
+    fi
     if git diff --cached --quiet; then echo "state unchanged; nothing to commit"; exit 0; fi
     PREV=$(git show HEAD:state/seen-posts.json | jq '.seenPostIds | length' 2>/dev/null || echo 0)
     CURR=$(jq '.seenPostIds | length' state/seen-posts.json)
     git commit -m "state: $((CURR - PREV)) new seen post ids"      # greppable delta history
-    bash scripts/commit-state-rebase.sh   # one of the TWO invocations — rebase, committed-state
-                                          # conflict skips (bounded), lease push, and the single
-                                          # retry all live inside the script
+    bash scripts/commit-state-rebase.sh   # one of the THREE invocations — rebase (onto the checkout
+                                          # branch's own remote head), committed-state conflict skips
+                                          # (bounded), lease push, and the single retry all live inside the script
 ```
 
 ```yaml
@@ -119,48 +132,50 @@ A red gate skips this step (fail-fast): the ceilings file lands only from a gree
 The skip-set grows to the three committed state files
 (`state/seen-posts.json`, `state/judge-ceilings.json`, `state/judge-health.json`).
 
-The script re-establishes errexit itself and exits 0 on push, 1 on a conflict outside the committed state set (`state/seen-posts.json`, `state/judge-ceilings.json`, `state/judge-health.json`) or a second push failure. Each invoker calls it once; the single retry lives inside it. Any conflicted path outside that set aborts the run loudly.
+The script re-establishes errexit itself and exits 0 on push, 1 on a conflict outside the committed state set (`state/seen-posts.json`, `state/judge-ceilings.json`, `state/judge-health.json`) or a second push failure. Each invoker calls it once; the single retry lives inside it. The rebase target is the CHECKOUT BRANCH's own remote head (`git branch --show-current`), not origin/main — a dispatch of a non-main branch must land its commit-back on its own remote head, or its push fights the sibling job's push (run 885). Any conflicted path outside that set aborts the run loudly.
 Accepted cost (F021): a skipped state conflict means the next run re-judges — or the next green probe overwrites the ceilings; the audit tolerates one duplicate digest or one stale-ceiling stretch. The commit-back steps are the only production writers to `state/`: the watch job owns `state/seen-posts.json` AND `state/judge-health.json` (success path + the guarded failure-path step), the probe job owns `state/judge-ceilings.json`.
 
 State history growth (N017): accepted and documented (2026-11-03). Every match run rewrites the ~1.6 MB seen-state file; prune keeps the file bounded to the 72h window, but git history accumulates one near-full-file rewrite per run, so clone size and CI checkout cost grow without bound. The policy is (a) accept and document. Revisit when clone size or checkout time becomes a visible cost: (b) periodic squash of state/ commits via git-filter-repo, or (c) move seen-state out of git (cache/artifact; a redesign).
 
-## The probe job: a gate that walks every account
+## The probe job: a freshness-gated walk of every account
 ```yaml
 probe:
   if: github.event_name == 'workflow_dispatch'   # never on the cron tick
-  # Walks EVERY LLM_ACCOUNTS account (doubling ramp 2→32): an auth-dead key or a failed leg fails this job, so a
-  # rotten key reddens the dispatch run instead of passing unseen. 429-refused legs are busy, not dead —
-  # throttling is data; the watch job is the real gate for it. The measured ceilings commit to
+  # Walks EVERY LLM_ACCOUNTS account (doubling ramp 2→32; accounts probed CONCURRENTLY — wall time is the
+  # slowest account — while ramp levels stay sequential within one account, and ramp lines carry the
+  # account label): an auth-dead key or a failed leg fails this job, so a rotten key reddens the dispatch
+  # run instead of passing unseen. 429-refused legs are busy, not dead — throttling is data; the watch
+  # job is the real gate for it. The measured ceilings + a probedAt stamp commit to
   # state/judge-ceilings.json (live-only, BEFORE the dead gate) and Commit ceilings pushes them — the
-  # watch job's spread consumes that file. A red gate skips the commit (fail-fast): the file lands
-  # only from a green probe run.
+  # watch job's spread and THIS freshness gate consume that file.
   timeout-minutes: 10
   steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0   # Commit ceilings rebases — the same merge-base rule as Commit state
-    - name: Probe judge latency
-      env:
-        LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
-      run: npx tsx scripts/probe-judge.ts
-    - name: Commit ceilings
-      # The F021 head shape from Commit state, minus the jq delta (the ceilings write is whole-file);
-      # the [-f] guard covers a probe that died before its write.
+        fetch-depth: 0   # Commit ceilings rebases — the checkout branch's own remote head (the same rule as Commit state)
+    - name: Freshness gate (8h)          # the probe runs at most once per 8h from its last success
+      id: freshness
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        if [ -f state/judge-ceilings.json ]; then
-          git add state/judge-ceilings.json
+        LAST=$(jq -r '.probedAt // 0' state/judge-ceilings.json 2>/dev/null || echo 0)
+        if [ "${{ inputs.force }}" = "true" ]; then LAST=0; fi
+        NOW=$(date +%s)
+        if [ "$LAST" != "0" ] && [ $((NOW - LAST)) -lt 28800 ]; then
+          echo "fresh=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "fresh=false" >> "$GITHUB_OUTPUT"
         fi
-        if git diff --cached --quiet; then
-          echo "ceilings unchanged; nothing to commit"
-          exit 0
-        fi
-        git commit -m "judge: probe-measured ceilings"
-        bash scripts/commit-state-rebase.sh   # second invocation — same body, no jq delta
+    # setup-node, npm ci, Probe judge latency, Commit ceilings — ALL FOUR carry
+    #   if: steps.freshness.outputs.fresh != 'true'
+    # Inside a fresh window the job stays GREEN on checkout + gate alone, so needs.probe.result ==
+    # 'success' holds and the dispatch proceeds on committed ceilings (the schedule-tick path applied
+    # to dispatches). The probe stamps probedAt (epoch seconds) on every successful write, so bytes
+    # change even when ceilings match and the Commit no-op guard cannot strand the clock; a red probe
+    # commits nothing, the window never starts, and the next dispatch re-probes. inputs.force zeroes
+    # LAST to force a re-probe.
+    - name: Commit ceilings   # the F021 head shape shown in Commit-back above (bot identity, the
+      run: |                  # [-f]-guarded add of ONLY state/judge-ceilings.json, the no-op guard,
+        ...                   # "judge: probe-measured ceilings") + ONE call to commit-state-rebase.sh
 ```
-
-Freshness gate (Phase 9, 2026-11-07): the probe runs at most once per 8 hours from its last success. A `Freshness gate (8h)` step sits first after checkout (jq `.probedAt // 0` against the committed ceilings file, the 28800 s window as a hard-coded workflow literal, `inputs.force` overrides), and the four probe-side steps (`setup-node`, `npm ci`, `Probe judge latency`, `Commit ceilings`) each carry `if: steps.freshness.outputs.fresh != 'true'`. Inside a fresh window the job stays GREEN with only checkout + the gate, so `needs.probe.result == 'success'` holds and the dispatch proceeds on committed ceilings — the schedule-tick path applied to dispatches. The probe script stamps `probedAt` (epoch seconds) on every write, so bytes change on every success and the Commit ceilings no-op guard never strands the clock; a red probe commits nothing, so the window never starts and the next dispatch re-probes.
 
 ## Architectural Boundaries
 - **No build step**: TS runs via tsx; `tsc --noEmit` is typecheck-only
@@ -185,6 +200,7 @@ Freshness gate (Phase 9, 2026-11-07): the probe runs at most once per 8 hours fr
 3. Permissions: `contents: read` by default; `write` only if the job commits back (a watch.yml clone needs write)
 4. Shared state or a rate-limited API ⇒ a `concurrency` group with a unique hardcoded name, `cancel-in-progress: false`
 5. `timeout-minutes` strictly below the cron interval, with the envelope-arithmetic comment
+5b. Job reads committed measured data (a producer-stamped `probedAt`-style clock)? Add a boolean `workflow_dispatch` input (`force`), a first-step freshness gate (jq read + `GITHUB_OUTPUT`), and `if: steps.<id>.outputs.fresh != 'true'` on every producer-side step — a skipped window must leave the job GREEN for its dependents
 6. Setup prologue: checkout → setup-node (22, npm cache) → `npm ci`; add `fetch-depth: 0` only when a later step rebases or pushes; add `playwright install --only-shell chromium` (lockfile-hash cache ahead of it) only if a browser is driven
 7. Pushing state? Keep the YAML head (bot identity, state-file-only add, no-op guard, jq delta commit) and invoke `scripts/commit-state-rebase.sh` exactly once — the single retry lives inside the script; keep the jq path in sync with `AppState`
 8. Verify with a manual dispatch before trusting the cron
