@@ -160,6 +160,8 @@ probe:
         bash scripts/commit-state-rebase.sh   # second invocation — same body, no jq delta
 ```
 
+Freshness gate (Phase 9, 2026-11-07): the probe runs at most once per 8 hours from its last success. A `Freshness gate (8h)` step sits first after checkout (jq `.probedAt // 0` against the committed ceilings file, the 28800 s window as a hard-coded workflow literal, `inputs.force` overrides), and the four probe-side steps (`setup-node`, `npm ci`, `Probe judge latency`, `Commit ceilings`) each carry `if: steps.freshness.outputs.fresh != 'true'`. Inside a fresh window the job stays GREEN with only checkout + the gate, so `needs.probe.result == 'success'` holds and the dispatch proceeds on committed ceilings — the schedule-tick path applied to dispatches. The probe script stamps `probedAt` (epoch seconds) on every write, so bytes change on every success and the Commit ceilings no-op guard never strands the clock; a red probe commits nothing, so the window never starts and the next dispatch re-probes.
+
 ## Architectural Boundaries
 - **No build step**: TS runs via tsx; `tsc --noEmit` is typecheck-only
 - **`npm ci`, never `npm install`**; only official `actions/*` at major tags (`@v4`)
