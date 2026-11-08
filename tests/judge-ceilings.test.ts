@@ -101,6 +101,23 @@ describe("resolveCeilings", () => {
       [],
     );
   });
+
+  it("ignores the probedAt freshness key - only account keys resolve", () => {
+    const parsed = {
+      "https://account-one.api/v1": 8,
+      "https://account-two.api/v1": 4,
+      probedAt: 1730000000,
+    };
+    const { ceilings, warnings } = resolveCeilings(ACCOUNTS, parsed);
+    assert.deepEqual(
+      [...ceilings.entries()],
+      [
+        [0, 8],
+        [1, 4],
+      ],
+    );
+    assert.deepEqual(warnings, []);
+  });
 });
 
 describe("writeCeilingsAtomic + loadAccountCeilings", () => {
@@ -203,5 +220,13 @@ describe("writeCeilingsAtomic + loadAccountCeilings", () => {
         return true;
       },
     );
+  });
+
+  it("writeCeilingsAtomic round-trips a file that carries probedAt", async () => {
+    const target = await path("ceilings-probed-at.json");
+    await writeCeilingsAtomic({ "https://account-one.api/v1": 8, probedAt: 1730000000 }, target);
+    const back = JSON.parse(await readFile(target, "utf8")) as Record<string, number>;
+    assert.equal(back.probedAt, 1730000000);
+    assert.equal(back["https://account-one.api/v1"], 8);
   });
 });

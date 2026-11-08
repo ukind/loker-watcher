@@ -13,6 +13,11 @@
  * because parseLlmAccounts trims baseUrl (src/judge.ts:163-172) and a
  * stray-space key must not silently miss into the default.
  *
+ * The committed file carries one non-ceiling key: probedAt (epoch seconds
+ * of the last successful probe - the watch.yml freshness gate's clock).
+ * The resolver skips it; lookups are baseUrl-keyed, so it can never
+ * collide with an account.
+ *
  * The writer lives here (not in scripts/) so the write path is
  * unit-testable: the probe script has no test suite, and this module is
  * its only automated coverage (the writeStateAtomic precedent).
@@ -23,7 +28,9 @@ import { JUDGE_CEILINGS_PATH } from "./config.js";
 import type { LlmAccount } from "./judge.js";
 import { stateTempPath } from "./state.js";
 
-/** The committed file shape: trimmed baseUrl -> positive integer ceiling. */
+/** The committed file shape: trimmed baseUrl -> positive integer ceiling.
+ *  One non-ceiling key rides along: probedAt, the freshness clock the
+ *  resolver skips (see resolveCeilings). */
 export type CeilingsFile = Record<string, number>;
 
 /** Result of the pure resolver: index-keyed ceilings plus the warnings. */
@@ -54,6 +61,7 @@ export function resolveCeilings(
   const byKey = new Map<string, number>();
   if (parsed !== undefined) {
     for (const [key, value] of Object.entries(parsed)) {
+      if (key === "probedAt") continue; // the freshness clock, not a ceiling (Phase 9)
       const usable = usableCeiling(value);
       if (usable !== undefined) byKey.set(key.trim(), usable);
     }

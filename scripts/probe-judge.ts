@@ -29,6 +29,10 @@
  * account), and the dispatch run serializes probe→watch (watch.yml) so
  * the same run's watch starts on the fresh maximal readings.
  *
+ * Revision 2026-11-07 (freshness gate): the write stamps probedAt (epoch
+ * seconds) - the dispatch probe job skips itself for 8h after a success; a
+ * failed probe never starts the window.
+ *
  * Usage:
  *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
  * Exits 1 when any account is auth-dead (401/403) or has a failed leg,
@@ -312,10 +316,16 @@ async function main(): Promise<void> {
   // probe runs dispatch-only, so readings legitimately age for days). A
   // dead account's 0 (broken ramp) floors at 1 in the reader with a
   // warning — the honest signal for a rotten key.
+  // The freshness clock (Phase 9): epoch seconds the watch.yml gate reads.
+  // Stamped on every SUCCESSFUL probe - bytes change even when the ceilings
+  // are identical, so the Commit ceilings no-op guard cannot strand the
+  // gate on a stale window. The COMMIT only lands on a green gate (the
+  // Commit step is skipped on failure), so a red probe never starts a
+  // window.
+  ceilings.probedAt = Math.floor(Date.now() / 1000);
   await writeCeilingsAtomic(ceilings, JUDGE_CEILINGS_PATH);
-  console.log(
-    `probe: committed ${Object.keys(ceilings).length} ceiling(s) to ${JUDGE_CEILINGS_PATH}`,
-  );
+  const ceilingCount = Object.keys(ceilings).length - 1; // minus probedAt
+  console.log(`probe: committed ${ceilingCount} ceiling(s) + probedAt to ${JUDGE_CEILINGS_PATH}`);
 
   if (dead.length > 0) {
     console.error("probe: DEAD account(s) — failing the gating probe:");
