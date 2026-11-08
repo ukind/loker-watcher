@@ -104,7 +104,12 @@ streaks and the outage-episode bit).
    those fresh ceilings; scheduled 10-minute runs skip the probe and read
    the committed file. Nothing to paste: watch spreads dispatches under
    those caps. A green gate commits; a red gate skips the commit and the
-   dispatch's watch, so the file keeps its last green reading.
+   dispatch's watch, so the file keeps its last green reading. The probe
+   runs at most once per 8 hours from its last success: a fresh window
+   skips the probe and the dispatch proceeds on the committed ceilings. A
+   failed probe starts no window — the next manual dispatch re-probes. The
+   dispatch form's force checkbox re-probes immediately (use it after
+   rotating keys).
 
    Provider health needs no setup: the watch run writes
    `state/judge-health.json` (on the success path and, best-effort, from

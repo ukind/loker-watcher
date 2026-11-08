@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-probe now, ignoring the 8-hour freshness window"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -33,6 +38,14 @@ jobs:
     # on dispatch runs — a fresh maximal reading flows into the same run's
     # watch; a red gate blocks that dispatch's watch (fail-fast). Scheduled
     # ticks never gate on it (this job is dispatch-only).
+    # Freshness gate (2026-11-07): the probe runs at most once per 8 hours
+    # from the last successful reading (probedAt in the committed ceilings
+    # file). Inside a fresh window the gate skips the probe steps and the
+    # job stays GREEN, so the watch job's needs.probe.result == 'success'
+    # holds and the dispatch proceeds on committed ceilings - exactly the
+    # schedule-tick path. A red probe commits nothing (Commit ceilings is
+    # skipped on failure), so the next dispatch re-probes. inputs.force
+    # re-probes immediately (rotated keys).
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -44,14 +57,39 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Freshness gate (8h)
+        id: freshness
+        # The 8-hour window (28800 s) is a hard-coded workflow literal, not
+        # an env knob (the tuning-values doctrine). The clock is the
+        # probedAt entry the probe script stamps on SUCCESS - a failed
+        # probe commits nothing, so the next dispatch re-probes. The gate
+        # only ever widens the skip: scheduled ticks never run this job.
+        run: |
+          LAST=$(jq -r '.probedAt // 0' state/judge-ceilings.json 2>/dev/null || echo 0)
+          if [ "${{ inputs.force }}" = "true" ]; then
+            echo "probe: force re-probe requested - ignoring the freshness window"
+            LAST=0
+          fi
+          NOW=$(date +%s)
+          if [ "$LAST" != "0" ] && [ $((NOW - LAST)) -lt 28800 ]; then
+            echo "probe: ceilings are $(( (NOW - LAST) / 3600 ))h old (< 8h) - skipping the probe; watch proceeds on committed ceilings"
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "probe: ceilings stale or unmeasured - running the probe"
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.freshness.outputs.fresh != 'true'
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
+        if: steps.freshness.outputs.fresh != 'true'
 
       - name: Probe judge latency
+        if: steps.freshness.outputs.fresh != 'true'
         env:
           LLM_ACCOUNTS: ${{ secrets.LLM_ACCOUNTS }}
         run: npx tsx scripts/probe-judge.ts
@@ -64,6 +102,7 @@ jobs:
         # push, single retry. The [-f] guard covers a probe that died
         # before its write (the probe step already failed the job; this
         # step cannot normally run on a red gate).
+        if: steps.freshness.outputs.fresh != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

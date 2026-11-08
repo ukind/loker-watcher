@@ -8,7 +8,7 @@ topic: provider-health-module-boundary
 tags: [plans, judge-health, judge-rotation, judge, judge-ceilings, email, heartbeat, watch-workflow, commit-state-rebase]
 status: ready
 parent: ".rpiv/artifacts/solutions/2026-11-07_08-22-22_provider-health-module-boundary.md"
-phase_count: 8
+phase_count: 9
 phases:
   - { n: 1, title: Health module, files: [src/judge-health.ts, src/config.ts], depends_on: [] }
   - { n: 2, title: Health module tests, files: [tests/judge-health.test.ts], depends_on: [1] }
@@ -18,9 +18,11 @@ phases:
   - { n: 6, title: Entry wiring, files: [src/index.ts, tests/index.test.ts], depends_on: [1, 3, 4, 5] }
   - { n: 7, title: Workflow + commit-back, files: [.github/workflows/watch.yml, scripts/commit-state-rebase.sh, tests/commit-state-rebase.test.ts], depends_on: [6] }
   - { n: 8, title: Docs sync + repo-wide gates, files: [README.md, AGENTS.md, .rpiv/guidance/architecture.md, .rpiv/guidance/src/architecture.md, .rpiv/guidance/.github/workflows/architecture.md, .rpiv/guidance/scripts/architecture.md, .rpiv/guidance/tests/architecture.md, scripts/commit-state-rebase.sh], depends_on: [7] }
+  - { n: 9, title: Probe freshness gate, files: [.github/workflows/watch.yml, scripts/probe-judge.ts, src/judge-ceilings.ts, tests/judge-ceilings.test.ts, README.md, .rpiv/guidance/.github/workflows/architecture.md], depends_on: [7] }
 unresolved_phase_count: 0
-last_updated: 2026-11-07T08:49:53+0700
+last_updated: 2026-11-07T17:28:58+0700
 last_updated_by: Yogiswara Utama
+last_updated_note: Phase 9 (probe freshness gate) - 8h success-gated probe cadence, probedAt clock, force input
 ---
 
 # Provider Health Circuit (judge-health module boundary) Implementation Plan
@@ -39,6 +41,7 @@ Build the provider health circuit on the module boundary the solutions artifact 
 - Digest and heartbeat emails carry one degraded-accounts line whenever any account is capped — resolved above Gate 1 so Gate-1 heartbeats render it.
 - Commit-back growth: a new `Commit health` step (`if: always() && failure()`, `-f`-guarded add), the Commit state file set grows, the rebase skip-set gains the third literal.
 - `npm run typecheck && npm run lint && npm test` green; the all-429 pin (`tests/index.test.ts:428-475`) and the email byte fixtures survive; the only expected compile breaks are the three `RotationState` literals (`src/judge.ts:735`, `tests/judge-rotation.test.ts`, `tests/judge.test.ts`) gaining three fields.
+- The probe job runs at most once per 8 hours measured from the last successful probe (`probedAt` in `state/judge-ceilings.json`): a fresh window skips the probe steps with the job GREEN (watch proceeds on committed ceilings), a failed probe starts no window (the next dispatch re-probes), and a `force` dispatch input overrides the window.
 
 ## Current State Analysis
 
@@ -97,6 +100,8 @@ const health = await (deps.judgeHealth ?? loadAccountHealth)(judgeAccounts);
 - NOT folding health into `judge-rotation.ts` (the solutions' rejected Option 2), and NOT adding a `judge-rotation → judge-health` import of any kind — the pick predicate stays inline plain-field reads; no exported `isHealthBlocked`.
 - NOT placing the flush inside `runWatcher` — it breaks the all-429 pin (`tests/index.test.ts:428-475`); the flush lives only in main's entry-module catch.
 - NOT changing the probe (`scripts/probe-judge.ts` stays health-free — it imports nothing health-related and stages exactly one path).
+- NOT gating scheduled ticks on the probe - the */10 cron stays ceilings-only; the freshness gate lives inside the dispatch-only probe job and only ever widens the skip (a fresh window behaves like a schedule tick).
+- NOT adding an env knob for the window - 28800 seconds is a hard-coded workflow literal (the tuning-values doctrine); overriding it is the operator's `force` checkbox.
 - NOT touching the seen-posts or linkedin-payload writers; NOT adding a circuit-breaker npm dependency.
 - NOT baking health caps into the ceilings map (the developer-confirmed seam: judgePosts receives COMMITTED ceilings + a marks field; the cap lives in the pick).
 - NOT stamping health on content-parse failures (a model failure is not an account failure).
@@ -155,6 +160,7 @@ The pattern-finder correction: `state.ts:237-254` is an input-derived skip (empt
 - Phase 6 precedes Phase 7 (the workflow/script literals reference the path + flush behavior that exist by then).
 - Phase 7 precedes Phase 8 (docs describe shipped machinery); Phase 8 carries the repo-wide gates (terminal phase only).
 - Phases 2 and 5 can technically interleave after their deps, but the plan runs strictly sequentially (micro-checkpoints between phases).
+- Phase 9 (probe freshness gate) post-dates the shipped Phase 7 workflow shape; it touches only the probe-job side of watch.yml, the probe script's write, and the ceilings resolver's key filter - the watch job, its if, and every other phase's deliverable stay untouched.
 
 ## Verification Notes
 
@@ -246,6 +252,7 @@ _Independent post-finalization review by artifact-code-reviewer and artifact-cov
 - Phase 6: Entry wiring — revised during verification: the match-path sendDigest call gained the degradedLine arg, and the flush default re-derived from the state file's directory (dirname(statePath)/judge-health.json — equals JUDGE_HEALTH_PATH in production, keeps every unmodified success-path test inside the temp dir); revised at Step 9: the catch gains the hoisted-flag episode gate (pre-flush read, load-bearing order), the marks resolve defaults to the derived path, the hoist comment states the Gate-1 exit 0 → exit 1 flip
 - Phase 7: Workflow + commit-back — approved as generated (verifier: zero findings)
 - Phase 8: Docs sync + repo-wide gates — revised at Step 9: target list grew to 8 files (the root guidance, the tests guidance's coverage map, and the script header's invoker sentence joined the sweep); the boundary prose corrected to zero-RUNTIME-import; judge-health.ts placed on the LEAVES+CONFIG lines; the flush prose names both the success-path and catch-only exhaustion flushes; the stale-prose grep widened to catch "two invokers" / "is two files" phrasings
+- Phase 9: Probe freshness gate - added by /skill:revise (2026-11-07): 8h success-gated probe cadence; the `probedAt` epoch stamp (probe script), the `freshness` gate step + step-level ifs (watch.yml probe job), the `force` dispatch input, and the ceilings resolver's `probedAt` key filter with its suite pin
 
 ## References
 
@@ -2956,3 +2963,174 @@ judge-health.ts    → judge-health.test.ts    # committed health: reader degrad
 
 #### Manual Verification:
 - [x] Every doc that named two committed state files now names three; the health story reads operator-legibly in README; the guidance files carry the module, the step, and the third literal
+
+## Phase 9: Probe freshness gate
+
+### Overview
+
+Gates the dispatch-only probe job (watch.yml) to run at most once per 8 hours, measured from the last SUCCESSFUL probe. The success clock is a `probedAt` entry (epoch seconds) the probe script stamps into `state/judge-ceilings.json` - bytes change on every success, so the Commit ceilings no-op guard never strands the clock on an unchanged reading. Dispatches inside a fresh window skip the probe-side steps while the job stays GREEN: `needs.probe.result == 'success'` holds and watch proceeds on committed ceilings - the schedule-tick doctrine applied to dispatches. A failed probe commits nothing (the Commit step is skipped on failure), so the window never starts and the next manual dispatch re-probes. The `force` dispatch input overrides the window (rotated keys need measurement now). The 8-hour window (28800 s) is a hard-coded workflow literal, not an env knob.
+
+### Changes Required:
+
+#### 1. .github/workflows/watch.yml
+
+**File**: .github/workflows/watch.yml
+
+**Changes**: MODIFY - the dispatch form gains `force`; a `freshness` gate step follows checkout; the probe-side steps (`setup-node`, `npm ci`, `Probe judge latency`, `Commit ceilings`) each gain the step-level if; the job comment block gains the gate paragraph. The job-level `if: github.event_name == 'workflow_dispatch'` and the watch job are untouched.
+
+(a) The dispatch inputs:
+
+```yaml
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-probe now, ignoring the 8-hour freshness window"
+        type: boolean
+        default: false
+```
+
+(b) The gate step - first after checkout (jq + date are runner-native):
+
+```yaml
+      - name: Freshness gate (8h)
+        id: freshness
+        # The 8-hour window (28800 s) is a hard-coded workflow literal, not
+        # an env knob (the tuning-values doctrine). The clock is the
+        # probedAt entry the probe script stamps on SUCCESS - a failed
+        # probe commits nothing, so the next dispatch re-probes. The gate
+        # only ever widens the skip: scheduled ticks never run this job.
+        run: |
+          LAST=$(jq -r '.probedAt // 0' state/judge-ceilings.json 2>/dev/null || echo 0)
+          if [ "${{ inputs.force }}" = "true" ]; then
+            echo "probe: force re-probe requested - ignoring the freshness window"
+            LAST=0
+          fi
+          NOW=$(date +%s)
+          if [ "$LAST" != "0" ] && [ $((NOW - LAST)) -lt 28800 ]; then
+            echo "probe: ceilings are $(( (NOW - LAST) / 3600 ))h old (< 8h) - skipping the probe; watch proceeds on committed ceilings"
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "probe: ceilings stale or unmeasured - running the probe"
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+          fi
+```
+
+(c) The four probe-side steps each gain:
+
+```yaml
+        if: steps.freshness.outputs.fresh != 'true'
+```
+
+(A fresh window leaves only checkout + the green gate - the probe job succeeds in seconds and the same run's watch starts immediately on committed ceilings. An all-skipped job reports `success`, which is what `needs.probe.result == 'success'` consumes.)
+
+(d) The job comment block gains, after the existing dispatch-gate paragraph:
+
+```yaml
+    # Freshness gate (2026-11-07): the probe runs at most once per 8 hours
+    # from the last successful reading (probedAt in the committed ceilings
+    # file). Inside a fresh window the gate skips the probe steps and the
+    # job stays GREEN, so the watch job's needs.probe.result == 'success'
+    # holds and the dispatch proceeds on committed ceilings - exactly the
+    # schedule-tick path. A red probe commits nothing (Commit ceilings is
+    # skipped on failure), so the next dispatch re-probes. inputs.force
+    # re-probes immediately (rotated keys).
+```
+
+#### 2. scripts/probe-judge.ts
+
+**File**: scripts/probe-judge.ts
+
+**Changes**: MODIFY - the success write stamps the clock; the log line counts ceilings minus the clock key; the header gains a revision note.
+
+```ts
+  // The freshness clock (Phase 9): epoch seconds the watch.yml gate reads.
+  // Stamped on every SUCCESSFUL probe - bytes change even when the ceilings
+  // are identical, so the Commit ceilings no-op guard cannot strand the
+  // gate on a stale window. The COMMIT only lands on a green gate (the
+  // Commit step is skipped on failure), so a red probe never starts a
+  // window.
+  ceilings.probedAt = Math.floor(Date.now() / 1000);
+  await writeCeilingsAtomic(ceilings, JUDGE_CEILINGS_PATH);
+  const ceilingCount = Object.keys(ceilings).length - 1; // minus probedAt
+  console.log(
+    `probe: committed ${ceilingCount} ceiling(s) + probedAt to ${JUDGE_CEILINGS_PATH}`,
+  );
+```
+
+Header revision note: `Revision 2026-11-07 (freshness gate): the write stamps probedAt (epoch seconds) - the dispatch probe job skips itself for 8h after a success; a failed probe never starts the window.`
+
+#### 3. src/judge-ceilings.ts
+
+**File**: src/judge-ceilings.ts
+
+**Changes**: MODIFY - `resolveCeilings` skips the clock key; the module docstring + the `CeilingsFile` comment name it.
+
+```ts
+// resolveCeilings loop head gains one line:
+    for (const [key, value] of Object.entries(parsed)) {
+      if (key === "probedAt") continue; // the freshness clock, not a ceiling (Phase 9)
+      const usable = usableCeiling(value);
+```
+
+Doc comment growth: `The committed file carries one non-ceiling key: probedAt (epoch seconds of the last successful probe - the watch.yml freshness gate's clock). The resolver skips it; lookups are baseUrl-keyed, so it can never collide with an account.`
+
+#### 4. tests/judge-ceilings.test.ts
+
+**File**: tests/judge-ceilings.test.ts
+
+**Changes**: MODIFY - two appended cases (adapted to the suite's lazy `mkdtemp` dir helpers, the `tests/judge-ceilings.test.ts:109-117` idiom):
+
+```ts
+  it("ignores the probedAt freshness key - only account keys resolve", () => {
+    const parsed = {
+      "https://account-one.api/v1": 8,
+      "https://account-two.api/v1": 4,
+      probedAt: 1730000000,
+    };
+    const { ceilings, warnings } = resolveCeilings(ACCOUNTS, parsed);
+    assert.deepEqual(
+      [...ceilings.entries()],
+      [
+        [0, 8],
+        [1, 4],
+      ],
+    );
+    assert.deepEqual(warnings, []);
+  });
+
+  it("writeCeilingsAtomic round-trips a file that carries probedAt", async () => {
+    const path = join(await freshDir(), "ceilings-probed-at.json");
+    await writeCeilingsAtomic({ "https://account-one.api/v1": 8, probedAt: 1730000000 }, path);
+    const back = JSON.parse(await readFile(path, "utf8")) as Record<string, number>;
+    assert.equal(back.probedAt, 1730000000);
+    assert.equal(back["https://account-one.api/v1"], 8);
+  });
+```
+
+#### 5. README.md + .rpiv/guidance/.github/workflows/architecture.md
+
+**File**: README.md - the Setup probe paragraph gains:
+
+```markdown
+    The probe runs at most once per 8 hours from its last success: a fresh
+    window skips the probe and the dispatch proceeds on the committed
+    ceilings. A failed probe starts no window - the next manual dispatch
+    re-probes. The dispatch form's force checkbox re-probes immediately
+    (use it after rotating keys).
+```
+
+**File**: .rpiv/guidance/.github/workflows/architecture.md - the probe job section gains one paragraph: the `freshness` gate step (jq `.probedAt // 0`, the 28800 s literal, `inputs.force`), the step-level ifs on the four probe-side steps, and the green-skip semantics (`needs.probe.result == 'success'` holds - the schedule-tick path for dispatches).
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] The ceilings suite passes: `npx tsx --test tests/judge-ceilings.test.ts`
+- [x] The resolver skips the clock key: the two appended `probedAt` cases pass (same suite run)
+- [x] The gate wiring exists: `grep -nE "freshness|28800|probedAt|inputs\.force" .github/workflows/watch.yml` returns the gate step, the four step-level ifs, the literal, and the input
+- [x] The stamp exists: `grep -n "probedAt" scripts/probe-judge.ts` returns the stamp and the revised log line
+- [x] Repo gates green: `npm run typecheck && npm run lint && npm test`
+
+#### Manual Verification:
+- [ ] Live dispatch inside a fresh window: "Probe judge latency" absent from the run, job green, watch proceeds on committed ceilings
+- [ ] Live dispatch with force=true: the probe runs regardless of the window
+- [ ] A red probe: no ceilings commit lands, and the next dispatch re-probes
