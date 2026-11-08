@@ -26,16 +26,19 @@ email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartb
 
 ## Funnel gates fix the ordering (the correctness invariant)
 ```typescript
-// The ORDER is the argument (src/index.ts runWatcher):
-if (newPosts.length === 0) {   // Gate 1: nothing unseen — heartbeat(stats) fires (best-effort), NO disk write
+// The ORDER is the argument (src/index.ts runWatcher). BEFORE Gate 1 the health resolve runs — hoisted so
+// the degraded-accounts line rides EVERY email; the recorded trade: malformed LLM_ACCOUNTS now exit-1s even a Gate-1 tick.
+if (newPosts.length === 0) {   // Gate 1: nothing unseen — heartbeat(stats, riders…) fires (best-effort), NO disk write
   return { judged: 0, matches: 0, skipped: 0, saved: false };   // state stays byte-identical
 }
 if (matches.length === 0) {                     // Gate 2: judged, zero matches — heartbeat, THEN persist
-  await heartbeat(stats);
+  await heartbeat(stats, recent, judged, candidateTerms, env, now, transport);
+  await flushTickHealth(health);                // the tick flush sits between the judge stage and Gate 2
   await persistJudged(state, judged, statePath, now());   // zero-match runs still mark seen
   return { judged, matches: 0, skipped, saved: true };
 }
-await sendDigest(matches, resolveEmailConfig(env), transport);  // notify BEFORE persist — a failed send exits 1
+await sendDigest(matches, resolveEmailConfig(env), transport);  // notify BEFORE persist — a failed send exits 1;
+                                              // the digest carries the linkedinLeg + degradedLine riders
 await persistJudged(state, judged, statePath, now());   // state untouched: next run re-judges + re-sends
 ```
 Every stage is wrapped in `timeStage` and logs one stable pair: `timing: <stage> <N>ms` then `<stage>: <counts>`.
@@ -47,6 +50,9 @@ env?: Record<string, string | undefined>;  config?: WatcherConfig;   // process.
 contextFactory?: ContextFactory;           // chromiumContextFactory — the sole Playwright import
 fetchFn?: typeof fetch;  transport?: Transporter;  statePath?: string;   // fetch | nodemailer | STATE_PATH
 now?: () => number;  sleepFn?: (ms: number) => Promise<void>;          // Date.now | judge sleep
+linkedinFetch?: (payloadPath, now) => Promise<PayloadRead>;  judgeCeilings?;  judgeHealth?;
+judgeHealthPath?: string;  // PC-leg payload read | ceilings/health readers (degrade, never fail) |
+                           //   the health flush target — default dirname(statePath)/judge-health.json
 ```
 Function-level idiom: I/O is an optional trailing param with the production default — judgePost, sendText, saveState, filterRecent.
 
@@ -71,24 +77,28 @@ const state: RotationState = { accounts, cooldownUntil: new Map(), ceilings, inF
 // charge-before-sleep, wake at earliest active expiry + 500ms jitter, false when spent) and can convert to
 // the exhaustion alarm. 429 → cool + rewind (no backoff); 5xx → same account [1s,2s,4s] via the frame-local
 // pinnedStart seat (the backoff sleep runs with the slot released); transport error → batch deferred whole.
-// Pool width = Σ per-account ceilings. The ceilings come from state/judge-ceilings.json — the committed,
-// degrade-everything reader (src/judge-ceilings.ts loadAccountCeilings: absent/malformed floors every
-// account at ceiling 1 with one warning naming the baseUrl; it never fails a run).
+// Pool width = Σ per-account ceilings (a health-capped account counts 1 until its probe rejoins it). The
+// ceilings come from state/judge-ceilings.json — the committed, degrade-everything reader (src/judge-ceilings.ts
+// loadAccountCeilings: absent/malformed floors every account at ceiling 1 with one warning naming the baseUrl;
+// it never fails a run, and it skips the probedAt freshness key).
 // Terminal RETURNED, never thrown in the core; judgePosts drains, then throws AFTER Promise.all: ONE alarm email, exit(1).
-```
 
-Health circuit (the provider-health boundary, 2026-11-07): RotationState carries healthMarks /
-probedThisTick / outcomeLedger as plain fields; the pick applies the cap and the half-open probe
-INLINE (committed ceilings un-merged — a capped account runs at effective ceiling 1 until its probe
-claims it; a success deletes the mark AND the probe slot, rejoining at the committed ceiling for the
-rest of the tick). The dispatch core stamps the ledger at the four branch sites (429 never counts;
-the mid-backoff branch never stamps; a parse-miss resolve stamps nothing — a model failure is not an
-account outcome). An all-health-blocked pick with no active cooldown exhausts immediately
-(progress-aware: an uncapped account never blocks — the zero-charge ceiling wait survives). The
-flush lives on the success path (flushTickHealth, once after the judge stage) and, best-effort, in
-main's entry-module catch (flushExhaustionHealth, episode OPEN, never masking exit 1).
-judge-rotation.ts keeps its ZERO-RUNTIME-IMPORT identity (the type-only TickOutcomes import is the
-D5 idiom; it never imports judge-health at runtime).
+Health circuit (the provider-health boundary): RotationState carries healthMarks / probedThisTick /
+outcomeLedger as plain fields; the pick applies the cap and the half-open probe INLINE (a capped account runs
+at effective ceiling 1 until its probe claims it; a success deletes the mark AND the probe slot, rejoining at
+the committed ceiling for the rest of the tick). The dispatch core stamps the ledger at the four branch sites
+(429 never counts; the mid-backoff branch never stamps; a parse-miss resolve stamps nothing — a model failure
+is not an account outcome). An all-health-blocked pick with no active cooldown exhausts immediately (an
+uncapped account never blocks — the zero-charge ceiling wait survives). judge-rotation.ts keeps its
+ZERO-RUNTIME-IMPORT identity with two sync idioms: a PAIRED constant (HARD_FAIL_TICKS_TO_CAP exported from
+judge-health + a MUST-stay-equal local copy) and a STRUCTURAL SLICE (OutcomeLedgerState redeclares the
+rotation fields instead of importing RotationState). Flushing is CHANGE-GATED — flushHealthIfChanged
+canonicalizes the envelope (sorted keys) and writes only on a content difference, so no-op ticks keep the
+committed file byte-identical: the tick flush rides the success path (after the judge stage), the exhaustion
+flush rides main's entry-module catch (episode OPEN, best-effort, never masking exit 1), and the alarm gates
+on the PRE-FLUSH episodeAlarmDue read (a duplicate alarm costs one email; a suppressed one costs the outage).
+RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
+```
 
 ## linkedin-*.ts: the second platform is a PC-local voyager leg (2026-11-04)
 
@@ -105,25 +115,22 @@ D5 idiom; it never imports judge-health at runtime).
 // binary, --impersonate chrome116 pinned — the profile OWNS the UA+TLS+H2 set, so the transport sends no
 // user-agent header and BROWSER_UA feeds ONLY the playwright adapter; injectable
 // exec, -w status sentinel) + playwright request.newContext transport (own quarantine); resolve
-// LINKEDIN_TRANSPORT curl|playwright, no auto-fallback; classifyFault §13.3; LegDeadError tagged
-// error; runPool walk — runPool RETURNS VOID: side arrays by claim index (fetchSurfacesAuthenticated
-// idiom), worker total for surface faults, leg-dead drain-then-throw (judgePosts D11 shape); shared
-// per-walk 5s pacing gate — the rate is pacing-bound, not width-bound.
+// LINKEDIN_TRANSPORT curl|playwright, no auto-fallback; classifyFault §13.3; LegDeadError +
+// AllSurfacesFaulted tagged errors (all surfaces faulted = the walk's leg-dead); runPool walk — runPool
+// RETURNS VOID: side arrays by claim index (fetchSurfacesAuthenticated idiom), worker total for surface
+// faults, leg-dead drain-then-throw (judgePosts D11 shape); shared per-walk 5s pacing gate — makePacingGate
+// RESERVES the slot BEFORE the await (nextFreeAt advances synchronously, so width-2 workers can never
+// compute the same wake time; per-walk closure, ticks never inherit stamps) — the rate is pacing-bound,
+// not width-bound.
 // linkedin-payload.ts: {version, writtenAt, posts}; writePayloadAtomic (temp+rename); readPayloadPosts
-// NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(30min)→stale+age; bad envelope→malformed;
-// bad rows→drop+count. {posts, leg} feeds HeartbeatStats.linkedinLeg (heartbeat line ALWAYS; digest
-// line when not ok).
+// NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(30min)→stale+age; non-ENOENT unreadable→
+// malformed; bad envelope→malformed; bad rows→drop+count. {posts, leg} feeds HeartbeatStats.linkedinLeg
+// (heartbeat line ALWAYS; digest line when not ok).
 // index.ts arm: linkedinFetch re-keyed to (payloadPath, now) => PayloadRead; no token gate — absence
 // is the PC-off normal; the D12 belt catch remains for unanticipated faults only.
-// PC scripts: fetch tick = fetch → payload → add ONLY state/linkedin-posts.json → commit →
-// login helper (scripts/login-linkedin.ts): HEADED persistent-profile harvest — the OPERATOR logs in by
-//   hand (§2.4 VERIFIED interactive login; NO headless re-login exists), the script polls the jar for the
-//   li_at + JSESSIONID pair (verbatim — the quoted JSESSIONID stays quoted), writes the cookie file
-//   atomically (stateTempPath + rename) and upserts the LINKEDIN_COOKIES_FILE line in <cwd>/.env;
-//   entry-guarded; exit 1 on timeout/no session. env-file.ts merges <cwd>/.env UNDER the real env for
-//   every PC script (missing .env = quiet normal).
-// pull --rebase → push, ONE retry (mirrors commit-state-rebase.sh; single-writer-per-file); leg-dead =
-// ONE alarm per episode (repo-local marker beside the payload) + exit 1; loop continues; probe = gate exit 1.
+// The PC scripts themselves live in scripts/ (tick, loop, gate, login, setup-curl) — see
+// .rpiv/guidance/scripts/architecture.md; env-file.ts merges <cwd>/.env UNDER the real env for every
+// PC script (missing .env = quiet normal).
 ```
 
 ## State: load → migrate → prune → gated atomic save
@@ -140,7 +147,7 @@ function stateTempPath(dir: string, nowMs = Date.now()): string {
 
 ## Architectural Boundaries
 - **No silent fallbacks**: config/state/optional-env faults exit non-zero naming the problem; the only sanctioned best-effort calls are heartbeat, the exhaustion alarm, and temp cleanup
-- **Pipeline shape lives only in `index.ts`** (stages never import each other); **only `state.ts` writes repo-side disk** (always `writeStateAtomic`) — threads-session.ts writes OS temp only; the workflow is the git committer
+- **Pipeline shape lives only in `index.ts`** (stages never import each other); **every `state/` write goes through ONE atomic idiom — `stateTempPath` + temp/rename from state.ts — via FOUR writers, one file each** (state.ts seen-posts, judge-ceilings.ts ceilings, judge-health.ts health, linkedin-payload.ts payload); the workflow is the git committer
 - **Secrets are env-only** (names in `ENV_NAMES`); **no classes** — tagged errors = name constant + factory + type guard (`rotationExhausted` / `isRotationExhausted`)
 
 <important if="you are adding a new pipeline stage">
@@ -193,7 +200,7 @@ function stateTempPath(dir: string, nowMs = Date.now()): string {
 
 <important if="you are adding an email variant">
 ## Adding an Email Variant
-1. Pure `buildX(...): string | null` builders in email.ts/heartbeat.ts — null means "nothing to send"
+1. Pure `buildX(...)` builders in email.ts/heartbeat.ts — `string | null`, null means "nothing to send"; the sanctioned exceptions are builders that always have content (`buildLegDeadAlarmText`, `buildHeartbeatSubject` return plain `string`)
 2. Thin `sendX(..., config, transport?)` wrapper: gate → build → sendText → prefix log; never call nodemailer directly
 3. The caller sets the failure policy in index.ts: digest = fail the run; status/alarm = best-effort try/catch + warn
 4. Tests: builders assert exact strings (incl. the null case); senders use a fake Transporter recording sendMail args

@@ -1,7 +1,7 @@
 # tests/ — offline unit test suite
 
 ## Responsibility
-Full-pipeline offline verification of src/ (plus the commit-state-rebase shell script in scripts/ and the two Claude hooks in scripts/hooks/) via `node:test` + `tsx` (`tsx --test tests/*.test.ts`). Zero network, zero browser, zero writes inside the repo, zero mocking libraries — every double is a hand-written literal. The bash-spawning suite resolves bash once at module scope (MINGW/MSYS gate + `git --exec-path` fallback) and skips EXPLICITLY — naming the problem — when none resolves; `npm test` still exits 0.
+Full-pipeline offline verification of src/ (plus the commit-state-rebase shell script in scripts/, the scripts/fetch-linkedin.ts CLI, and the two Claude hooks in scripts/hooks/) via `node:test` + `tsx` (`tsx --test tests/*.test.ts`). Zero network, zero browser, zero writes inside the repo, zero mocking libraries — every double is a hand-written literal. The bash-spawning suite resolves bash once at module scope (MINGW/MSYS gate + `git --exec-path` fallback) and skips EXPLICITLY — naming the problem — when none resolves; `npm test` still exits 0. Per-test conditional skips use `t.skip("reason")` inside the one it() that needs a real binary (read-only probes only).
 
 ## Dependencies
 - **node:test + node:assert/strict**, run via tsx — the only runner/assertion stack
@@ -14,16 +14,15 @@ config.ts, types.ts   — no test (names/paths/kill switch — the "false" branc
 config-file.ts     → config-file.test.ts
 email.ts, heartbeat.ts → email.test.ts, heartbeat.test.ts
 extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/tag-page.html, graphql-response.json
-linkedin-voyager.ts → linkedin-voyager.test.ts   # §12.5 escaping matrix, §12.7 URL pin, id>>22n clock, scrubbed fixture (edges 1-4)
+linkedin-voyager.ts → linkedin-voyager.test.ts   # §12.5 escaping matrix, §12.7 URL pin, id>>22n clock,
+#                                              #   fixture/voyager-search-response.json (edges 1-4)
 linkedin-session.ts → linkedin-session.test.ts   # resolver reject matrix (all name LINKEDIN_COOKIES_FILE), quote asymmetry, storageState
 linkedin-fetch.ts → linkedin-fetch.test.ts        # §13.3 classifier table, curl-over-fake-exec, resolver matrix, scripted VoyagerGet walk
 linkedin-payload.ts → linkedin-payload.test.ts    # all four failure classes + atomic round trip
-env-file.ts        → env-file.test.ts            # parser pins (malformed line warn+skip naming file+line) + merge contract
-                                                 #   (fills ONLY unset keys; real env wins; missing = quiet no-op) + the
-                                                 #   hoisted upsertDotEnvLine writer pins (moved from login-linkedin, Phase 9)
+env-file.ts        → env-file.test.ts            # parser pins + merge contract (fills ONLY unset keys; real env
+                                                 #   wins; missing = quiet no-op) + the hoisted upsertDotEnvLine writer pins
 login-linkedin.ts (core) → login-linkedin.test.ts  # context seam injected, sleeps/clock injected — no headed Chromium in tests
-scripts/setup-curl-impersonate.ts → setup-curl-impersonate.test.ts  # fetch + tar doubles, fixture sha computed by the suite,
-                                                 #   already-configured short-circuit, sha/tar/exe/platform failure pins
+scripts/setup-curl-impersonate.ts → setup-curl-impersonate.test.ts  # fetch/tar doubles, suite-computed fixture sha, failure pins
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins
@@ -37,6 +36,12 @@ judge-helpers.ts, pool.ts — no test (shared pure fixtures, not *.test.ts, neve
 recency.ts         → recency.test.ts
 state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
 threads-session.ts → session.test.ts         # GRANDFATHERED name drift — new files mirror <module>.test.ts
+scripts/fetch-linkedin.ts → fetch-linkedin.test.ts   # CLI suite: scriptGit argv-transcript doubles (the transcript IS
+#                                              #   the oracle), transportFor counters, parked deferred() flush,
+#                                              #   marker-file episode edges (preflight, rebase/retry, leg-dead)
+scripts/watch-linkedin.ts, probe-judge.ts, probe-linkedin.ts — NO TESTS BY DESIGN: the loop wraps the tested
+#                                              #   tick; probe-judge drives a LIVE LLM endpoint (the dispatch gate
+#                                              #   is its check); probe-linkedin's run IS the gate
 scripts/hooks/*    → gate-destructive.test.ts, format-on-edit.test.ts   # black-box spawnSync; import no src code
 scripts/commit-state-rebase.sh → commit-state-rebase.test.ts   # black-box scratch-repo git scenarios; bash gate + explicit skip
 ```
@@ -55,21 +60,22 @@ import { filterRecent } from "../src/recency.js"; // .js extension REQUIRED (Nod
 let captured: unknown = null;
 const mockTransport = { sendMail: async (o: unknown) => { captured = o; return { messageId: "m1" }; },
 } as unknown as Transporter;                        // exactly ONE double-cast, at construction
-// Idiom B — named factory returning { double, captures } (index/fetch-threads suites): same literal shape,
-// but a closure list is returned — function recordingTransport() { const subjects: string[] = []; ...
-// return { transport, subjects }; } — the closure IS the test oracle.
+// Idiom B — named factory returning { double, captures } — the closure IS the test oracle.
 // mockFetch returns real Response objects; branch on request CONTENT (prompt token, URL host), never on call
-// order in POOLED contexts. Deterministic single-worker cases may use call counters. Plain *Like doubles need
-// NO cast; an inline mockFetch casts at the call site.
+// order in POOLED contexts. Plain *Like doubles need NO cast; an inline mockFetch casts at the call site.
+// scripts/ CLIs: scriptGit scripts a process double PER SUBCOMMAND — arrays script retries, the full argv
+// transcript is the oracle (assert.deepEqual(git.calls, [["add",…],["diff","--cached","--quiet"],…])).
+// Pooled concurrency: park responses in deferred<T>() promises, resolve in explicit order, drain with
+// const flush = () => new Promise(r => setImmediate(r)); before each assertion (linkedin-fetch suite).
 ```
 
 ## Clock and env are parameters — pinned, never ambient
 ```typescript
 const NOW = Date.UTC(2026, 9, 26, 9, 14, 0);        // month is 0-based; never Date.now()
 await runWatcher({ env: BASE_ENV, now: () => NOW, /* ... */ });   // env literal, not process.env
-// Structured env values inline: LLM_ACCOUNTS: JSON.stringify([...]); secrets as Buffer base64 literals.
-// Injected-clock variants are fine (some suites pass the real Date.now AS the injected now): ambient reads are
-// the forbidden thing. One wall-clock assertion: the 429 "no backoff" elapsed < 500ms test (judge-rotation).
+// Structured env values inline (LLM_ACCOUNTS: JSON.stringify([...])); a real Date.now passed AS the
+// injected now is the sanctioned variant; ambient reads are the forbidden thing. One wall-clock
+// assertion exists: the 429 "no backoff" elapsed < 500ms test (judge-rotation).
 ```
 
 ## Temp files: lazy mkdtemp + one after(); hook suites use per-test mkdtemp + try/finally
@@ -81,7 +87,7 @@ async function tempStatePath(name: string, seed?: AppState): Promise<string> {
   return join(dir, name);
 }
 // Absence: assert.rejects(() => readFile(path), /ENOENT/) proves no write happened. Gate 1 contract: read
-// before/after — byte-identical IS the assertion.
+// before/after — byte-identical IS the assertion. Episode edges: the marker FILE's content is the oracle.
 ```
 
 ## Error messages are API (thunk + regex; validator form; domain predicates)
@@ -91,6 +97,11 @@ await assert.rejects(() => writeStateAtomic(STATE, dirTarget), (error: unknown) 
   assert.match((error as Error).message, /^state: atomic write failed for /); return true;   // multi-part: return true
 });
 await assert.rejects(() => judgePost(/* pool 429s out */), (e: unknown) => isRotationExhausted(e));   // tagged errors
+// Tagged error WITH payload — catch-then-assert (predicate first, then inspect the carried data):
+let caught: unknown;
+try { await judgePost(/* pool 429s out */); } catch (error) { caught = error; }
+assert.ok(isRotationExhausted(caught));
+assert.deepEqual((caught as RotationExhausted).failures.map((f) => f.account), [1, 2]);
 ```
 
 ## Fixtures: trimmed real captures, numbered edges, mutation variants
@@ -98,8 +109,8 @@ await assert.rejects(() => judgePost(/* pool 429s out */), (e: unknown) => isRot
 // Header comment (comment-capable formats only — HTML, not JSON): origin, date, trim policy, every planted
 // edge. JSON fixtures cannot carry comments: their provenance lives in the LOADING TEST's titles instead.
 const fixture = readFileSync(join(here, "fixture", "tag-page.html"), "utf8");   // import.meta.url, never cwd
-const noisy = fixture.replace("</head>", '<script type="application/json" data-sjs="">{"broken": </script></head>');
-assert.deepEqual(extractPosts(noisy), extractPosts(fixture));   // variants by MUTATION; tolerance = equivalence
+// Variants by MUTATION of the fixture string (e.g. break the data-sjs JSON) — tolerance = equivalence:
+// assert.deepEqual(extractPosts(mutated), extractPosts(fixture));
 ```
 No keyword-agreement rule: fixture text stays verbatim-realistic to the capture (a former "must agree with keywords" rule was dropped — nothing enforced it and no fixture contains a shipped keyword).
 
@@ -117,6 +128,18 @@ No keyword-agreement rule: fixture text stays verbatim-realistic to the capture 
 4. Per exported function: happy path (deepEqual), gate/no-op case (called flag or ENOENT), failure case (thunk + message regex)
 5. Concurrency behavior: measure with an inFlight/peak counter double; out-of-order completion with parked resolvers resolved last-first
 6. Gates in order: `npm run typecheck` → `npm run lint` → `npm test`
+</important if>
+
+<important if="you are adding a test for a scripts/ CLI entry point">
+## Adding a Test for a scripts/ CLI Entry Point
+1. File: `tests/<script>.test.ts` (mirror the scripts/ name — fetch-linkedin, login-linkedin, setup-curl-impersonate)
+2. Ensure the injection seam FIRST: a deps object on the exported core function (`git`, `transport`, `env`, `markerPath`, `now`, `sleepFn`, `context`) with lazy production defaults; keep the `import.meta.url === pathToFileURL(process.argv[1]).href` main-guard so importing never runs the CLI
+3. Script external processes per subcommand (`scriptGit({ diff: 1, push: [1, 0] })` — push fails once, then succeeds); real-binary probes are read-only and guarded by an in-test `t.skip`
+4. Pin the argv/sleep transcript with `assert.deepEqual(calls, [...])`, not just return values — ordering IS the contract; zero calls on an early return is also an assertion
+5. Concurrency flows: parked `deferred` responses + a `setImmediate` flush between resolution steps
+6. Files: lazy mkdtemp + one `after()` (prefix `lw-<script>-`); absence-oracles prove nothing was written; marker-file content pins episode edges across a simulated restart
+7. Every failure message carries the child tool's own output (`/git said: fatal: …/`) plus aftermath pins (no push, payload untouched); pass `env: {}` literals to prove resolvers never touch ambient env
+8. Gates in order: `npm run typecheck` → `npm run lint` → `npm test`
 </important if>
 
 <important if="you are adding a fixture">
