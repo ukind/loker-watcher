@@ -140,7 +140,7 @@
    ],
    "platforms":{
       "linkedin":true,
-      "threads":true
+      "threads":false
    },
    "recencyHours":72
 }
