@@ -16,9 +16,10 @@
  * so consecutive claims land on consecutive accounts — the first N
  * dispatches of a run hit N distinct hosts up to the pool's ceilings. A
  * claim moves the dial just past the claimed account; an undefined pick
- * never moves it. An all-at-ceiling pick (nothing cooling) parks its
- * dispatcher on the release-waiter queue at ZERO budget charge: the shared
- * park budget and the exhaustion alarm stay exclusive to cooldown parks
+ * never moves it. A pick blocked while a release is outstanding (some
+ * account still has calls in flight) parks its dispatcher on the
+ * release-waiter queue at ZERO budget charge: the shared park budget and
+ * the exhaustion alarm stay exclusive to quiet-pool cooldown parks
  * (D4). A fresh cooldown stamp also wakes the queue — it shrinks effective
  * capacity — while a first-write-wins re-stamp changes nothing and wakes
  * nobody.
@@ -281,8 +282,8 @@ export function releaseAccount(state: RotationState, accountIndex: number): void
  * can never convert to the exhaustion alarm (D4). The caller registers
  * inside the same sync window as the pick-undefined observation — the
  * push lands before the first await, so no release can slip past
- * unobserved. Steady state is safe: an all-at-ceiling scan proves claims
- * are outstanding (in-flight >= ceiling somewhere), and every claim's
+ * unobserved. Steady state is safe: the caller parks only while a release
+ * is outstanding (in-flight somewhere), and every claim's
  * release wakes the queue, so the wait resolves on real network events —
  * no timer, no polling.
  */
@@ -294,8 +295,8 @@ export function waitCeilingSlot(state: RotationState): Promise<void> {
 
 /**
  * Earliest ACTIVE cooldown expiry (> nowMs), or undefined when nothing is
- * cooling — the caller's flavor split for an undefined pick (D4): an
- * expiry here means park on the shared budget (the cooldown path, the
+ * cooling — the caller's flavor split for an undefined pick on a quiet
+ * pool (D4): an expiry here means park on the shared budget (the cooldown path, the
  * only road to the exhaustion terminal); no expiry means every account is
  * merely at its ceiling (the zero-charge ceiling wait). parkUntilEligible
  * reads the same computation.
@@ -309,6 +310,23 @@ export function earliestCooldown(state: RotationState, nowMs: number): number | 
     }
   }
   return earliest;
+}
+
+/**
+ * True when any account has dispatched-and-unfinished calls. Every claim's
+ * finally releases — and every fresh cooldown stamp wakes the queue — so a
+ * true reading guarantees the release-waiter queue a wake: the flavor
+ * split may park a dispatcher on waitCeilingSlot at zero budget charge
+ * instead of drawing the shared cooldown budget. Plain field reads;
+ * synchronous; the boundary twin of allAvailabilityBlocked's idle check.
+ */
+export function hasOutstandingRelease(state: RotationState): boolean {
+  for (const count of state.inFlight.values()) {
+    if (count > 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -334,8 +352,9 @@ export async function parkUntilEligible(
     return false;
   }
   const startedAt = now();
-  // The caller parks only on an undefined pick WITH an active cooldown,
-  // so earliest is defined at this point; the typed fallback keeps the
+  // The caller parks only on an undefined pick WITH an active cooldown
+  // and a quiet pool (no release outstanding), so earliest is defined at
+  // this point; the typed fallback keeps the
   // function total — it reads as a spent budget, the conservative terminal.
   const earliest = earliestCooldown(state, startedAt);
   if (earliest === undefined) {

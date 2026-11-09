@@ -59,6 +59,7 @@ import {
   claimAccount,
   coolAccount,
   earliestCooldown,
+  hasOutstandingRelease,
   isRotationExhausted,
   parkUntilEligible,
   pickEligibleAccount,
@@ -488,24 +489,36 @@ async function dispatchLlmCall<T>(options: {
     pinnedStart = undefined;
     if (picked === undefined) {
       // Every account is cooling, at its ceiling, or mask-refused — split
-      // the flavors (D4): an active cooldown parks through the shared
+      // the flavors (D4). FIRST: a release outstanding — some account
+      // still has calls in flight, and every claim's finally (and every
+      // fresh cooldown stamp) wakes the release queue — so wait at ZERO
+      // budget charge. A peer seconds from freeing a slot must never
+      // route the dispatcher onto the paid cooldown timer: cooldown-first
+      // parks rewound dispatchers, three parks spend the whole 180s cell,
+      // and the rest convert to exhaustion while healthy seats hold
+      // capacity (watch episode 2026-11-07..09: eleven consecutive runs
+      // exited 1 with the exhaustion record naming account 1 alone). A
+      // quiet pool (no release can ever wake the queue) keeps the old
+      // flavors in order: an active cooldown parks through the shared
       // budget (the only road to the exhaustion terminal, OUTSIDE the try
       // below — a throw here would be swallowed by the catch and misread
-      // as a transport error); an all-at-ceiling pick has no expiry, so
-      // it waits on the release queue at ZERO budget charge — a healthy
-      // backlog can never false-trip the alarm. A permanently-dead pool
-      // is the third flavor: every seat mask-refused, or capped with its
-      // probe spent and drained, and no cooldown pending — the release
-      // queue would never wake, so the terminal trips immediately at zero
-      // budget charge (the D11 guard).
-      if (earliestCooldown(state, now()) !== undefined) {
+      // as a transport error); a permanently-dead pool — every seat
+      // mask-refused, or capped with its probe spent and drained, and no
+      // cooldown pending — trips the terminal immediately at zero budget
+      // charge (the D11 guard). The trailing arm is unreachable by the
+      // case analysis (an at-ceiling seat carries in-flight, a cooling
+      // seat parks above); it stays a terminal — never a timerless wait
+      // that could hang.
+      if (hasOutstandingRelease(state)) {
+        await waitCeilingSlot(state);
+      } else if (earliestCooldown(state, now()) !== undefined) {
         if (!(await parkUntilEligible(state, now, sleepFn))) {
           return { status: "exhausted" };
         }
       } else if (allAvailabilityBlocked(state)) {
         return { status: "exhausted" };
       } else {
-        await waitCeilingSlot(state);
+        return { status: "exhausted" };
       }
       attempt -= 1; // the wait is not a retry — do not spend an attempt
       continue;

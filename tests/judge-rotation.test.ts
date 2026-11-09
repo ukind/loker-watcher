@@ -12,6 +12,7 @@ import {
   claimAccount,
   coolAccount,
   earliestCooldown,
+  hasOutstandingRelease,
   isRotationExhausted,
   pickEligibleAccount,
   releaseAccount,
@@ -1016,10 +1017,17 @@ describe("pool-truthful exhaustion wording (D9)", () => {
     );
   });
 
-  it("mid-run exhaustion with a saturated healthy survivor reads 1 of 2 — the survivor never failed", async () => {
+  it("a saturated healthy seat rescues rewound 429 batches through the free release queue — zero budget draw", async () => {
+    // The paid-park regression (watch episode 2026-11-07..09): under
+    // cooldown-first ordering, the rewound dispatcher drew the shared
+    // budget while the healthy seat was merely saturated, and three parks
+    // spent the whole 180s cell — "1 of 2 exhausted" with a seat that
+    // never failed. Exhaustion in that shape is now impossible by design:
+    // the rewound dispatcher waits on the release queue for free, and the
+    // survivor's release hands it the freed slot. The D9 pool-truthful
+    // wording keeps its throw-site proof in the "2 of 2" case above.
     const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches, 2 workers
-    let tick = 0;
-    const now = (): number => tick;
+    const allIds = posts.map((post) => post.id);
     let releaseSurvivor!: (response: Response) => void;
     const survivorGate = new Promise<Response>((resolve) => {
       releaseSurvivor = resolve;
@@ -1027,24 +1035,34 @@ describe("pool-truthful exhaustion wording (D9)", () => {
     const sleeps: number[] = [];
     const inertSleep = (ms: number): Promise<void> => {
       sleeps.push(ms);
-      tick += ms; // parks wake exactly at expiry
-      // The third park spends the last of the 180_000 cell; release the
-      // held dispatch so the drain-then-throw join completes.
-      if (sleeps.length === 3) {
-        releaseSurvivor(ok('{"relevant": true, "locationOk": true}'));
-      }
       return Promise.resolve();
     };
-    const mockFetch = (async (url: unknown): Promise<Response> => {
+    let accountOneCalls = 0;
+    let accountTwoCalls = 0;
+    let survivorReleased = false;
+    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      const requestedIds = [...new Set(content.match(/\d{19}/g) ?? [])];
       if (String(url).includes("account-one")) {
+        accountOneCalls += 1;
         return new Response("Too Many Requests", { status: 429 });
       }
-      return survivorGate; // the healthy seat saturates: held, never answers
+      accountTwoCalls += 1;
+      if (!survivorReleased) {
+        survivorReleased = true;
+        return survivorGate; // the healthy seat saturates: held until the test releases it
+      }
+      return ok(bulkContent(requestedIds));
     }) as unknown as typeof fetch;
 
-    let caught: unknown;
+    // Release the held dispatch once the rewound dispatcher has parked on
+    // the release queue — a real tick, offline-safe.
+    const releaser = setTimeout(() => releaseSurvivor(ok(bulkContent(allIds))), 50);
     try {
-      await judgePosts(
+      const result = await judgePosts(
         posts,
         twoAccounts(),
         KEYWORDS,
@@ -1054,25 +1072,36 @@ describe("pool-truthful exhaustion wording (D9)", () => {
           [0, 1],
           [1, 1],
         ]),
-        now,
+        Date.now,
         inertSleep,
       );
-    } catch (error) {
-      caught = error;
+      assert.deepEqual(sleeps, []); // the free queue served the rewind — zero budget charge
+      assert.equal(accountOneCalls, 1); // the 429 leg ran exactly once
+      assert.equal(accountTwoCalls, 2); // batch two, then the rescued batch one
+      assert.equal(result.judged.length, 20); // every post judged anyway
+      assert.deepEqual(result.skippedPostIds, []);
+    } finally {
+      clearTimeout(releaser);
     }
+  });
+});
 
-    assert.ok(isRotationExhausted(caught));
-    const exhausted = caught as RotationExhausted;
-    // The saturated seat never failed, so it never entered the record —
-    // the pool-truthful count is 1 of 2.
-    assert.deepEqual(
-      exhausted.failures.map((f) => f.account),
-      [1],
-    );
-    assert.match(
-      exhausted.message,
-      /^judge: 1 of 2 LLM_ACCOUNTS accounts failed — account 1 \(https:\/\/account-one\.api\/v1\): HTTP 429/,
-    );
-    assert.deepEqual(sleeps, [60_500, 60_500, 59_000]); // the budget parks, hand-stepped
+describe("hasOutstandingRelease (the flavor split's free-park gate)", () => {
+  it("reads true while a claim is outstanding and false once it releases", () => {
+    const state = freshState(twoAccounts());
+    assert.equal(hasOutstandingRelease(state), false);
+    claimAccount(state, 0);
+    assert.equal(hasOutstandingRelease(state), true);
+    releaseAccount(state, 0);
+    assert.equal(hasOutstandingRelease(state), false);
+  });
+
+  it("reads true with in-flight on any seat, false on an all-idle pool", () => {
+    const state = freshState(threeAccounts());
+    claimAccount(state, 2);
+    assert.equal(hasOutstandingRelease(state), true);
+    releaseAccount(state, 2);
+    state.inFlight.set(1, 0); // an explicit zero entry is still idle
+    assert.equal(hasOutstandingRelease(state), false);
   });
 });

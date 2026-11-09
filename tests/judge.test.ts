@@ -1066,3 +1066,50 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
     assert.deepEqual(result.skippedPostIds, []);
   });
 });
+
+describe("judgePosts release-outstanding park (the paid-park regression)", () => {
+  it("rewound 429 batches queue on the free release queue while healthy peers hold slots — zero budget draw", async () => {
+    const accounts: LlmAccount[] = [
+      { baseUrl: "https://rate-limited.api/v1", apiKey: "k0", model: "m0" },
+      { baseUrl: "https://healthy-one.api/v1", apiKey: "k1", model: "m1" },
+      { baseUrl: "https://healthy-two.api/v1", apiKey: "k2", model: "m2" },
+    ];
+    const allIds = Array.from({ length: 21 }, (_, i) => id19(i + 1)); // 3 batches: 10/10/1
+    const ceilings = new Map([
+      [0, 1],
+      [1, 1],
+      [2, 1],
+    ]);
+    const delays: number[] = [];
+    const inertSleep = (ms: number): Promise<void> => {
+      delays.push(ms);
+      return Promise.resolve();
+    };
+    let rateLimitedCalls = 0;
+    const laterOk = (content: string): Promise<Response> =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve(ok(content)), 25);
+      });
+    const mockFetch = (async (url: unknown): Promise<Response> => {
+      if (String(url).includes("rate-limited")) {
+        rateLimitedCalls += 1;
+        return new Response("Too Many Requests", { status: 429 });
+      }
+      return laterOk(bulkContent(allIds));
+    }) as unknown as typeof fetch;
+    const result = await judgePosts(
+      allIds.map((id) => bulkPost(id)),
+      accounts,
+      KEYWORDS,
+      mockFetch,
+      "medium",
+      ceilings,
+      Date.now,
+      inertSleep,
+    );
+    assert.ok(rateLimitedCalls >= 1); // the 429 leg ran
+    assert.deepEqual(delays, []); // zero cooldown-park charge — the free queue served every rewind
+    assert.equal(result.judged.length, 21); // every post judged anyway
+    assert.deepEqual(result.skippedPostIds, []);
+  });
+});
