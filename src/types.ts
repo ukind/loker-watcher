@@ -7,7 +7,6 @@
  */
 import type { Surface } from "./config-file.js";
 
-/** One post
 /** One post from any watched platform, normalized. Produced by extract (Threads) and each fetcher. */
 export interface Post {
   /** Stable dedup key: numeric post id, e.g. "3388928313420694692". */
