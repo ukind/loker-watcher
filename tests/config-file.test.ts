@@ -38,7 +38,11 @@ describe("loadWatcherConfig — happy path", () => {
     const config = await loadWatcherConfig("watcher.config.json");
     assert.ok(config.keywords.length > 0);
     assert.ok(config.surfaces.length > 0);
-    assert.deepEqual(config.platforms, { linkedin: true, threads: true });
+    // Operator-editable committed data (c56569c/a493b8c flipped threads to
+    // false): pin the stable half — linkedin must stay on (the PC leg feeds
+    // the hosted run) — and accept either threads value.
+    assert.equal(config.platforms.linkedin, true);
+    assert.equal(typeof config.platforms.threads, "boolean");
     assert.equal(config.recencyHours, 72);
   });
 
@@ -136,6 +140,36 @@ describe("loadWatcherConfig — failures", () => {
     assert.deepEqual(config.candidateTerms, []);
   });
 
+  it("defaults negativeKeywords to [] when absent", async () => {
+    const path = await writeConfig({ ...VALID });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.negativeKeywords, []);
+  });
+
+  it("accepts a non-empty negativeKeywords array", async () => {
+    const path = await writeConfig({ ...VALID, negativeKeywords: ["internship", "outsourcing"] });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.negativeKeywords, ["internship", "outsourcing"]);
+  });
+
+  it("allows an empty negativeKeywords array", async () => {
+    const path = await writeConfig({ ...VALID, negativeKeywords: [] });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.negativeKeywords, []);
+  });
+
+  it("rejects a non-array negativeKeywords", async () => {
+    const path = await writeConfig({ ...VALID, negativeKeywords: "internship" });
+    await assert.rejects(() => loadWatcherConfig(path), /negativeKeywords.*must be an array/);
+  });
+
+  it("rejects a blank negativeKeywords item", async () => {
+    const path = await writeConfig({ ...VALID, negativeKeywords: ["   "] });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /negativeKeywords.*must contain only non-empty strings/,
+    );
+  });
   it("accepts a linkedin surface", async () => {
     const path = await writeConfig({
       ...VALID,

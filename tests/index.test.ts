@@ -43,6 +43,7 @@ const iso = (ms: number): string => new Date(ms).toISOString();
 const CONFIG: WatcherConfig = {
   keywords: ["hiring"],
   candidateTerms: ["hiring", "loker"],
+  negativeKeywords: [],
   surfaces: [{ type: "tag", value: "hiring" }],
   platforms: { linkedin: true, threads: true },
   recencyHours: 72,
@@ -387,6 +388,46 @@ describe("runWatcher", () => {
     assert.match(subjects[0] ?? "", /2 new job posts/);
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds).sort(), [id19(3), id19(4)]);
+  });
+
+  it("digest-excludes a vetoed post: config negativeKeywords rides the judge prompt", async () => {
+    const posts = [{ id: id19(7), text: "Hiring: frontend developer. Internship track included." }];
+    const statePath = await tempStatePath("negative-veto-digest.json");
+    const { transport, subjects } = recordingTransport();
+    const systems: string[] = [];
+    const fetchFn = (async (_url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      systems.push(body.messages[0]?.content ?? "");
+      const content = body.messages[1]?.content ?? "";
+      if (content.includes("Judge each post below")) {
+        const ids = content.match(/\b\d{16,}\b/g) ?? [];
+        const answer: Record<string, JudgeVerdict> = {};
+        for (const id of ids) answer[id] = { relevant: false, locationOk: true };
+        return ok(JSON.stringify(answer));
+      }
+      return ok(JSON.stringify({ relevant: false, locationOk: true }));
+    }) as unknown as typeof fetch;
+
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: { ...CONFIG, negativeKeywords: ["internship"] },
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn,
+      judgeAvailability: availabilityPassAll,
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.deepEqual(run, { judged: 1, matches: 0, skipped: 0, saved: true });
+    assert.equal(systems.length, 1); // the bulk answered every id — no fallback
+    assert.match(systems[0] ?? "", /negative keywords: \["internship"\]/);
+    assert.equal(subjects.length, 1); // zero matches -> the heartbeat
+    assert.match(subjects[0] ?? "", /0 new matches/);
+    const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
+    assert.deepEqual(Object.keys(stored.seenPostIds), [id19(7)]);
   });
 
   it("leaves the state file byte-identical when everything is already seen (Gate 1) and still sends the heartbeat", async () => {
