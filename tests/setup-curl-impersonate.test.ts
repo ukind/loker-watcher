@@ -100,6 +100,7 @@ describe("runSetupCurl", () => {
     const { fetchFn, urls } = fetchServing(FIXTURE_BYTES);
 
     await runSetupCurl({
+      platform: "win32", // the suite tests win32 paths on every host
       fetchFn,
       env: {},
       envPath,
@@ -148,6 +149,7 @@ describe("runSetupCurl", () => {
     await assert.rejects(
       async () =>
         runSetupCurl({
+          platform: "win32", // the suite tests win32 paths on every host
           fetchFn,
           env: {},
           envPath,
@@ -173,6 +175,7 @@ describe("runSetupCurl", () => {
     await assert.rejects(
       async () =>
         runSetupCurl({
+          platform: "win32", // the suite tests win32 paths on every host
           fetchFn,
           env: {},
           envPath: await workPath("tarfail.env"),
@@ -198,6 +201,7 @@ describe("runSetupCurl", () => {
     await assert.rejects(
       async () =>
         runSetupCurl({
+          platform: "win32", // the suite tests win32 paths on every host
           fetchFn,
           env: {},
           envPath: await workPath("noexe.env"),
@@ -243,6 +247,7 @@ describe("runSetupCurl", () => {
     const targetDir = await workPath("arm-tools");
     const { fetchFn, urls } = fetchServing(FIXTURE_BYTES);
     await runSetupCurl({
+      platform: "win32", // the suite tests win32 paths on every host
       fetchFn,
       env: {},
       envPath: await workPath("arm.env"),
@@ -259,6 +264,7 @@ describe("runSetupCurl", () => {
     await assert.rejects(
       async () =>
         runSetupCurl({
+          platform: "win32", // the suite tests win32 paths on every host
           fetchFn,
           env: {},
           envPath: await workPath("dl503.env"),
