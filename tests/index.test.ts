@@ -673,7 +673,7 @@ describe("runWatcher", () => {
     // the single return keeps the LinkedIn posts (D13).
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on Threads \+ LinkedIn/);
+    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [`urn:li:activity:${linkedinIdNow}`]);
   });
@@ -726,8 +726,34 @@ describe("runWatcher", () => {
     assert.equal(payloadReads, 1);
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on Threads \+ LinkedIn/);
+    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.doesNotMatch(subjects[0] ?? "", /Threads/);
     assert.ok(texts[0]?.includes("LinkedIn hiring post"));
+  });
+
+  it("both on: a LinkedIn-only match renders a LinkedIn-only subject", async () => {
+    const statePath = await tempStatePath("linkedin-only-subject.json", {
+      version: 2,
+      seenPostIds: { [id19(41)]: iso(NOW - HOUR) }, // the Threads post is already seen — it never reaches the judge
+    });
+    const { transport, subjects } = recordingTransport();
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: MIXED_CONFIG,
+      contextFactory: singlePageContextFactory(
+        graphqlBody([{ id: id19(41), text: "Hiring: golang developer, remote" }]),
+      ), // the Threads walk is healthy; everything it captured is already seen
+      linkedinFetch: async () => payloadRead([linkedinPost(linkedinIdNow)], "ok"),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.doesNotMatch(subjects[0] ?? "", /Threads/);
   });
 
   it("linkedin off: the payload reader is never called and the Threads walk still runs", async () => {
