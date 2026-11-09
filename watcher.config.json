@@ -158,8 +158,8 @@
       }
    ],
    "platforms":{
-      "linkedin":true,
-      "threads":false
+      "linkedin":false,
+      "threads":true
    },
    "recencyHours":72
 }
