@@ -511,9 +511,19 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     );
     const { groups, orphans } = groupMatchesBySurface(matches, notifySurfaces);
     for (const orphan of orphans) {
-      const stamps = (orphan.surfaces ?? []).map(surfaceLabel).join(", ");
+      const stamps = orphan.surfaces ?? [];
+      if (stamps.length === 0) {
+        // Legacy payload row (no stamps): the fetcher that produced it
+        // predates stamping — the PC loop running old code. The remedy
+        // is updating that clone, not the config.
+        console.warn(
+          `notify: match ${orphan.id} carries no surface stamp — the payload row predates stamping; update the PC loop's clone of main (git pull) and restart watch-linkedin so rows carry stamps`,
+        );
+        continue;
+      }
+      const labels = stamps.map(surfaceLabel).join(", ");
       console.warn(
-        `notify: match ${orphan.id} carries no configured surface (${stamps === "" ? "no stamps" : stamps}) — skipped from every email; re-add the surface if it left watcher.config.json, or enable its platform in "platforms" if the platform switch is off`,
+        `notify: match ${orphan.id} carries no configured surface (${labels}) — skipped from every email; re-add the surface if it left watcher.config.json, or enable its platform in "platforms" if the platform switch is off`,
       );
     }
     const emailConfig = resolveEmailConfig(env);

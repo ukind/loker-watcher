@@ -992,7 +992,7 @@ describe("per-surface notify loop (email-per-surface)", () => {
     assert.deepEqual(run, { judged: 3, matches: 3, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
     assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
-    // One loud warn per orphan, naming id + stamps + the remedy.
+    // One loud warn per orphan, naming id + stamps or no-stamps + its remedy.
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
       lines.some((line) =>
@@ -1004,7 +1004,7 @@ describe("per-surface notify loop (email-per-surface)", () => {
     assert.ok(
       lines.some((line) =>
         line.includes(
-          `notify: match urn:li:activity:${retiredId} carries no configured surface (no stamps)`,
+          `notify: match urn:li:activity:${retiredId} carries no surface stamp — the payload row predates stamping; update the PC loop's clone of main (git pull) and restart watch-linkedin so rows carry stamps`,
         ),
       ),
     );
