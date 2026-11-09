@@ -38,7 +38,7 @@ describe("loadWatcherConfig — happy path", () => {
     const config = await loadWatcherConfig("watcher.config.json");
     assert.ok(config.keywords.length > 0);
     assert.ok(config.surfaces.length > 0);
-    assert.deepEqual(config.platforms, { linkedin: true, threads: true });
+    assert.deepEqual(config.platforms, { linkedin: true, threads: false });
     assert.equal(config.recencyHours, 72);
   });
 
