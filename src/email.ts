@@ -189,21 +189,46 @@ export async function sendDigest(
  * Build the plain-text body for the judge-pool exhaustion alarm.
  * Lists every account with its recorded failure, in pool order. Returns
  * null when the failure list is empty (no alarm to send).
+ *
+ * With poolSize the header is pool-truthful — "X of N LLM_ACCOUNTS
+ * accounts failed" — and the pool seats that never entered the record
+ * render as one "Still working" line, computed by set-difference against
+ * the 1-based pool positions (the builder sees only failures, not the
+ * account list, so survivors render as numbers). Without poolSize the
+ * legacy body stands byte-identical.
  */
-export function buildExhaustionText(failures: readonly AccountFailure[]): string | null {
+export function buildExhaustionText(
+  failures: readonly AccountFailure[],
+  poolSize?: number,
+): string | null {
   if (failures.length === 0) return null;
   const lines = failures.map(
     (failure, index) =>
       `${index + 1}. account ${failure.account} (${failure.baseUrl}) — ${failure.reason}`,
   );
-  return [
-    "The LLM judge pool is exhausted — every LLM_ACCOUNTS account failed.",
-    "",
-    ...lines,
+  const header =
+    poolSize === undefined
+      ? "The LLM judge pool is exhausted — every LLM_ACCOUNTS account failed."
+      : `The LLM judge pool is exhausted — ${failures.length} of ${poolSize} LLM_ACCOUNTS accounts failed.`;
+  const parts: string[] = [header, "", ...lines];
+  if (poolSize !== undefined) {
+    const failed = new Set(failures.map((failure) => failure.account));
+    const survivors: number[] = [];
+    for (let seat = 1; seat <= poolSize; seat += 1) {
+      if (!failed.has(seat)) survivors.push(seat);
+    }
+    if (survivors.length > 0) {
+      const label =
+        survivors.length === 1 ? `account ${survivors[0]!}` : `accounts ${survivors.join(", ")}`;
+      parts.push("", `Still working this run: ${label}.`);
+    }
+  }
+  parts.push(
     "",
     "No digest was sent and no posts were marked seen; they retry next run.",
     "Add a working account to the LLM_ACCOUNTS secret and re-run.",
-  ].join("\n");
+  );
+  return parts.join("\n");
 }
 
 /**
@@ -211,16 +236,23 @@ export function buildExhaustionText(failures: readonly AccountFailure[]): string
  * the digest. Returns the message id when the transport reports one, or
  * undefined when there is nothing to send. Throws fail-visible when
  * nodemailer fails to deliver (sendText wraps the transport error).
+ * With poolSize the subject reads "LLM judge pool exhausted (X of N
+ * accounts failed)" — the /judge pool exhausted/ pin fragment survives;
+ * without it the legacy count-only subject stands.
  */
 export async function sendExhaustionEmail(
   failures: readonly AccountFailure[],
   config: EmailConfig,
   transport?: Transporter,
+  poolSize?: number,
 ): Promise<string | undefined> {
-  const text = buildExhaustionText(failures);
+  const text = buildExhaustionText(failures, poolSize);
   if (text === null) return undefined;
-  const plural = failures.length === 1 ? "" : "s";
-  const subject = `LLM judge pool exhausted (${failures.length} account${plural} failed)`;
+  const counts =
+    poolSize === undefined
+      ? `${failures.length} account${failures.length === 1 ? "" : "s"} failed`
+      : `${failures.length} of ${poolSize} accounts failed`;
+  const subject = `LLM judge pool exhausted (${counts})`;
   const messageId = await sendText(subject, text, config, transport);
   console.log(`email: sent exhaustion alarm for ${failures.length} account(s)`);
   return messageId;

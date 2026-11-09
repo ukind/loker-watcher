@@ -209,8 +209,13 @@ export function resolveJudgeConfig(
   return parseLlmAccounts(env);
 }
 
-/** Chat-completions URL from a base URL, tolerating a full endpoint. */
-function normalizeEndpoint(baseUrl: string): string {
+/**
+ * Chat-completions URL from a base URL, tolerating a full endpoint.
+ * Exported (F006 drift-proofing precedent): the availability pre-check
+ * (src/judge-availability.ts) probes the exact production URL shape
+ * instead of a hand-copy that has already drifted from it.
+ */
+export function normalizeEndpoint(baseUrl: string): string {
   return baseUrl.endsWith("/chat/completions")
     ? baseUrl
     : `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
@@ -334,25 +339,33 @@ interface DispatchWarns {
 /**
  * The real-cause string a terminal non-ok status stamps on the ledger.
  * 401/403 mean the key is dead — the alarm should say so, not just the
- * status code.
+ * status code. Exported so the availability pre-check renders the SAME
+ * reason vocabulary verbatim, keeping the exhaustion message and email
+ * composable with zero translation.
  */
-function terminalFailureReason(status: number): string {
+export function terminalFailureReason(status: number): string {
   return status === 401 || status === 403 ? `HTTP ${status} — key dead` : `HTTP ${status}`;
 }
 
 /**
- * True when the pick found nothing BECAUSE of the health circuit. An
- * uncapped account always makes progress on a release (its claims return
- * and the queue wakes), so it can never permanently block the pool — this
- * is what keeps the zero-charge ceiling wait alive for a healthy saturated
- * pool. A capped account is permanently blocked only when its probe is
- * spent AND no claim is outstanding that could still succeed and free it.
- * No cooldown is active at the call site (the flavor split checks that
+ * True when the pick found nothing BECAUSE every seat is permanently dead
+ * this tick: the availability pre-check refused it (the blocked mask — a
+ * refused seat never dispatches, so no release can ever come from it), or
+ * the health circuit blocked it (capped, probe spent and drained). With
+ * an empty mask this is exactly the pre-mask health predicate — the
+ * no-mask behavior is unchanged — and with a mask it is the D11 guard: an
+ * all-blocked (or blocked-plus-health-dead) pool exhausts immediately at
+ * zero budget charge instead of parking forever on the timerless
+ * waitCeilingSlot. An uncapped seat always makes progress on a release,
+ * so it can never permanently block the pool — this is what keeps the
+ * zero-charge ceiling wait alive for a healthy saturated pool. No
+ * cooldown is active at the call site (the flavor split checks that
  * first). Plain field reads; inline by design (judge-rotation owns no
- * health concept — the boundary).
+ * mask or health concept — the boundary).
  */
-function allHealthBlocked(state: RotationState): boolean {
+function allAvailabilityBlocked(state: RotationState): boolean {
   return state.accounts.every((_, index) => {
+    if (state.blocked.has(index)) return true;
     const capped = (state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP;
     if (!capped) return false;
     return state.probedThisTick.has(index) && (state.inFlight.get(index) ?? 0) === 0;
@@ -360,18 +373,28 @@ function allHealthBlocked(state: RotationState): boolean {
 }
 
 /**
- * The exhaustion record with the health fallback: the ledger's real causes
- * first (cooling-only accounts carry "HTTP 429" inside
- * buildFailuresFromLedger), then any capped account the ledger cannot
- * explain appended — a probe that answered unusably stamps nothing, but
- * the alarm must still name the account. Non-empty at every throw site by
- * construction: the arm fires only when every account is cooling, ledgered,
- * or capped (src/email.ts:181-182 renders null on an empty record while
- * exit 1 still fires — the exact silent-alarm this prevents).
+ * The exhaustion record, in pool order, from three sources: the ledger's
+ * real causes first (cooling-only accounts carry "HTTP 429" inside
+ * buildFailuresFromLedger), then any availability-refused seat — its
+ * probe ran before the tick began, the refusal is the freshest evidence,
+ * and the seat never dispatched, so the ledger cannot explain it — then
+ * any capped account neither source explained (a probe that answered
+ * unusably stamps nothing, but the alarm must still name the account).
+ * Non-empty at every throw site by construction: every arm fires only on
+ * seats the earlier sources did not list (src/email.ts:181-182 renders
+ * null on an empty record while exit 1 still fires — the exact
+ * silent-alarm this prevents).
  */
 function exhaustionRecord(state: RotationState): AccountFailure[] {
   const record = buildFailuresFromLedger(state);
   const listed = new Set(record.map((failure) => failure.account));
+  for (const [index, account] of state.accounts.entries()) {
+    const reason = state.blocked.get(index);
+    if (reason !== undefined && !listed.has(index + 1)) {
+      record.push({ account: index + 1, baseUrl: account.baseUrl, reason });
+      listed.add(index + 1);
+    }
+  }
   for (const [index, account] of state.accounts.entries()) {
     const capped = (state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP;
     if (capped && !listed.has(index + 1)) {
@@ -380,10 +403,11 @@ function exhaustionRecord(state: RotationState): AccountFailure[] {
         baseUrl: account.baseUrl,
         reason: "capped by provider health",
       });
+      listed.add(index + 1);
     }
   }
-  // Pool order across BOTH sources: the ledger walk is already in pool
-  // order, but the capped appendix lands after it — the stable sort
+  // Pool order across ALL sources: the ledger walk is already in pool
+  // order, but the appendices land after it — the stable sort
   // re-establishes the pool-ordered record buildFailuresFromLedger's doc
   // promises (the old cooldown-map builder guaranteed the same).
   record.sort((a, b) => a.account - b.account);
@@ -463,21 +487,22 @@ async function dispatchLlmCall<T>(options: {
     const picked = pickEligibleAccount(state, now(), pinnedStart);
     pinnedStart = undefined;
     if (picked === undefined) {
-      // Every account is cooling or at its ceiling — split the flavors
-      // (D4): an active cooldown parks through the shared budget (the
-      // only road to the exhaustion terminal, OUTSIDE the try below — a
-      // throw here would be swallowed by the catch and misread as a
-      // transport error); an all-at-ceiling pick has no expiry, so it
-      // waits on the release queue at ZERO budget charge — a healthy
-      // backlog can never false-trip the alarm. A health-blocked pool is
-      // the third flavor: every account capped with its probe spent and
-      // drained, no cooldown pending — the release queue would never
-      // wake, so the terminal trips immediately at zero budget charge.
+      // Every account is cooling, at its ceiling, or mask-refused — split
+      // the flavors (D4): an active cooldown parks through the shared
+      // budget (the only road to the exhaustion terminal, OUTSIDE the try
+      // below — a throw here would be swallowed by the catch and misread
+      // as a transport error); an all-at-ceiling pick has no expiry, so
+      // it waits on the release queue at ZERO budget charge — a healthy
+      // backlog can never false-trip the alarm. A permanently-dead pool
+      // is the third flavor: every seat mask-refused, or capped with its
+      // probe spent and drained, and no cooldown pending — the release
+      // queue would never wake, so the terminal trips immediately at zero
+      // budget charge (the D11 guard).
       if (earliestCooldown(state, now()) !== undefined) {
         if (!(await parkUntilEligible(state, now, sleepFn))) {
           return { status: "exhausted" };
         }
-      } else if (allHealthBlocked(state)) {
+      } else if (allAvailabilityBlocked(state)) {
         return { status: "exhausted" };
       } else {
         await waitCeilingSlot(state);
@@ -789,7 +814,7 @@ export async function judgePost(
   if (outcome.status === "exhausted") {
     // D6: thrown at wrapper level, OUTSIDE the core's try — a throw inside
     // would be swallowed by the total transport catches.
-    throw rotationExhausted(exhaustionRecord(state));
+    throw rotationExhausted(exhaustionRecord(state), undefined, state.accounts.length);
   }
   if (outcome.status === "answered") {
     return outcome.value;
@@ -825,6 +850,15 @@ export async function judgePost(
  * coherent without locks. There is no sticky pointer: every dispatch
  * starts at the dial and skips cooling or at-ceiling accounts, and a claim
  * moves the dial to the next account (the proactive spread, D1/D6).
+ *
+ * Refused seats ride in on the trailing `blocked` mask (0-based index ->
+ * the availability pre-check's refusal reason): the pick skips them, the
+ * pool width excludes them, and the exhaustion record appends them with
+ * their real reasons. An ALL-blocked pool exhausts immediately (the D11
+ * guard) instead of parking on the timerless ceiling wait — production
+ * never sends one (index.ts pre-checks and skips the judge stage), so a
+ * non-empty mask here is the direct-caller and degraded-run shape the
+ * exported core must survive on its own.
  */
 export async function judgePosts(
   candidates: readonly Post[],
@@ -836,11 +870,13 @@ export async function judgePosts(
   now: () => number = Date.now,
   sleepFn: SleepFn = sleep,
   healthMarks: ReadonlyMap<number, number> = new Map(),
+  blocked: ReadonlyMap<number, string> = new Map(),
 ): Promise<JudgeBatchResult> {
   const state: RotationState = {
     accounts,
     cooldownUntil: new Map(),
     ceilings,
+    blocked: new Map(blocked),
     inFlight: new Map(),
     healthMarks: new Map(healthMarks),
     probedThisTick: new Set(),
@@ -856,18 +892,20 @@ export async function judgePosts(
   }
 
   // Pool width = the pool's total in-flight budget: the sum of the
-  // per-account ceilings. No overall clamp (D1) — the caps ARE the width —
+  // per-account ceilings, minus every availability-refused seat (a
+  // refused seat can never dispatch, so capacity spent on it would only
+  // park its worker). No overall clamp (D1) — the caps ARE the width —
   // and the floor keeps a hand-built empty map (tests) from spawning zero
   // workers. The new Map() default is the same degrade as an absent
   // ceilings file: every account floors at 1 (the pick's ?? 1 floor);
   // index.ts always passes the resolved map.
   const width = Math.max(
     1,
-    [...ceilings.entries()].reduce(
-      (sum, [index, ceiling]) =>
-        sum + ((state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP ? 1 : ceiling),
-      0,
-    ),
+    [...ceilings.entries()].reduce((sum, [index, ceiling]) => {
+      if (state.blocked.has(index)) return sum;
+      const capped = (state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP;
+      return sum + (capped ? 1 : ceiling);
+    }, 0),
   );
 
   // One result slot per batch, filled by whichever worker takes it. Indexing
@@ -895,7 +933,11 @@ export async function judgePosts(
   // leaves the unjudged posts unseen — index.ts turns the error into the
   // exhaustion email and exit 1; state is never reached.
   if (outcomes.some((outcome) => outcome?.status === "exhausted")) {
-    throw rotationExhausted(exhaustionRecord(state), readTickOutcomes(state));
+    throw rotationExhausted(
+      exhaustionRecord(state),
+      readTickOutcomes(state),
+      state.accounts.length,
+    );
   }
 
   // Reassembly walk (input order): bulk verdicts fill their slots at once;
@@ -973,7 +1015,11 @@ export async function judgePosts(
       }
     });
     if (exhausted) {
-      throw rotationExhausted(exhaustionRecord(state), readTickOutcomes(state));
+      throw rotationExhausted(
+        exhaustionRecord(state),
+        readTickOutcomes(state),
+        state.accounts.length,
+      );
     }
     const starved = Math.max(0, fallbackWork.length - FALLBACK_CALL_BUDGET);
     if (starved > 0) {

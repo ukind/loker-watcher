@@ -66,9 +66,9 @@ const HEALTH_CAP_STREAK = 2;
  * every worker — the same closure-shared mutable pattern as the `next` batch
  * cursor (read and advance with no await between). There is no sticky
  * pointer: every dispatch scans FROM the dispatch dial (dispatchCounter %
- * poolSize), skipping accounts that are cooling OR at their in-flight
- * ceiling; a claim moves the dial just past the claimed account, so
- * consecutive dispatches land on consecutive hosts.
+ * poolSize), skipping accounts that are cooling, blocked, OR at their
+ * in-flight ceiling; a claim moves the dial just past the claimed
+ * account, so consecutive dispatches land on consecutive hosts.
  */
 export interface RotationState {
   readonly accounts: readonly LlmAccount[];
@@ -78,6 +78,15 @@ export interface RotationState {
    *  resolveCeilings floors every pool account at 1). Read-only here —
    *  writing the file is the probe's job, the run only enforces. */
   readonly ceilings: ReadonlyMap<number, number>;
+  /** 0-based account index -> the availability pre-check's refusal
+   *  reason for this run (the blocked-index mask). Set once when the
+   *  state is built and never mutated in-run: a refused account sits
+   *  out the WHOLE tick, unlike a cooldown that expires mid-run. The
+   *  value carries the real cause in the judge's own vocabulary, so
+   *  the exhaustion record and the email compose it with zero
+   *  translation. An empty map is the no-mask normal: every account
+   *  available. */
+  readonly blocked: ReadonlyMap<number, string>;
   /** 0-based account index -> dispatched-and-unfinished calls. A claim
    *  increments before the request leaves; the attempt's finally releases,
    *  so every exit path frees its slot exactly once. */
@@ -126,16 +135,23 @@ export interface RotationExhausted extends Error {
   health?: TickOutcomes;
 }
 
-/** Build a pool-exhausted error carrying the per-account record. */
+/** Build a pool-exhausted error carrying the per-account record. With
+ *  poolSize the message is pool-truthful — "X of N LLM_ACCOUNTS accounts
+ *  failed" (X can sit under N: a seat that was merely saturated or still
+ *  healthy when the budget died never enters the record). Without it the
+ *  legacy "all X" form stands — bare test-constructed errors keep
+ *  today's wording. */
 export function rotationExhausted(
   failures: readonly AccountFailure[],
   health?: TickOutcomes,
+  poolSize?: number,
 ): RotationExhausted {
-  const error = new Error(
-    `judge: all ${failures.length} LLM_ACCOUNTS account(s) exhausted — ${failures
-      .map((f) => `account ${f.account} (${f.baseUrl}): ${f.reason}`)
-      .join("; ")}`,
-  ) as RotationExhausted;
+  const detail = failures.map((f) => `account ${f.account} (${f.baseUrl}): ${f.reason}`).join("; ");
+  const summary =
+    poolSize === undefined
+      ? `judge: all ${failures.length} LLM_ACCOUNTS account(s) exhausted`
+      : `judge: ${failures.length} of ${poolSize} LLM_ACCOUNTS accounts failed`;
+  const error = new Error(`${summary} — ${detail}`) as RotationExhausted;
   error.name = ROTATION_EXHAUSTED;
   error.failures = [...failures];
   if (health !== undefined) {
@@ -154,15 +170,16 @@ export function isRotationExhausted(error: unknown): error is RotationExhausted 
  * dispatchCounter % pool size — wrapping the pool once. The proactive
  * spread: consecutive claims land on consecutive accounts, so the first
  * N dispatches of a run hit N distinct hosts. An account is dispatchable
- * when it is neither cooling (expiry > nowMs) nor at its in-flight
- * ceiling. Synchronous and pre-await: the caller claims inside the same
- * sync window as this read. The pick NEVER advances the dial (D6) —
+ * when it is neither cooling (expiry > nowMs), blocked (the
+ * availability pre-check's refusal), nor at its in-flight ceiling.
+ * Synchronous and pre-await: the caller claims inside the same sync
+ * window as this read. The pick NEVER advances the dial (D6) —
  * claimAccount does, and only for a fresh claim.
  *
  * startAt pins the scan's FIRST seat (the same-account 5xx retry): a
- * start hint, not a guarantee — a cooling or at-ceiling pinned seat is
- * skipped like any other, and an undefined pick still leaves the dial
- * untouched.
+ * start hint, not a guarantee — a cooling, blocked, or at-ceiling
+ * pinned seat is skipped like any other, and an undefined pick still
+ * leaves the dial untouched.
  */
 export function pickEligibleAccount(
   state: RotationState,
@@ -177,6 +194,10 @@ export function pickEligibleAccount(
     if (account === undefined) continue;
     const expiry = state.cooldownUntil.get(index);
     if (expiry !== undefined && expiry > nowMs) continue;
+    // The blocked-index mask: a seat the availability pre-check refused
+    // sits out the whole run. Ahead of the health circuit on purpose —
+    // the probe is a dispatch, and a refused seat must not dispatch.
+    if (state.blocked.has(index)) continue;
     // Health circuit, INLINE plain-field reads (no judge-health import):
     // a capped account runs at effective ceiling 1 and is half-open — its
     // first dispatch of the tick is the probe; further picks stay blocked
