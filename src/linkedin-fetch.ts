@@ -491,7 +491,13 @@ export async function fetchLinkedInPosts(
           if (parsed.posts.length < PAGE_SIZE) break;
           start += PAGE_SIZE;
         }
-        perSurface[index] = collected;
+        // Stamp at the slot write (email-per-surface): the surface is a
+        // LinkedinSurface, so type is always "linkedin" here. Fresh post
+        // objects — the walk's collected array is never mutated.
+        perSurface[index] = collected.map((post) => ({
+          ...post,
+          surfaces: [{ type: surface.type, value: surface.value }],
+        }));
         // Empty-is-success keyed on the observable signal (defb8af): a
         // surface that yields 0 posts is an outcome, not a fault.
         console.log(`fetch: ${label} OK — ${collected.length} post(s)`);

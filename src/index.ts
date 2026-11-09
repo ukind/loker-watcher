@@ -9,7 +9,12 @@ import {
   resolveSurfaces,
 } from "./config-file.js";
 import { LINKEDIN_PAYLOAD_PATH, STATE_PATH, isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
-import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js";
+import {
+  groupMatchesBySurface,
+  resolveEmailConfig,
+  sendExhaustionEmail,
+  sendSurfaceDigest,
+} from "./email.js";
 /**
  * CLI entry point: the full pipeline (FRD #1-#9; fast-workflow-runtime
  * D7-D9; rotation exhaustion path).
@@ -492,11 +497,38 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
 
   // Email before state: a failed send exits non-zero and leaves state
   // untouched, so the next run re-judges and re-sends these matches (D3, D8).
-  // The leg state rides the digest whenever it is not ok (D13 — sendDigest
-  // renders the line only then; undefined omits it entirely).
-  const { durationMs: notifyMs } = await timeStage(() =>
-    sendDigest(matches, resolveEmailConfig(env), deps.transport, linkedinLeg, degradedLine),
-  );
+  // The per-surface loop (D6) replaces the single combined-digest
+  // call inside the SAME timeStage closure: one timing pair (FR8), any
+  // failed send throws before persist (FR7), and the leg + degraded
+  // riders ride every surface email when present (FR9; the body renders
+  // the leg line only when it is not ok, D13 — undefined omits it
+  // entirely). Surfaces iterate in config order, disabled platforms
+  // filtered out (FR6); duplicate configured surfaces collapse to one
+  // group key, one email (D7 — the load already warned).
+  const { durationMs: notifyMs } = await timeStage(async () => {
+    const notifySurfaces = config.surfaces.filter((surface) =>
+      surface.type === "linkedin" ? config.platforms.linkedin : config.platforms.threads,
+    );
+    const { groups, orphans } = groupMatchesBySurface(matches, notifySurfaces);
+    for (const orphan of orphans) {
+      const stamps = (orphan.surfaces ?? []).map(surfaceLabel).join(", ");
+      console.warn(
+        `notify: match ${orphan.id} carries no configured surface (${stamps === "" ? "no stamps" : stamps}) — skipped from every email; re-add the surface if it left watcher.config.json, or enable its platform in "platforms" if the platform switch is off`,
+      );
+    }
+    const emailConfig = resolveEmailConfig(env);
+    for (const group of groups) {
+      if (group.posts.length === 0) continue;
+      await sendSurfaceDigest(
+        group.surface,
+        group.posts,
+        emailConfig,
+        deps.transport,
+        linkedinLeg,
+        degradedLine,
+      );
+    }
+  });
   console.log(`timing: notify ${notifyMs}ms`);
   const saved = await persistJudged(state, judged, statePath, now());
   return {
@@ -533,9 +565,14 @@ async function fetchLoggedOutPosts(
 ): Promise<Post[]> {
   const fetched = await fetchSurfaces(surfaces, contextFactory);
   const posts: Post[] = [];
-  for (const surface of fetched) {
-    const extracted = extractPosts(surface.html);
-    console.log(`extract: ${surface.label}: ${extracted.length} post(s)`);
+  for (const page of fetched) {
+    // Stamp from the page own pair (design D2): the successes filter
+    // compacted the slot list, so the page carries the only identity left.
+    const extracted = extractPosts(page.html).map((post) => ({
+      ...post,
+      surfaces: [{ type: page.type, value: page.value }],
+    }));
+    console.log(`extract: ${page.label}: ${extracted.length} post(s)`);
     posts.push(...extracted);
   }
   return posts;
@@ -548,16 +585,39 @@ function surfaceLabel(surface: Surface): string {
   return surface.value; // url surfaces log verbatim
 }
 
-/** Dedupe posts by id, keeping first-seen order. */
-function dedupePosts(posts: readonly Post[]): Post[] {
-  const seen = new Set<string>();
-  const unique: Post[] = [];
+/**
+ * Dedupe posts by id, keeping first-seen order (D5). Surface stamps on a
+ * later duplicate merge into the kept post — a post collected by N
+ * surfaces rides every matching surface email (FR2). Map re-sets keep the
+ * first-seen position; the inputs and their stamp arrays are never
+ * mutated.
+ */
+export function dedupePosts(posts: readonly Post[]): Post[] {
+  const byId = new Map<string, Post>();
   for (const post of posts) {
-    if (seen.has(post.id)) continue;
-    seen.add(post.id);
-    unique.push(post);
+    const kept = byId.get(post.id);
+    byId.set(post.id, kept === undefined ? post : mergeSurfaceStamps(kept, post));
   }
-  return unique;
+  return [...byId.values()];
+}
+
+/**
+ * Union of the stamps on two duplicate posts (D5): kept stamps first, then
+ * the unseen ones from the duplicate, into a FRESH array. Under
+ * exactOptionalPropertyTypes the field stays off the post entirely when
+ * no stamps exist (legacy payload rows predate the stamp).
+ */
+function mergeSurfaceStamps(kept: Post, duplicate: Post): Post {
+  const merged = [...(kept.surfaces ?? [])];
+  for (const stamp of duplicate.surfaces ?? []) {
+    const key = `${stamp.type}|${stamp.value}`;
+    if (merged.some((existing) => `${existing.type}|${existing.value}` === key)) continue;
+    merged.push(stamp);
+  }
+  return {
+    ...kept,
+    ...(merged.length > 0 ? { surfaces: merged } : {}),
+  };
 }
 
 // Pipeline entry: the run starts only when this file IS the entry module

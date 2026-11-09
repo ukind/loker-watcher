@@ -4,11 +4,14 @@
  * context-factory double, fetch double, transport double, temp state file,
  * pinned clock — so a full pipeline run executes with zero network, zero
  * browser, and zero writes inside the repo. Covers: the zero-match run
- * persisting judged ids (Gate 2), the digest path, the all-seen Gate 1
- * byte-identity, heartbeat-disabled persistence, judge-skip persistence
- * (D3), the payload-seam mixed run, the absent-payload and belt degrades
- * (D13), the D13/D14 acquisition-shape pins, and the timeStage duration
- * measurement.
+ * persisting judged ids (Gate 2), the per-surface digest loop
+ * (email-per-surface: FR2 cross-surface rides, FR5 once per body, FR7
+ * all-or-nothing before persist, FR8 one timing pair, FR9 riders on every
+ * surface email, D3 orphan skips, D7 duplicate-surface collapse), the
+ * all-seen Gate 1 byte-identity, heartbeat-disabled persistence, judge-skip
+ * persistence (D3), the payload-seam mixed run, the absent-payload and belt
+ * degrades (D13), the D13/D14 acquisition-shape pins, and the timeStage
+ * duration measurement.
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -16,7 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import type { Transporter } from "nodemailer";
-import type { WatcherConfig } from "../src/config-file.js";
+import type { Surface, WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import type {
   ContextFactory,
@@ -25,7 +28,7 @@ import type {
   PageLike,
   ResponseLike,
 } from "../src/fetch-threads.js";
-import { flushAndSendExhaustionAlarm, runWatcher, timeStage } from "../src/index.js";
+import { dedupePosts, flushAndSendExhaustionAlarm, runWatcher, timeStage } from "../src/index.js";
 import type { AvailabilityResult } from "../src/judge-availability.js";
 import { type HealthFile, loadAccountHealth } from "../src/judge-health.js";
 import { isRotationExhausted } from "../src/judge-rotation.js";
@@ -98,15 +101,26 @@ const graphqlResponse = (body: string): ResponseLike => ({
 /** LinkedIn activity id whose embedded epoch ms equals the pinned NOW. */
 const linkedinIdNow = (BigInt(NOW) << 22n).toString();
 
-/** One normalized LinkedIn post for the injected payload-reader double. */
-const linkedinPost = (id: string): Post => ({
+/**
+ * One normalized LinkedIn post for the injected payload-reader double. The
+ * optional stamps mirror a v2 payload row: the PC leg stamps rows with its
+ * configured linkedin surface (Slice 2), so a payload post joins a surface
+ * email only when its stamps name a configured surface (D3) — unstamped
+ * legacy-shaped rows come back as orphans.
+ */
+const linkedinPost = (id: string, surfaces?: Surface[]): Post => ({
   platform: "linkedin",
   id: `urn:li:activity:${id}`,
   text: `LinkedIn hiring post ${id}`,
   author: "linkedin-member",
   permalink: `https://www.linkedin.com/feed/update/urn:li:activity:${id}`,
   timestamp: iso(NOW),
+  ...(surfaces !== undefined ? { surfaces } : {}),
 });
+
+/** The MIXED_CONFIG linkedin surface, stamped as the PC leg stamps rows. */
+const stampedLinkedinPost = (id: string): Post =>
+  linkedinPost(id, [{ type: "linkedin", value: "#hiring" }]);
 
 /** Build a PayloadRead for the re-keyed linkedinFetch double (D6). */
 const payloadRead = (posts: Post[], leg: PayloadRead["leg"], detail?: string): PayloadRead =>
@@ -384,7 +398,7 @@ describe("runWatcher", () => {
 
     assert.deepEqual(run, { judged: 2, matches: 2, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /2 new job posts/);
+    assert.equal(subjects[0], `2 new job posts — tag: "hiring"`);
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds).sort(), [id19(3), id19(4)]);
   });
@@ -463,7 +477,7 @@ describe("runWatcher", () => {
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [id19(8)]); // the skipped id stays unseen
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post/);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
   });
 
   it("rejects with the complete pool-ordered exhaustion record and never touches state at budget death", async () => {
@@ -531,7 +545,7 @@ describe("runWatcher", () => {
       }),
       linkedinFetch: async (path, nowFn) => {
         linkedinCalls.push({ path, nowMs: nowFn() });
-        return payloadRead([linkedinPost(linkedinIdNow)], "ok", "payload 0 min old");
+        return payloadRead([stampedLinkedinPost(linkedinIdNow)], "ok", "payload 0 min old");
       },
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
       judgeAvailability: availabilityPassAll,
@@ -541,15 +555,24 @@ describe("runWatcher", () => {
     });
 
     assert.deepEqual(run, { judged: 3, matches: 3, skipped: 0, saved: true });
-    assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /3 new job posts on Threads \+ LinkedIn/);
+    // One email per surface, in config order (D6): the tag email first, the
+    // linkedin email second — the combined Threads+LinkedIn subject form
+    // is gone.
+    assert.equal(subjects.length, 2);
+    assert.equal(subjects[0], `2 new job posts — tag: "hiring"`);
+    assert.equal(subjects[1], `1 new job post — linkedin: "#hiring"`);
     // The reader got the fixed repo payload path and the injected clock.
     assert.deepEqual(linkedinCalls, [{ path: LINKEDIN_PAYLOAD_PATH, nowMs: NOW }]);
     // The Playwright walk never drove a linkedin URL...
     assert.ok(urls.every((url) => !url.includes("linkedin.com")));
-    // ...the digest marks the linkedin row and carries no leg line on ok...
-    assert.ok(texts[0]?.includes("3. [linkedin] LinkedIn hiring post"));
+    // ...the tag email carries only the threads posts (no [linkedin] token),
+    // the linkedin email carries the payload post with its token, and an ok
+    // leg renders no rider line on either email (D13)...
+    assert.ok(texts[0]?.includes("1. Hiring: python developer, jakarta remote"));
+    assert.ok(!texts[0]?.includes("[linkedin]"));
+    assert.ok(texts[1]?.includes("1. [linkedin] LinkedIn hiring post"));
     assert.ok(!texts[0]?.includes("LinkedIn leg:"));
+    assert.ok(!texts[1]?.includes("LinkedIn leg:"));
     // ...both platform id forms reached the state file...
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds).sort(), [
@@ -655,11 +678,13 @@ describe("runWatcher", () => {
 
     // The belt degrades the fault to a warn + a malformed leg; the
     // logged-out Threads posts survive and the run completes (exit 0 shape).
+    // The logged-out walk stamps from the page's own pair (D2), so the
+    // match joins the tag surface email.
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /linkedin payload FAILED — payload io exploded/.test(line)));
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post/);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
     // The not-ok leg rides the digest (D13).
     assert.ok(texts[0]?.includes("LinkedIn leg: malformed — payload io exploded"));
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
@@ -684,10 +709,11 @@ describe("runWatcher", () => {
       now: () => NOW,
     });
 
-    // One threads match; the stale leg rides the digest so a dark leg
-    // stays visible on a match run too.
+    // One threads match; the stale leg rides the surface email so a dark
+    // leg stays visible on a match run too.
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
     assert.ok(!texts[0]?.includes("[linkedin]")); // the stale leg contributed no posts
     assert.ok(texts[0]?.includes("\n\nLinkedIn leg: stale — payload 3h old\n"));
   });
@@ -700,9 +726,8 @@ describe("runWatcher", () => {
       env: BASE_ENV, // THREADS_SESSION_STATE present
       config: { ...CONFIG, surfaces: [{ type: "linkedin", value: "#hiring" }] },
       contextFactory: singlePageContextFactory(graphqlBody([])), // never driven: zero threads surfaces
-      linkedinFetch: async () => payloadRead([linkedinPost(linkedinIdNow)], "ok"),
+      linkedinFetch: async () => payloadRead([stampedLinkedinPost(linkedinIdNow)], "ok"),
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
-      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -712,7 +737,7 @@ describe("runWatcher", () => {
     // the single return keeps the LinkedIn posts (D13).
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.equal(subjects[0], `1 new job post — linkedin: "#hiring"`);
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [`urn:li:activity:${linkedinIdNow}`]);
   });
@@ -743,7 +768,6 @@ describe("runWatcher", () => {
   });
 
   it("threads off: LinkedIn posts flow through the payload and no Threads walk runs", async () => {
-    const posts = [linkedinPost(linkedinIdNow)];
     const statePath = await tempStatePath("threads-off.json");
     const { transport, subjects, texts } = recordingTransport();
     let payloadReads = 0;
@@ -755,7 +779,7 @@ describe("runWatcher", () => {
       },
       linkedinFetch: async () => {
         payloadReads += 1;
-        return payloadRead(posts, "ok");
+        return payloadRead([stampedLinkedinPost(linkedinIdNow)], "ok");
       },
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
       transport,
@@ -766,7 +790,7 @@ describe("runWatcher", () => {
     assert.equal(payloadReads, 1);
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.equal(subjects[0], `1 new job post — linkedin: "#hiring"`);
     assert.doesNotMatch(subjects[0] ?? "", /Threads/);
     assert.ok(texts[0]?.includes("LinkedIn hiring post"));
   });
@@ -783,7 +807,7 @@ describe("runWatcher", () => {
       contextFactory: singlePageContextFactory(
         graphqlBody([{ id: id19(41), text: "Hiring: golang developer, remote" }]),
       ), // the Threads walk is healthy; everything it captured is already seen
-      linkedinFetch: async () => payloadRead([linkedinPost(linkedinIdNow)], "ok"),
+      linkedinFetch: async () => payloadRead([stampedLinkedinPost(linkedinIdNow)], "ok"),
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
       transport,
       statePath,
@@ -792,7 +816,7 @@ describe("runWatcher", () => {
 
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.equal(subjects[0], `1 new job post — linkedin: "#hiring"`);
     assert.doesNotMatch(subjects[0] ?? "", /Threads/);
   });
 
@@ -818,7 +842,7 @@ describe("runWatcher", () => {
     assert.equal(payloadReads, 0);
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on Threads/);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
     assert.doesNotMatch(subjects[0] ?? "", /LinkedIn/);
   });
 
@@ -846,6 +870,247 @@ describe("runWatcher", () => {
     assert.deepEqual(run, { judged: 0, matches: 0, skipped: 0, saved: false });
     assert.equal(subjects.length, 0); // no heartbeat, no digest
     await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/); // never read, never written
+  });
+});
+
+describe("per-surface notify loop (email-per-surface)", () => {
+  it("a post collected by two surfaces rides both surface emails, once per body (FR2, FR5, FR8)", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const posts = [
+      { id: id19(42), text: "Hiring: senior backend engineer, remote in Indonesia" },
+      { id: id19(43), text: "Hiring: frontend developer in Jakarta" },
+    ];
+    const statePath = await tempStatePath("fr2-ride.json");
+    const { transport, subjects, texts } = recordingTransport();
+
+    // Both tag walks capture the same two posts: the dedupe union merge
+    // (D5) keeps first-seen order and unions the stamps, so each post
+    // carries both surface stamps and joins both groups.
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: {
+        ...CONFIG,
+        surfaces: [
+          { type: "tag", value: "hiring" },
+          { type: "tag", value: "loker" },
+        ],
+      },
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.deepEqual(run, { judged: 2, matches: 2, skipped: 0, saved: true });
+    // One email per surface, config order (D6) — two surfaces, two emails.
+    assert.equal(subjects.length, 2);
+    assert.equal(subjects[0], `2 new job posts — tag: "hiring"`);
+    assert.equal(subjects[1], `2 new job posts — tag: "loker"`);
+    // FR2: the shared post rides both bodies...
+    for (const text of texts) {
+      assert.ok(text?.includes("Hiring: senior backend engineer, remote in Indonesia"));
+      assert.ok(text?.includes("Hiring: frontend developer in Jakarta"));
+    }
+    // ...FR5: exactly once per body — no duplicate render inside one email.
+    const shared = texts[0] ?? "";
+    assert.equal(
+      shared.indexOf("Hiring: senior backend engineer"),
+      shared.lastIndexOf("Hiring: senior backend engineer"),
+    );
+    // FR8: one timing pair for the whole loop, one sent-line per email.
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.equal(lines.filter((line) => line.startsWith("timing: notify")).length, 1);
+    assert.equal(lines.filter((line) => line.includes("email: sent digest for")).length, 2);
+    // The state write still landed (notify-before-persist held for both).
+    const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
+    assert.deepEqual(Object.keys(stored.seenPostIds).sort(), [id19(42), id19(43)]);
+  });
+
+  it("collapses duplicate configured surfaces to one email (D7)", async () => {
+    const posts = [{ id: id19(44), text: "Hiring: embedded c developer, bandung" }];
+    const statePath = await tempStatePath("d7-collapse.json");
+    const { transport, subjects, texts } = recordingTransport();
+
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: {
+        ...CONFIG,
+        surfaces: [
+          { type: "tag", value: "hiring" },
+          { type: "tag", value: "hiring" },
+        ],
+      },
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    // The load-time warn lives in readSurfaces (config-file suite); the run
+    // itself groups on the type|value key, so the duplicate collapses to
+    // one group and one email.
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
+    assert.ok(texts[0]?.includes("Hiring: embedded c developer, bandung"));
+  });
+
+  it("skips matches whose stamps name no configured surface, with one loud warn each (D3)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const statePath = await tempStatePath("d3-orphans.json");
+    const { transport, subjects } = recordingTransport();
+    const retiredId = (BigInt(NOW - HOUR) << 22n).toString();
+
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: MIXED_CONFIG,
+      contextFactory: singlePageContextFactory(
+        graphqlBody([{ id: id19(45), text: "Hiring: react developer, remote" }]),
+      ),
+      linkedinFetch: async () =>
+        payloadRead(
+          [
+            // A row stamped by a surface that left the config...
+            linkedinPost(linkedinIdNow, [{ type: "linkedin", value: "retired-query" }]),
+            // ...and a legacy-shaped row with no stamps at all.
+            linkedinPost(retiredId),
+          ],
+          "ok",
+        ),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    // Three matches judged; only the threads post joins an email.
+    assert.deepEqual(run, { judged: 3, matches: 3, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
+    // One loud warn per orphan, naming id + stamps + the remedy.
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      lines.some((line) =>
+        line.includes(
+          `notify: match urn:li:activity:${linkedinIdNow} carries no configured surface (linkedin/retired-query)`,
+        ),
+      ),
+    );
+    assert.ok(
+      lines.some((line) =>
+        line.includes(
+          `notify: match urn:li:activity:${retiredId} carries no configured surface (no stamps)`,
+        ),
+      ),
+    );
+    // The orphans were still JUDGED — persistJudged marks every judged id,
+    // so the next run never re-judges them (the loss is loud, not silent).
+    const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
+    assert.deepEqual(
+      Object.keys(stored.seenPostIds).sort(),
+      [id19(45), `urn:li:activity:${linkedinIdNow}`, `urn:li:activity:${retiredId}`].sort(),
+    );
+  });
+
+  it("a failed surface email rejects the run before persist; the earlier email is already out (FR7)", async () => {
+    const posts = [
+      { id: id19(46), text: "Hiring: rails developer, remote" },
+      { id: id19(47), text: "Hiring: django developer, jakarta" },
+    ];
+    const statePath = await tempStatePath("fr7-mid-loop.json");
+    const subjects: string[] = [];
+    let sendCount = 0;
+    const transport = {
+      sendMail: async (options: { subject: string }) => {
+        sendCount += 1;
+        if (sendCount === 1) {
+          subjects.push(options.subject);
+          return { messageId: "msg-1" };
+        }
+        throw new Error("smtp died mid-loop");
+      },
+    } as unknown as Transporter;
+
+    // Two tag surfaces, same capture: both match, the SECOND surface's
+    // email is the one that fails.
+    let caught: unknown;
+    try {
+      await runWatcher({
+        env: BASE_ENV,
+        config: {
+          ...CONFIG,
+          surfaces: [
+            { type: "tag", value: "hiring" },
+            { type: "tag", value: "loker" },
+          ],
+        },
+        contextFactory: singlePageContextFactory(graphqlBody(posts)),
+        fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+        judgeAvailability: availabilityPassAll,
+        transport,
+        statePath,
+        now: () => NOW,
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    // sendText wraps the transport error fail-visibly; the run rejects...
+    assert.match((caught as Error).message, /email: failed to send: smtp died mid-loop/);
+    // ...the FIRST surface email was already out and the second never
+    // rendered...
+    assert.deepEqual(subjects, [`2 new job posts — tag: "hiring"`]);
+    assert.equal(sendCount, 2);
+    // ...and state was never reached: the next run re-judges and re-sends
+    // both surfaces whole (F021's accepted duplicate is the failure
+    // currency).
+    await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/);
+  });
+
+  it("the leg and degraded riders ride EVERY surface email when present (FR9)", async () => {
+    const statePath = await tempStatePath("fr9-riders.json");
+    const { transport, subjects, texts } = recordingTransport();
+    const DEGRADED = "Degraded LLM account(s): #1 https://mock.api/v1 — capped at 1 request/tick";
+
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: MIXED_CONFIG,
+      contextFactory: singlePageContextFactory(
+        graphqlBody([{ id: id19(48), text: "Hiring: scala developer, remote" }]),
+      ),
+      linkedinFetch: async () =>
+        payloadRead([stampedLinkedinPost(linkedinIdNow)], "stale", "payload 3h old"),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeHealth: async () => ({
+        marks: new Map([[0, 2]]),
+        file: { version: 1, marks: { "https://mock.api/v1": 2 }, outageOpen: false },
+      }),
+    });
+
+    // Two matches, two emails; the not-ok leg AND the degraded line ride
+    // both (FR9 — riders are per-email, not per-run).
+    assert.deepEqual(run, { judged: 2, matches: 2, skipped: 0, saved: true });
+    assert.equal(subjects.length, 2);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
+    assert.equal(subjects[1], `1 new job post — linkedin: "#hiring"`);
+    for (const text of texts) {
+      assert.ok(text?.includes("\n\nLinkedIn leg: stale — payload 3h old\n"));
+      assert.ok(text?.includes(DEGRADED));
+    }
+    const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
+    assert.deepEqual(
+      Object.keys(stored.seenPostIds).sort(),
+      [id19(48), `urn:li:activity:${linkedinIdNow}`].sort(),
+    );
   });
 });
 
@@ -915,7 +1180,7 @@ describe("provider health (the entry wiring)", () => {
     // Three emails: two Gate-2 heartbeats, then the match digest — which
     // still renders the degraded line (the load-time marks were capped).
     assert.equal(subjects.length, 3);
-    assert.match(subjects[2] ?? "", /2 new job posts/);
+    assert.equal(subjects[2], `2 new job posts — tag: "hiring"`);
     assert.ok(
       texts[2]?.includes(
         "Degraded LLM account(s): #1 https://mock.api/v1 — capped at 1 request/tick",
@@ -1017,7 +1282,7 @@ describe("availability pre-check (the entry wiring)", () => {
     // availability log lines.
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post/);
+    assert.equal(subjects[0], `1 new job post — tag: "hiring"`);
     // One tiny probe per account rode the same production fetch default,
     // then the judged batch.
     const probeBodies = bodies.filter((body) => body.includes("Reply with the single word"));
@@ -1269,5 +1534,35 @@ describe("timeStage", () => {
       () => tick,
     );
     assert.equal(durationMs, 0);
+  });
+});
+
+// --- Plan Review blocker row: the non-aliasing pin (design Verification Notes §3) ---
+describe("dedupePosts (email-per-surface union merge)", () => {
+  it("merges stamps into a fresh array and never mutates the input posts", () => {
+    const stampA: Surface[] = [{ type: "tag", value: "hiring" }];
+    const stampB: Surface[] = [{ type: "tag", value: "loker" }];
+    const first: Post = {
+      platform: "threads",
+      id: id19(60),
+      text: "Hiring: unity developer, remote",
+      author: "author",
+      permalink: "https://www.threads.com/@author/post/60",
+      timestamp: iso(NOW),
+      surfaces: stampA,
+    };
+    const duplicate: Post = { ...first, surfaces: stampB };
+
+    const merged = dedupePosts([first, duplicate]);
+
+    assert.equal(merged.length, 1);
+    // Inputs untouched: kept keeps stampA only; stampB was never appended to it.
+    assert.deepEqual(first.surfaces, stampA);
+    // Fresh array: the merged stamps are never aliased onto an input's array.
+    assert.notEqual(first.surfaces, merged[0]?.surfaces);
+    assert.deepEqual(merged[0]?.surfaces, [
+      { type: "tag", value: "hiring" },
+      { type: "tag", value: "loker" },
+    ]);
   });
 });

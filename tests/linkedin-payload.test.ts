@@ -172,3 +172,76 @@ describe("readPayloadPosts failure classes (D13)", () => {
     assert.deepEqual(read.posts, []);
   });
 });
+
+describe("payload v2 — surfaces stamps", () => {
+  const stamped = (n: number): Post => ({
+    ...post(n),
+    surfaces: [{ type: "linkedin", value: "hiring react" }],
+  });
+
+  it("class: ok — a row with a well-formed stamp passes admission", async () => {
+    const path = await payloadPath("stamp-ok.json");
+    await seedEnvelope(path, envelopeFor([stamped(1)]));
+    const read = await readPayloadPosts(path, () => T0);
+    assert.equal(read.leg, "ok");
+    assert.deepEqual(read.posts, [stamped(1)]);
+  });
+
+  it("class: ok — a row without a stamp stays valid (legacy shape)", async () => {
+    const path = await payloadPath("stamp-absent.json");
+    await seedEnvelope(path, envelopeFor([post(1)]));
+    const read = await readPayloadPosts(path, () => T0);
+    assert.equal(read.leg, "ok");
+    assert.deepEqual(read.posts, [post(1)]);
+  });
+
+  it("class: rows — a malformed stamp fails the whole row (drop + count)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await payloadPath("stamp-bad.json");
+    const bad = {
+      ...post(1),
+      surfaces: [{ type: "linkedin", value: "" }],
+    };
+    await seedEnvelope(path, envelopeFor([post(2), bad as unknown as Post]));
+    const read = await readPayloadPosts(path, () => T0);
+    assert.equal(read.leg, "ok");
+    assert.deepEqual(read.posts, [post(2)]);
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /payload carried 1 malformed row/.test(line)));
+  });
+
+  it("class: rows — a stamp that is not an array fails the whole row", async () => {
+    const path = await payloadPath("stamp-not-array.json");
+    const bad = { ...post(1), surfaces: "hiring react" };
+    await seedEnvelope(path, envelopeFor([bad as unknown as Post]));
+    const read = await readPayloadPosts(path, () => T0);
+    assert.equal(read.leg, "ok");
+    assert.deepEqual(read.posts, []);
+  });
+
+  it("class: rows — an unknown stamp type fails the whole row", async () => {
+    const path = await payloadPath("stamp-bad-type.json");
+    const bad = { ...post(1), surfaces: [{ type: "profile", value: "x" }] };
+    await seedEnvelope(path, envelopeFor([bad as unknown as Post]));
+    const read = await readPayloadPosts(path, () => T0);
+    assert.equal(read.leg, "ok");
+    assert.deepEqual(read.posts, []);
+  });
+
+  it("class: malformed — a version 1 envelope degrades after the v2 bump", async () => {
+    const path = await payloadPath("v1-envelope.json");
+    await seedEnvelope(path, { ...envelopeFor([post(1)]), version: 1 });
+    const read = await readPayloadPosts(path, () => T0);
+    assert.equal(read.leg, "malformed");
+    assert.match(read.detail ?? "", /unknown version 1/);
+    assert.deepEqual(read.posts, []);
+  });
+
+  it("v2 round trip: a stamped row survives write → read byte-faithful", async () => {
+    const path = await payloadPath("stamp-round-trip.json");
+    await writePayloadAtomic([stamped(1)], path, () => T0);
+    const read = await readPayloadPosts(path, () => T0 + 1 * MINUTE);
+    assert.equal(read.leg, "ok");
+    assert.deepEqual(read.posts, [stamped(1)]);
+  });
+});

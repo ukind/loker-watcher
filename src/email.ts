@@ -1,11 +1,12 @@
 /**
- * Gmail plain-text digest notification sender (FRD #7, #8).
- *
- * Formats new relevant job posts into a clean plain-text email digest
- * and dispatches it via Gmail SMTP using nodemailer.
- * Gated by post count: sends no email when candidate matches are zero (FRD #8).
+ * Gmail plain-text notification senders (FRD #7, #8; email-per-surface):
+ * one plain-text digest email per configured surface that produced
+ * matches (D6), dispatched via Gmail SMTP using nodemailer, plus the
+ * exhaustion and leg-dead alarms. A surface with zero matches sends no
+ * email.
  */
 import nodemailer, { type Transporter } from "nodemailer";
+import type { Surface } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
 import type { LegLine } from "./linkedin-payload.js";
 import type { AccountFailure, Post } from "./types.js";
@@ -48,53 +49,93 @@ export function resolveEmailConfig(
   };
 }
 
+// --- replaces the old combined subject builder ---
 /**
- * Build the digest email subject line.
- * Returns null when posts array is empty.
+ * Render one surface for subjects, logs, and orphan warnings (D4): tag
+ * and linkedin render as `type: "value"`; a url surface renders its full
+ * URL verbatim — zero ambiguity over short subjects.
  */
-export function buildSubject(posts: readonly Post[]): string | null {
-  if (posts.length === 0) return null;
-  const count = posts.length;
-  const plural = count === 1 ? "" : "s";
-  // D10: the subject names the platforms that produced matches, in first-seen
-  // order — a platform with zero matched posts drops its name (a toggle-off
-  // platform can never match). All-Threads stays byte-identical to the
-  // pre-LinkedIn pin.
-  const platformLabel = (post: Post): string =>
-    post.platform === "linkedin" ? "LinkedIn" : "Threads";
-  const names = [...new Set(posts.map(platformLabel))].join(" + ");
-
-  return `${count} new job post${plural} on ${names} (#hiring indonesia)`;
+export function renderSurface(surface: Surface): string {
+  if (surface.type === "url") return `url: ${surface.value}`;
+  return `${surface.type}: "${surface.value}"`;
 }
 
 /**
- * Build plain-text digest body (FRD #7, UX non-functional requirement).
- * Returns null when posts array is empty.
- *
- * The LinkedIn leg line (D13): rides the body ONLY when the leg state is
- * not ok — an ok leg is the quiet default, and sendDigest renders the
- * line only then; undefined omits it entirely. The ` — detail` suffix
- * rides the legDetailSuffix helper.
- *
- * The degraded-accounts line (provider health): the pre-rendered string
- * from judge-health's buildDegradedAccountsLine rides ONLY when some
- * account is capped — absent from healthy emails, never empty (byte
- * compatibility with the pre-health fixtures).
+ * Per-surface digest subject (D4): `3 new job posts — tag: "hiring"`. The
+ * old combined subject pin is gone — each subject names the one surface
+ * the email is about.
  */
-export function buildDigest(
+export function buildSurfaceSubject(surface: Surface, postCount: number): string {
+  const plural = postCount === 1 ? "" : "s";
+  return `${postCount} new job post${plural} — ${renderSurface(surface)}`;
+}
+
+/** One surface share of the matches (email-per-surface, D6). */
+export interface SurfaceGroup {
+  surface: Surface;
+  posts: Post[];
+}
+
+/**
+ * Group matches per configured surface, in the same order as the
+ * surfaces argument (D6). A post rides every group whose surface appears
+ * in its stamps (FR2) — once per group, never twice (FR5; a surface
+ * listed twice on one post still places it once). Duplicate configured
+ * surfaces collapse to one group (D7). Posts whose stamps name no
+ * configured surface — and unstamped posts — return as orphans: the
+ * caller warns and skips them (D3: the stamps left the config, the
+ * posts belong to no email).
+ */
+export function groupMatchesBySurface(
+  matches: readonly Post[],
+  surfaces: readonly Surface[],
+): { groups: SurfaceGroup[]; orphans: Post[] } {
+  const groups: SurfaceGroup[] = [];
+  const seen = new Set<string>();
+  for (const surface of surfaces) {
+    const key = `${surface.type}|${surface.value}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    groups.push({ surface, posts: [] });
+  }
+  const orphans: Post[] = [];
+  for (const post of matches) {
+    let placed = false;
+    for (const group of groups) {
+      const stamped = (post.surfaces ?? []).some(
+        (stamp) => stamp.type === group.surface.type && stamp.value === group.surface.value,
+      );
+      if (stamped) {
+        group.posts.push(post);
+        placed = true;
+      }
+    }
+    if (!placed) orphans.push(post);
+  }
+  return { groups, orphans };
+}
+
+// --- replaces the old combined body builder (legDetailSuffix keeps its place below) ---
+/**
+ * Per-surface digest body (email-per-surface). Same item rendering and
+ * rider lines as the retired combined digest — only the subject line is
+ * per-surface now. The LinkedIn leg line (D13) rides ONLY when the leg
+ * is not ok; the degraded-accounts line rides ONLY when some account is
+ * capped. Returns null when the post list is empty.
+ */
+export function buildSurfaceDigest(
+  surface: Surface,
   posts: readonly Post[],
   leg?: LegLine,
   degradedAccounts?: string,
 ): string | null {
-  const subject = buildSubject(posts);
-  if (subject === null) return null;
-
+  if (posts.length === 0) return null;
+  const subject = buildSurfaceSubject(surface, posts.length);
   const items = posts.map((post, index) => {
     const author = post.author.replace(/^@+/, "");
     const platformToken = post.platform === "threads" ? "" : "[linkedin] ";
     return `${index + 1}. ${platformToken}${post.text}\n   — @${author}\n   ${post.permalink}`;
   });
-
   const legLine =
     leg !== undefined && leg.status !== "ok"
       ? `\n\nLinkedIn leg: ${leg.status}${legDetailSuffix(leg)}`
@@ -147,39 +188,36 @@ export async function sendText(
   }
 }
 
+// --- replaces the old combined sender (after sendText) ---
 /**
- * Send a digest email for new matched posts via nodemailer (FRD #7, #8).
- *
- * Gated: returns { sent: false, postCount: 0 } immediately when posts is empty.
- * Accepts an optional custom Transporter instance for unit testing.
- * Throws when nodemailer fails to deliver, ensuring fail-visible execution.
+ * Send one surface digest email via nodemailer (email-per-surface, D6).
+ * Gated: returns { sent: false, postCount: 0 } when the surface produced
+ * no posts. Throws when nodemailer fails to deliver (sendText wraps the
+ * transport error) — the notify loop is all-or-nothing before persist
+ * (FR7).
  */
-export async function sendDigest(
+export async function sendSurfaceDigest(
+  surface: Surface,
   posts: readonly Post[],
   config: EmailConfig,
   transport?: Transporter,
   leg?: LegLine,
   degradedAccounts?: string,
 ): Promise<SendDigestResult> {
-  if (posts.length === 0) {
+  const text = buildSurfaceDigest(surface, posts, leg, degradedAccounts);
+  if (text === null) {
     return {
       sent: false,
       postCount: 0,
     };
   }
 
-  const subject = buildSubject(posts);
-  const text = buildDigest(posts, leg, degradedAccounts);
-  if (subject === null || text === null) {
-    return {
-      sent: false,
-      postCount: 0,
-    };
-  }
-
+  const subject = buildSurfaceSubject(surface, posts.length);
   const messageId = await sendText(subject, text, config, transport);
   const recipient = config.to ?? config.user;
-  console.log(`email: sent digest with ${posts.length} post(s) to ${recipient}`);
+  console.log(
+    `email: sent digest for ${renderSurface(surface)} with ${posts.length} post(s) to ${recipient}`,
+  );
 
   return {
     sent: true,

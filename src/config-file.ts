@@ -26,6 +26,11 @@ export interface ResolvedSurface {
   label: string;
   /** Absolute URL to load. */
   url: string;
+  /** The raw surface type (email-per-surface stamp, design D2): results
+   *  carry their own identity past any list compaction downstream. */
+  type: "tag" | "url";
+  /** The raw surface value exactly as configured. */
+  value: string;
 }
 
 /** Reasoning effort level for the LLM judge's chat-completions calls. */
@@ -188,7 +193,30 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
     }
     out.push({ type, value: surfaceValue });
   }
+  warnDuplicateSurfaces(out, filePath);
   return out;
+}
+
+/**
+ * Duplicate configured surfaces (design D7): two identical entries produce
+ * one group key downstream, hence one email. The load stays valid — the
+ * warn names the duplicate so the operator can clean the config.
+ */
+function warnDuplicateSurfaces(surfaces: readonly Surface[], filePath: string): void {
+  const seen = new Set<string>();
+  const warned = new Set<string>();
+  for (const surface of surfaces) {
+    const key = `${surface.type}|${surface.value}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      continue;
+    }
+    if (warned.has(key)) continue;
+    warned.add(key);
+    console.warn(
+      `config: ${filePath} duplicate surface ${surface.type} "${surface.value}" — watched once; delete the extra entry from "surfaces"`,
+    );
+  }
 }
 
 /**
@@ -293,9 +321,17 @@ export function resolveSurfaces(surfaces: readonly Surface[]): ResolvedSurface[]
         platform: "threads",
         label: `tag/${surface.value}`,
         url: tagPageUrlFor(surface.value),
+        type: surface.type,
+        value: surface.value,
       };
     }
-    return { platform: "threads", label: surface.value, url: surface.value };
+    return {
+      platform: "threads",
+      label: surface.value,
+      url: surface.value,
+      type: surface.type,
+      value: surface.value,
+    };
   });
 }
 

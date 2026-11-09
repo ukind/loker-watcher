@@ -20,12 +20,14 @@
  */
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import type { Surface } from "./config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "./config.js";
 import { stateTempPath } from "./state.js";
 import type { Post } from "./types.js";
 
-/** Envelope version; bump on a shape change, keep the reader tolerant. */
-export const PAYLOAD_VERSION = 1;
+/** Envelope version; bump on a shape change, keep the reader tolerant.
+ *  v2 (email-per-surface): rows may carry surfaces stamps. */
+export const PAYLOAD_VERSION = 2;
 
 /** Twice the 10-minute cadence: a payload older than this reads as stale. */
 export const PAYLOAD_MAX_AGE_MS = 1_800_000;
@@ -58,6 +60,26 @@ export interface PayloadRead {
 
 const ACTIVITY_URN_RE = /^urn:li:activity:\d{9,}$/;
 
+/** One surface stamp inside a payload row (email-per-surface). */
+function isValidStamp(stamp: unknown): stamp is Surface {
+  if (stamp === null || typeof stamp !== "object") return false;
+  const entry = stamp as Record<string, unknown>;
+  return (
+    (entry.type === "tag" || entry.type === "url" || entry.type === "linkedin") &&
+    typeof entry.value === "string" &&
+    entry.value.length > 0
+  );
+}
+
+/**
+ * The stamp is optional on a v2 row (legacy-shaped rows stay valid) but a
+ * PRESENT stamp must be a well-formed Surface[] — one malformed stamp fails
+ * the whole row (drop + count, the module doctrine).
+ */
+function stampsAreValid(value: unknown): value is Surface[] {
+  return value === undefined || (Array.isArray(value) && value.every(isValidStamp));
+}
+
 /** Per-row shape contract: a row that fails any check is dropped + counted. */
 function isValidRow(value: unknown): value is Post {
   if (value === null || typeof value !== "object") return false;
@@ -73,7 +95,8 @@ function isValidRow(value: unknown): value is Post {
     typeof row.permalink === "string" &&
     row.permalink.length > 0 &&
     typeof row.timestamp === "string" &&
-    !Number.isNaN(Date.parse(row.timestamp))
+    !Number.isNaN(Date.parse(row.timestamp)) &&
+    stampsAreValid(row.surfaces)
   );
 }
 

@@ -5,7 +5,9 @@
  * src/extract.ts against a real 2026-10-24 /tag/hiring capture; no separate
  * raw type is exported until a consumer needs one.
  */
+import type { Surface } from "./config-file.js";
 
+/** One post
 /** One post from any watched platform, normalized. Produced by extract (Threads) and each fetcher. */
 export interface Post {
   /** Stable dedup key: numeric post id, e.g. "3388928313420694692". */
@@ -20,6 +22,11 @@ export interface Post {
   permalink: string;
   /** Post time, ISO 8601 UTC, e.g. "2026-10-24T08:15:00.000Z". */
   timestamp: string;
+  /** Which configured surfaces collected this post (email-per-surface):
+   *  stamped by every fetcher before the funnel; absent on rows that
+   *  predate the stamp (payload admission keeps those valid). Type-only
+   *  import — types.ts stays a runtime leaf. */
+  surfaces?: Surface[];
 }
 
 /** LLM verdict for one candidate post (judge, Slice 4). */
