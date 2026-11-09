@@ -36,6 +36,11 @@
       "wfh",
       "work from home"
    ],
+   "negativeKeywords":[
+      "internship",
+      "magang",
+      "outsourcing"
+   ],
    "surfaces":[
       {
          "type":"tag",
