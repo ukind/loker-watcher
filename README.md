@@ -134,6 +134,7 @@ no code change and no Actions variable is involved.
 | Key | What it does |
 |---|---|
 | `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries feed a keywords string to the PC leg's voyager search (newest first, past 24 hours) — they need no GitHub secret. |
+| `platforms` | Which platforms this run watches: `{ "linkedin": true, "threads": true }`. Required — an absent block, a missing member, or a non-boolean member fails the run naming the key. `false` skips that platform's fetch, judge, and digest rows; both `false` parks the run (exit 0, no email, no state read or write). The PC LinkedIn leg keeps fetching — this gates the hosted run only. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
 | `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |

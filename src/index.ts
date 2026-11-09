@@ -177,20 +177,27 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const judgeHealthPath = deps.judgeHealthPath ?? join(dirname(statePath), "judge-health.json");
   const startedAt = now();
   const linkedinFetch = deps.linkedinFetch ?? readPayloadPosts;
-  // D14: labels come from the RAW config partition, not the resolved
-  // array — Slice 3 narrows ResolvedSurface to threads-only, and this
-  // line must keep listing every surface the run attempts, linkedin
-  // included. Labels: tag/<value>, url verbatim, linkedin/<value>.
+  console.log(
+    `watch: platforms: linkedin=${config.platforms.linkedin ? "on" : "off"}, threads=${config.platforms.threads ? "on" : "off"}`,
+  );
+  // D14: labels come from the RAW config partition, not the resolved array,
+  // and they stay raw when a platform flag is off — this line mirrors
+  // watcher.config.json surfaces array, linkedin included. The platforms
+  // line above carries what this run enables. Labels: tag/<value>, url
+  // verbatim, linkedin/<value>.
   console.log(`watch: surfaces: ${config.surfaces.map(surfaceLabel).join(", ")}`);
-  // Raw partition first: the PC leg's payload reader takes the fixed repo
-  // path (no surface arguments), the walker takes resolved threads records.
-  // Slice 3 narrows ResolvedSurface.platform to "threads"; partitioning
-  // here keeps linkedin entries out of resolveSurfaces.
+  // Raw partition, gated by the platforms flags: a false flag empties its arm —
+  // the fetch stage existing empty-guards then skip the platform with no new
+  // skip machinery. The PC leg payload reader takes the fixed repo path (no
+  // surface arguments), the walker takes resolved threads records. Slice 3
+  // narrows ResolvedSurface.platform to "threads"; partitioning here keeps
+  // linkedin entries out of resolveSurfaces.
   const linkedinSurfaces = config.surfaces.filter(
-    (surface): surface is LinkedinSurface => surface.type === "linkedin",
+    (surface): surface is LinkedinSurface =>
+      surface.type === "linkedin" && config.platforms.linkedin,
   );
   const surfaces = resolveSurfaces(
-    config.surfaces.filter((surface) => surface.type !== "linkedin"),
+    config.surfaces.filter((surface) => surface.type !== "linkedin" && config.platforms.threads),
   );
 
   // Acquisition stage (D4): the per-platform fetches timed as one span.
@@ -250,8 +257,8 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   console.log(
     `extract: ${posts.length} unique post(s) across ${config.surfaces.length} surface(s)`,
   );
-  // (the extract line counts config.surfaces.length — the resolved array is
-  // threads-only from this slice on; the count is the surfaces ATTEMPTED)
+  // (the extract line counts config.surfaces.length — the raw-config mirror per
+  // D14; per-platform enabled state rides the startup platforms line)
 
   const recencyHours = config.recencyHours;
   const recent = filterRecent(posts, recencyHours, now());
@@ -279,6 +286,16 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const degradedLine = buildDegradedAccountsLine(judgeAccounts, health.marks);
   if (degradedLine !== undefined) {
     console.warn(degradedLine);
+  }
+
+  // Both platforms off: the parked run. The secret resolve above already ran
+  // (locked discover decision — a malformed LLM_ACCOUNTS still exits 1 while
+  // parked, the recorded trade untouched), and nothing below this line runs:
+  // no state read, no heartbeat, no state write. The Gate-1 return shape keeps
+  // the parked tick indistinguishable from a nothing-unseen tick to callers.
+  if (!config.platforms.linkedin && !config.platforms.threads) {
+    console.log("watch: platforms off — parked");
+    return { judged: 0, matches: 0, skipped: 0, saved: false };
   }
 
   const stats: HeartbeatStats = {

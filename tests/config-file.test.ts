@@ -9,6 +9,7 @@ const VALID = {
   keywords: ["react"],
   candidateTerms: ["developer"],
   surfaces: [{ type: "tag", value: "hiring" }],
+  platforms: { linkedin: true, threads: true },
   recencyHours: 72,
 };
 
@@ -37,6 +38,7 @@ describe("loadWatcherConfig — happy path", () => {
     const config = await loadWatcherConfig("watcher.config.json");
     assert.ok(config.keywords.length > 0);
     assert.ok(config.surfaces.length > 0);
+    assert.deepEqual(config.platforms, { linkedin: true, threads: true });
     assert.equal(config.recencyHours, 72);
   });
 
@@ -226,5 +228,75 @@ describe("scrollRounds", () => {
       () => loadWatcherConfig(path),
       /"scrollRounds" must be an integer >= 1, got "five"/,
     );
+  });
+});
+
+describe("platforms", () => {
+  it("rejects a missing platforms block", async () => {
+    const path = await writeConfig({
+      keywords: ["react"],
+      candidateTerms: ["developer"],
+      surfaces: [{ type: "tag", value: "hiring" }],
+      recencyHours: 72,
+    });
+    await assert.rejects(() => loadWatcherConfig(path), /"platforms" must be an object/);
+  });
+
+  it("rejects a missing platforms.linkedin member", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      platforms: { threads: true },
+    });
+    await assert.rejects(() => loadWatcherConfig(path), /"platforms\.linkedin" is required/);
+  });
+
+  it("rejects a missing platforms.threads member", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      platforms: { linkedin: true },
+    });
+    await assert.rejects(() => loadWatcherConfig(path), /"platforms\.threads" is required/);
+  });
+
+  it("rejects a non-boolean platforms.linkedin member", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      platforms: { linkedin: "yes", threads: true },
+    });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"platforms\.linkedin" must be a boolean, got "yes"/,
+    );
+  });
+
+  it("rejects a non-boolean platforms.threads member", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      platforms: { linkedin: true, threads: 1 },
+    });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"platforms\.threads" must be a boolean, got 1/,
+    );
+  });
+
+  it("accepts both platforms off", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      platforms: { linkedin: false, threads: false },
+    });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.platforms, { linkedin: false, threads: false });
+  });
+
+  it("accepts each single platform off", async () => {
+    for (const platforms of [
+      { linkedin: false, threads: true },
+      { linkedin: true, threads: false },
+    ]) {
+      const path = await writeConfig({ ...VALID, platforms });
+      const config = await loadWatcherConfig(path);
+      assert.deepEqual(config.platforms, platforms);
+    }
   });
 });

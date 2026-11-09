@@ -31,11 +31,20 @@ export interface ResolvedSurface {
 /** Reasoning effort level for the LLM judge's chat-completions calls. */
 export type ReasoningEffort = "low" | "medium" | "high";
 
+/** Per-platform switches for the two acquisition legs. */
+export interface PlatformFlags {
+  /** Fetch + judge the PC leg pushed LinkedIn payload. */
+  linkedin: boolean;
+  /** Walk the Threads surfaces. */
+  threads: boolean;
+}
+
 /** Shape of watcher.config.json. */
 export interface WatcherConfig {
   keywords: string[];
   candidateTerms: string[];
   surfaces: Surface[];
+  platforms: PlatformFlags;
   recencyHours: number;
   reasoningEffort: ReasoningEffort;
   scrollRounds: number;
@@ -45,6 +54,7 @@ const ALLOWED_KEYS = [
   "keywords",
   "candidateTerms",
   "surfaces",
+  "platforms",
   "recencyHours",
   "reasoningEffort",
   "scrollRounds",
@@ -98,11 +108,20 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
   const keywords = readStringArray(record.keywords, "keywords", filePath, true);
   const candidateTerms = readStringArray(record.candidateTerms, "candidateTerms", filePath, false);
   const surfaces = readSurfaces(record.surfaces, filePath);
+  const platforms = readPlatforms(record.platforms, filePath);
   const recencyHours = readRecencyHours(record.recencyHours, filePath);
   const reasoningEffort = readReasoningEffort(record.reasoningEffort, filePath);
   const scrollRounds = readScrollRounds(record.scrollRounds, filePath);
 
-  return { keywords, candidateTerms, surfaces, recencyHours, reasoningEffort, scrollRounds };
+  return {
+    keywords,
+    candidateTerms,
+    surfaces,
+    platforms,
+    recencyHours,
+    reasoningEffort,
+    scrollRounds,
+  };
 }
 
 function readStringArray(
@@ -170,6 +189,44 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
     out.push({ type, value: surfaceValue });
   }
   return out;
+}
+
+/**
+ * Required per-platform switches: an absent block, a missing member, or a
+ * non-boolean member each fail with the path and the key. Which platforms
+ * run is an operator decision, so there is no default to fall back to.
+ * Extra members inside the block are ignored (the readSurfaces precedent).
+ */
+function readPlatforms(value: unknown, filePath: string): PlatformFlags {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(
+      `config: ${filePath} "platforms" must be an object with "linkedin" and "threads" boolean members`,
+    );
+  }
+  const record = value as Record<string, unknown>;
+  const linkedin = record.linkedin;
+  if (linkedin === undefined) {
+    throw new Error(
+      `config: ${filePath} "platforms.linkedin" is required — true watches the platform, false skips it`,
+    );
+  }
+  if (typeof linkedin !== "boolean") {
+    throw new Error(
+      `config: ${filePath} "platforms.linkedin" must be a boolean, got ${JSON.stringify(linkedin)}`,
+    );
+  }
+  const threads = record.threads;
+  if (threads === undefined) {
+    throw new Error(
+      `config: ${filePath} "platforms.threads" is required — true watches the platform, false skips it`,
+    );
+  }
+  if (typeof threads !== "boolean") {
+    throw new Error(
+      `config: ${filePath} "platforms.threads" must be a boolean, got ${JSON.stringify(threads)}`,
+    );
+  }
+  return { linkedin, threads };
 }
 
 function readRecencyHours(value: unknown, filePath: string): number {
