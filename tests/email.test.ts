@@ -1,183 +1,99 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Transporter } from "nodemailer";
+import type { Surface } from "../src/config-file.js";
 import {
   type EmailConfig,
-  buildDigest,
   buildExhaustionText,
-  buildSubject,
+  buildSurfaceDigest,
+  buildSurfaceSubject,
+  groupMatchesBySurface,
+  renderSurface,
   resolveEmailConfig,
-  sendDigest,
   sendExhaustionEmail,
+  sendSurfaceDigest,
 } from "../src/email.js";
 import type { AccountFailure, Post } from "../src/types.js";
 
-describe("buildSubject", () => {
-  it("returns null for empty post array", () => {
-    assert.equal(buildSubject([]), null);
-  });
-
-  it("formats subject for a single post without plural s", () => {
-    const posts: Post[] = [
-      {
-        platform: "threads",
-        id: "1",
-        text: "Hiring React dev",
-        author: "techcorp",
-        permalink: "https://www.threads.com/@techcorp/post/1",
-        timestamp: "2026-10-24T00:00:00.000Z",
-      },
-    ];
-    assert.equal(buildSubject(posts), "1 new job post on Threads (#hiring indonesia)");
-  });
-
-  it("formats subject for multiple posts with plural s", () => {
-    const posts: Post[] = [
-      {
-        platform: "threads",
-        id: "1",
-        text: "Hiring React dev",
-        author: "techcorp",
-        permalink: "https://www.threads.com/@techcorp/post/1",
-        timestamp: "2026-10-24T00:00:00.000Z",
-      },
-      {
-        platform: "threads",
-        id: "2",
-        text: "Looking for Vue dev",
-        author: "startup",
-        permalink: "https://www.threads.com/@startup/post/2",
-        timestamp: "2026-10-24T01:00:00.000Z",
-      },
-      {
-        platform: "threads",
-        id: "3",
-        text: "Senior Frontend Lead",
-        author: "agency",
-        permalink: "https://www.threads.com/@agency/post/3",
-        timestamp: "2026-10-24T02:00:00.000Z",
-      },
-    ];
-    assert.equal(buildSubject(posts), "3 new job posts on Threads (#hiring indonesia)");
-  });
-
-  it("appends + LinkedIn to the subject only when a linkedin match is present", () => {
-    const posts: Post[] = [
-      {
-        platform: "threads",
-        id: "1",
-        text: "Hiring React dev",
-        author: "techcorp",
-        permalink: "https://www.threads.com/@techcorp/post/1",
-        timestamp: "2026-10-24T00:00:00.000Z",
-      },
-      {
-        platform: "linkedin",
-        id: "urn:li:activity:7522028760582447104",
-        text: "Hiring backend engineer, remote",
-        author: "sometechguy",
-        permalink: "https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
-        timestamp: "2026-10-24T01:00:00.000Z",
-      },
-    ];
-    assert.equal(buildSubject(posts), "2 new job posts on Threads + LinkedIn (#hiring indonesia)");
-  });
-
-  it("keeps all-Threads subjects free of the + LinkedIn suffix", () => {
-    const posts: Post[] = [
-      {
-        platform: "threads",
-        id: "1",
-        text: "Hiring React dev",
-        author: "techcorp",
-        permalink: "https://www.threads.com/@techcorp/post/1",
-        timestamp: "2026-10-24T00:00:00.000Z",
-      },
-      {
-        platform: "threads",
-        id: "2",
-        text: "Looking for Vue dev",
-        author: "startup",
-        permalink: "https://www.threads.com/@startup/post/2",
-        timestamp: "2026-10-24T01:00:00.000Z",
-      },
-      {
-        platform: "threads",
-        id: "3",
-        text: "Senior Frontend Lead",
-        author: "agency",
-        permalink: "https://www.threads.com/@agency/post/3",
-        timestamp: "2026-10-24T02:00:00.000Z",
-      },
-    ];
-    const subject = buildSubject(posts);
-    assert.equal(subject, "3 new job posts on Threads (#hiring indonesia)");
-    assert.ok(!subject?.includes("+ LinkedIn"));
+describe("renderSurface", () => {
+  it("quotes tag and linkedin values and renders url verbatim (D4)", () => {
+    assert.equal(renderSurface({ type: "tag", value: "loker" }), `tag: "loker"`);
+    assert.equal(
+      renderSurface({ type: "linkedin", value: "react indonesia" }),
+      `linkedin: "react indonesia"`,
+    );
+    assert.equal(
+      renderSurface({ type: "url", value: "https://www.threads.com/@hiresflow" }),
+      "url: https://www.threads.com/@hiresflow",
+    );
   });
 });
 
-describe("buildDigest", () => {
-  it("returns null for empty post list", () => {
-    assert.equal(buildDigest([]), null);
+describe("buildSurfaceSubject", () => {
+  const tag: Surface = { type: "tag", value: "hiring" };
+  const linkedin: Surface = { type: "linkedin", value: "hiring react" };
+
+  it("renders one post singular with the tag surface", () => {
+    assert.equal(buildSurfaceSubject(tag, 1), `1 new job post — tag: "hiring"`);
   });
 
-  it("formats single post digest with author and permalink", () => {
-    const posts: Post[] = [
+  it("renders several posts plural with the linkedin surface", () => {
+    assert.equal(buildSurfaceSubject(linkedin, 3), `3 new job posts — linkedin: "hiring react"`);
+  });
+
+  it("renders a url surface as the full URL verbatim (D4)", () => {
+    const url: Surface = {
+      type: "url",
+      value: "https://www.threads.com/search?q=hiring&serp_type=deeplink&filter=recent",
+    };
+    assert.equal(
+      buildSurfaceSubject(url, 2),
+      "2 new job posts — url: https://www.threads.com/search?q=hiring&serp_type=deeplink&filter=recent",
+    );
+  });
+
+  it("drops the combined subject pin (#hiring indonesia)", () => {
+    const subject = buildSurfaceSubject(tag, 5);
+    assert.ok(!subject.includes("#hiring indonesia"));
+    assert.ok(!subject.includes("on Threads"));
+  });
+});
+
+describe("buildSurfaceDigest", () => {
+  const tag: Surface = { type: "tag", value: "hiring" };
+  const threadsPost: Post = {
+    platform: "threads",
+    id: "101",
+    text: "First job post",
+    author: "companyA",
+    permalink: "https://www.threads.com/@companyA/post/P1",
+    timestamp: "2026-10-24T08:00:00.000Z",
+  };
+
+  it("returns null for an empty post list", () => {
+    assert.equal(buildSurfaceDigest(tag, []), null);
+  });
+
+  it("opens with the per-surface subject and renders author + permalink", () => {
+    const digest = buildSurfaceDigest(tag, [
       {
         platform: "threads",
-        id: "101",
+        id: "201",
         text: "Looking for a Next.js frontend dev in Jakarta, hybrid...",
         author: "pttechcareers",
         permalink: "https://www.threads.com/@pttechcareers/post/C8H5FiCtESk",
         timestamp: "2026-10-24T08:15:00.000Z",
       },
-    ];
-
-    const digest = buildDigest(posts);
+    ]);
     assert.ok(digest !== null);
-    assert.ok(digest.startsWith("1 new job post on Threads (#hiring indonesia)\n\n"));
+    assert.ok(digest.startsWith(`1 new job post — tag: "hiring"\n\n`));
     assert.ok(digest.includes("1. Looking for a Next.js frontend dev in Jakarta, hybrid..."));
     assert.ok(digest.includes("   — @pttechcareers"));
     assert.ok(digest.includes("   https://www.threads.com/@pttechcareers/post/C8H5FiCtESk"));
   });
 
-  it("formats multi-post digest with sequential numbers and double spacing", () => {
-    const posts: Post[] = [
-      {
-        platform: "threads",
-        id: "101",
-        text: "First job post",
-        author: "companyA",
-        permalink: "https://www.threads.com/@companyA/post/P1",
-        timestamp: "2026-10-24T08:00:00.000Z",
-      },
-      {
-        platform: "threads",
-        id: "102",
-        text: "Second job post",
-        author: "@companyB",
-        permalink: "https://www.threads.com/@companyB/post/P2",
-        timestamp: "2026-10-24T09:00:00.000Z",
-      },
-    ];
-
-    const digest = buildDigest(posts);
-    assert.ok(digest !== null);
-    assert.ok(digest.startsWith("2 new job posts on Threads (#hiring indonesia)\n\n"));
-    assert.ok(
-      digest.includes(
-        "1. First job post\n   — @companyA\n   https://www.threads.com/@companyA/post/P1",
-      ),
-    );
-    assert.ok(
-      digest.includes(
-        "2. Second job post\n   — @companyB\n   https://www.threads.com/@companyB/post/P2",
-      ),
-    );
-  });
-
-  it("preserves multi-line captions without breaking post structure", () => {
-    const posts: Post[] = [
+  it("keeps multi-line captions and sequential numbering intact", () => {
+    const digest = buildSurfaceDigest(tag, [
       {
         platform: "threads",
         id: "103",
@@ -186,25 +102,24 @@ describe("buildDigest", () => {
         permalink: "https://www.threads.com/@recruiter/post/P3",
         timestamp: "2026-10-24T10:00:00.000Z",
       },
-    ];
-
-    const digest = buildDigest(posts);
+      {
+        platform: "threads",
+        id: "104",
+        text: "Vue dev needed",
+        author: "@companyB",
+        permalink: "https://www.threads.com/@companyB/post/P4",
+        timestamp: "2026-10-24T11:00:00.000Z",
+      },
+    ]);
     assert.ok(digest !== null);
     assert.ok(
       digest.includes("1. HIRING NOW!\n- React\n- TypeScript\nApply via DM\n   — @recruiter"),
     );
+    assert.ok(digest.includes("2. Vue dev needed\n   — @companyB"));
   });
 
-  it("marks only the linkedin item lines with the [linkedin] token", () => {
-    const posts: Post[] = [
-      {
-        platform: "threads",
-        id: "101",
-        text: "First job post",
-        author: "companyA",
-        permalink: "https://www.threads.com/@companyA/post/P1",
-        timestamp: "2026-10-24T08:00:00.000Z",
-      },
+  it("marks only linkedin item lines with the [linkedin] token", () => {
+    const digest = buildSurfaceDigest({ type: "linkedin", value: "hiring react" }, [
       {
         platform: "linkedin",
         id: "urn:li:activity:7522028760582447104",
@@ -213,20 +128,248 @@ describe("buildDigest", () => {
         permalink: "https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
         timestamp: "2026-10-24T09:00:00.000Z",
       },
-    ];
-
-    const digest = buildDigest(posts);
+    ]);
     assert.ok(digest !== null);
-    assert.ok(digest.startsWith("2 new job posts on Threads + LinkedIn (#hiring indonesia)\n\n"));
     assert.ok(
       digest.includes(
-        "1. First job post\n   — @companyA\n   https://www.threads.com/@companyA/post/P1",
+        "1. [linkedin] Second job post\n   — @sometechguy\n   https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
       ),
     );
+  });
+
+  it("renders the leg line only when the leg is not ok (D13)", () => {
+    const okDigest = buildSurfaceDigest(tag, [threadsPost], { status: "ok" });
+    assert.ok(okDigest !== null);
+    assert.ok(!okDigest.includes("LinkedIn leg:"));
+    const staleDigest = buildSurfaceDigest(tag, [threadsPost], {
+      status: "stale",
+      detail: "payload 2h old",
+    });
+    assert.ok(staleDigest !== null);
+    assert.ok(staleDigest.includes("\n\nLinkedIn leg: stale — payload 2h old\n"));
+  });
+
+  it("appends the degraded line after the leg line when both riders ride", () => {
+    const LINE = "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick";
+    const digest = buildSurfaceDigest(
+      tag,
+      [threadsPost],
+      { status: "stale", detail: "payload 2h old" },
+      LINE,
+    );
+    assert.ok(digest !== null);
+    assert.ok(digest.endsWith(`${LINE}\n`));
+    const legAt = digest.indexOf("LinkedIn leg: stale");
+    const degradedAt = digest.indexOf("Degraded LLM");
+    assert.ok(legAt >= 0);
+    assert.ok(degradedAt > legAt);
+  });
+
+  it("keeps the body byte-identical when no rider rides", () => {
+    const LINE = "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick";
+    const withRider = buildSurfaceDigest(tag, [threadsPost], undefined, LINE);
+    const without = buildSurfaceDigest(tag, [threadsPost]);
+    assert.ok(withRider !== null && without !== null);
+    assert.ok(withRider.startsWith(without));
+    assert.ok(!without.includes("Degraded LLM"));
+  });
+});
+
+describe("groupMatchesBySurface (email-per-surface grouping)", () => {
+  const tagHiring: Surface = { type: "tag", value: "hiring" };
+  const tagLoker: Surface = { type: "tag", value: "loker" };
+  const linkedinReact: Surface = { type: "linkedin", value: "hiring react" };
+
+  const postFor = (id: string, surfaces?: Surface[]): Post => ({
+    platform: "threads",
+    id,
+    text: `post ${id}`,
+    author: "author",
+    permalink: `https://www.threads.com/@author/post/${id}`,
+    timestamp: "2026-10-24T00:00:00.000Z",
+    ...(surfaces !== undefined ? { surfaces } : {}),
+  });
+
+  it("sends a shared post to every surface that stamped it (FR2)", () => {
+    const shared = postFor("1", [tagHiring, linkedinReact]);
+    const onlyTag = postFor("2", [tagHiring]);
+    const { groups, orphans } = groupMatchesBySurface(
+      [shared, onlyTag],
+      [tagHiring, linkedinReact],
+    );
+    assert.deepEqual(
+      groups.map((group) => [group.surface, group.posts.map((post) => post.id)]),
+      [
+        [tagHiring, ["1", "2"]],
+        [linkedinReact, ["1"]],
+      ],
+    );
+    assert.deepEqual(orphans, []);
+  });
+
+  it("keeps a post once per group even when its stamps list the surface twice (FR5)", () => {
+    const stamped = postFor("1", [tagHiring, { type: "tag", value: "hiring" }]);
+    const { groups, orphans } = groupMatchesBySurface([stamped], [tagHiring]);
+    assert.equal(groups.length, 1);
+    assert.equal(groups[0]?.posts.length, 1);
+    assert.deepEqual(orphans, []);
+  });
+
+  it("collapses duplicate configured surfaces to one group (D7)", () => {
+    const stamped = postFor("1", [linkedinReact]);
+    const { groups } = groupMatchesBySurface(
+      [stamped],
+      [linkedinReact, { type: "linkedin", value: "hiring react" }],
+    );
+    assert.equal(groups.length, 1);
+    assert.equal(groups[0]?.posts.length, 1);
+  });
+
+  it("keeps group order following the surfaces argument (config order, D6)", () => {
+    const stamped = postFor("1", [tagLoker, tagHiring]);
+    const { groups } = groupMatchesBySurface([stamped], [tagHiring, tagLoker]);
+    assert.deepEqual(
+      groups.map((group) => group.surface.value),
+      ["hiring", "loker"],
+    );
+  });
+
+  it("returns posts whose stamps name no configured surface as orphans (D3)", () => {
+    const orphaned = postFor("1", [{ type: "tag", value: "removed-tag" }]);
+    const placed = postFor("2", [tagHiring]);
+    const { groups, orphans } = groupMatchesBySurface([orphaned, placed], [tagHiring]);
+    assert.deepEqual(
+      orphans.map((post) => post.id),
+      ["1"],
+    );
+    assert.deepEqual(
+      groups[0]?.posts.map((post) => post.id),
+      ["2"],
+    );
+  });
+
+  it("returns an unstamped post as an orphan (legacy payload rows)", () => {
+    const unstamped = postFor("1");
+    const { groups, orphans } = groupMatchesBySurface([unstamped], [tagHiring]);
+    assert.deepEqual(
+      orphans.map((post) => post.id),
+      ["1"],
+    );
+    assert.equal(groups[0]?.posts.length, 0);
+  });
+});
+
+describe("sendSurfaceDigest", () => {
+  const sampleConfig: EmailConfig = {
+    user: "alerts@gmail.com",
+    pass: "app-password",
+    to: "alerts@gmail.com",
+  };
+  const tag: Surface = { type: "tag", value: "hiring" };
+  const samplePosts: Post[] = [
+    {
+      platform: "threads",
+      id: "201",
+      text: "Hiring React dev",
+      author: "devteam",
+      permalink: "https://www.threads.com/@devteam/post/201",
+      timestamp: "2026-10-24T00:00:00.000Z",
+    },
+  ];
+
+  it("does not send email when the surface produced no posts", async () => {
+    let called = false;
+    const mockTransport = {
+      sendMail: async () => {
+        called = true;
+        return { messageId: "msg-123" };
+      },
+    } as unknown as Transporter;
+
+    const result = await sendSurfaceDigest(tag, [], sampleConfig, mockTransport);
+    assert.equal(result.sent, false);
+    assert.equal(result.postCount, 0);
+    assert.equal(called, false);
+  });
+
+  it("sends one email whose subject names the surface", async () => {
+    let capturedOptions: unknown = null;
+    const mockTransport = {
+      sendMail: async (options: unknown) => {
+        capturedOptions = options;
+        return { messageId: "msg-456" };
+      },
+    } as unknown as Transporter;
+
+    const result = await sendSurfaceDigest(tag, samplePosts, sampleConfig, mockTransport);
+    assert.equal(result.sent, true);
+    assert.equal(result.postCount, 1);
+    assert.equal(result.messageId, "msg-456");
+    assert.equal(result.recipient, "alerts@gmail.com");
+
+    const mail = capturedOptions as {
+      from: string;
+      to: string;
+      subject: string;
+      text: string;
+    };
+    assert.equal(mail.from, "Loker Watcher <alerts@gmail.com>");
+    assert.equal(mail.to, "alerts@gmail.com");
+    assert.equal(mail.subject, `1 new job post — tag: "hiring"`);
+    assert.ok(mail.text.includes("Hiring React dev"));
+  });
+
+  it("logs one per-surface line naming the surface (FR8)", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const mockTransport = {
+      sendMail: async () => ({ messageId: "msg-log" }),
+    } as unknown as Transporter;
+
+    await sendSurfaceDigest(
+      { type: "linkedin", value: "hiring react" },
+      samplePosts,
+      sampleConfig,
+      mockTransport,
+    );
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
-      digest.includes(
-        "2. [linkedin] Second job post\n   — @sometechguy\n   https://www.linkedin.com/feed/update/urn:li:activity:7522028760582447104",
+      lines.includes(
+        `email: sent digest for linkedin: "hiring react" with 1 post(s) to alerts@gmail.com`,
       ),
+    );
+  });
+
+  it("uses custom recipient if specified in config", async () => {
+    let capturedRecipient = "";
+    const mockTransport = {
+      sendMail: async (options: unknown) => {
+        capturedRecipient = (options as { to: string }).to;
+        return { messageId: "msg-789" };
+      },
+    } as unknown as Transporter;
+
+    const customConfig: EmailConfig = {
+      user: "sender@gmail.com",
+      pass: "pass",
+      to: "recipient@company.com",
+    };
+
+    const result = await sendSurfaceDigest(tag, samplePosts, customConfig, mockTransport);
+    assert.equal(result.sent, true);
+    assert.equal(result.recipient, "recipient@company.com");
+    assert.equal(capturedRecipient, "recipient@company.com");
+  });
+
+  it("throws fail-visible error when transport fails", async () => {
+    const mockTransport = {
+      sendMail: async () => {
+        throw new Error("SMTP connection timeout");
+      },
+    } as unknown as Transporter;
+
+    await assert.rejects(
+      () => sendSurfaceDigest(tag, samplePosts, sampleConfig, mockTransport),
+      /email: failed to send: SMTP connection timeout/,
     );
   });
 });
@@ -269,101 +412,6 @@ describe("resolveEmailConfig", () => {
     assert.throws(
       () => resolveEmailConfig({}),
       /email: missing required environment variables: GMAIL_USER, GMAIL_APP_PASSWORD/,
-    );
-  });
-});
-
-describe("sendDigest", () => {
-  const sampleConfig: EmailConfig = {
-    user: "alerts@gmail.com",
-    pass: "app-password",
-    to: "alerts@gmail.com",
-  };
-
-  const samplePosts: Post[] = [
-    {
-      platform: "threads",
-      id: "201",
-      text: "Hiring React dev",
-      author: "devteam",
-      permalink: "https://www.threads.com/@devteam/post/201",
-      timestamp: "2026-10-24T00:00:00.000Z",
-    },
-  ];
-
-  it("does not send email when posts array is empty (FRD #8)", async () => {
-    let called = false;
-    const mockTransport = {
-      sendMail: async () => {
-        called = true;
-        return { messageId: "msg-123" };
-      },
-    } as unknown as Transporter;
-
-    const result = await sendDigest([], sampleConfig, mockTransport);
-    assert.equal(result.sent, false);
-    assert.equal(result.postCount, 0);
-    assert.equal(called, false);
-  });
-
-  it("sends digest when new posts match", async () => {
-    let capturedOptions: unknown = null;
-    const mockTransport = {
-      sendMail: async (options: unknown) => {
-        capturedOptions = options;
-        return { messageId: "msg-456" };
-      },
-    } as unknown as Transporter;
-
-    const result = await sendDigest(samplePosts, sampleConfig, mockTransport);
-    assert.equal(result.sent, true);
-    assert.equal(result.postCount, 1);
-    assert.equal(result.messageId, "msg-456");
-    assert.equal(result.recipient, "alerts@gmail.com");
-
-    const mail = capturedOptions as {
-      from: string;
-      to: string;
-      subject: string;
-      text: string;
-    };
-    assert.equal(mail.from, "Loker Watcher <alerts@gmail.com>");
-    assert.equal(mail.to, "alerts@gmail.com");
-    assert.equal(mail.subject, "1 new job post on Threads (#hiring indonesia)");
-    assert.ok(mail.text.includes("Hiring React dev"));
-  });
-
-  it("uses custom recipient if specified in config", async () => {
-    let capturedRecipient = "";
-    const mockTransport = {
-      sendMail: async (options: unknown) => {
-        capturedRecipient = (options as { to: string }).to;
-        return { messageId: "msg-789" };
-      },
-    } as unknown as Transporter;
-
-    const customConfig: EmailConfig = {
-      user: "sender@gmail.com",
-      pass: "pass",
-      to: "recipient@company.com",
-    };
-
-    const result = await sendDigest(samplePosts, customConfig, mockTransport);
-    assert.equal(result.sent, true);
-    assert.equal(result.recipient, "recipient@company.com");
-    assert.equal(capturedRecipient, "recipient@company.com");
-  });
-
-  it("throws fail-visible error when transport fails", async () => {
-    const mockTransport = {
-      sendMail: async () => {
-        throw new Error("SMTP connection timeout");
-      },
-    } as unknown as Transporter;
-
-    await assert.rejects(
-      () => sendDigest(samplePosts, sampleConfig, mockTransport),
-      /email: failed to send: SMTP connection timeout/,
     );
   });
 });
@@ -511,82 +559,6 @@ describe("sendExhaustionEmail", () => {
     assert.equal(messageId, "msg-2");
     const mail = captured as { subject: string };
     assert.equal(mail.subject, "LLM judge pool exhausted (1 account failed)");
-  });
-});
-
-describe("buildDigest degraded line (provider health)", () => {
-  const posts: Post[] = [
-    {
-      platform: "threads",
-      id: "301",
-      text: "Hiring React dev",
-      author: "devteam",
-      permalink: "https://www.threads.com/@devteam/post/301",
-      timestamp: "2026-10-24T00:00:00.000Z",
-    },
-  ];
-  const LINE = "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick";
-
-  it("renders the degraded line after the items when provided", () => {
-    const digest = buildDigest(posts, undefined, LINE);
-    assert.ok(digest !== null);
-    assert.ok(digest.includes(`\n\n${LINE}\n`));
-    assert.ok(digest.endsWith(`${LINE}\n`));
-  });
-
-  it("keeps the body byte-identical when the line is absent", () => {
-    const withRider = buildDigest(posts, undefined, LINE);
-    const without = buildDigest(posts);
-    assert.ok(withRider !== null && without !== null);
-    assert.equal(withRider.startsWith(without), true);
-    assert.ok(!without.includes("Degraded LLM"));
-  });
-
-  it("still renders the leg line when both riders ride (leg first, degraded last)", () => {
-    const digest = buildDigest(posts, { status: "stale", detail: "payload 2h old" }, LINE);
-    assert.ok(digest !== null);
-    const legAt = digest.indexOf("LinkedIn leg: stale");
-    const degradedAt = digest.indexOf("Degraded LLM");
-    assert.ok(legAt >= 0);
-    assert.ok(degradedAt > legAt);
-  });
-});
-
-describe("sendDigest degraded pass-through", () => {
-  const sampleConfig: EmailConfig = {
-    user: "alerts@gmail.com",
-    pass: "app-password",
-    to: "alerts@gmail.com",
-  };
-  const samplePosts: Post[] = [
-    {
-      platform: "threads",
-      id: "201",
-      text: "Hiring React dev",
-      author: "devteam",
-      permalink: "https://www.threads.com/@devteam/post/201",
-      timestamp: "2026-10-24T00:00:00.000Z",
-    },
-  ];
-
-  it("passes the degraded line into the rendered body", async () => {
-    let captured: unknown = null;
-    const mockTransport = {
-      sendMail: async (options: unknown) => {
-        captured = options;
-        return { messageId: "msg-d1" };
-      },
-    } as unknown as Transporter;
-
-    await sendDigest(
-      samplePosts,
-      sampleConfig,
-      mockTransport,
-      undefined,
-      "Degraded LLM account(s): #1 https://api.a.com/v1 — capped at 1 request/tick",
-    );
-    const mail = captured as { text: string };
-    assert.ok(mail.text.includes("Degraded LLM account(s)"));
   });
 });
 

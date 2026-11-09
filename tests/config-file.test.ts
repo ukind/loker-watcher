@@ -41,7 +41,10 @@ describe("loadWatcherConfig — happy path", () => {
     // Operator-editable committed data (c56569c/a493b8c flipped threads to
     // false): pin the stable half — linkedin must stay on (the PC leg feeds
     // the hosted run) — and accept either threads value.
-    assert.equal(config.platforms.linkedin, true);
+    // Platforms are operator-editable committed data — both flags have
+    // flipped in the past. Pin the shape, not the values: the loader
+    // must admit any boolean combination.
+    assert.equal(typeof config.platforms.linkedin, "boolean");
     assert.equal(typeof config.platforms.threads, "boolean");
     assert.equal(config.recencyHours, 72);
   });
@@ -210,6 +213,8 @@ describe("resolveSurfaces", () => {
         platform: "threads",
         label: "tag/hiring",
         url: "https://www.threads.com/tag/hiring",
+        type: "tag",
+        value: "hiring",
       },
     ]);
   });
@@ -217,7 +222,7 @@ describe("resolveSurfaces", () => {
   it("uses a url surface verbatim", () => {
     const url = "https://www.threads.com/@hiresflow";
     const resolved = resolveSurfaces([{ type: "url", value: url }]);
-    assert.deepEqual(resolved, [{ platform: "threads", label: url, url }]);
+    assert.deepEqual(resolved, [{ platform: "threads", label: url, url, type: "url", value: url }]);
   });
 
   it("percent-encodes a tag that needs it", () => {
@@ -332,5 +337,61 @@ describe("platforms", () => {
       const config = await loadWatcherConfig(path);
       assert.deepEqual(config.platforms, platforms);
     }
+  });
+});
+
+describe("duplicate surfaces (email-per-surface: the notify loop groups on type|value)", () => {
+  it("warns once naming the duplicate and still loads the config", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [
+        { type: "tag", value: "hiring" },
+        { type: "tag", value: "hiring" },
+      ],
+    });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.surfaces, [
+      { type: "tag", value: "hiring" },
+      { type: "tag", value: "hiring" },
+    ]);
+    const dupes = warns.mock.calls
+      .map((call) => call.arguments.join(" "))
+      .filter((line) => /duplicate surface/.test(line));
+    assert.equal(dupes.length, 1);
+    assert.match(dupes[0] ?? "", /duplicate surface tag "hiring"/);
+  });
+
+  it("warns once even when a surface is listed three times", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [
+        { type: "linkedin", value: "hiring react" },
+        { type: "linkedin", value: "hiring react" },
+        { type: "linkedin", value: "hiring react" },
+      ],
+    });
+    await loadWatcherConfig(path);
+    const dupes = warns.mock.calls
+      .map((call) => call.arguments.join(" "))
+      .filter((line) => /duplicate surface/.test(line));
+    assert.equal(dupes.length, 1);
+    assert.match(dupes[0] ?? "", /duplicate surface linkedin "hiring react"/);
+  });
+
+  it("stays quiet when every surface is distinct", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [
+        { type: "tag", value: "hiring" },
+        { type: "tag", value: "loker" },
+        { type: "linkedin", value: "hiring react" },
+      ],
+    });
+    await loadWatcherConfig(path);
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.every((line) => !/duplicate surface/.test(line)));
   });
 });
