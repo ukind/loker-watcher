@@ -384,6 +384,47 @@ describe("buildExhaustionText", () => {
   });
 });
 
+describe("buildExhaustionText pool-truthful wording (D9)", () => {
+  const failures: AccountFailure[] = [
+    { account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 429" },
+    { account: 2, baseUrl: "https://api.b.com/v1", reason: "network error: socket hang up" },
+  ];
+
+  it("with poolSize the header reads X of N and survivors render by set-difference", () => {
+    const text = buildExhaustionText(failures, 3);
+    assert.ok(
+      text?.startsWith("The LLM judge pool is exhausted — 2 of 3 LLM_ACCOUNTS accounts failed.\n"),
+    );
+    assert.ok(text?.includes("1. account 1 (https://api.a.com/v1) — HTTP 429"));
+    assert.ok(text?.includes("account 2 (https://api.b.com/v1) — network error: socket hang up"));
+    assert.ok(text?.includes("Still working this run: account 3."));
+  });
+
+  it("without poolSize the legacy body stands byte-identical (every-account header, no survivors)", () => {
+    const text = buildExhaustionText(failures);
+    assert.ok(
+      text?.startsWith("The LLM judge pool is exhausted — every LLM_ACCOUNTS account failed.\n"),
+    );
+    assert.ok(!text?.includes("Still working"));
+  });
+
+  it("pluralizes the survivors line for multiple never-failed seats", () => {
+    const text = buildExhaustionText(
+      [{ account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 429" }],
+      3,
+    );
+    assert.ok(text?.includes("Still working this run: accounts 2, 3."));
+  });
+
+  it("an X-of-N pool with no survivors renders no survivors line", () => {
+    const text = buildExhaustionText(failures, 2);
+    assert.ok(
+      text?.startsWith("The LLM judge pool is exhausted — 2 of 2 LLM_ACCOUNTS accounts failed.\n"),
+    );
+    assert.ok(!text?.includes("Still working"));
+  });
+});
+
 describe("sendExhaustionEmail", () => {
   const sampleConfig: EmailConfig = {
     user: "alerts@gmail.com",
@@ -435,6 +476,41 @@ describe("sendExhaustionEmail", () => {
       () => sendExhaustionEmail(failures, sampleConfig, mockTransport),
       /email: failed to send: SMTP connection timeout/,
     );
+  });
+
+  it("subject reads X of N when poolSize rides", async () => {
+    let captured: unknown = null;
+    const mockTransport = {
+      sendMail: async (options: unknown) => {
+        captured = options;
+        return { messageId: "msg-23" };
+      },
+    } as unknown as Transporter;
+
+    const midRun: AccountFailure[] = [
+      { account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 429" },
+      { account: 2, baseUrl: "https://api.b.com/v1", reason: "network error: socket hang up" },
+    ];
+    const messageId = await sendExhaustionEmail(midRun, sampleConfig, mockTransport, 3);
+    assert.equal(messageId, "msg-23");
+    const mail = captured as { subject: string; text: string };
+    assert.equal(mail.subject, "LLM judge pool exhausted (2 of 3 accounts failed)");
+    assert.ok(mail.text.includes("Still working this run: account 3."));
+  });
+
+  it("legacy subject form stands without poolSize", async () => {
+    let captured: unknown = null;
+    const mockTransport = {
+      sendMail: async (options: unknown) => {
+        captured = options;
+        return { messageId: "msg-2" };
+      },
+    } as unknown as Transporter;
+
+    const messageId = await sendExhaustionEmail(failures, sampleConfig, mockTransport);
+    assert.equal(messageId, "msg-2");
+    const mail = captured as { subject: string };
+    assert.equal(mail.subject, "LLM judge pool exhausted (1 account failed)");
   });
 });
 

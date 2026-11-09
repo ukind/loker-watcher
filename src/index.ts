@@ -31,9 +31,11 @@ import { resolveEmailConfig, sendDigest, sendExhaustionEmail } from "./email.js"
 import { extractPosts } from "./extract.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
+import { type AvailabilityResult, checkJudgeAvailability } from "./judge-availability.js";
 import { loadAccountCeilings } from "./judge-ceilings.js";
 import {
   type HealthRead,
+  type TickOutcomes,
   buildDegradedAccountsLine,
   episodeAlarmDue,
   flushExhaustionHealth,
@@ -53,7 +55,7 @@ import { type LegLine, type PayloadRead, readPayloadPosts } from "./linkedin-pay
 import { filterRecent } from "./recency.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
 import { cleanupSessionDir, resolveSession } from "./threads-session.js";
-import type { Post } from "./types.js";
+import type { AccountFailure, Post } from "./types.js";
 
 /**
  * Best-effort status email for a zero-match run.
@@ -84,6 +86,60 @@ async function heartbeat(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`heartbeat: not sent — ${message}`);
+  }
+}
+
+/**
+ * The shared exhaustion-episode sequence (D8): the pre-flush
+ * episodeAlarmDue read, the exhaustion health flush, then the
+ * suppress-or-send alarm. The skip branch calls it with the injected
+ * pool, the hoisted health snapshot, and deps.transport; the entry catch
+ * calls it with the bootstrap re-resolve (production nodemailer default;
+ * process.exit(1) stays in the catch). The pre-flush discipline: the
+ * flush OPENS the episode bit, so an open bit read BEFORE it means a
+ * previous run already alarmed — one alarm per episode.
+ * flushExhaustionHealth never throws, so a failed flush cannot swallow
+ * the alarm: the due-read already happened and the send still fires
+ * (fail-visible — a duplicate alarm costs one email, a suppressed alarm
+ * costs the outage). The email's pool size rides as accounts.length
+ * (D9): the skip path reads "3 of 3 accounts failed" against a 0-of-N
+ * availability log line, and the mid-run catch path finally composes
+ * pool-truthful wording.
+ *
+ * The caller passes a FRESH read: a stale snapshot can only DUPLICATE
+ * the alarm — never suppress it — the fail-safe direction the doctrine
+ * already picks (a duplicate costs one email, a suppressed alarm costs
+ * the outage). The entry catch re-resolves per invocation; the skip
+ * branch passes the run's hoisted snapshot, which no in-run write has
+ * touched (a skip run never reaches the tick flush).
+ */
+export async function flushAndSendExhaustionAlarm(deps: {
+  readonly accounts: readonly LlmAccount[];
+  readonly health: HealthRead;
+  readonly outcomes: TickOutcomes;
+  readonly failures: readonly AccountFailure[];
+  readonly env: Record<string, string | undefined>;
+  readonly transport: Transporter | undefined;
+  readonly judgeHealthPath: string | undefined;
+}): Promise<void> {
+  const episodeAlreadyOpen = !episodeAlarmDue(deps.health.file);
+  await flushExhaustionHealth(deps.accounts, deps.health.file, deps.outcomes, deps.judgeHealthPath);
+  if (episodeAlreadyOpen) {
+    console.warn(
+      "watch: outage episode already open — exhaustion alarm suppressed (one per episode)",
+    );
+    return;
+  }
+  try {
+    await sendExhaustionEmail(
+      deps.failures,
+      resolveEmailConfig(deps.env),
+      deps.transport,
+      deps.accounts.length,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`email: exhaustion alarm not sent — ${message}`);
   }
 }
 
@@ -129,6 +185,12 @@ export interface WatcherDeps {
    *  or malformed health file reads as the healthy default and never
    *  fails the run). */
   readonly judgeHealth?: (accounts: readonly LlmAccount[]) => Promise<HealthRead>;
+  /** Availability pre-check (D6 seam, the judgeCeilings shape). Default:
+   *  checkJudgeAvailability over deps.fetchFn — the module owns its
+   *  never-throw degrade contract: per-account refusals come back as
+   *  failures, a checker fault degrades to all-available (degraded:
+   *  true) and the run proceeds unfiltered. */
+  readonly judgeAvailability?: (accounts: readonly LlmAccount[]) => Promise<AvailabilityResult>;
   /** Health file location for the flushes. Default: beside the state file —
    *  dirname(statePath)/judge-health.json, which equals JUDGE_HEALTH_PATH
    *  in production. Tests point either knob at a temp dir — the offline
@@ -311,6 +373,52 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   }
   console.log(`state: ${newPosts.length} unseen post(s)`);
 
+  const checkAvailability =
+    deps.judgeAvailability ??
+    ((accounts: readonly LlmAccount[]) => checkJudgeAvailability(accounts, deps.fetchFn));
+  const { value: availability, durationMs: availabilityMs } = await timeStage(() =>
+    checkAvailability(judgeAccounts),
+  );
+  console.log(`timing: availability ${availabilityMs}ms`);
+  const availableCount = judgeAccounts.length - availability.failures.length;
+  console.log(`availability: ${availableCount} of ${judgeAccounts.length} account(s) available`);
+  // One sit-out line per refused account: the run's visibility into who
+  // sits out and why (the mask below carries the same reasons).
+  for (const failure of availability.failures) {
+    console.log(
+      `availability: account ${failure.account} (${failure.baseUrl}) sits out — ${failure.reason}`,
+    );
+  }
+  // The all-down skip (D7): zero survivors on a trustworthy verdict — no
+  // judge calls, ids stay unseen, the episode alarm fires at most once,
+  // and the run resolves exit-0 green. A degraded check never skips: an
+  // unfiltered run is the contract (the checker warned once already).
+  if (
+    judgeAccounts.length > 0 &&
+    !availability.degraded &&
+    availability.failures.length === judgeAccounts.length
+  ) {
+    console.log(
+      `availability: skipping the judge stage — every account refused, ${newPosts.length} post(s) stay unseen`,
+    );
+    await flushAndSendExhaustionAlarm({
+      accounts: judgeAccounts,
+      health,
+      outcomes: { ok: [], failed: new Map<number, string>() },
+      failures: availability.failures,
+      env,
+      transport: deps.transport,
+      judgeHealthPath,
+    });
+    return { judged: 0, matches: 0, skipped: newPosts.length, saved: false };
+  }
+  // The mask (D2): 1-based failure account numbers become 0-based
+  // RotationState indexes. Survivors dispatch at their committed
+  // ceilings; refused seats never dispatch and never count toward width.
+  const blocked = new Map(
+    availability.failures.map((failure) => [failure.account - 1, failure.reason] as const),
+  );
+
   const { value: judgeOutcome, durationMs: judgeMs } = await timeStage(async () => {
     // D3 seam: the ceilings resolver mirrors linkedinFetch — injected in
     // tests, the fs-reading default in production. Its degrade contract
@@ -327,6 +435,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       now,
       sleepFn,
       health.marks,
+      blocked,
     );
   });
   console.log(`timing: judge ${judgeMs}ms`);
@@ -446,29 +555,30 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
     // (D3, D8).
     if (isRotationExhausted(error)) {
       console.error(`watch: FAILED — ${error.message}`);
-      let episodeAlreadyOpen = false;
+      let episodeHandled = false;
       try {
         const bootstrapAccounts = resolveJudgeConfig(process.env);
         const healthRead = await loadAccountHealth(bootstrapAccounts);
-        // Pre-flush read: the flush below OPENS the bit — an open bit here
-        // means a PREVIOUS run already alarmed (one alarm per episode, the
-        // research's checkpoint 4; the fetch-linkedin episode precedent).
-        episodeAlreadyOpen = !episodeAlarmDue(healthRead.file);
-        const outcomes = error.health ?? { ok: [], failed: new Map<number, string>() };
-        await flushExhaustionHealth(bootstrapAccounts, healthRead.file, outcomes);
+        await flushAndSendExhaustionAlarm({
+          accounts: bootstrapAccounts,
+          health: healthRead,
+          outcomes: error.health ?? { ok: [], failed: new Map<number, string>() },
+          failures: error.failures,
+          env: process.env,
+          transport: undefined,
+          judgeHealthPath: undefined,
+        });
+        episodeHandled = true;
       } catch (healthError) {
         const healthMessage =
           healthError instanceof Error ? healthError.message : String(healthError);
         console.warn(`judge: health flush failed — ${healthMessage}`);
-        // episodeAlreadyOpen stays false → the alarm fires (fail-visible:
-        // a duplicate alarm costs one email, a suppressed alarm costs the
-        // outage).
+        // episodeHandled stays false → the fallback below sends the alarm
+        // unsuppressed (fail-visible: a duplicate alarm costs one email, a
+        // suppressed alarm costs the outage). Pool size unknowable on a
+        // bootstrap fault — the legacy wording stands (D9).
       }
-      if (episodeAlreadyOpen) {
-        console.warn(
-          "watch: outage episode already open — exhaustion alarm suppressed (one per episode)",
-        );
-      } else {
+      if (!episodeHandled) {
         try {
           await sendExhaustionEmail(error.failures, resolveEmailConfig(process.env));
         } catch (emailError) {

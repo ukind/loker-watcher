@@ -25,12 +25,14 @@ import type {
   PageLike,
   ResponseLike,
 } from "../src/fetch-threads.js";
-import { runWatcher, timeStage } from "../src/index.js";
+import { flushAndSendExhaustionAlarm, runWatcher, timeStage } from "../src/index.js";
+import type { AvailabilityResult } from "../src/judge-availability.js";
 import { type HealthFile, loadAccountHealth } from "../src/judge-health.js";
 import { isRotationExhausted } from "../src/judge-rotation.js";
+import type { LlmAccount } from "../src/judge.js";
 import type { PayloadRead } from "../src/linkedin-payload.js";
 import type { AppState } from "../src/state.js";
-import type { JudgeVerdict, Post } from "../src/types.js";
+import type { AccountFailure, JudgeVerdict, Post } from "../src/types.js";
 
 // Pinned clock (UTC): 2026-10-26T09:14:00.000Z — every stage reads it
 // through deps.now; the tests never touch the system clock.
@@ -281,6 +283,33 @@ function recordingTransport() {
   return { transport, subjects, texts };
 }
 
+/**
+ * Pass-all availability double (D10): every judge-stage test injects it.
+ * The DEFAULT checker would probe the judge fetch doubles — a 429/500
+ * answer would mis-mark accounts unavailable, and the all-down skip
+ * branch would flip mid-run exhaustion tests into green skip runs.
+ */
+const availabilityPassAll = async (): Promise<AvailabilityResult> => ({
+  failures: [],
+  degraded: false,
+});
+
+/** Three-account pool for the some-pass, all-down, and degrade scenarios. */
+const THREE_ACCOUNT_ENV: Record<string, string | undefined> = {
+  ...BASE_ENV,
+  LLM_ACCOUNTS: JSON.stringify([
+    { baseUrl: "https://one.api/v1", apiKey: "k1", model: "m1" },
+    { baseUrl: "https://two.api/v1", apiKey: "k2", model: "m2" },
+    { baseUrl: "https://three.api/v1", apiKey: "k3", model: "m3" },
+  ]),
+};
+
+const threeAccounts: LlmAccount[] = [
+  { baseUrl: "https://one.api/v1", apiKey: "k1", model: "m1" },
+  { baseUrl: "https://two.api/v1", apiKey: "k2", model: "m2" },
+  { baseUrl: "https://three.api/v1", apiKey: "k3", model: "m3" },
+];
+
 // Temp state files (offline rule: OS temp only, cleaned up once).
 let dir: string | undefined;
 after(async () => {
@@ -319,6 +348,7 @@ describe("runWatcher", () => {
       config: CONFIG,
       contextFactory: singlePageContextFactory(graphqlBody(posts)),
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -345,6 +375,7 @@ describe("runWatcher", () => {
       config: CONFIG,
       contextFactory: singlePageContextFactory(graphqlBody(posts)),
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -396,6 +427,7 @@ describe("runWatcher", () => {
       config: CONFIG,
       contextFactory: singlePageContextFactory(graphqlBody(posts)),
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -420,6 +452,7 @@ describe("runWatcher", () => {
       config: CONFIG,
       contextFactory: singlePageContextFactory(graphqlBody(posts)),
       fetchFn: partialBulkThenFailFetch({ [id19(8)]: { relevant: true, locationOk: true } }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -454,6 +487,7 @@ describe("runWatcher", () => {
         config: CONFIG,
         contextFactory: singlePageContextFactory(graphqlBody(posts)),
         fetchFn: all429,
+        judgeAvailability: availabilityPassAll,
         transport,
         statePath,
         now,
@@ -499,6 +533,7 @@ describe("runWatcher", () => {
         return payloadRead([linkedinPost(linkedinIdNow)], "ok", "payload 0 min old");
       },
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -544,6 +579,7 @@ describe("runWatcher", () => {
       }),
       linkedinFetch: async () => payloadRead([], "absent"),
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -610,6 +646,7 @@ describe("runWatcher", () => {
         throw new Error("payload io exploded");
       },
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -640,6 +677,7 @@ describe("runWatcher", () => {
       ),
       linkedinFetch: async () => payloadRead([], "stale", "payload 3h old"),
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -663,6 +701,7 @@ describe("runWatcher", () => {
       contextFactory: singlePageContextFactory(graphqlBody([])), // never driven: zero threads surfaces
       linkedinFetch: async () => payloadRead([linkedinPost(linkedinIdNow)], "ok"),
       fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -692,6 +731,7 @@ describe("runWatcher", () => {
       }),
       linkedinFetch: async () => payloadRead([], "absent"),
       fetchFn: judgeFetch({ relevant: false, locationOk: false }),
+      judgeAvailability: availabilityPassAll,
       transport,
       statePath,
       now: () => NOW,
@@ -739,6 +779,7 @@ describe("provider health (the entry wiring)", () => {
         config: CONFIG,
         contextFactory: singlePageContextFactory(graphqlBody(posts)),
         fetchFn,
+        judgeAvailability: availabilityPassAll,
         transport,
         statePath,
         now: () => NOW,
@@ -836,6 +877,264 @@ describe("provider health (the entry wiring)", () => {
     });
 
     await assert.rejects(() => readFile(healthPath, "utf8"), /ENOENT/);
+  });
+});
+
+describe("availability pre-check (the entry wiring)", () => {
+  it("runs the default checker over deps.fetchFn — an all-pass pool behaves exactly as today (FR4)", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const posts = [{ id: id19(30), text: "Hiring: ruby developer, remote" }];
+    const statePath = await tempStatePath("availability-all-pass.json");
+    const { transport, subjects } = recordingTransport();
+    const bodies: string[] = [];
+    const judgeDouble = judgeFetch({ relevant: true, locationOk: true }) as (
+      url: unknown,
+      options?: unknown,
+    ) => Promise<Response>;
+    const probingFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+      bodies.push((options as { body: string }).body);
+      return judgeDouble(url, options);
+    }) as unknown as typeof fetch;
+
+    const run = await runWatcher({
+      env: THREE_ACCOUNT_ENV,
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn: probingFetch,
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    // FR4: same digest, same persistence — the only additions are the
+    // availability log lines.
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.match(subjects[0] ?? "", /1 new job post/);
+    // One tiny probe per account rode the same production fetch default,
+    // then the judged batch.
+    const probeBodies = bodies.filter((body) => body.includes("Reply with the single word"));
+    assert.equal(probeBodies.length, 3);
+    assert.equal(bodies.length - probeBodies.length, 1);
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /availability: 3 of 3 account\(s\) available/.test(line)));
+  });
+
+  it("some-pass: refused accounts sit out with their reason and only survivors dispatch", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const posts = [{ id: id19(31), text: "Hiring: swift developer, remote" }];
+    const statePath = await tempStatePath("availability-some-pass.json");
+    const { transport, subjects } = recordingTransport();
+    const judgeHosts: string[] = [];
+    const fetchFn = (async (url: unknown): Promise<Response> => {
+      judgeHosts.push(new URL(String(url)).host);
+      return ok(JSON.stringify({ [id19(31)]: { relevant: true, locationOk: true } }));
+    }) as unknown as typeof fetch;
+
+    const run = await runWatcher({
+      env: THREE_ACCOUNT_ENV,
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn,
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeAvailability: async () => ({
+        failures: [
+          { account: 1, baseUrl: "https://one.api/v1", reason: "HTTP 429" },
+          { account: 3, baseUrl: "https://three.api/v1", reason: "HTTP 503" },
+        ],
+        degraded: false,
+      }),
+    });
+
+    // The run completed on the survivors and the digest went out.
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    // The refused seats never dispatched: only the survivor's host called.
+    assert.ok(judgeHosts.length > 0);
+    assert.ok(judgeHosts.every((host) => host === "two.api"));
+    // The sit-out lines name each refused account with its real reason.
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(
+      lines.some((line) => /account 1 \(https:\/\/one\.api\/v1\) sits out — HTTP 429/.test(line)),
+    );
+    assert.ok(
+      lines.some((line) => /account 3 \(https:\/\/three\.api\/v1\) sits out — HTTP 503/.test(line)),
+    );
+    assert.ok(lines.some((line) => /availability: 1 of 3 account\(s\) available/.test(line)));
+  });
+
+  it("all-down: no judge call, ids stay unseen, one alarm reads 3 of 3, exit-0 run shape", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const posts = [
+      { id: id19(32), text: "Hiring: php developer, remote" },
+      { id: id19(33), text: "Hiring: laravel developer, bandung" },
+    ];
+    const statePath = await tempStatePath("availability-all-down.json");
+    const healthPath = await tempHealthPath("availability-all-down-health.json");
+    const { transport, subjects, texts } = recordingTransport();
+    let judgeCalls = 0;
+    const fetchFn = (async (): Promise<Response> => {
+      judgeCalls += 1;
+      return ok("{}");
+    }) as unknown as typeof fetch;
+
+    const run = await runWatcher({
+      env: THREE_ACCOUNT_ENV,
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn,
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeAvailability: async () => ({
+        failures: [
+          { account: 1, baseUrl: "https://one.api/v1", reason: "HTTP 429" },
+          { account: 2, baseUrl: "https://two.api/v1", reason: "network error: socket hang up" },
+          {
+            account: 3,
+            baseUrl: "https://three.api/v1",
+            reason: "unusable answer: missing message content",
+          },
+        ],
+        degraded: false,
+      }),
+      judgeHealth: (accounts) => loadAccountHealth(accounts, healthPath),
+      judgeHealthPath: healthPath,
+    });
+
+    // FR5: the honest skip run — exit 0 by resolution, nothing judged,
+    // nothing persisted, the alarm the only mail (no heartbeat on skip).
+    assert.deepEqual(run, { judged: 0, matches: 0, skipped: 2, saved: false });
+    assert.equal(judgeCalls, 0); // no judge call reached the dead pool
+    await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/); // ids stay unseen
+    assert.equal(subjects.length, 1); // the alarm, not the heartbeat
+    assert.match(subjects[0] ?? "", /LLM judge pool exhausted \(3 of 3 accounts failed\)/);
+    assert.ok(texts[0]?.includes("1. account 1 (https://one.api/v1) — HTTP 429"));
+    assert.ok(!texts[0]?.includes("Still working")); // no survivors line
+    // The run log names 0 of N: the counts line and the skip line.
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /availability: 0 of 3 account\(s\) available/.test(line)));
+    assert.ok(lines.some((line) => /skipping the judge stage/.test(line)));
+    // The skip flush flipped the episode bit and preserved every mark
+    // (empty outcomes — pre-check 429s never reach the marks merge).
+    const stored = JSON.parse(await readFile(healthPath, "utf8")) as HealthFile;
+    assert.equal(stored.outageOpen, true);
+    assert.deepEqual(stored.marks, {});
+  });
+
+  it("two consecutive skips alarm once and preserve marks: the skip flush passes empty outcomes", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const posts = [{ id: id19(34), text: "Hiring: go developer, remote" }];
+    const statePath = await tempStatePath("availability-dedup-state.json");
+    const healthPath = await tempHealthPath("availability-dedup-health.json");
+    // Seed: one account mid-streak, no open episode — the skip flushes
+    // must not touch the mark (a pre-check refusal is NOT a provider
+    // health failure) and the second tick must not re-alarm.
+    await writeFile(
+      healthPath,
+      `${JSON.stringify(
+        { version: 1, marks: { "https://mock.api/v1": 2 }, outageOpen: false },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    const { transport, subjects } = recordingTransport();
+    const deps = {
+      env: BASE_ENV, // the single-account pool
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn: (async (): Promise<Response> => {
+        throw new Error("judge must never dispatch on a skip run");
+      }) as unknown as typeof fetch,
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeAvailability: async () => ({
+        failures: [{ account: 1, baseUrl: "https://mock.api/v1", reason: "HTTP 429" }],
+        degraded: false,
+      }),
+      judgeHealth: (accounts: readonly LlmAccount[]) => loadAccountHealth(accounts, healthPath),
+      judgeHealthPath: healthPath,
+    };
+
+    // Tick 1: the episode opens and the alarm fires.
+    assert.deepEqual(await runWatcher(deps), { judged: 0, matches: 0, skipped: 1, saved: false });
+    assert.equal(subjects.length, 1);
+    // Tick 2: same pool, same refusal — the open bit suppresses.
+    assert.deepEqual(await runWatcher(deps), { judged: 0, matches: 0, skipped: 1, saved: false });
+    assert.equal(subjects.length, 1); // one alarm per episode
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /outage episode already open/.test(line)));
+    // The seeded mark survived both skip flushes verbatim; the bit is open.
+    const stored = JSON.parse(await readFile(healthPath, "utf8")) as HealthFile;
+    assert.deepEqual(stored.marks, { "https://mock.api/v1": 2 });
+    assert.equal(stored.outageOpen, true);
+    await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/);
+  });
+
+  it("a degraded checker result runs the stage unfiltered — the tick never crashes on the pre-check", async () => {
+    const posts = [{ id: id19(35), text: "Hiring: kotlin developer, remote" }];
+    const statePath = await tempStatePath("availability-degraded.json");
+    const { transport, subjects } = recordingTransport();
+    let judgeCalls = 0;
+    const fetchFn = (async (): Promise<Response> => {
+      judgeCalls += 1;
+      return ok(JSON.stringify({ [id19(35)]: { relevant: true, locationOk: true } }));
+    }) as unknown as typeof fetch;
+
+    const run = await runWatcher({
+      env: THREE_ACCOUNT_ENV,
+      config: CONFIG,
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      fetchFn,
+      transport,
+      statePath,
+      now: () => NOW,
+      judgeAvailability: async () => ({ failures: [], degraded: true }),
+    });
+
+    // Degraded = all-available: the judge dispatched, the run completed.
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.ok(judgeCalls >= 1);
+  });
+
+  it("the extracted alarm helper passes the pool size: a mid-run record reads 2 of 3 (D8/D9)", async () => {
+    const healthPath = await tempHealthPath("availability-wording-health.json");
+    const { transport, subjects, texts } = recordingTransport();
+    const alarmDeps = {
+      accounts: threeAccounts,
+      health: { marks: new Map<number, number>(), file: undefined },
+      outcomes: { ok: [] as number[], failed: new Map<number, string>() },
+      failures: [
+        { account: 1, baseUrl: "https://one.api/v1", reason: "HTTP 429" },
+        { account: 2, baseUrl: "https://two.api/v1", reason: "network error: socket hang up" },
+      ] as AccountFailure[],
+      env: BASE_ENV,
+      transport,
+      judgeHealthPath: healthPath,
+    };
+
+    await flushAndSendExhaustionAlarm(alarmDeps);
+
+    assert.equal(subjects.length, 1);
+    assert.equal(subjects[0], "LLM judge pool exhausted (2 of 3 accounts failed)");
+    assert.ok(
+      texts[0]?.includes("The LLM judge pool is exhausted — 2 of 3 LLM_ACCOUNTS accounts failed."),
+    );
+    assert.ok(texts[0]?.includes("Still working this run: account 3."));
+    // The flush ran through the injected path and opened the episode bit.
+    const stored = JSON.parse(await readFile(healthPath, "utf8")) as HealthFile;
+    assert.equal(stored.outageOpen, true);
+    // A second episode call on the same file suppresses (one per episode):
+    // the helper reads its PRE-FLUSH snapshot, so the caller re-resolves
+    // the read from disk exactly like the entry catch does per invocation.
+    const reloaded = await loadAccountHealth(threeAccounts, healthPath);
+    await flushAndSendExhaustionAlarm({ ...alarmDeps, health: reloaded });
+    assert.equal(subjects.length, 1);
   });
 });
 

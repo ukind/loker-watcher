@@ -27,6 +27,7 @@ function freshState(accounts: LlmAccount[]): RotationState {
     accounts,
     cooldownUntil: new Map(),
     ceilings: new Map(),
+    blocked: new Map(),
     inFlight: new Map(),
     dispatchCounter: 0,
     ceilingWaiters: [],
@@ -861,5 +862,207 @@ describe("health ledger stamps (the four branch sites)", () => {
     assert.deepEqual(exhausted.health?.ok, []);
     assert.deepEqual([...(exhausted.health?.failed.entries() ?? [])], [[1, "HTTP 503"]]);
     assert.deepEqual(delays, []); // zero park AND zero backoff — the arm fired on drained, stamped probes
+  });
+});
+
+describe("judgePosts blocked mask (availability pre-check refusals)", () => {
+  function twoAccounts(): LlmAccount[] {
+    return [
+      { baseUrl: "https://account-one.api/v1", apiKey: "key-1", model: "model-1" },
+      { baseUrl: "https://account-two.api/v1", apiKey: "key-2", model: "model-2" },
+    ];
+  }
+
+  function threeAccounts(): LlmAccount[] {
+    return [
+      { baseUrl: "https://account-one.api/v1", apiKey: "key-1", model: "model-1" },
+      { baseUrl: "https://account-two.api/v1", apiKey: "key-2", model: "model-2" },
+      { baseUrl: "https://account-three.api/v1", apiKey: "key-3", model: "model-3" },
+    ];
+  }
+
+  /** Records every host the judge dispatched to — the mask's observable. */
+  function hostRecorder(): { hosts: string[]; fetchFn: typeof fetch } {
+    const hosts: string[] = [];
+    const fetchFn = (async (url: unknown, options?: unknown): Promise<Response> => {
+      hosts.push(new URL(String(url)).host);
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
+        (match) => match[1] ?? "",
+      );
+      return ok(bulkContent(ids));
+    }) as unknown as typeof fetch;
+    return { hosts, fetchFn };
+  }
+
+  it("a blocked seat never dispatches and the survivor judges every post", async () => {
+    const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1)));
+    const { hosts, fetchFn } = hostRecorder();
+
+    const result = await judgePosts(
+      posts,
+      twoAccounts(),
+      KEYWORDS,
+      fetchFn,
+      "medium",
+      new Map([
+        [0, 4],
+        [1, 4],
+      ]),
+      Date.now,
+      (): Promise<void> => Promise.resolve(),
+      new Map(),
+      new Map([[0, "HTTP 429"]]),
+    );
+
+    assert.equal(result.judged.length, 10);
+    assert.deepEqual(result.skippedPostIds, []);
+    assert.ok(hosts.every((host) => host.includes("account-two"))); // seat 0 never dispatched
+    assert.equal(hosts.length, 1); // one batch, one call
+  });
+
+  it("an all-blocked pool exhausts immediately — zero fetch calls, zero sleeps, mask reasons in pool order", async () => {
+    const posts = [bulkPost(id19(1))];
+    const delays: number[] = [];
+    let calls = 0;
+    const mockFetch = (async (): Promise<Response> => {
+      calls += 1;
+      return ok(bulkContent([id19(1)]));
+    }) as unknown as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await judgePosts(
+        posts,
+        threeAccounts(),
+        KEYWORDS,
+        mockFetch,
+        "medium",
+        new Map([
+          [0, 4],
+          [1, 4],
+          [2, 4],
+        ]),
+        Date.now,
+        (ms: number): Promise<void> => {
+          delays.push(ms);
+          return Promise.resolve();
+        },
+        new Map(),
+        new Map([
+          [0, "HTTP 429"],
+          [1, "network error: socket hang up"],
+          [2, "unusable answer: missing message content"],
+        ]),
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    assert.ok(isRotationExhausted(caught));
+    const exhausted = caught as RotationExhausted;
+    assert.equal(calls, 0); // the guard fired before any dispatch
+    assert.deepEqual(delays, []); // zero park AND zero backoff — no timerless hang
+    assert.deepEqual(
+      exhausted.failures.map((f) => [f.account, f.reason]),
+      [
+        [1, "HTTP 429"],
+        [2, "network error: socket hang up"],
+        [3, "unusable answer: missing message content"],
+      ],
+    );
+  });
+
+  it("a blocked seat plus a health-drained survivor exhausts immediately (the mixed pool never parks)", async () => {
+    const posts = [bulkPost(id19(1))];
+    const delays: number[] = [];
+    let calls = 0;
+    const mockFetch = (async (): Promise<Response> => {
+      calls += 1;
+      return new Response("Service Unavailable", { status: 503 });
+    }) as unknown as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await judgePosts(
+        posts,
+        twoAccounts(),
+        KEYWORDS,
+        mockFetch,
+        "medium",
+        new Map([
+          [0, 4],
+          [1, 4],
+        ]),
+        Date.now,
+        (ms: number): Promise<void> => {
+          delays.push(ms);
+          return Promise.resolve();
+        },
+        new Map([[1, 2]]), // seat 1 capped: its first dispatch is the probe
+        new Map([[0, "HTTP 401 — key dead"]]),
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    assert.ok(isRotationExhausted(caught));
+    const exhausted = caught as RotationExhausted;
+    assert.equal(calls, 1); // one probe dispatch, then the guard — no park, no hang
+    assert.deepEqual(delays, [1_000]); // one spent bulk backoff (a mid-backoff 5xx never stamps)
+    assert.deepEqual(
+      exhausted.failures.map((f) => [f.account, f.reason]),
+      [
+        [1, "HTTP 401 — key dead"], // the mask reason outranks the cap
+        [2, "capped by provider health"],
+      ],
+    );
+  });
+
+  it("blocked seats shrink the width — the survivor pool still peaks at its own Σ ceilings", async () => {
+    const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches
+    const state = { inFlight: 0, peak: 0 };
+    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
+      state.inFlight += 1;
+      state.peak = Math.max(state.peak, state.inFlight);
+      await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
+      state.inFlight -= 1;
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
+        (match) => match[1] ?? "",
+      );
+      return ok(bulkContent(ids));
+    }) as unknown as typeof fetch;
+
+    const result = await judgePosts(
+      posts,
+      threeAccounts(),
+      KEYWORDS,
+      mockFetch,
+      "medium",
+      new Map([
+        [0, 4],
+        [1, 4],
+        [2, 4],
+      ]),
+      Date.now,
+      (): Promise<void> => Promise.resolve(),
+      new Map(),
+      new Map([
+        [0, "HTTP 429"],
+        [1, "HTTP 503"],
+      ]),
+    );
+
+    // Only seat 2 survives: width = its ceiling 4, and the two batches
+    // cannot exceed it — a regression that subtracts blocked seats from
+    // the SURVIVORS' capacity drops this peak below 2.
+    assert.equal(state.peak, 2); // min(4, 2 batches)
+    assert.equal(result.judged.length, 20);
+    assert.deepEqual(result.skippedPostIds, []);
   });
 });

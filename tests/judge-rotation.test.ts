@@ -15,10 +15,11 @@ import {
   isRotationExhausted,
   pickEligibleAccount,
   releaseAccount,
+  rotationExhausted,
   waitCeilingSlot,
 } from "../src/judge-rotation.js";
 import { type LlmAccount, judgePost, judgePosts } from "../src/judge.js";
-import type { Post } from "../src/types.js";
+import type { AccountFailure, Post } from "../src/types.js";
 import {
   KEYWORDS,
   bulkContent,
@@ -54,11 +55,13 @@ function threeAccounts(): LlmAccount[] {
 function freshState(
   accounts: LlmAccount[],
   ceilings: ReadonlyMap<number, number> = new Map(),
+  blocked: ReadonlyMap<number, string> = new Map(),
 ): RotationState {
   return {
     accounts,
     cooldownUntil: new Map(),
     ceilings,
+    blocked,
     inFlight: new Map(),
     dispatchCounter: 0,
     ceilingWaiters: [],
@@ -910,5 +913,166 @@ describe("health-circuit pick: the inline half-open probe", () => {
     state.cooldownUntil.set(1, 10_000); // block the other seat
     const picked = pickEligibleAccount(state, 0);
     assert.equal(picked?.index, 0); // still dispatchable at the committed ceiling
+  });
+});
+
+describe("blocked mask: pre-check-refused seats never dispatch", () => {
+  it("skips a blocked seat and lands the claim on the next free account", () => {
+    const state = freshState(twoAccounts(), new Map(), new Map([[0, "HTTP 429"]]));
+    const picked = pickEligibleAccount(state, 0);
+    assert.equal(picked?.index, 1); // seat 0 refused — the scan moved past it
+    claimAccount(state, 1);
+    assert.equal(state.dispatchCounter, 2); // the dial moved past the CLAIM, not the skip
+    assert.equal(state.inFlight.get(0), undefined); // the blocked seat was never claimed
+  });
+
+  it("returns undefined when every seat is blocked and never moves the dial (D6)", () => {
+    const state = freshState(
+      threeAccounts(),
+      new Map(),
+      new Map([
+        [0, "HTTP 429"],
+        [1, "network error: socket hang up"],
+        [2, "unusable answer: missing message content"],
+      ]),
+    );
+    state.dispatchCounter = 1;
+    assert.equal(pickEligibleAccount(state, 0), undefined);
+    assert.equal(state.dispatchCounter, 1); // an undefined pick never moves the dial
+  });
+
+  it("a blocked seat never spends the half-open probe — the mask outranks the health circuit", () => {
+    const state = freshState(twoAccounts(), new Map(), new Map([[0, "HTTP 401 — key dead"]]));
+    state.healthMarks.set(0, 2); // capped: its first dispatch would be the tick's probe
+    state.cooldownUntil.set(1, 10_000); // block the only other seat
+    // Seat 0 is refused AND capped: without the mask line the pick would
+    // return it as the half-open probe. With the line, nothing dispatches.
+    assert.equal(pickEligibleAccount(state, 0), undefined);
+    assert.equal(state.probedThisTick.size, 0); // the probe was never spent
+  });
+
+  it("a pinned startAt on a blocked seat skips it like any other", () => {
+    const state = freshState(twoAccounts(), new Map(), new Map([[1, "HTTP 503"]]));
+    const picked = pickEligibleAccount(state, 0, 1); // the same-account retry pins seat 1
+    assert.equal(picked?.index, 0); // the pinned seat is refused — the scan wrapped past it
+  });
+});
+
+describe("pool-truthful exhaustion wording (D9)", () => {
+  const failures: AccountFailure[] = [
+    { account: 1, baseUrl: "https://api.a.com/v1", reason: "HTTP 429" },
+    { account: 2, baseUrl: "https://api.b.com/v1", reason: "network error: socket hang up" },
+  ];
+
+  it("with poolSize the message reads X of N accounts failed", () => {
+    const error = rotationExhausted(failures, undefined, 3);
+    assert.match(error.message, /^judge: 2 of 3 LLM_ACCOUNTS accounts failed — /);
+    assert.ok(error.message.includes("account 1 (https://api.a.com/v1): HTTP 429"));
+    assert.ok(
+      error.message.includes("account 2 (https://api.b.com/v1): network error: socket hang up"),
+    );
+  });
+
+  it("without poolSize the legacy all-X form stands (bare test-constructed errors)", () => {
+    const error = rotationExhausted(failures);
+    assert.match(error.message, /^judge: all 2 LLM_ACCOUNTS account\(s\) exhausted — /);
+  });
+
+  it("the judgePosts throw site passes the pool size — the caught error reads 2 of 2", async () => {
+    const posts = Array.from({ length: 3 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
+    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
+      const body = JSON.parse((options as { body: string }).body) as {
+        messages: Array<{ content: string }>;
+      };
+      const content = body.messages[1]?.content ?? "";
+      if (content.includes("Judge each post below")) {
+        return ok("{}"); // answered, zero verdicts — every post falls back
+      }
+      return new Response("Too Many Requests", { status: 429 }); // both accounts cool
+    }) as unknown as typeof fetch;
+    const inertSleep = (ms: number): Promise<void> => Promise.resolve();
+    let caught: unknown;
+    try {
+      await judgePosts(
+        posts,
+        twoAccounts(),
+        KEYWORDS,
+        mockFetch,
+        "medium",
+        new Map([
+          [0, 2],
+          [1, 2],
+        ]),
+        Date.now,
+        inertSleep,
+      );
+    } catch (error) {
+      caught = error;
+    }
+    assert.ok(isRotationExhausted(caught));
+    assert.match(
+      (caught as RotationExhausted).message,
+      /^judge: 2 of 2 LLM_ACCOUNTS accounts failed — account 1 \(https:\/\/account-one\.api\/v1\): HTTP 429/,
+    );
+  });
+
+  it("mid-run exhaustion with a saturated healthy survivor reads 1 of 2 — the survivor never failed", async () => {
+    const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches, 2 workers
+    let tick = 0;
+    const now = (): number => tick;
+    let releaseSurvivor!: (response: Response) => void;
+    const survivorGate = new Promise<Response>((resolve) => {
+      releaseSurvivor = resolve;
+    });
+    const sleeps: number[] = [];
+    const inertSleep = (ms: number): Promise<void> => {
+      sleeps.push(ms);
+      tick += ms; // parks wake exactly at expiry
+      // The third park spends the last of the 180_000 cell; release the
+      // held dispatch so the drain-then-throw join completes.
+      if (sleeps.length === 3) {
+        releaseSurvivor(ok('{"relevant": true, "locationOk": true}'));
+      }
+      return Promise.resolve();
+    };
+    const mockFetch = (async (url: unknown): Promise<Response> => {
+      if (String(url).includes("account-one")) {
+        return new Response("Too Many Requests", { status: 429 });
+      }
+      return survivorGate; // the healthy seat saturates: held, never answers
+    }) as unknown as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await judgePosts(
+        posts,
+        twoAccounts(),
+        KEYWORDS,
+        mockFetch,
+        "medium",
+        new Map([
+          [0, 1],
+          [1, 1],
+        ]),
+        now,
+        inertSleep,
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    assert.ok(isRotationExhausted(caught));
+    const exhausted = caught as RotationExhausted;
+    // The saturated seat never failed, so it never entered the record —
+    // the pool-truthful count is 1 of 2.
+    assert.deepEqual(
+      exhausted.failures.map((f) => f.account),
+      [1],
+    );
+    assert.match(
+      exhausted.message,
+      /^judge: 1 of 2 LLM_ACCOUNTS accounts failed — account 1 \(https:\/\/account-one\.api\/v1\): HTTP 429/,
+    );
+    assert.deepEqual(sleeps, [60_500, 60_500, 59_000]); // the budget parks, hand-stepped
   });
 });
