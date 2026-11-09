@@ -48,6 +48,8 @@ export interface PlatformFlags {
 export interface WatcherConfig {
   keywords: string[];
   candidateTerms: string[];
+  /** Terms that veto a post the judge would otherwise accept. Absent -> []. */
+  negativeKeywords: string[];
   surfaces: Surface[];
   platforms: PlatformFlags;
   recencyHours: number;
@@ -58,6 +60,7 @@ export interface WatcherConfig {
 const ALLOWED_KEYS = [
   "keywords",
   "candidateTerms",
+  "negativeKeywords",
   "surfaces",
   "platforms",
   "recencyHours",
@@ -112,6 +115,7 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
 
   const keywords = readStringArray(record.keywords, "keywords", filePath, true);
   const candidateTerms = readStringArray(record.candidateTerms, "candidateTerms", filePath, false);
+  const negativeKeywords = readNegativeKeywords(record.negativeKeywords, filePath);
   const surfaces = readSurfaces(record.surfaces, filePath);
   const platforms = readPlatforms(record.platforms, filePath);
   const recencyHours = readRecencyHours(record.recencyHours, filePath);
@@ -121,6 +125,7 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
   return {
     keywords,
     candidateTerms,
+    negativeKeywords,
     surfaces,
     platforms,
     recencyHours,
@@ -300,6 +305,19 @@ function readScrollRounds(value: unknown, filePath: string): number {
     );
   }
   return value;
+}
+
+/**
+ * Optional negative-keyword veto list: absent -> [], present but not an
+ * array of non-empty strings -> fail with the path and key. The judge
+ * appends the veto sentence only when the list is non-empty, so [] and
+ * absence are the same no-veto state.
+ */
+function readNegativeKeywords(value: unknown, filePath: string): string[] {
+  if (value === undefined) {
+    return [];
+  }
+  return readStringArray(value, "negativeKeywords", filePath, false);
 }
 
 /**

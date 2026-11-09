@@ -36,6 +36,13 @@
       "wfh",
       "work from home"
    ],
+   "negativeKeywords":[
+      "internship",
+      "fresher candidate",
+      "outsourcing",
+      "LP or Job from India",
+      "remote india"
+   ],
    "surfaces":[
       {
          "type":"tag",
@@ -82,8 +89,8 @@
          "value":"https://www.threads.com/search?exact_match=false&q=Loker&serp_type=default&filter=recent"
       },
       {
-         "type":"linkedin",
-         "value":"hiring react"
+         "type":"url",
+         "value":"https://www.threads.com"
       },
       {
          "type":"linkedin",
@@ -107,7 +114,7 @@
       },
       {
          "type":"linkedin",
-         "value":"hiring developer jakkarta"
+         "value":"hiring developer jakarta"
       },
       {
          "type":"linkedin",
@@ -147,24 +154,16 @@
       },
       {
          "type":"linkedin",
-         "value":"hiring software"
+         "value":"engineer jakarta"
       },
       {
          "type":"linkedin",
-         "value":"hiring engineer"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring developer"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring next.js"
+         "value":"developer jakarta"
       }
    ],
    "platforms":{
-      "linkedin":true,
-      "threads":false
+      "linkedin":false,
+      "threads":true
    },
    "recencyHours":72
 }

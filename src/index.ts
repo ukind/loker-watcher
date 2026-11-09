@@ -458,6 +458,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       sleepFn,
       health.marks,
       blocked,
+      config.negativeKeywords,
     );
   });
   console.log(`timing: judge ${judgeMs}ms`);

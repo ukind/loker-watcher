@@ -37,6 +37,7 @@ const COOKIES: LinkedInCookies = { liAt: "AQE-test", jsessionId: "ajax:012345678
 const CONFIG: WatcherConfig = {
   keywords: ["hiring"],
   candidateTerms: [],
+  negativeKeywords: [],
   surfaces: [{ type: "linkedin", value: "#hiring react" }],
   platforms: { linkedin: true, threads: true },
   recencyHours: 72,
