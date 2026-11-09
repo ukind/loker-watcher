@@ -75,6 +75,11 @@ last_updated: 2026-11-09T14:01:49+0700
 - ✓ Config-key registration follows the `d8fc15b` template end to end: `ALLOWED_KEYS` entry + typed field + validator + test matrix + the two typed literals
 - Minor observation (acceptable variation, not a deviation): the new config-file test block runs directly into the next `it` with no blank line; Biome accepts it and the suite is green
 
+#### Potential Issues:
+
+- Accepted, recorded 2026-11-09 (operator ruling: record-only, no code change): `scripts/probe-judge.ts:247` calls `buildBulkMessages(ten, CONFIG.keywords)` with no negatives and the plan's D5 grep gate pins that call shape. The day the operator adds `negativeKeywords` to `watcher.config.json`, production sends a longer prompt than the one `state/judge-ceilings.json` was measured on — permanently, until someone acts; that breaks the "probe-measured values are committed data" doctrine on key-add. Resolution path when the key lands: thread `config.negativeKeywords` into the probe call and re-probe (the committed ceilings must describe the prompt production sends).
+- Accepted deferral: the live `npm start` vetoed-post run needs real `LLM_*`/`GMAIL_*` credentials and is the only criterion resting on a proxy — the pins prove the veto sentence reaches the prompt (`src/judge.ts:233`), not that the model obeys it. The plan left the box unchecked for the same reason; the automated digest-exclusion pin carries the substance. Run the live check when the key is added for real.
+
 ### Manual Testing Required:
 
 Executed during this validation (offline probes; scratch lived under `.rpiv/tmp/` and was deleted after the run):
