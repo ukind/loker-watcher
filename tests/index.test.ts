@@ -44,6 +44,7 @@ const CONFIG: WatcherConfig = {
   keywords: ["hiring"],
   candidateTerms: ["hiring", "loker"],
   surfaces: [{ type: "tag", value: "hiring" }],
+  platforms: { linkedin: true, threads: true },
   recencyHours: 72,
   reasoningEffort: "medium",
   scrollRounds: 8,
@@ -711,7 +712,7 @@ describe("runWatcher", () => {
     // the single return keeps the LinkedIn posts (D13).
     assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
     assert.equal(subjects.length, 1);
-    assert.match(subjects[0] ?? "", /1 new job post on Threads \+ LinkedIn/);
+    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
     const stored = JSON.parse(await readFile(statePath, "utf8")) as AppState;
     assert.deepEqual(Object.keys(stored.seenPostIds), [`urn:li:activity:${linkedinIdNow}`]);
   });
@@ -739,6 +740,112 @@ describe("runWatcher", () => {
 
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /watch: surfaces: tag\/hiring, linkedin\/#hiring/.test(line)));
+  });
+
+  it("threads off: LinkedIn posts flow through the payload and no Threads walk runs", async () => {
+    const posts = [linkedinPost(linkedinIdNow)];
+    const statePath = await tempStatePath("threads-off.json");
+    const { transport, subjects, texts } = recordingTransport();
+    let payloadReads = 0;
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: { ...MIXED_CONFIG, platforms: { linkedin: true, threads: false } },
+      contextFactory: async () => {
+        throw new Error("the Threads walker must not run while platforms.threads is false");
+      },
+      linkedinFetch: async () => {
+        payloadReads += 1;
+        return payloadRead(posts, "ok");
+      },
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.equal(payloadReads, 1);
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.doesNotMatch(subjects[0] ?? "", /Threads/);
+    assert.ok(texts[0]?.includes("LinkedIn hiring post"));
+  });
+
+  it("both on: a LinkedIn-only match renders a LinkedIn-only subject", async () => {
+    const statePath = await tempStatePath("linkedin-only-subject.json", {
+      version: 2,
+      seenPostIds: { [id19(41)]: iso(NOW - HOUR) }, // the Threads post is already seen — it never reaches the judge
+    });
+    const { transport, subjects } = recordingTransport();
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: MIXED_CONFIG,
+      contextFactory: singlePageContextFactory(
+        graphqlBody([{ id: id19(41), text: "Hiring: golang developer, remote" }]),
+      ), // the Threads walk is healthy; everything it captured is already seen
+      linkedinFetch: async () => payloadRead([linkedinPost(linkedinIdNow)], "ok"),
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.match(subjects[0] ?? "", /1 new job post on LinkedIn/);
+    assert.doesNotMatch(subjects[0] ?? "", /Threads/);
+  });
+
+  it("linkedin off: the payload reader is never called and the Threads walk still runs", async () => {
+    const posts = [{ id: id19(31), text: "Hiring: svelte developer, remote" }];
+    const statePath = await tempStatePath("linkedin-off.json");
+    const { transport, subjects } = recordingTransport();
+    let payloadReads = 0;
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: { ...MIXED_CONFIG, platforms: { linkedin: false, threads: true } },
+      contextFactory: singlePageContextFactory(graphqlBody(posts)),
+      linkedinFetch: async () => {
+        payloadReads += 1;
+        return payloadRead([], "absent");
+      },
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.equal(payloadReads, 0);
+    assert.deepEqual(run, { judged: 1, matches: 1, skipped: 0, saved: true });
+    assert.equal(subjects.length, 1);
+    assert.match(subjects[0] ?? "", /1 new job post on Threads/);
+    assert.doesNotMatch(subjects[0] ?? "", /LinkedIn/);
+  });
+
+  it("both off: the parked run fetches nothing, emails nothing, and never touches state", async () => {
+    const statePath = await tempStatePath("both-off.json");
+    const { transport, subjects } = recordingTransport();
+    let payloadReads = 0;
+    const run = await runWatcher({
+      env: BASE_ENV,
+      config: { ...MIXED_CONFIG, platforms: { linkedin: false, threads: false } },
+      contextFactory: async () => {
+        throw new Error("no fetch stage work may run while both platforms are off");
+      },
+      linkedinFetch: async () => {
+        payloadReads += 1;
+        return payloadRead([], "absent");
+      },
+      fetchFn: judgeFetch({ relevant: true, locationOk: true }),
+      transport,
+      statePath,
+      now: () => NOW,
+    });
+
+    assert.equal(payloadReads, 0);
+    assert.deepEqual(run, { judged: 0, matches: 0, skipped: 0, saved: false });
+    assert.equal(subjects.length, 0); // no heartbeat, no digest
+    await assert.rejects(() => readFile(statePath, "utf8"), /ENOENT/); // never read, never written
   });
 });
 

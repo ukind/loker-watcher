@@ -38,6 +38,7 @@ const CONFIG: WatcherConfig = {
   keywords: ["hiring"],
   candidateTerms: [],
   surfaces: [{ type: "linkedin", value: "#hiring react" }],
+  platforms: { linkedin: true, threads: true },
   recencyHours: 72,
   reasoningEffort: "low",
   scrollRounds: 1,

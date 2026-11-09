@@ -138,5 +138,9 @@
          "value":"hiring react indonesia"
       }
    ],
+   "platforms":{
+      "linkedin":true,
+      "threads":true
+   },
    "recencyHours":72
 }

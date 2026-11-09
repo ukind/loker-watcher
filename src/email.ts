@@ -56,11 +56,15 @@ export function buildSubject(posts: readonly Post[]): string | null {
   if (posts.length === 0) return null;
   const count = posts.length;
   const plural = count === 1 ? "" : "s";
-  // D10: the suffix rides only when at least one LinkedIn match is present;
-  // an all-Threads subject stays byte-identical to the pre-LinkedIn pin.
-  const suffix = posts.some((post) => post.platform !== "threads") ? " + LinkedIn" : "";
+  // D10: the subject names the platforms that produced matches, in first-seen
+  // order — a platform with zero matched posts drops its name (a toggle-off
+  // platform can never match). All-Threads stays byte-identical to the
+  // pre-LinkedIn pin.
+  const platformLabel = (post: Post): string =>
+    post.platform === "linkedin" ? "LinkedIn" : "Threads";
+  const names = [...new Set(posts.map(platformLabel))].join(" + ");
 
-  return `${count} new job post${plural} on Threads${suffix} (#hiring indonesia)`;
+  return `${count} new job post${plural} on ${names} (#hiring indonesia)`;
 }
 
 /**
