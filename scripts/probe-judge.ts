@@ -43,7 +43,8 @@
 import { loadWatcherConfig } from "../src/config-file.js";
 import { JUDGE_CEILINGS_PATH } from "../src/config.js";
 import { writeCeilingsAtomic } from "../src/judge-ceilings.js";
-import { type LlmAccount, buildBulkMessages, resolveJudgeConfig } from "../src/judge.js";
+import { buildBulkMessages, normalizeEndpoint } from "../src/judge-dispatch.js";
+import { type LlmAccount, resolveJudgeConfig } from "../src/judge.js";
 import type { Post } from "../src/types.js";
 
 // Read once at startup; a missing or malformed file fails the probe loudly.
@@ -104,7 +105,7 @@ interface AccountProbe {
 async function timed(label: string, payload: unknown, account: LlmAccount): Promise<ProbeOutcome> {
   const started = Date.now();
   try {
-    const response = await fetch(`${account.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+    const response = await fetch(normalizeEndpoint(account.baseUrl), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,18 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { buildBulkMessages, judgePost } from "../src/judge-dispatch.js";
 import {
   type RotationExhausted,
   type RotationState,
   isRotationExhausted,
 } from "../src/judge-rotation.js";
-import {
-  type LlmAccount,
-  buildBulkMessages,
-  judgePost,
-  judgePosts,
-  parseLlmAccounts,
-  resolveJudgeConfig,
-} from "../src/judge.js";
+import { type LlmAccount, judgePosts, parseLlmAccounts, resolveJudgeConfig } from "../src/judge.js";
 import { KEYWORDS, bulkContent, bulkPost, id19, ok, singleAccount } from "./judge-helpers.js";
 
 /** Mirror of tests/judge-rotation.test.ts's freshState (the canonical copy)

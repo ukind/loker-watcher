@@ -38,6 +38,7 @@ import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
 import { type AvailabilityResult, checkJudgeAvailability } from "./judge-availability.js";
 import { loadAccountCeilings } from "./judge-ceilings.js";
+import { sleep } from "./judge-dispatch.js";
 import {
   type HealthRead,
   type TickOutcomes,
@@ -48,13 +49,7 @@ import {
   loadAccountHealth,
 } from "./judge-health.js";
 import { isRotationExhausted } from "./judge-rotation.js";
-import {
-  type JudgedPost,
-  type LlmAccount,
-  judgePosts,
-  resolveJudgeConfig,
-  sleep,
-} from "./judge.js";
+import { type JudgedPost, type LlmAccount, judgePosts, resolveJudgeConfig } from "./judge.js";
 import type { LinkedinSurface } from "./linkedin-fetch.js";
 import { type LegLine, type PayloadRead, readPayloadPosts } from "./linkedin-payload.js";
 import { filterRecent } from "./recency.js";

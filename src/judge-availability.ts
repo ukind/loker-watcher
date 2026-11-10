@@ -18,13 +18,14 @@
  * the signal and becomes that account's failure reason, never a
  * degrade.
  *
- * Import surface: the two wire helpers are runtime imports — judge.ts
- * exports them for exactly this caller (the F006 buildBulkMessages
- * drift-proofing precedent), no cycle exists (judge.ts never imports
- * this module), and both are pure functions. Everything else is
- * type-only.
+ * Import surface: the two wire helpers are runtime imports —
+ * src/judge-dispatch.ts exports them for exactly this caller (the F006
+ * buildBulkMessages drift-proofing precedent), no cycle exists (the
+ * dispatch module never imports this one), and both are pure functions.
+ * Everything else is type-only.
  */
-import { type LlmAccount, normalizeEndpoint, terminalFailureReason } from "./judge.js";
+import { normalizeEndpoint, terminalFailureReason } from "./judge-dispatch.js";
+import type { LlmAccount } from "./judge.js";
 import type { AccountFailure } from "./types.js";
 
 /**

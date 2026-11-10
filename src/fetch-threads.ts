@@ -28,7 +28,7 @@
  */
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
-import { sleep } from "./judge.js";
+import { sleep } from "./judge-dispatch.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
 

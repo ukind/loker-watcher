@@ -1,3 +1,4 @@
+import type { SleepFn } from "./judge-dispatch.js";
 /**
  * Account-pool rotation primitives for the LLM judge (F010): the cooldown
  * map state, the tagged exhaustion error, and the park helper — moved
@@ -37,7 +38,7 @@
 // Type-only import (D5): verbatimModuleSyntax erases it, so judge.ts can
 // import this module's runtime symbols with no runtime cycle.
 import type { TickOutcomes } from "./judge-health.js";
-import type { LlmAccount, SleepFn } from "./judge.js";
+import type { LlmAccount } from "./judge.js";
 import type { AccountFailure } from "./types.js";
 
 /**

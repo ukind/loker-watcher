@@ -1130,21 +1130,21 @@ import type { LlmAccount } from "./judge.js";
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the 2338274 park/rewind pins ride the move untouched: `npm test`
-- [ ] dispatchLlmCall moved byte-verbatim: `diff <(git show HEAD:src/judge.ts | sed -n '/^async function dispatchLlmCall,/^}/p') <(sed -n '/^async function dispatchLlmCall,/^}/p' src/judge-dispatch.ts)` outputs nothing
-- [ ] Wrappers moved byte-verbatim: `diff <(git show HEAD:src/judge.ts | sed -n '/^\(export \)\?async function judgeBatch,/^}/p') <(sed -n '/^\(export \)\?async function judgeBatch,/^}/p' src/judge-dispatch.ts)` and the same command with judgePost — both output nothing
-- [ ] Builders + helpers moved byte-verbatim: for each NAME in systemMessage buildMessages buildBulkMessages normalizeEndpoint terminalFailureReason exhaustionRecord, `diff <(git show HEAD:src/judge.ts | sed -n "/^\(export \)\?function NAME,/^}/p") <(sed -n "/^\(export \)\?function NAME,/^}/p" src/judge-dispatch.ts)` outputs nothing
-- [ ] sleep moved byte-verbatim: `diff <(git show HEAD:src/judge.ts | sed -n '/^export const sleep,/setTimeout(resolve, ms);/p') <(sed -n '/^export const sleep,/setTimeout(resolve, ms);/p' src/judge-dispatch.ts)` outputs nothing (the SleepFn type line rides typecheck)
-- [ ] Warn-string census unchanged: `git show HEAD:src/judge.ts | grep -c "stay unseen and retry next run"` equals the sum of `grep -c "stay unseen and retry next run" src/judge.ts src/judge-dispatch.ts`
-- [ ] The seam is runtime-cycle-free: `git grep -n 'from "./judge.js"' src/judge-dispatch.ts` returns exactly one hit and it is `import type`
-- [ ] Re-points landed: `git grep -c "judge-dispatch" src/judge-availability.ts src/fetch-threads.ts src/index.ts src/judge-rotation.ts scripts/probe-judge.ts tests/judge.test.ts tests/judge-rotation.test.ts` reports >= 1 per file
-- [ ] knip stays clean (the new surface arrives pre-consumed): `npx knip` exits 0
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the 2338274 park/rewind pins ride the move untouched: `npm test`
+- [x] dispatchLlmCall moved byte-verbatim: `diff <(git show HEAD:src/judge.ts | sed -n '/^async function dispatchLlmCall,/^}/p') <(sed -n '/^async function dispatchLlmCall,/^}/p' src/judge-dispatch.ts)` outputs nothing
+- [x] Wrappers moved byte-verbatim: `diff <(git show HEAD:src/judge.ts | sed -n '/^\(export \)\?async function judgeBatch,/^}/p') <(sed -n '/^\(export \)\?async function judgeBatch,/^}/p' src/judge-dispatch.ts)` and the same command with judgePost — both output nothing
+- [x] Builders + helpers moved byte-verbatim: for each NAME in systemMessage buildMessages buildBulkMessages normalizeEndpoint terminalFailureReason exhaustionRecord, `diff <(git show HEAD:src/judge.ts | sed -n "/^\(export \)\?function NAME,/^}/p") <(sed -n "/^\(export \)\?function NAME,/^}/p" src/judge-dispatch.ts)` outputs nothing
+- [x] sleep moved byte-verbatim: `diff <(git show HEAD:src/judge.ts | sed -n '/^export const sleep,/setTimeout(resolve, ms);/p') <(sed -n '/^export const sleep,/setTimeout(resolve, ms);/p' src/judge-dispatch.ts)` outputs nothing (the SleepFn type line rides typecheck)
+- [x] Warn-string census unchanged: `git show HEAD:src/judge.ts | grep -c "stay unseen and retry next run"` equals the sum of `grep -c "stay unseen and retry next run" src/judge.ts src/judge-dispatch.ts`
+- [x] The seam is runtime-cycle-free: `git grep -n 'from "./judge.js"' src/judge-dispatch.ts` returns exactly one hit and it is `import type`
+- [x] Re-points landed: `git grep -c "judge-dispatch" src/judge-availability.ts src/fetch-threads.ts src/index.ts src/judge-rotation.ts scripts/probe-judge.ts tests/judge.test.ts tests/judge-rotation.test.ts` reports >= 1 per file
+- [x] knip stays clean (the new surface arrives pre-consumed): `npx knip` exits 0
 
 #### Manual Verification:
-- [ ] The module header docs on both sides of the seam tell the truth (judge.ts = orchestration; judge-dispatch.ts = the seam) and the D6 "OUTSIDE the try" comments rode the move byte-identical
-- [ ] `git diff --stat` shows judge.ts shrinking by the moved blocks and src/judge-dispatch.ts appearing with them — no file grew beyond its one-line re-point
+- [x] The module header docs on both sides of the seam tell the truth (judge.ts = orchestration; judge-dispatch.ts = the seam) and the D6 "OUTSIDE the try" comments rode the move byte-identical
+- [x] `git diff --stat` shows judge.ts shrinking by the moved blocks and src/judge-dispatch.ts appearing with them — no file grew beyond its one-line re-point
 
 ## Phase 4: FR3 judgePosts options object## Phase 4: FR3 judgePosts options object
 

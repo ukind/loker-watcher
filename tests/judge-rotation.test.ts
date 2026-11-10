@@ -6,6 +6,7 @@
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { judgePost } from "../src/judge-dispatch.js";
 import {
   type RotationExhausted,
   type RotationState,
@@ -19,7 +20,7 @@ import {
   rotationExhausted,
   waitCeilingSlot,
 } from "../src/judge-rotation.js";
-import { type LlmAccount, judgePost, judgePosts } from "../src/judge.js";
+import { type LlmAccount, judgePosts } from "../src/judge.js";
 import type { AccountFailure, Post } from "../src/types.js";
 import {
   KEYWORDS,
