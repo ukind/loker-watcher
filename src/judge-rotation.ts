@@ -318,7 +318,7 @@ export function earliestCooldown(state: RotationState, nowMs: number): number | 
  * true reading guarantees the release-waiter queue a wake: the flavor
  * split may park a dispatcher on waitCeilingSlot at zero budget charge
  * instead of drawing the shared cooldown budget. Plain field reads;
- * synchronous; the boundary twin of allAvailabilityBlocked's idle check.
+ * synchronous; the boundary twin of the dispatch loop's drained-seat idle check.
  */
 export function hasOutstandingRelease(state: RotationState): boolean {
   for (const count of state.inFlight.values()) {

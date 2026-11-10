@@ -267,15 +267,15 @@ function allAvailabilityBlocked(state: RotationState): boolean {
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the collapsed arm's pins survive unchanged: `npm test` (tests/judge.test.ts all-blocked :1085 and blocked-plus-drained :1137 fire the trailing return)
-- [ ] Predicate fully gone: `git grep -c "allAvailabilityBlocked" src tests` returns 0
-- [ ] Load-bearing comments kept: `git grep -c "misread as a transport error" src/judge.ts` returns 1; `git grep -c "never a timerless wait" src/judge.ts` returns 1
-- [ ] False sentence gone: `git grep -c "unreachable by the case analysis" src/judge.ts` returns 0
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the collapsed arm's pins survive unchanged: `npm test` (tests/judge.test.ts all-blocked :1085 and blocked-plus-drained :1137 fire the trailing return)
+- [x] Predicate fully gone: `git grep -c "allAvailabilityBlocked" src tests` returns 0
+- [x] Load-bearing comments kept: `git grep -c "misread as a transport error" src/judge.ts` returns 1; `git grep -c "never a timerless wait" src/judge.ts` returns 1
+- [x] False sentence gone: `git grep -c "unreachable by the case analysis" src/judge.ts` returns 0
 
 #### Manual Verification:
-- [ ] `git diff src/judge.ts` shows only deletions (doc + function + one arm) and the comment rewrite — no other line moved
+- [x] `git diff src/judge.ts` shows only deletions (doc + function + one arm) and the comment rewrite — no other line moved
 
 ## Phase 3: N005 dispatch extraction (verbatim move + re-points)
 

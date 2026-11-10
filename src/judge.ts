@@ -373,31 +373,6 @@ export function terminalFailureReason(status: number): string {
 }
 
 /**
- * True when the pick found nothing BECAUSE every seat is permanently dead
- * this tick: the availability pre-check refused it (the blocked mask — a
- * refused seat never dispatches, so no release can ever come from it), or
- * the health circuit blocked it (capped, probe spent and drained). With
- * an empty mask this is exactly the pre-mask health predicate — the
- * no-mask behavior is unchanged — and with a mask it is the D11 guard: an
- * all-blocked (or blocked-plus-health-dead) pool exhausts immediately at
- * zero budget charge instead of parking forever on the timerless
- * waitCeilingSlot. An uncapped seat always makes progress on a release,
- * so it can never permanently block the pool — this is what keeps the
- * zero-charge ceiling wait alive for a healthy saturated pool. No
- * cooldown is active at the call site (the flavor split checks that
- * first). Plain field reads; inline by design (judge-rotation owns no
- * mask or health concept — the boundary).
- */
-function allAvailabilityBlocked(state: RotationState): boolean {
-  return state.accounts.every((_, index) => {
-    if (state.blocked.has(index)) return true;
-    const capped = (state.healthMarks.get(index) ?? 0) >= HARD_FAIL_TICKS_TO_CAP;
-    if (!capped) return false;
-    return state.probedThisTick.has(index) && (state.inFlight.get(index) ?? 0) === 0;
-  });
-}
-
-/**
  * The exhaustion record, in pool order, from three sources: the ledger's
  * real causes first (cooling-only accounts carry "HTTP 429" inside
  * buildFailuresFromLedger), then any availability-refused seat — its
@@ -529,18 +504,16 @@ async function dispatchLlmCall<T>(options: {
       // as a transport error); a permanently-dead pool — every seat
       // mask-refused, or capped with its probe spent and drained, and no
       // cooldown pending — trips the terminal immediately at zero budget
-      // charge (the D11 guard). The trailing arm is unreachable by the
-      // case analysis (an at-ceiling seat carries in-flight, a cooling
-      // seat parks above); it stays a terminal — never a timerless wait
-      // that could hang.
+      // charge (the D11 guard) — the trailing arm below is exactly where
+      // those pools land (the suite's all-blocked and blocked-plus-drained
+      // cases fire it). The trailing return stays a terminal —
+      // never a timerless wait that could hang.
       if (hasOutstandingRelease(state)) {
         await waitCeilingSlot(state);
       } else if (earliestCooldown(state, now()) !== undefined) {
         if (!(await parkUntilEligible(state, now, sleepFn))) {
           return { status: "exhausted" };
         }
-      } else if (allAvailabilityBlocked(state)) {
-        return { status: "exhausted" };
       } else {
         return { status: "exhausted" };
       }
