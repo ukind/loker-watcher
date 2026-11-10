@@ -2683,18 +2683,6 @@ describe("readPayloadPosts failure classes (D13)", () => {
 - [x] FR-4 pin green (ratified): an unparsable 200 throws leg-dead — the tick aborts, a healthy sibling's posts are discarded, never all-faulted
 - [x] Payload pin green: `PAYLOAD_MAX_AGE_MS === 2_400_000`; exactly-at-boundary ok, boundary+1 stale (symbolic, unchanged)
 - [x] FR-6 holds: `scripts/probe-linkedin.ts` untouched (it calls `transport.get` directly, never the walk)
-#### Reconciliation
-- `tests/config-file.test.ts`: replace — the operator swapped three committed linkedin surface values between sessions (`hiring developer indonesia`->`developer indonesia`, `hiring engineer jakarta`->`engineer jakarta`, `react indonesia`->`react`); the FRD-five pin at tests/config-file.test.ts:394 ("keeps the committed spread at the FRD five") still expects the Phase 6 values and fails the full suite. Phase 3 does not own that file. Apply ONLY if the operator keeps their uncommitted watcher.config.json edit; if they revert it, drop this directive.
-  find:
-  ```
-  hiring developer indonesia
-  ```
-  replace:
-  ```
-  developer indonesia
-  ```
-  (plus the two sibling value swaps in the same pin: `hiring engineer jakarta`->`engineer jakarta`, `react indonesia`->`react`)
-
 - [x] Credential-leak pin green (revise 2026-11-10): an `execFn` rejection shaped like Node's execFile failure (full command line in `.message`, `code` + `stderr` fields) produces a thrown message carrying exit code (number or string) + stderr excerpt only — no `li_at`, no `-H`, no csrf token; the missing-binary shape (`code: "ENOENT"`, no stderr) reads `(exit ENOENT): no stderr captured`; suites stay 45 + 13 (the old exec-failure `it` was REPLACED in place, not added to — measured 58 total, not 59)
 
 #### Manual Verification:
@@ -5915,3 +5903,5 @@ Revise run (operator transcript: two `npm run probe-linkedin` failures). The fai
 Post-edit gate audit: `.rpiv/tmp/readback-gate.mjs` run against the revised plan fails only its criteria-verbatim check — and re-run against the PRE-revise plan (git HEAD extract) fails the same six phases, so the redness pre-dates this revision. Root cause is in the gate, not the plan: it compares the plan's criteria block against the design slice's ENTIRE body (everything between `### Slice N:` and the next slice, minus `**Files**` lines — Overview prose, Changes Required, and code fences included). Plan criteria can never byte-equal a whole slice body; the check is structurally unsatisfiable and was already red at handoff. The gate's structural checks (139 imports / 26 fences / headings / markers / stale prose) all PASS on the revised plan. The unsatisfiable comparison is upstream tooling (`implement`-generated scratch) — the design slices' criteria sections, not whole bodies, are what that check should compare.
 
 Amendment (post-review, same day): the review caught a diagnosability hole in this revision — the sanitized message accepted only numeric exit codes, but a missing binary rejects with the string `code: "ENOENT"` and no stderr, which would have printed `(exit unknown): no stderr captured` and buried the one fact the operator needs. The fence now accepts number-or-string codes, the criterion wording widened, and the test carries a second ENOENT-shaped double (rule: test doubles must reproduce the real system's failure shape, including its leak paths).
+
+Operator decision (2026-11-10, second revision): the three surface-value swaps in the operator's working-tree watcher.config.json were REVERTED to the FRD five (via a targeted stash — the swap is preserved as stash entry `operator surface-value swap`, not destroyed), so the Reconciliation directive recorded above was dropped without being applied. `outputs/.drafts/` and `outputs/.plans/` become gitignored scratch by the same decision.
