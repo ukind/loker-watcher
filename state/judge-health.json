@@ -1,7 +1,7 @@
 {
   "version": 1,
   "marks": {
-    "https://api.z.ai/api/coding/paas/v4": 1
+    "https://inference.coralbricks.ai/v1": 1
   },
   "outageOpen": false
 }
