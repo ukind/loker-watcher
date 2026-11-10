@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import {
   type AccountTickOutcome,
+  HARD_FAIL_TICKS_TO_CAP,
   type HealthFile,
   type OutcomeLedgerState,
   buildDegradedAccountsLine,
@@ -21,6 +22,7 @@ import {
   stampSuccess,
   writeHealthAtomic,
 } from "../src/judge-health.js";
+import { type RotationState, claimAccount, pickEligibleAccount } from "../src/judge-rotation.js";
 import type { LlmAccount } from "../src/judge.js";
 
 /** Two accounts with distinct hosts — the capped/streak cases need both. */
@@ -235,6 +237,48 @@ describe("buildDegradedAccountsLine", () => {
   });
 });
 
+describe("the paired cap constant (N022)", () => {
+  it("pins the threshold literally: HARD_FAIL_TICKS_TO_CAP === 2", () => {
+    assert.equal(HARD_FAIL_TICKS_TO_CAP, 2);
+  });
+
+  it("rotation's pick applies the SAME threshold — the pairing holds", () => {
+    // Seed the capped arm with the SYMBOL, not a literal 2: if
+    // judge-rotation's HEALTH_CAP_STREAK drifts, this fails too.
+    const state: RotationState = {
+      accounts: ACCOUNTS,
+      cooldownUntil: new Map(),
+      ceilings: new Map([
+        [0, 4],
+        [1, 4],
+      ]),
+      blocked: new Map(),
+      inFlight: new Map(),
+      healthMarks: new Map([[0, HARD_FAIL_TICKS_TO_CAP]]),
+      probedThisTick: new Set(),
+      outcomeLedger: new Map(),
+      dispatchCounter: 0,
+      ceilingWaiters: [],
+      waitBudgetRemainingMs: 180_000,
+    };
+    // First dispatch of the capped account IS its probe (the half-open
+    // gate): the pick returns it, the claim registers the probe slot.
+    const first = pickEligibleAccount(state, 0);
+    assert.equal(first?.index, 0);
+    claimAccount(state, 0);
+    // Fabricate the probe-spent-and-drained state the live dataflow cannot
+    // produce (only stampSuccess deletes the slot, and it clears the mark
+    // with it): the HALF-OPEN gate is out of the picture, so the skip below
+    // comes from the effective-ceiling-1 arm — in-flight 1 >= capped
+    // ceiling 1 — exactly the arm N022 exists to exercise.
+    state.probedThisTick.delete(0);
+    // The pick restarts AT the capped seat (the dispatcher's pin shape) and
+    // must land on the healthy peer: the pairing is behavioral, not just
+    // literal.
+    const second = pickEligibleAccount(state, 0, 0);
+    assert.equal(second?.index, 1);
+  });
+});
 describe("writeHealthAtomic + loadAccountHealth", () => {
   let dir: string | undefined;
   after(async () => {

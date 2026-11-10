@@ -1705,17 +1705,17 @@ describe("the paired cap constant (N022)", () => {
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the new pairing pins plus the existing threshold pins: `npm test`
-- [ ] The literal pin exists: `git grep -c "assert.equal(HARD_FAIL_TICKS_TO_CAP, 2)" tests/judge-health.test.ts` returns 1
-- [ ] The behavioral pin seeds with the symbol: `git grep -c "new Map([[0, HARD_FAIL_TICKS_TO_CAP]])" tests/judge-health.test.ts` returns 1
-- [ ] No src-graph edge was added: `git grep -c "judge-rotation" src/judge-health.ts` returns 0 (the D5 boundary holds)
-- [ ] judge-rotation keeps its zero-runtime-import identity: `git grep -n "^import" src/judge-rotation.ts` shows only `import type` lines
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the new pairing pins plus the existing threshold pins: `npm test`
+- [x] The literal pin exists: `git grep -c "assert.equal(HARD_FAIL_TICKS_TO_CAP, 2)" tests/judge-health.test.ts` returns 1
+- [x] The behavioral pin seeds with the symbol: `git grep -c "new Map([[0, HARD_FAIL_TICKS_TO_CAP]])" tests/judge-health.test.ts` returns 1
+- [x] No src-graph edge was added: `git grep -c "judge-rotation" src/judge-health.ts` returns 0 (the D5 boundary holds)
+- [x] judge-rotation keeps its zero-runtime-import identity: `git grep -n "^import" src/judge-rotation.ts` shows only `import type` lines
 
 #### Manual Verification:
-- [ ] Temporarily changing judge-rotation's HEALTH_CAP_STREAK to 3 fails the new behavioral pin (drift detection proven), then revert
-- [ ] HEALTH_CAP_STREAK stays private: `git grep -c "export const HEALTH_CAP_STREAK" src/judge-rotation.ts` returns 0
+- [x] Temporarily changing judge-rotation's HEALTH_CAP_STREAK to 3 fails the new behavioral pin (drift detection proven), then revert
+- [x] HEALTH_CAP_STREAK stays private: `git grep -c "export const HEALTH_CAP_STREAK" src/judge-rotation.ts` returns 0
 
 
 ## Phase 9: N018 + N024 + N025 — docs sync
