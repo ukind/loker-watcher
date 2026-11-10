@@ -1511,15 +1511,15 @@ git rm .probe-dispatch-canary
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the duplicate-surface warn pin still fires on a fresh duplicate: `npm test`
-- [ ] Exactly one configured surface remains: `git grep -c "hiring developer jakarta" watcher.config.json` returns 1
-- [ ] The canary is untracked: `git ls-files .probe-dispatch-canary` returns nothing and `test ! -e .probe-dispatch-canary` exits 0
-- [ ] The config still loads (a JSON syntax slip fails the run): `npx tsx -e "import { loadWatcherConfig } from './src/config-file.js'; loadWatcherConfig();"` exits 0
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the duplicate-surface warn pin still fires on a fresh duplicate: `npm test`
+- [x] Exactly one configured surface remains: `git grep -c "hiring developer jakarta" watcher.config.json` returns 1
+- [x] The canary is untracked: `git ls-files .probe-dispatch-canary` returns nothing and `test ! -e .probe-dispatch-canary` exits 0
+- [x] The config still loads (a JSON syntax slip fails the run): `npx tsx -e "import { loadWatcherConfig } from './src/config-file.js'; loadWatcherConfig();"` exits 0
 
 #### Manual Verification:
-- [ ] A local run logs no duplicate-surface warning for this pair (warnDuplicateSurfaces quiet)
+- [x] A local run logs no duplicate-surface warning for this pair (warnDuplicateSurfaces quiet)
 
 
 ## Phase 7: N027 + N028 — script guards
