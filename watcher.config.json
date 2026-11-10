@@ -120,5 +120,6 @@
       "linkedin":true,
       "threads":true
    },
+   "reasoningEffort": "high",
    "recencyHours":72
 }
