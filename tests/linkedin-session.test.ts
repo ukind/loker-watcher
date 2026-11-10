@@ -180,3 +180,47 @@ describe("toStorageState", () => {
     assert.deepEqual(toStorageState(cookies).origins, []);
   });
 });
+
+describe("harvest stamp (FR-0, slice 5)", () => {
+  it("carries a present stamp through, trimmed", async () => {
+    const path = await cookieFile(
+      JSON.stringify({
+        liAt: "AQE",
+        jsessionid: "ajax:1",
+        harvestedAt: "  2026-11-10T00:00:00.000Z  ",
+      }),
+    );
+    assert.deepEqual(resolveLinkedInCookies(envFor(path)), {
+      liAt: "AQE",
+      jsessionId: "ajax:1",
+      harvestedAt: "2026-11-10T00:00:00.000Z",
+    });
+  });
+
+  it("tolerates its absence — a legacy file resolves without the key", async () => {
+    const path = await cookieFile(PAIR);
+    const resolved = resolveLinkedInCookies(envFor(path));
+    assert.deepEqual(resolved, {
+      liAt: "AQE-test-li-at",
+      jsessionId: "ajax:0123456789012345678",
+    });
+    assert.equal("harvestedAt" in resolved, false);
+  });
+
+  it("ignores a blank or non-string stamp", async () => {
+    const blank = await cookieFile(
+      JSON.stringify({ liAt: "AQE", jsessionid: "ajax:1", harvestedAt: "   " }),
+    );
+    const wrong = await cookieFile(
+      JSON.stringify({ liAt: "AQE", jsessionid: "ajax:1", harvestedAt: 42 }),
+    );
+    assert.deepEqual(resolveLinkedInCookies(envFor(blank)), {
+      liAt: "AQE",
+      jsessionId: "ajax:1",
+    });
+    assert.deepEqual(resolveLinkedInCookies(envFor(wrong)), {
+      liAt: "AQE",
+      jsessionId: "ajax:1",
+    });
+  });
+});

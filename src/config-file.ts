@@ -71,6 +71,15 @@ const ALLOWED_KEYS = [
 const THREADS_HOST = "www.threads.com";
 
 /**
+ * FR-8 (design 2026-11-09): exactly 5 linkedin surfaces — the PC leg's
+ * account-safety arithmetic (worst-case wake-ups x surfaces x one page vs
+ * the daily GET budget) assumes the fleet stays at five. The count is the
+ * invariant, not the keywords: an operator may swap a surface's value,
+ * never grow the fleet.
+ */
+const LINKEDIN_SURFACE_COUNT = 5;
+
+/**
  * Read and validate the config file. Throws with the path and the offending
  * key when the file is missing, unparsable, or fails any rule below.
  */
@@ -197,6 +206,12 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
       }
     }
     out.push({ type, value: surfaceValue });
+  }
+  const linkedinCount = out.filter((surface) => surface.type === "linkedin").length;
+  if (linkedinCount !== LINKEDIN_SURFACE_COUNT) {
+    throw new Error(
+      `config: ${filePath} has ${linkedinCount} linkedin surfaces — exactly ${LINKEDIN_SURFACE_COUNT} are required (the PC leg's daily GET budget assumes it); keep the five-surface spread`,
+    );
   }
   warnDuplicateSurfaces(out, filePath);
   return out;

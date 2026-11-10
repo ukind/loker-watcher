@@ -337,3 +337,46 @@ export async function sendLegDeadAlarm(
   console.log("email: sent leg-dead alarm");
   return messageId;
 }
+
+/**
+ * Build the plain-text body for the halt-latch alarm (design 2026-11-09).
+ * One email per trip, sent by the PC fetch leg (the fault's origin); the
+ * hosted run never sends it. The body names the remedy — delete the latch
+ * file — so the operator can act without opening the docs.
+ */
+export function buildHaltAlarmText(reason: string): string {
+  return [
+    "The LinkedIn fetch leg is HALTED.",
+    "",
+    `Signature: ${reason}`,
+    "",
+    "Fetching is blocked until you clear the latch. The loop keeps running",
+    "and every tick is a quiet no-op — no LinkedIn requests are made.",
+    "",
+    "To resume: delete state/linkedin-halt.flag (or run npm run reset-linkedin",
+    "to clear the session and the latch together).",
+    "",
+    "A 429 means LinkedIn told this account to slow down. Wait before",
+    "resuming, and check the daily GET budget in state/linkedin-get-budget.json.",
+  ].join("\n");
+}
+
+/**
+ * Send the halt-latch alarm through the same Gmail transport as the
+ * digest. The PC loop caller owns the best-effort try/catch policy — a
+ * broken GMAIL_* configuration must not mask the tick outcome.
+ */
+export async function sendHaltAlarm(
+  reason: string,
+  config: EmailConfig,
+  transport?: Transporter,
+): Promise<string | undefined> {
+  const messageId = await sendText(
+    "LinkedIn fetch leg halted — clear the latch to resume",
+    buildHaltAlarmText(reason),
+    config,
+    transport,
+  );
+  console.log("email: sent halt-latch alarm");
+  return messageId;
+}

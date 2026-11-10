@@ -5,12 +5,14 @@ import type { Surface } from "../src/config-file.js";
 import {
   type EmailConfig,
   buildExhaustionText,
+  buildHaltAlarmText,
   buildSurfaceDigest,
   buildSurfaceSubject,
   groupMatchesBySurface,
   renderSurface,
   resolveEmailConfig,
   sendExhaustionEmail,
+  sendHaltAlarm,
   sendSurfaceDigest,
 } from "../src/email.js";
 import type { AccountFailure, Post } from "../src/types.js";
@@ -572,5 +574,33 @@ describe("buildExhaustionText health reasons", () => {
     assert.ok(text?.includes("account 1 (https://api.a.com/v1) — HTTP 503"));
     assert.ok(text?.includes("account 2 (https://api.b.com/v1) — HTTP 401 — key dead"));
     assert.ok(text?.includes("account 3 (https://api.c.com/v1) — network error: socket hang up"));
+  });
+});
+
+describe("halt-latch alarm (design 2026-11-09)", () => {
+  it("builds a body that names the latch file, the reason, and the reset command", () => {
+    const text = buildHaltAlarmText(
+      "HTTP 429 rate limit — LinkedIn told this account to slow down",
+    );
+    assert.ok(text.includes("HALTED"));
+    assert.ok(text.includes("state/linkedin-halt.flag"));
+    assert.ok(text.includes("npm run reset-linkedin"));
+    assert.ok(text.includes("HTTP 429 rate limit"));
+  });
+
+  it("sends a subject naming the remedy through the injected transport", async () => {
+    let captured: unknown = null;
+    const mockTransport = {
+      sendMail: async (o: unknown) => {
+        captured = o;
+        return { messageId: "m-halt" };
+      },
+    } as unknown as Transporter;
+    const config: EmailConfig = { user: "a@b.c", pass: "pw" };
+    const messageId = await sendHaltAlarm("budget spent", config, mockTransport);
+    assert.equal(messageId, "m-halt");
+    const mail = captured as { subject: string; text: string };
+    assert.match(mail.subject, /halted — clear the latch/i);
+    assert.ok(mail.text.includes("budget spent"));
   });
 });
