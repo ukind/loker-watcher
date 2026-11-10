@@ -114,8 +114,8 @@
       }
    ],
    "platforms":{
-      "linkedin":false,
-      "threads":true
+      "linkedin":true,
+      "threads":false
    },
    "recencyHours":72
 }
