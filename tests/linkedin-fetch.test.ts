@@ -21,6 +21,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   type LinkedinSurface,
+  PACE_MAX_MS,
+  PACE_MIN_MS,
   PAGE_SIZE,
   type VoyagerGet,
   type VoyagerResponse,
@@ -28,7 +30,9 @@ import {
   classifyFault,
   createCurlTransport,
   fetchLinkedInPosts,
+  halt,
   isAllSurfacesFaulted,
+  isHalt,
   isLegDead,
   legDead,
   resolveLinkedInTransport,
@@ -36,10 +40,23 @@ import {
 import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
 
-const COOKIES: LinkedInCookies = { liAt: "AQE-test", jsessionId: "ajax:0123456789012345678" };
+const COOKIES: LinkedInCookies = {
+  liAt: "AQE-test",
+  jsessionId: "ajax:0123456789012345678",
+  harvestedAt: "2026-11-10T00:00:00.000Z", // FR-0: present, age never checked
+};
 
 /** An instant sleepFn: multi-GET walk tests pin paging order, not pacing. */
 const instantSleep = async (): Promise<void> => undefined;
+
+/** Deterministic LCG (Numerical Recipes constants) — no ambient Math.random. */
+function seededRng(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1_664_525 + 1_013_904_223) >>> 0;
+    return state / 0x1_0000_0000;
+  };
+}
 
 /** Build a §6-shaped 200 body carrying the given activity ids. */
 const okBody = (ids: readonly string[]): string =>
@@ -145,6 +162,13 @@ describe("classifyFault (§13.3 table)", () => {
 
   it("classifies any other non-200 as a fault", () => {
     assert.equal(classifyFault(503, "").kind, "fault");
+  });
+
+  it("classifies 429 as a HALT, never leg-dead (the account must slow down)", () => {
+    const fault = classifyFault(429, "");
+    assert.equal(fault.kind, "halt");
+    assert.match(fault.reason, /429/);
+    assert.equal(isLegDead(fault), false);
   });
 
   it("classifies 302 as leg-dead naming the redirect loop (live-observed 2026-11-05)", () => {
@@ -285,26 +309,31 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     );
   });
 
-  it("pages a full page, then stops on the exhaustion page (elements: [])", async () => {
+  it("fetches ONE page per surface per tick — a full page never pages again (FR-3)", async () => {
     const get = scriptGet([
       { match: (url) => startOf(url) === "0", respond: () => page(FULL_PAGE) },
       { match: (url) => startOf(url) === "50", respond: () => page([]) },
     ]);
     const posts = await fetchLinkedInPosts(oneSurface, COOKIES, get, instantSleep);
-    assert.equal(get.calls.length, 2);
+    assert.equal(get.calls.length, 1); // the exhaustion route never fires
     assert.equal(posts.length, PAGE_SIZE);
-    assert.ok(get.calls[1]?.includes("start:50"));
+    assert.equal(get.calls.filter((url) => startOf(url) === "50").length, 0);
   });
 
-  it("paces voyager GETs PACE_MS apart through the injected clock and sleep", async () => {
+  it("paces voyager GETs a randomized 5-15 s apart through the injected rng", async () => {
     const sleeps: number[] = [];
     let tick = 0;
     const get = scriptGet([
-      { match: (url) => startOf(url) === "0", respond: () => page(FULL_PAGE) },
-      { match: (url) => startOf(url) === "50", respond: () => page([idAt(99)]) },
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => page([idAt(1)]) },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => page([idAt(2)]) },
     ]);
+    // rng() === 0 pins the floor exactly: 5000 ms. Two surfaces — the cap
+    // means one GET each, so A's GET is free and B's waits the floor.
     await fetchLinkedInPosts(
-      oneSurface,
+      [
+        { type: "linkedin", value: "#a" },
+        { type: "linkedin", value: "#b" },
+      ],
       COOKIES,
       get,
       (ms) => {
@@ -313,18 +342,46 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
         return Promise.resolve();
       },
       () => tick,
+      () => 0,
     );
-    assert.deepEqual(sleeps, [5000]); // first GET is free; the second waits
+    assert.deepEqual(sleeps, [PACE_MIN_MS]);
     assert.equal(get.calls.length, 2);
+  });
+
+  it("keeps every pacing draw inside [5 s, 15 s) under a seeded rng", async () => {
+    const sleeps: number[] = [];
+    let tick = 0;
+    const five: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" },
+      { type: "linkedin", value: "#b" },
+      { type: "linkedin", value: "#c" },
+      { type: "linkedin", value: "#d" },
+      { type: "linkedin", value: "#e" },
+    ];
+    const get = scriptGet([{ match: () => true, respond: () => page([idAt(1)]) }]);
+    await fetchLinkedInPosts(
+      five,
+      COOKIES,
+      get,
+      (ms) => {
+        sleeps.push(ms);
+        tick += ms;
+        return Promise.resolve();
+      },
+      () => tick,
+      seededRng(2026_11_09),
+    );
+    assert.equal(sleeps.length, 4); // first GET free; four reservations
+    for (const ms of sleeps) {
+      assert.ok(ms >= PACE_MIN_MS && ms < PACE_MAX_MS, `out of band: ${ms}`);
+    }
   });
 
   it("reserves the pacing slot before sleeping, so concurrent waiters never share a wake time", async () => {
     // The width-2 walk must never fire a burst: each waiter reserves its
-    // slot SYNCHRONOUSLY on entry (reserve-before-sleep), so B's target is
-    // a full PACE_MS beyond A's in-flight reservation. An update-after-
-    // sleep stamp would compute B's wake from the stale stamp and both
-    // workers would GET together every PACE_MS. Deferred sleeps + deferred
-    // GETs make the reservation order observable deterministically.
+    // slot SYNCHRONOUSLY on entry (reserve-before-sleep). Deferred sleeps
+    // + deferred GETs make the reservation order observable. rng() === 0
+    // shuffles [A, B] to [B, A], so B claims the free slot and A waits.
     const surfaces: readonly LinkedinSurface[] = [
       { type: "linkedin", value: "#a" },
       { type: "linkedin", value: "#b" },
@@ -338,64 +395,44 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
       });
     };
     let tick = 0;
-    const get0 = deferred<VoyagerResponse>();
-    const get1 = deferred<VoyagerResponse>();
-    const get2 = deferred<VoyagerResponse>();
-    const get3 = deferred<VoyagerResponse>();
+    const getA = deferred<VoyagerResponse>();
+    const getB = deferred<VoyagerResponse>();
     const get = scriptGet([
-      {
-        match: (url) => surfaceOf(url) === "%23a" && startOf(url) === "0",
-        respond: () => get0.promise,
-      },
-      {
-        match: (url) => surfaceOf(url) === "%23b" && startOf(url) === "0",
-        respond: () => get1.promise,
-      },
-      {
-        match: (url) => surfaceOf(url) === "%23a" && startOf(url) === "50",
-        respond: () => get2.promise,
-      },
-      {
-        match: (url) => surfaceOf(url) === "%23b" && startOf(url) === "50",
-        respond: () => get3.promise,
-      },
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => getA.promise },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => getB.promise },
     ]);
-    const walk = fetchLinkedInPosts(surfaces, COOKIES, get, sleepFn, () => tick);
+    const walk = fetchLinkedInPosts(
+      surfaces,
+      COOKIES,
+      get,
+      sleepFn,
+      () => tick,
+      () => 0,
+    );
     const flush = (): Promise<void> => new Promise<void>((resolve) => setImmediate(resolve));
 
-    // A's first GET is open on the free slot; B reserved the NEXT slot
-    // while A's GET was still in flight — call starts space PACE_MS apart.
+    // B's GET is open on the free slot; A reserved the NEXT slot while B's
+    // GET was still in flight — call starts spaced apart, never together.
     await flush();
     assert.deepEqual(sleeps, [5000]);
 
-    // A's second reservation (its GET answered) lands a full PACE_MS beyond
-    // B's in-flight reservation — the shared wake (burst) never happens.
-    get0.resolve(page(FULL_PAGE));
+    // B's GET answers; A's in-flight reservation is untouched — no burst.
+    getB.resolve(page([idAt(2)]));
     await flush();
-    assert.deepEqual(sleeps, [5000, 10000]);
+    assert.deepEqual(sleeps, [5000]);
 
-    // Release in reservation order: B GETs, then reserves beyond A again.
+    // Release A's sleep: A GETs, both surfaces complete.
     heldSleeps[0]?.();
     tick += 5000;
     await flush();
-    get1.resolve(page(FULL_PAGE));
-    await flush();
-    assert.deepEqual(sleeps, [5000, 10000, 10000]);
-
-    // Drain the remaining held sleeps and GETs to completion.
-    heldSleeps[1]?.();
-    tick += 10000;
-    await flush();
-    get2.resolve(page([]));
-    await flush();
-    heldSleeps[2]?.();
-    tick += 10000;
-    await flush();
-    get3.resolve(page([]));
-    await flush();
+    getA.resolve(page([idAt(1)]));
     const posts = await walk;
-    assert.equal(get.calls.length, 4);
-    assert.equal(posts.length, PAGE_SIZE * 2); // both surfaces survived
+    assert.equal(get.calls.length, 2);
+    // Output order stays structural (input order) despite the [B, A] dispatch.
+    assert.deepEqual(
+      posts.map((post) => post.id),
+      [`urn:li:activity:${idAt(1)}`, `urn:li:activity:${idAt(2)}`],
+    );
   });
 
   it("reassembles two surfaces in input order under out-of-order completion", async () => {
@@ -442,7 +479,7 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     assert.ok(lines.some((line) => /linkedin\/#a FAILED — .*bad variables/.test(line)));
   });
 
-  it("drains then throws leg-dead once, and the sibling stops paging", async (t) => {
+  it("drains then throws leg-dead once on page 0, and nothing publishes", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const surfaces: readonly LinkedinSurface[] = [
       { type: "linkedin", value: "#a" },
@@ -450,19 +487,12 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     ];
     const get = scriptGet([
       {
-        match: (url) => surfaceOf(url) === "%23a" && startOf(url) === "0",
-        respond: () => page(FULL_PAGE),
-      },
-      {
-        match: (url) => surfaceOf(url) === "%23a" && startOf(url) === "50",
+        match: (url) => surfaceOf(url) === "%23a",
         respond: () => page([], 400, '{"status":400}'), // bare 400 = leg dead
       },
       {
-        match: (url) => surfaceOf(url) === "%23b" && startOf(url) === "0",
-        respond: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 25)); // still in flight when A flags
-          return page(FULL_PAGE);
-        },
+        match: (url) => surfaceOf(url) === "%23b",
+        respond: () => page(FULL_PAGE),
       },
     ]);
     let caught: unknown;
@@ -471,18 +501,16 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     } catch (error) {
       caught = error;
     }
+    // Tick-abort semantics: the walk THREW, so no surface's posts publish.
+    // The post-wait drain check may starve the sibling's GET entirely —
+    // a GET saved — so only the flag is pinned, never a call count.
     assert.ok(isLegDead(caught));
     assert.match((caught as Error).message, /dead session/);
-    // Sibling stop: B never fired its second page after A flagged.
-    assert.equal(
-      get.calls.filter((url) => surfaceOf(url) === "%23b" && startOf(url) === "50").length,
-      0,
-    );
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /linkedin\/#a LEG DEAD/.test(line)));
   });
 
-  it("drains then throws leg-dead once on a scripted 302, sibling pager stopped (live-regression pin)", async (t) => {
+  it("drains then throws leg-dead once on a scripted page-0 302 (live-regression pin)", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const surfaces: readonly LinkedinSurface[] = [
       { type: "linkedin", value: "#a" },
@@ -490,19 +518,12 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     ];
     const get = scriptGet([
       {
-        match: (url) => surfaceOf(url) === "%23a" && startOf(url) === "0",
-        respond: () => page(FULL_PAGE),
-      },
-      {
-        match: (url) => surfaceOf(url) === "%23a" && startOf(url) === "50",
+        match: (url) => surfaceOf(url) === "%23a",
         respond: () => page([], 302, ""), // the live-observed dead-session presentation
       },
       {
-        match: (url) => surfaceOf(url) === "%23b" && startOf(url) === "0",
-        respond: async () => {
-          await new Promise((resolve) => setTimeout(resolve, 25)); // still in flight when A flags
-          return page(FULL_PAGE);
-        },
+        match: (url) => surfaceOf(url) === "%23b",
+        respond: () => page(FULL_PAGE),
       },
     ]);
     let caught: unknown;
@@ -514,11 +535,6 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     assert.ok(isLegDead(caught));
     assert.match((caught as Error).message, /redirect loop/);
     assert.equal(isAllSurfacesFaulted(caught), false); // leg-dead, not the generic no-op
-    // Sibling stop: B never fired its second page after A flagged.
-    assert.equal(
-      get.calls.filter((url) => surfaceOf(url) === "%23b" && startOf(url) === "50").length,
-      0,
-    );
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /linkedin\/#a LEG DEAD/.test(line)));
   });
@@ -545,7 +561,7 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     assert.equal(isAllSurfacesFaulted(caught), false);
   });
 
-  it("throws AllSurfacesFaulted when the ONLY surface hits an unparsable 200 body (a fault, never leg-dead)", async (t) => {
+  it("aborts the whole walk on an unparsable 200 (FR-4 ratified): leg-dead, never all-faulted", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const get = scriptGet([
       { match: (url) => startOf(url) === "0", respond: () => page([], 200, "<html>weird</html>") },
@@ -556,11 +572,38 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     } catch (error) {
       caught = error;
     }
-    assert.ok(isAllSurfacesFaulted(caught));
-    assert.equal((caught as Error).name, "AllSurfacesFaulted");
-    assert.ok(!isLegDead(caught));
+    // FR-4 (ratified 2026-11-09): a changed response shape stops the
+    // machine — the leg-dead channel's episode marker emails once per
+    // episode and auto-clears on the next good tick.
+    assert.ok(isLegDead(caught));
+    assert.match((caught as Error).message, /unparsable 200 body/);
+    assert.equal(isAllSurfacesFaulted(caught), false);
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(lines.some((line) => /unparsable 200 body/.test(line)));
+    assert.ok(lines.some((line) => /linkedin\/#hiring react LEG DEAD/.test(line)));
+  });
+
+  it("discards the tick when a surface goes unparsable, sibling included (tick abort)", async () => {
+    const surfaces: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" },
+      { type: "linkedin", value: "#b" },
+    ];
+    const get = scriptGet([
+      {
+        match: (url) => surfaceOf(url) === "%23a",
+        respond: () => page([], 200, "<html>weird</html>"),
+      },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => page(FULL_PAGE) },
+    ]);
+    let caught: unknown;
+    try {
+      await fetchLinkedInPosts(surfaces, COOKIES, get, instantSleep);
+    } catch (error) {
+      caught = error;
+    }
+    // FR-4: the walk throws on the unparsable 200 — even a healthy
+    // sibling's posts are discarded (nothing publishes from a stopped tick).
+    assert.ok(isLegDead(caught));
+    assert.match((caught as Error).message, /unparsable 200 body/);
   });
 
   it("degrades on 1-of-2 faulted: the fine-empty survivor publishes [] with no throw", async (t) => {
@@ -686,6 +729,192 @@ describe("fetchLinkedInPosts (runPool walk)", () => {
     assert.equal(error.faulted, 2);
     assert.equal(isAllSurfacesFaulted(new Error("plain")), false);
     assert.equal(isAllSurfacesFaulted(legDead("because")), false);
+  });
+});
+
+describe("fetchLinkedInPosts surface shuffle (FR-5)", () => {
+  it("dispatches in the shuffled order while output stays input order (rng=0 -> [B, C, A])", async () => {
+    const surfaces: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" },
+      { type: "linkedin", value: "#b" },
+      { type: "linkedin", value: "#c" },
+    ];
+    const get = scriptGet([
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => page([idAt(1)]) },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => page([idAt(2)]) },
+      { match: (url) => surfaceOf(url) === "%23c", respond: () => page([idAt(3)]) },
+    ]);
+    const posts = await fetchLinkedInPosts(
+      surfaces,
+      COOKIES,
+      get,
+      instantSleep,
+      () => 0,
+      () => 0,
+    );
+    // rng() === 0 drives every Fisher-Yates swap to index 0: two swaps
+    // (C<->A, then B<->C) take [A, B, C] to [B, C, A] — the GET transcript
+    // proves the shuffle happened.
+    assert.deepEqual(
+      get.calls.map((url) => surfaceOf(url)),
+      ["%23b", "%23c", "%23a"],
+    );
+    // Output order is structural (input order), independent of dispatch.
+    assert.deepEqual(
+      posts.map((post) => post.id),
+      [idAt(1), idAt(2), idAt(3)].map((id) => `urn:li:activity:${id}`),
+    );
+  });
+
+  it("preserves input order under a near-one rng (every swap lands on itself)", async () => {
+    const surfaces: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" },
+      { type: "linkedin", value: "#b" },
+    ];
+    const get = scriptGet([
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => page([idAt(1)]) },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => page([idAt(2)]) },
+    ]);
+    const posts = await fetchLinkedInPosts(
+      surfaces,
+      COOKIES,
+      get,
+      instantSleep,
+      () => 0,
+      () => 0.999999999,
+    );
+    assert.deepEqual(
+      get.calls.map((url) => surfaceOf(url)),
+      ["%23a", "%23b"],
+    );
+    assert.deepEqual(
+      posts.map((post) => post.id),
+      [`urn:li:activity:${idAt(1)}`, `urn:li:activity:${idAt(2)}`],
+    );
+  });
+
+  it("pins the seeded Fisher-Yates dispatch transcript (the transcript IS the oracle)", async () => {
+    const surfaces: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" },
+      { type: "linkedin", value: "#b" },
+      { type: "linkedin", value: "#c" },
+    ];
+    // Recompute the permutation with the same seed and the same swap loop.
+    const order = surfaces.map((surface) => surface.value);
+    const rng = seededRng(2026_11_09);
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1));
+      const tmp = order[i]!;
+      order[i] = order[j]!;
+      order[j] = tmp;
+    }
+    const get = scriptGet([
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => page([]) },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => page([]) },
+      { match: (url) => surfaceOf(url) === "%23c", respond: () => page([]) },
+    ]);
+    await fetchLinkedInPosts(surfaces, COOKIES, get, instantSleep, () => 0, seededRng(2026_11_09));
+    assert.deepEqual(
+      get.calls.map((url) => surfaceOf(url)),
+      order.map((value) => encodeURIComponent(value)),
+    );
+  });
+});
+
+describe("fetchLinkedInPosts halt channel (429)", () => {
+  it("throws the tagged HaltError on a 429, never leg-dead or all-faulted", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const get = scriptGet([{ match: () => true, respond: () => page([], 429, "") }]);
+    let caught: unknown;
+    try {
+      await fetchLinkedInPosts([{ type: "linkedin", value: "#hiring react" }], COOKIES, get);
+    } catch (error) {
+      caught = error;
+    }
+    assert.ok(isHalt(caught));
+    assert.equal(isLegDead(caught), false);
+    assert.equal(isAllSurfacesFaulted(caught), false);
+    assert.match((caught as Error).message, /429/);
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /linkedin\/#hiring react HALT/.test(line)));
+  });
+
+  it("stops claiming on a 429: no GET fires after the flag", async () => {
+    const surfaces: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" },
+      { type: "linkedin", value: "#b" },
+      { type: "linkedin", value: "#c" },
+    ];
+    const get = scriptGet([
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => page([], 429, "") },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => page([idAt(2)]) },
+      { match: (url) => surfaceOf(url) === "%23c", respond: () => page([idAt(3)]) },
+    ]);
+    let caught: unknown;
+    try {
+      await fetchLinkedInPosts(
+        surfaces,
+        COOKIES,
+        get,
+        instantSleep,
+        () => 0,
+        () => 0,
+      );
+    } catch (error) {
+      caught = error;
+    }
+    // rng=0 dispatch order [B, C, A]: B GETs fine, C GETs fine, A's 429
+    // flags the halt — the walk throws and C's posts are discarded.
+    assert.ok(isHalt(caught));
+    assert.equal(get.calls.length, 3);
+  });
+
+  it("halt outranks leg-dead at the join: a 429 + a dead session throws HaltError", async () => {
+    const surfaces: readonly LinkedinSurface[] = [
+      { type: "linkedin", value: "#a" }, // 429
+      { type: "linkedin", value: "#b" }, // 302
+    ];
+    // Park BOTH responses: both GETs issue (rng=0 dispatches [B, A]), THEN
+    // the flags set — the both-flags race is the only way this join
+    // priority is reachable (a flag set before a sibling's GET starves
+    // that sibling via the post-wait drain check, and the lone flag wins).
+    const getA = deferred<VoyagerResponse>();
+    const getB = deferred<VoyagerResponse>();
+    const get = scriptGet([
+      { match: (url) => surfaceOf(url) === "%23a", respond: () => getA.promise },
+      { match: (url) => surfaceOf(url) === "%23b", respond: () => getB.promise },
+    ]);
+    // Capture the outcome FIRST: the walk rejects while the test is still
+    // in its flush sequence, and an unhandled rejection would fail the
+    // test before the try block ever runs.
+    const outcome = fetchLinkedInPosts(
+      surfaces,
+      COOKIES,
+      get,
+      instantSleep,
+      () => 0,
+      () => 0,
+    ).then(
+      () => ({ ok: true as const }),
+      (error: unknown) => ({ ok: false as const, error }),
+    );
+    const flush = (): Promise<void> => new Promise<void>((resolve) => setImmediate(resolve));
+    await flush();
+    getB.resolve(page([], 302, "")); // B flags leg-dead first
+    await flush();
+    getA.resolve(page([], 429, "")); // A's in-flight response still classifies
+    await flush();
+    const settled = await outcome;
+    assert.equal(settled.ok, false);
+    const caught = settled.ok ? undefined : settled.error;
+    assert.ok(isHalt(caught)); // the account-safety terminal outranks self-heal
+    assert.equal(isLegDead(caught), false);
+  });
+
+  it("exposes the tagged halt guard", () => {
+    assert.ok(isHalt(halt("because")));
+    assert.equal(isHalt(new Error("plain")), false);
+    assert.equal(isHalt(legDead("because")), false);
   });
 });
 

@@ -75,6 +75,10 @@ describe("writePayloadAtomic / readPayloadPosts round trip", () => {
   it("uses the fixed repo path beside STATE_PATH by default", () => {
     assert.equal(LINKEDIN_PAYLOAD_PATH, "state/linkedin-posts.json");
   });
+
+  it("pins the 40-minute staleness window (the 33-minute worst-case wake plus margin)", () => {
+    assert.equal(PAYLOAD_MAX_AGE_MS, 2_400_000);
+  });
 });
 
 describe("readPayloadPosts failure classes (D13)", () => {

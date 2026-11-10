@@ -8,7 +8,14 @@ import { loadWatcherConfig, resolveSurfaces } from "../src/config-file.js";
 const VALID = {
   keywords: ["react"],
   candidateTerms: ["developer"],
-  surfaces: [{ type: "tag", value: "hiring" }],
+  surfaces: [
+    { type: "tag", value: "hiring" },
+    { type: "linkedin", value: "hiring indonesia" },
+    { type: "linkedin", value: "hiring jakarta" },
+    { type: "linkedin", value: "hiring developer indonesia" },
+    { type: "linkedin", value: "hiring engineer jakarta" },
+    { type: "linkedin", value: "react indonesia" },
+  ],
   platforms: { linkedin: true, threads: true },
   recencyHours: 72,
 };
@@ -170,14 +177,6 @@ describe("loadWatcherConfig — failures", () => {
       /negativeKeywords.*must contain only non-empty strings/,
     );
   });
-  it("accepts a linkedin surface", async () => {
-    const path = await writeConfig({
-      ...VALID,
-      surfaces: [{ type: "linkedin", value: "#hiring" }],
-    });
-    const config = await loadWatcherConfig(path);
-    assert.deepEqual(config.surfaces, [{ type: "linkedin", value: "#hiring" }]);
-  });
 
   it("rejects an empty linkedin surface value", async () => {
     const path = await writeConfig({
@@ -267,12 +266,7 @@ describe("scrollRounds", () => {
 
 describe("platforms", () => {
   it("rejects a missing platforms block", async () => {
-    const path = await writeConfig({
-      keywords: ["react"],
-      candidateTerms: ["developer"],
-      surfaces: [{ type: "tag", value: "hiring" }],
-      recencyHours: 72,
-    });
+    const path = await writeConfig({ ...VALID, platforms: undefined });
     await assert.rejects(() => loadWatcherConfig(path), /"platforms" must be an object/);
   });
 
@@ -332,5 +326,80 @@ describe("platforms", () => {
       const config = await loadWatcherConfig(path);
       assert.deepEqual(config.platforms, platforms);
     }
+  });
+});
+
+describe("exactly five linkedin surfaces (FR-8, slice 6)", () => {
+  const FIVE = [
+    { type: "linkedin", value: "hiring indonesia" },
+    { type: "linkedin", value: "hiring jakarta" },
+    { type: "linkedin", value: "hiring developer indonesia" },
+    { type: "linkedin", value: "hiring engineer jakarta" },
+    { type: "linkedin", value: "react indonesia" },
+  ];
+
+  it("accepts exactly five linkedin surfaces and keeps their values", async () => {
+    const path = await writeConfig({ ...VALID, surfaces: FIVE });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.surfaces, FIVE);
+  });
+
+  it("accepts five linkedin surfaces mixed with threads surfaces", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [
+        { type: "tag", value: "hiring" },
+        ...FIVE,
+        { type: "url", value: "https://www.threads.com/@hiresflow" },
+      ],
+    });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.surfaces.filter((s) => s.type === "linkedin").length, 5);
+    assert.equal(config.surfaces.length, 7);
+  });
+
+  it("rejects four linkedin surfaces", async () => {
+    const path = await writeConfig({ ...VALID, surfaces: FIVE.slice(0, 4) });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /4 linkedin surfaces — exactly 5 are required/,
+    );
+  });
+
+  it("rejects six linkedin surfaces", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [...FIVE, { type: "linkedin", value: "engineer indonesia" }],
+    });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /6 linkedin surfaces — exactly 5 are required/,
+    );
+  });
+
+  it("rejects zero linkedin surfaces", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      surfaces: [
+        { type: "tag", value: "hiring" },
+        { type: "url", value: "https://www.threads.com/@hiresflow" },
+      ],
+    });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /0 linkedin surfaces — exactly 5 are required/,
+    );
+  });
+
+  it("keeps the committed spread at the FRD five", async () => {
+    const config = await loadWatcherConfig("watcher.config.json");
+    const linkedin = config.surfaces.filter((s) => s.type === "linkedin").map((s) => s.value);
+    assert.deepEqual(linkedin, [
+      "hiring indonesia",
+      "hiring jakarta",
+      "hiring developer indonesia",
+      "hiring engineer jakarta",
+      "react indonesia",
+    ]);
   });
 });

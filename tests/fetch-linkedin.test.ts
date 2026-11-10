@@ -24,15 +24,24 @@ import {
   pushPayload,
   realGit,
 } from "../scripts/fetch-linkedin.js";
-import type { WatcherConfig } from "../src/config-file.js";
+import type { Surface, WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
-import { type Transport, isLegDead, legDead } from "../src/linkedin-fetch.js";
+import {
+  HALT_BUDGET_REASON,
+  HALT_RATE_LIMIT_REASON,
+  localDateKey,
+} from "../src/linkedin-behavior.js";
+import { type Transport, isHalt, isLegDead, legDead } from "../src/linkedin-fetch.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
 
 const T0 = Date.UTC(2026, 9, 26, 9, 14, 0);
-const COOKIES: LinkedInCookies = { liAt: "AQE-test", jsessionId: "ajax:0123456789012345678" };
+const COOKIES: LinkedInCookies = {
+  liAt: "AQE-test",
+  jsessionId: "ajax:0123456789012345678",
+  harvestedAt: "2026-11-10T00:00:00.000Z", // FR-0: present, age never checked
+};
 
 const CONFIG: WatcherConfig = {
   keywords: ["hiring"],
@@ -259,7 +268,6 @@ describe("pushPayload (single-path rebase+retry discipline)", () => {
     );
   });
 });
-
 describe("fetchTick (compose cookies → transport → walk → payload → push)", () => {
   it("composes the tick end to end: payload written, single-path push, marker cleared", async () => {
     const payload = await workPath("tick-ok.json");
@@ -268,6 +276,9 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const transport = transportFor(pageBody([idAt(1)]));
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
+      latchPath: await workPath("latch-1.flag"),
+      budgetPath: await workPath("budget-1.json"),
+      bypassWindow: true,
       config: CONFIG,
       cookies: COOKIES,
       transport,
@@ -308,8 +319,11 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const transport = transportFor(legDead("bare HTTP 400 — dead session"));
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     await assert.rejects(
-      () =>
+      async () =>
         fetchTick({
+          latchPath: await workPath("latch-2.flag"),
+          budgetPath: await workPath("budget-2.json"),
+          bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
           transport,
@@ -341,6 +355,9 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const transport = transportFor(new Error("surface blew up"));
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
+      latchPath: await workPath("latch-3.flag"),
+      budgetPath: await workPath("budget-3.json"),
+      bypassWindow: true,
       config: CONFIG,
       cookies: COOKIES,
       transport,
@@ -369,6 +386,9 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const transport = transportFor(pageBody([])); // 200, zero posts, zero faults
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
+      latchPath: await workPath("latch-4.flag"),
+      budgetPath: await workPath("budget-4.json"),
+      bypassWindow: true,
       config: CONFIG,
       cookies: COOKIES,
       transport,
@@ -388,6 +408,9 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
   it("returns early when no linkedin surfaces are configured (resolvers AND the checkout preflight never run)", async () => {
     const git = scriptGit({});
     const result = await fetchTick({
+      latchPath: await workPath("latch-5.flag"),
+      budgetPath: await workPath("budget-5.json"),
+      bypassWindow: true,
       config: { ...CONFIG, surfaces: [{ type: "tag", value: "hiring" }] },
       git,
       env: {}, // no LINKEDIN_COOKIES_FILE — the cookie resolver would throw if reached
@@ -401,8 +424,11 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const payloadPath = await workPath("tick-resolver.json");
     const markerPath = await workPath("tick-resolver.flag");
     await assert.rejects(
-      () =>
+      async () =>
         fetchTick({
+          latchPath: await workPath("latch-6.flag"),
+          budgetPath: await workPath("budget-6.json"),
+          bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
           env: { LINKEDIN_TRANSPORT: "wget" },
@@ -414,7 +440,6 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     );
   });
 });
-
 describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () => {
   it("passes on clean main with exactly the two guard reads (direct pin)", async () => {
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } }); // status → empty porcelain
@@ -433,8 +458,11 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
       "rev-parse": { code: 0, output: "feature/add-support-for-linkeind" },
     });
     await assert.rejects(
-      () =>
+      async () =>
         fetchTick({
+          latchPath: await workPath("latch-7.flag"),
+          budgetPath: await workPath("budget-7.json"),
+          bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
           transport,
@@ -464,8 +492,11 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
       status: { code: 0, output: " M src/linkedin-fetch.ts\n M README.md" },
     });
     await assert.rejects(
-      () =>
+      async () =>
         fetchTick({
+          latchPath: await workPath("latch-8.flag"),
+          budgetPath: await workPath("budget-8.json"),
+          bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
           transport,
@@ -545,5 +576,286 @@ describe("handleLegDeadEpisode (one alarm per episode)", () => {
     assert.equal(await readFile(marker, "utf8"), "dead\n"); // marker persists despite the send failure
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /alarm not sent/.test(line)));
+  });
+});
+
+// --- the anti-restriction preflight band + budget wrapper + latch (design 2026-11-09) ---
+
+describe("the anti-restriction preflight band (design 2026-11-09)", () => {
+  it("blocks a latched tick: zero GETs, zero git spawns, quiet zeros", async () => {
+    const latchPath = await workPath("latch-1.flag");
+    await writeFile(latchPath, "HTTP 429 rate limit\n", "utf8");
+    const transport = transportFor(pageBody([idAt(1)]));
+    const git = scriptGit();
+    const result = await fetchTick({
+      config: CONFIG,
+      transport,
+      git,
+      payloadPath: await workPath("payload-latched.json"),
+      latchPath,
+      budgetPath: await workPath("budget-9.json"),
+      bypassWindow: true,
+      env: {},
+    });
+    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
+    assert.equal(transport.gets(), 0);
+    assert.equal(git.calls.length, 0);
+  });
+
+  it("outside the working window the tick is a quiet no-op (Saturday noon local)", async () => {
+    const saturdayNoon = new Date(2026, 9, 31, 12, 0).getTime(); // 2026-10-31 is a Saturday
+    const transport = transportFor(pageBody([idAt(1)]));
+    const git = scriptGit();
+    const result = await fetchTick({
+      config: CONFIG,
+      transport,
+      git,
+      payloadPath: await workPath("payload-weekend.json"),
+      latchPath: await workPath("latch-9.flag"),
+      budgetPath: await workPath("budget-10.json"),
+      now: () => saturdayNoon,
+      env: {},
+    });
+    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
+    assert.equal(transport.gets(), 0);
+    assert.equal(git.calls.length, 0);
+  });
+
+  it("inside the window (Monday 10:00 local, latch absent) the tick reaches the checkout guard", async () => {
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime(); // 2026-10-26 is a Monday
+    const transport = transportFor(pageBody([idAt(1)]));
+    const git = scriptGit({ "rev-parse": { code: 0, output: "feature\n" } });
+    await assert.rejects(
+      async () =>
+        fetchTick({
+          config: CONFIG,
+          transport,
+          git,
+          payloadPath: await workPath("payload-weekday.json"),
+          latchPath: await workPath("latch-10.flag"),
+          budgetPath: await workPath("budget-11.json"),
+          now: () => mondayTen,
+          env: {},
+        }),
+      /not main/,
+    );
+    assert.ok(git.calls.length >= 1); // the band let it through to the guard
+    assert.equal(transport.gets(), 0); // the guard threw before any GET
+  });
+
+  it("a spent daily budget skips the walk before any GET or git spawn", async () => {
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
+    const budgetPath = await workPath("budget-1.json");
+    const dayKey = localDateKey(new Date(mondayTen));
+    await writeFile(budgetPath, JSON.stringify({ localDate: dayKey, count: 150 }), "utf8");
+    const transport = transportFor(pageBody([idAt(1)]));
+    const git = scriptGit();
+    const result = await fetchTick({
+      config: CONFIG,
+      transport,
+      git,
+      payloadPath: await workPath("payload-spent.json"),
+      latchPath: await workPath("latch-11.flag"),
+      budgetPath,
+      now: () => mondayTen,
+      env: {},
+    });
+    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
+    assert.equal(transport.gets(), 0);
+    assert.equal(git.calls.length, 0);
+  });
+});
+
+describe("the budget wrapper on the VoyagerGet seam (design 2026-11-09)", () => {
+  it("reserves and persists BEFORE each GET: the ledger counts every GET", async () => {
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
+    const budgetPath = await workPath("budget-2.json");
+    const payloadPath = await workPath("payload-budget.json");
+    const twoSurfaces = {
+      ...CONFIG,
+      surfaces: [
+        { type: "linkedin", value: "#a" } as Surface,
+        { type: "linkedin", value: "#b" } as Surface,
+      ],
+    };
+    await fetchTick({
+      config: twoSurfaces,
+      cookies: COOKIES,
+      transport: transportFor(pageBody([idAt(1)])),
+      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
+      payloadPath,
+      latchPath: await workPath("latch-12.flag"),
+      budgetPath,
+      now: () => mondayTen,
+      bypassWindow: true,
+      env: {},
+    });
+    const dayKey = localDateKey(new Date(mondayTen));
+    const ledger = JSON.parse(await readFile(budgetPath, "utf8")) as {
+      localDate: string;
+      count: number;
+    };
+    assert.deepEqual(ledger, { localDate: dayKey, count: 2 });
+  });
+
+  it("a malformed budget file degrades to fresh with one warning naming the path", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
+    const budgetPath = await workPath("budget-3.json");
+    await writeFile(budgetPath, "{not json", "utf8");
+    await fetchTick({
+      config: CONFIG,
+      cookies: COOKIES,
+      transport: transportFor(pageBody([idAt(1)])),
+      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
+      payloadPath: await workPath("payload-degraded.json"),
+      latchPath: await workPath("latch-13.flag"),
+      budgetPath,
+      now: () => mondayTen,
+      bypassWindow: true,
+      env: {},
+    });
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    const budgetLine = lines.find((line) => line.includes("budget file unreadable"));
+    assert.ok(budgetLine !== undefined);
+    assert.ok(budgetLine!.includes(budgetPath));
+    // The walk proceeded and the ledger came back valid.
+    const ledger = JSON.parse(await readFile(budgetPath, "utf8")) as { count: number };
+    assert.equal(ledger.count, 1);
+  });
+
+  it("a budget spent MID-WALK trips the latch with the budget reason", async () => {
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
+    const budgetPath = await workPath("budget-4.json");
+    const latchPath = await workPath("latch-2.flag");
+    const dayKey = localDateKey(new Date(mondayTen));
+    await writeFile(budgetPath, JSON.stringify({ localDate: dayKey, count: 149 }), "utf8");
+    const alarms: string[] = [];
+    const twoSurfaces = {
+      ...CONFIG,
+      surfaces: [
+        { type: "linkedin", value: "#a" } as Surface,
+        { type: "linkedin", value: "#b" } as Surface,
+      ],
+    };
+    const result = await fetchTick({
+      config: twoSurfaces,
+      cookies: COOKIES,
+      transport: transportFor(pageBody([idAt(1)])),
+      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
+      payloadPath: await workPath("payload-midwalk.json"),
+      latchPath,
+      budgetPath,
+      now: () => mondayTen,
+      bypassWindow: true,
+      haltAlarm: async (reason) => {
+        alarms.push(reason);
+      },
+      env: {},
+    });
+    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
+    const flag = await readFile(latchPath, "utf8");
+    assert.equal(flag, `${HALT_BUDGET_REASON}\n`);
+    assert.deepEqual(alarms, [HALT_BUDGET_REASON]);
+  });
+});
+
+describe("the halt-latch trip (FR-7, design 2026-11-09)", () => {
+  it("a 429 walks to a halt, trips the latch with the canonical reason, alarms once", async () => {
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
+    const latchPath = await workPath("latch-3.flag");
+    const payloadPath = await workPath("payload-429.json");
+    const alarms: string[] = [];
+    const transport: Transport = {
+      get: async () => ({ status: 429, body: "" }),
+      dispose: async () => undefined,
+    };
+    const result = await fetchTick({
+      config: CONFIG,
+      cookies: COOKIES,
+      transport,
+      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
+      payloadPath,
+      latchPath,
+      budgetPath: await workPath("budget-12.json"),
+      now: () => mondayTen,
+      bypassWindow: true,
+      haltAlarm: async (reason) => {
+        alarms.push(reason);
+      },
+      env: {},
+    });
+    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
+    const flag = await readFile(latchPath, "utf8");
+    assert.equal(flag, `${HALT_RATE_LIMIT_REASON}\n`);
+    assert.deepEqual(alarms, [HALT_RATE_LIMIT_REASON]);
+    assert.equal(await exists(payloadPath), false); // no payload on a halted tick
+  });
+
+  it("the latch trip never writes the leg-dead episode marker (separate channels)", async () => {
+    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
+    const latchPath = await workPath("latch-4.flag");
+    const markerPath = await workPath("episode.flag");
+    const transport: Transport = {
+      get: async () => ({ status: 429, body: "" }),
+      dispose: async () => undefined,
+    };
+    await fetchTick({
+      config: CONFIG,
+      cookies: COOKIES,
+      transport,
+      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
+      payloadPath: await workPath("payload-channels.json"),
+      latchPath,
+      budgetPath: await workPath("budget-13.json"),
+      markerPath,
+      now: () => mondayTen,
+      bypassWindow: true,
+      haltAlarm: async () => undefined,
+      env: {},
+    });
+    assert.equal(await exists(latchPath), true);
+    assert.equal(await exists(markerPath), false);
+  });
+});
+
+describe("FR-0 stamp gate (slice 5)", () => {
+  it("rejects a stampless cookie file before the transport opens or any GET", async () => {
+    const stampless: LinkedInCookies = {
+      liAt: "AQE-test",
+      jsessionId: "ajax:0123456789012345678",
+    };
+    const payloadPath = await workPath("payload-stamp.json");
+    const latchPath = await workPath("latch-stamp.flag");
+    const budgetPath = await workPath("budget-stamp.json");
+    const gitCalls: string[] = [];
+    const git: GitRunner = async (args) => {
+      gitCalls.push(args.join(" "));
+      return args[0] === "rev-parse" ? { code: 0, output: "main" } : { code: 0, output: "" };
+    };
+    await assert.rejects(
+      () =>
+        fetchTick({
+          config: CONFIG,
+          cookies: stampless,
+          transport: {
+            get: async () => {
+              throw new Error("no GET may leave on a stampless tick");
+            },
+            dispose: async () => undefined,
+          },
+          git,
+          payloadPath,
+          latchPath,
+          budgetPath,
+          now: () => new Date(2026, 9, 26, 10, 0).getTime(),
+          bypassWindow: true,
+          env: {},
+        }),
+      /harvestedAt.*login-linkedin/,
+    );
+    // The gate sits after the checkout guard: two git reads happened, zero writes.
+    assert.deepEqual(gitCalls, ["rev-parse --abbrev-ref HEAD", "status --porcelain"]);
+    assert.equal(await exists(payloadPath), false);
   });
 });

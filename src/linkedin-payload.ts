@@ -27,8 +27,12 @@ import type { Post } from "./types.js";
 /** Envelope version; bump on a shape change, keep the reader tolerant. */
 export const PAYLOAD_VERSION = 1;
 
-/** Twice the 10-minute cadence: a payload older than this reads as stale. */
-export const PAYLOAD_MAX_AGE_MS = 1_800_000;
+/**
+ * The jittered wake cadence's worst case (33 minutes) plus margin: a
+ * payload older than this reads as stale (design 2026-11-09; was twice
+ * the old 10-minute cadence).
+ */
+export const PAYLOAD_MAX_AGE_MS = 2_400_000;
 
 /** What the PC loop writes: a self-describing, versioned post envelope. */
 export interface PayloadEnvelope {

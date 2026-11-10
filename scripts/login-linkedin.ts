@@ -66,12 +66,30 @@ export function findSessionCookies(
  * precedent): a crashed harvest never leaves a partial cookie file for
  * the next command to misread.
  */
-export async function writeCookieFile(pair: LinkedInCookiePair, filePath: string): Promise<void> {
+/**
+ * Atomic cookie-file write (sibling unique temp + rename, the state.ts
+ * precedent): a crashed harvest never leaves a partial cookie file for
+ * the next command to misread. `harvestedAt` is the machine-written FR-0
+ * provenance stamp — an ISO-8601 instant the CALLER computes from its own
+ * clock (pinned-clock rule: the clock never enters this writer), recorded
+ * verbatim beside the pair. The fetchTick gate requires it; nothing here
+ * or in the session resolver age-checks it.
+ */
+export async function writeCookieFile(
+  pair: LinkedInCookiePair,
+  filePath: string,
+  harvestedAt: string,
+): Promise<void> {
   const dir = dirname(filePath);
   const tempPath = stateTempPath(dir, Date.now());
   try {
     await mkdir(dir, { recursive: true });
-    await writeFile(tempPath, `${JSON.stringify(pair, null, 2)}\n`, "utf8");
+    await writeFile(
+      tempPath,
+      `${JSON.stringify({ ...pair, harvestedAt }, null, 2)}
+`,
+      "utf8",
+    );
     await rename(tempPath, filePath);
   } catch (error) {
     try {
@@ -159,7 +177,7 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
       await sleepFn(pollMs);
       pair = findSessionCookies(await context.cookies("https://www.linkedin.com"));
     }
-    await writeCookieFile(pair, cookiePath);
+    await writeCookieFile(pair, cookiePath, new Date(now()).toISOString());
     console.log(`login-linkedin: session captured — ${cookiePath}`);
     const dotEnvUpdated = await upsertDotEnvLine(
       dotEnvPath,
