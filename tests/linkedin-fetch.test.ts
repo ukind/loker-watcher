@@ -230,12 +230,51 @@ describe("createCurlTransport", () => {
     assert.ok(call?.args.every((arg) => arg !== "-L" && arg !== "--location"));
   });
 
-  it("throws a surface fault (not leg-dead) when the exec fails", async () => {
+  it("throws a surface fault (not leg-dead) when the exec fails — message sanitized, never the command line", async () => {
+    // Revise 2026-11-10: a live probe leaked the whole cookie jar because
+    // Node's execFile error message embeds the full command line. The
+    // rejection here carries that shape (li_at in .message, code + stderr
+    // fields); the thrown message must hold ONLY exit code + stderr.
     const make = createCurlTransport(COOKIES, { CURL_IMPERSONATE_BIN: "curl-chrome" }, async () => {
-      throw new Error("connection reset");
+      throw Object.assign(
+        new Error(
+          'Command failed: curl-chrome --impersonate chrome116 -H cookie: li_at=SECRET; JSESSIONID="ajax:x"\n',
+        ),
+        { code: 7, stderr: "curl: (7) Could not resolve host: www.linkedin.com" },
+      );
     });
     const transport = await make();
-    await assert.rejects(() => transport.get("https://x"), /curl exec failed — connection reset/);
+    await assert.rejects(
+      () => transport.get("https://x"),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /curl exec failed \(exit 7\): curl: \(7\) Could not resolve host/);
+        assert.ok(!message.includes("li_at"), "no cookie value may reach the message");
+        assert.ok(!message.includes("-H"), "no header flags may reach the message");
+        assert.ok(!message.includes("SECRET"), "no leaked literal may reach the message");
+        return true;
+      },
+    );
+    // The other real execFile failure shape: a missing binary rejects with
+    // a STRING code ("ENOENT") and no stderr — the one fact the operator
+    // needs must survive sanitization.
+    const missingBin = createCurlTransport(
+      COOKIES,
+      { CURL_IMPERSONATE_BIN: "curl-chrome" },
+      async () => {
+        throw Object.assign(new Error("spawn curl-chrome ENOENT"), { code: "ENOENT" });
+      },
+    );
+    const gone = await missingBin();
+    await assert.rejects(
+      () => gone.get("https://x"),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /curl exec failed \(exit ENOENT\): no stderr captured/);
+        assert.ok(!message.includes("spawn"), "the raw spawn message may not reach the message");
+        return true;
+      },
+    );
   });
 
   it("fails visibly naming the variable when CURL_IMPERSONATE_BIN is unset", async () => {

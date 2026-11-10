@@ -346,8 +346,21 @@ export function createCurlTransport(
       try {
         ({ stdout } = await execFn(bin, args));
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        throw new Error(`linkedin-fetch: curl exec failed — ${message}`);
+        // Credential hygiene (revise 2026-11-10): Node's execFile error
+        // message embeds the ENTIRE command line — cookie and csrf-token
+        // headers included — and a live probe printed the whole jar to the
+        // console. Never forward it. The diagnostic value rides the exit
+        // code + curl's own stderr: headers never go to stderr.
+        const failure = error as { code?: unknown; stderr?: unknown };
+        const code =
+          typeof failure.code === "number" || typeof failure.code === "string"
+            ? failure.code
+            : "unknown";
+        const stderr =
+          typeof failure.stderr === "string" && failure.stderr.trim() !== ""
+            ? failure.stderr.trim().slice(0, 200)
+            : "no stderr captured";
+        throw new Error(`linkedin-fetch: curl exec failed (exit ${code}): ${stderr}`);
       }
       const marker = stdout.lastIndexOf(STATUS_SENTINEL);
       if (marker === -1) {
