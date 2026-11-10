@@ -151,6 +151,30 @@ export function resolveJudgeConfig(
 }
 
 /**
+ * FR3 options for judgePosts. Fields declare `field?: T` under
+ * exactOptionalPropertyTypes — absence hits the destructure default; an
+ * explicit `undefined` is a compile error (the omit-when-absent doctrine).
+ * fetchFn and reasoningEffort deliberately stay POSITIONAL on judgePosts
+ * (implementer's choice recorded per FR3: ~19 test re-points instead of
+ * ~36 — the deep-tail suites keep passing them as today). Module-private:
+ * exporting it would trip the knip 0/0 gate.
+ */
+interface JudgePostsOptions {
+  /** Probe-measured in-flight ceilings (0-based index -> ceiling). */
+  ceilings?: ReadonlyMap<number, number>;
+  /** Injected clock (recency, prune, stamps, the park budget). */
+  now?: () => number;
+  /** Injected park wait (the judge seam's production default). */
+  sleepFn?: SleepFn;
+  /** Seed marks from the committed health file (index.ts). */
+  healthMarks?: ReadonlyMap<number, number>;
+  /** The availability pre-check's refusal mask (0-based index -> reason). */
+  blocked?: ReadonlyMap<number, string>;
+  /** The negative-keyword veto list (config negativeKeywords). */
+  negativeKeywords?: readonly string[];
+}
+
+/**
  * Judge candidate posts in ~BATCH_SIZE-post bulk calls; every item the bulk
  * response misses or mangles falls back to the single-post judgePost.
  * Collects successful verdicts and tracks skipped IDs (D3).
@@ -177,7 +201,7 @@ export function resolveJudgeConfig(
  * starts at the dial and skips cooling or at-ceiling accounts, and a claim
  * moves the dial to the next account (the proactive spread, D1/D6).
  *
- * Refused seats ride in on the `blocked` mask (parameter 10; 0-based index
+ * Refused seats ride in on `options.blocked` (0-based index
  * -> the availability pre-check's refusal reason): the pick skips them, the
  * pool width excludes them, and the exhaustion record appends them with
  * their real reasons. An ALL-blocked pool exhausts immediately (the D11
@@ -194,13 +218,16 @@ export async function judgePosts(
   keywords: readonly string[],
   fetchFn: typeof fetch = fetch,
   reasoningEffort: ReasoningEffort = "medium",
-  ceilings: ReadonlyMap<number, number> = new Map(),
-  now: () => number = Date.now,
-  sleepFn: SleepFn = sleep,
-  healthMarks: ReadonlyMap<number, number> = new Map(),
-  blocked: ReadonlyMap<number, string> = new Map(),
-  negativeKeywords: readonly string[] = [],
+  options: JudgePostsOptions = {},
 ): Promise<JudgeBatchResult> {
+  const {
+    ceilings = new Map<number, number>(),
+    now = Date.now,
+    sleepFn = sleep,
+    healthMarks = new Map<number, number>(),
+    blocked = new Map<number, string>(),
+    negativeKeywords = [],
+  } = options;
   const state: RotationState = {
     accounts,
     cooldownUntil: new Map(),

@@ -1308,17 +1308,17 @@ Live roster (grep-verified 2026-11-10) + the rewrite rule ride the code block be
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes — the arity gate proves no site was missed: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the as-is sites (judge-rotation :398/:434/:484 and the shallow judge.test calls) compile and pass unchanged: `npm test`
-- [ ] Options object wired in production: `git grep -c "negativeKeywords: config.negativeKeywords" src/index.ts` returns 1
-- [ ] Interface stays module-private (knip-safe): `git grep -c "export.*JudgePostsOptions" src/judge.ts` returns 0 and `git grep -c "interface JudgePostsOptions" src/judge.ts` returns 1
-- [ ] Defensive copies from the defaulted locals: `git grep -c "new Map(blocked)" src/judge.ts` >= 1 and `git grep -c "new Map(healthMarks)" src/judge.ts` >= 1
-- [ ] FR3 choice documented at the seam: `git grep -c "POSITIONAL" src/judge.ts` >= 1
+- [x] Type checking passes — the arity gate proves no site was missed: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the as-is sites (judge-rotation :398/:434/:484 and the shallow judge.test calls) compile and pass unchanged: `npm test`
+- [x] Options object wired in production: `git grep -c "negativeKeywords: config.negativeKeywords" src/index.ts` returns 1
+- [x] Interface stays module-private (knip-safe): `git grep -c "export.*JudgePostsOptions" src/judge.ts` returns 0 and `git grep -c "interface JudgePostsOptions" src/judge.ts` returns 1
+- [x] Defensive copies from the defaulted locals: `git grep -c "new Map(blocked)" src/judge.ts` >= 1 and `git grep -c "new Map(healthMarks)" src/judge.ts` >= 1
+- [x] FR3 choice documented at the seam: `git grep -c "POSITIONAL" src/judge.ts` >= 1
 
 #### Manual Verification:
-- [ ] judgePosts' doc comment names `options.blocked`, not "parameter 10"
-- [ ] A zero-options judgePosts call behaves byte-identically (the untouched suite sites still pass)
+- [x] judgePosts' doc comment names `options.blocked`, not "parameter 10"
+- [x] A zero-options judgePosts call behaves byte-identically (the untouched suite sites still pass)
 
 ## Phase 5: N023 shared SMTP transport
 

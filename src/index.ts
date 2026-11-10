@@ -448,12 +448,14 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       config.keywords,
       deps.fetchFn,
       config.reasoningEffort,
-      ceilings,
-      now,
-      sleepFn,
-      health.marks,
-      blocked,
-      config.negativeKeywords,
+      {
+        ceilings,
+        now,
+        sleepFn,
+        healthMarks: health.marks,
+        blocked,
+        negativeKeywords: config.negativeKeywords,
+      },
     );
   });
   console.log(`timing: judge ${judgeMs}ms`);

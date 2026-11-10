@@ -369,19 +369,14 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        twoAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 2],
           [1, 2],
         ]),
-        Date.now,
-        inertSleep,
-      );
+        now: Date.now,
+        sleepFn: inertSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -456,19 +451,14 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       }
       return ok(bulkContent(posts.map((p) => p.id)));
     }) as unknown as typeof fetch;
-    const result = await judgePosts(
-      posts,
-      twoAccounts(),
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map([
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map([
         [0, 2],
         [1, 2],
       ]),
-      Date.now,
-      inertSleep,
-    );
+      now: Date.now,
+      sleepFn: inertSleep,
+    });
     assert.equal(calls, 2); // 502 retry — injected delay, not real
     assert.deepEqual(delays, [1_000]); // RETRY_DELAYS_MS[0]
     assert.equal(result.judged.length, 1);
@@ -503,20 +493,15 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        threeAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      await judgePosts(posts, threeAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 1],
           [1, 1],
           [2, 1],
         ]),
-        Date.now,
-        inertSleep,
-      );
+        now: Date.now,
+        sleepFn: inertSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -577,16 +562,11 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       }
       return ok(bulkContent(ids)); // everything after the park answers
     }) as unknown as typeof fetch;
-    const result = await judgePosts(
-      posts,
-      twoAccounts(),
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map([[0, 1]]),
-      now,
-      inertSleep,
-    );
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map([[0, 1]]),
+      now: now,
+      sleepFn: inertSleep,
+    });
     assert.equal(result.judged.length, 20);
     assert.deepEqual(result.skippedPostIds, []);
     // Exactly one park: earliest expiry (60_100) + the 500ms wake jitter,
@@ -620,16 +600,11 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
 
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        singleAccount,
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([[0, 4]]),
-        now,
-        inertSleep,
-      );
+      await judgePosts(posts, singleAccount, KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([[0, 4]]),
+        now: now,
+        sleepFn: inertSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -667,7 +642,9 @@ describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait"
       KEYWORDS,
       spreadAnswering(auths),
       "medium",
-      new Map(fiveAccounts.map((_, i) => [i, 1] as const)),
+      {
+        ceilings: new Map(fiveAccounts.map((_, i) => [i, 1] as const)),
+      },
     );
     assert.equal(result.judged.length, 50);
     assert.deepEqual(result.skippedPostIds, []);
@@ -700,17 +677,12 @@ describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait"
       }
       return ok('{"relevant": true, "locationOk": true}');
     }) as unknown as typeof fetch;
-    const result = await judgePosts(
-      posts,
-      twoAccounts(),
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map([
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map([
         [0, 2],
         [1, 1],
       ]),
-    );
+    });
     assert.equal(result.judged.length, 30);
     assert.deepEqual(result.skippedPostIds, []);
     // Both hosts used (the dial spread), neither host over its ceiling.
@@ -995,19 +967,14 @@ describe("pool-truthful exhaustion wording (D9)", () => {
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        twoAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 2],
           [1, 2],
         ]),
-        Date.now,
-        inertSleep,
-      );
+        now: Date.now,
+        sleepFn: inertSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -1063,19 +1030,14 @@ describe("pool-truthful exhaustion wording (D9)", () => {
     // the release queue — a real tick, offline-safe.
     const releaser = setTimeout(() => releaseSurvivor(ok(bulkContent(allIds))), 50);
     try {
-      const result = await judgePosts(
-        posts,
-        twoAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 1],
           [1, 1],
         ]),
-        Date.now,
-        inertSleep,
-      );
+        now: Date.now,
+        sleepFn: inertSleep,
+      });
       assert.deepEqual(sleeps, []); // the free queue served the rewind — zero budget charge
       assert.equal(accountOneCalls, 1); // the 429 leg ran exactly once
       assert.equal(accountTwoCalls, 2); // batch two, then the rescued batch one

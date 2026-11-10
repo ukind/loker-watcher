@@ -340,7 +340,9 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      new Map([[0, 4]]),
+      {
+        ceilings: new Map([[0, 4]]),
+      },
     );
     assert.equal(state.peak, 4); // exactly Σ ceilings, never more
     assert.equal(result.judged.length, 280);
@@ -359,7 +361,9 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      new Map([[0, 2]]),
+      {
+        ceilings: new Map([[0, 2]]),
+      },
     );
     assert.equal(state.peak, Math.min(2, batchCount));
     assert.equal(result.judged.length, 25);
@@ -376,7 +380,9 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      new Map([[0, 3]]),
+      {
+        ceilings: new Map([[0, 3]]),
+      },
     );
 
     // The bulk phase peaks at 2 (two batches) — only the fallback pool can
@@ -443,7 +449,9 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      new Map([[0, 4]]),
+      {
+        ceilings: new Map([[0, 4]]),
+      },
     );
 
     assert.equal(result.judged.length, 9);
@@ -492,7 +500,9 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      new Map([[0, 2]]),
+      {
+        ceilings: new Map([[0, 2]]),
+      },
     );
 
     // The burst defers BOTH first-wave batches whole: their 20 posts are
@@ -523,7 +533,9 @@ describe("judgePosts", () => {
       KEYWORDS,
       mockFetch as unknown as typeof fetch,
       "medium",
-      new Map([[0, 4]]),
+      {
+        ceilings: new Map([[0, 4]]),
+      },
     );
     // Wait until all four workers have parked their batch call.
     await new Promise<void>((resolveQueued) => {
@@ -791,19 +803,14 @@ describe("negative keywords ride the judge system prompt", () => {
       systems.push(body.messages[0]?.content ?? "");
       return ok(JSON.stringify({ [post.id]: { relevant: false, locationOk: true } }));
     }) as unknown as typeof fetch;
-    const result = await judgePosts(
-      [post],
-      singleAccount,
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map(),
-      Date.now,
-      async () => {},
-      new Map(),
-      new Map(),
-      ["internship"],
-    );
+    const result = await judgePosts([post], singleAccount, KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map(),
+      now: Date.now,
+      sleepFn: async () => {},
+      healthMarks: new Map(),
+      blocked: new Map(),
+      negativeKeywords: ["internship"],
+    });
     assert.equal(systems.length, 1); // the bulk answered every id — no fallback
     assert.match(systems[0] ?? "", /negative keywords: \["internship"\]/);
     assert.deepEqual(result.judged[0]?.verdict, { relevant: false, locationOk: true });
@@ -820,19 +827,14 @@ describe("negative keywords ride the judge system prompt", () => {
       const isBulk = (body.messages[1]?.content ?? "").includes("Judge each post below");
       return ok(isBulk ? "no verdicts here" : '{"relevant": false, "locationOk": true}');
     }) as unknown as typeof fetch;
-    const result = await judgePosts(
-      [post],
-      singleAccount,
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map(),
-      Date.now,
-      async () => {},
-      new Map(),
-      new Map(),
-      ["internship", "outsourcing"],
-    );
+    const result = await judgePosts([post], singleAccount, KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map(),
+      now: Date.now,
+      sleepFn: async () => {},
+      healthMarks: new Map(),
+      blocked: new Map(),
+      negativeKeywords: ["internship", "outsourcing"],
+    });
     assert.equal(systems.length, 2); // one bulk + one single-post fallback
     assert.match(systems[1] ?? "", /negative keywords: \["internship","outsourcing"\]/);
     assert.deepEqual(result.judged[0]?.verdict, { relevant: false, locationOk: true });
@@ -932,16 +934,11 @@ describe("health ledger stamps (the four branch sites)", () => {
     };
     const mockFetch = (async (): Promise<Response> =>
       new Response("Service Unavailable", { status: 503 })) as unknown as typeof fetch;
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map([[0, 2]]),
-      Date.now,
-      inertSleep,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map([[0, 2]]),
+      now: Date.now,
+      sleepFn: inertSleep,
+    });
     assert.deepEqual(delays, [1_000, 2_000, 4_000]); // the three mid-backoff sleeps — none stamped
     assert.deepEqual(
       result.skippedPostIds,
@@ -982,23 +979,18 @@ describe("health ledger stamps (the four branch sites)", () => {
     }) as unknown as typeof fetch;
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        twoAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 4],
           [1, 4],
         ]),
-        Date.now,
-        inertSleep,
-        new Map([
+        now: Date.now,
+        sleepFn: inertSleep,
+        healthMarks: new Map([
           [0, 2],
           [1, 2],
         ]),
-      );
+      });
     } catch (error) {
       caught = error;
     }
@@ -1054,21 +1046,16 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
     const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1)));
     const { hosts, fetchFn } = hostRecorder();
 
-    const result = await judgePosts(
-      posts,
-      twoAccounts(),
-      KEYWORDS,
-      fetchFn,
-      "medium",
-      new Map([
+    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, fetchFn, "medium", {
+      ceilings: new Map([
         [0, 4],
         [1, 4],
       ]),
-      Date.now,
-      (): Promise<void> => Promise.resolve(),
-      new Map(),
-      new Map([[0, "HTTP 429"]]),
-    );
+      now: Date.now,
+      sleepFn: (): Promise<void> => Promise.resolve(),
+      healthMarks: new Map(),
+      blocked: new Map([[0, "HTTP 429"]]),
+    });
 
     assert.equal(result.judged.length, 10);
     assert.deepEqual(result.skippedPostIds, []);
@@ -1087,29 +1074,24 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
 
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        threeAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      await judgePosts(posts, threeAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 4],
           [1, 4],
           [2, 4],
         ]),
-        Date.now,
-        (ms: number): Promise<void> => {
+        now: Date.now,
+        sleepFn: (ms: number): Promise<void> => {
           delays.push(ms);
           return Promise.resolve();
         },
-        new Map(),
-        new Map([
+        healthMarks: new Map(),
+        blocked: new Map([
           [0, "HTTP 429"],
           [1, "network error: socket hang up"],
           [2, "unusable answer: missing message content"],
         ]),
-      );
+      });
     } catch (error) {
       caught = error;
     }
@@ -1139,24 +1121,19 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
 
     let caught: unknown;
     try {
-      await judgePosts(
-        posts,
-        twoAccounts(),
-        KEYWORDS,
-        mockFetch,
-        "medium",
-        new Map([
+      await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch, "medium", {
+        ceilings: new Map([
           [0, 4],
           [1, 4],
         ]),
-        Date.now,
-        (ms: number): Promise<void> => {
+        now: Date.now,
+        sleepFn: (ms: number): Promise<void> => {
           delays.push(ms);
           return Promise.resolve();
         },
-        new Map([[1, 2]]), // seat 1 capped: its first dispatch is the probe
-        new Map([[0, "HTTP 401 — key dead"]]),
-      );
+        healthMarks: new Map([[1, 2]]),
+        blocked: new Map([[0, "HTTP 401 — key dead"]]), // seat 1 capped: its first dispatch is the probe
+      });
     } catch (error) {
       caught = error;
     }
@@ -1191,25 +1168,20 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
       return ok(bulkContent(ids));
     }) as unknown as typeof fetch;
 
-    const result = await judgePosts(
-      posts,
-      threeAccounts(),
-      KEYWORDS,
-      mockFetch,
-      "medium",
-      new Map([
+    const result = await judgePosts(posts, threeAccounts(), KEYWORDS, mockFetch, "medium", {
+      ceilings: new Map([
         [0, 4],
         [1, 4],
         [2, 4],
       ]),
-      Date.now,
-      (): Promise<void> => Promise.resolve(),
-      new Map(),
-      new Map([
+      now: Date.now,
+      sleepFn: (): Promise<void> => Promise.resolve(),
+      healthMarks: new Map(),
+      blocked: new Map([
         [0, "HTTP 429"],
         [1, "HTTP 503"],
       ]),
-    );
+    });
 
     // Only seat 2 survives: width = its ceiling 4, and the two batches
     // cannot exceed it — a regression that subtracts blocked seats from
@@ -1256,9 +1228,11 @@ describe("judgePosts release-outstanding park (the paid-park regression)", () =>
       KEYWORDS,
       mockFetch,
       "medium",
-      ceilings,
-      Date.now,
-      inertSleep,
+      {
+        ceilings: ceilings,
+        now: Date.now,
+        sleepFn: inertSleep,
+      },
     );
     assert.ok(rateLimitedCalls >= 1); // the 429 leg ran
     assert.deepEqual(delays, []); // zero cooldown-park charge — the free queue served every rewind
