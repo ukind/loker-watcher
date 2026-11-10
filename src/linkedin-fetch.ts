@@ -57,13 +57,13 @@ export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
 export type SleepFn = (ms: number) => Promise<void>;
 
 /** Walk width. The pacing gate, not this number, bounds the voyager rate. */
-export const LINKEDIN_FETCH_CONCURRENCY = 2;
+const LINKEDIN_FETCH_CONCURRENCY = 2;
 
 /** §12.1: count 50 is unclamped server-side; `start += count` pages. */
 export const PAGE_SIZE = 50;
 
 /** Minimum spacing between voyager GETs, shared across surfaces (§13.3). */
-export const PACE_MS = 5_000;
+const PACE_MS = 5_000;
 
 /** One curl exec's wall-clock cap; mirrored by --max-time inside curl. */
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -80,7 +80,7 @@ const STATUS_SENTINEL = "___CURL_STATUS:";
  * mismatched fingerprint signal. Our §3/§10 -H overrides (cookie,
  * csrf-token, the static set) ride ON TOP of the profile defaults.
  */
-export const CURL_IMPERSONATE_PROFILE = "chrome116";
+const CURL_IMPERSONATE_PROFILE = "chrome116";
 
 /**
  * §10 client fingerprint for the PLAYWRIGHT adapter only (no profile
@@ -107,7 +107,7 @@ export interface Transport {
 
 // --- LegDeadError: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
-export const LEG_DEAD = "LegDeadError";
+const LEG_DEAD = "LegDeadError";
 
 /**
  * Thrown once per tick when the session leg is dead (D7). Factory-assigned
@@ -133,7 +133,7 @@ export function isLegDead(error: unknown): error is LegDead {
 
 // --- AllSurfacesFaulted: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
-export const ALL_SURFACES_FAULTED = "AllSurfacesFaulted";
+const ALL_SURFACES_FAULTED = "AllSurfacesFaulted";
 
 /** Thrown when EVERY configured surface faulted and none published posts (D13: the tick, not the walk, decides the write). */
 export interface AllSurfacesFaulted extends Error {
@@ -160,7 +160,7 @@ export function isAllSurfacesFaulted(error: unknown): error is AllSurfacesFaulte
 
 // --- §13.3 fault classification ---
 
-export type FaultKind = "legDead" | "fault";
+type FaultKind = "legDead" | "fault";
 
 export interface Fault {
   readonly kind: FaultKind;
@@ -334,7 +334,7 @@ export function createCurlTransport(
  * extraHTTPHeaders. Unexercised by the offline suite, like
  * chromiumContextFactory — the VoyagerGet seam carries the tests.
  */
-export function createPlaywrightTransport(cookies: LinkedInCookies): () => Promise<Transport> {
+function createPlaywrightTransport(cookies: LinkedInCookies): () => Promise<Transport> {
   return async (): Promise<Transport> => {
     const { request } = await import("playwright");
     // Complete the session-module cookie shape to Playwright's storageState

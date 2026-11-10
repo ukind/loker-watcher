@@ -141,7 +141,7 @@ export function csrfToken(cookies: LinkedInCookies): string {
 }
 
 /** One cookie entry shaped for Playwright's storageState contract (extras stay optional on Playwright's side). */
-export interface VoyagerStorageCookie {
+interface VoyagerStorageCookie {
   name: string;
   value: string;
   domain: string;

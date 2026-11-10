@@ -306,7 +306,7 @@ export async function sendExhaustionEmail(
  * the hosted run never sends it. The body names the remedy — the cookie
  * file refresh — so the operator can act without opening the docs.
  */
-export function buildLegDeadAlarmText(reason: string): string {
+function buildLegDeadAlarmText(reason: string): string {
   return [
     "The LinkedIn fetch leg is dead.",
     "",

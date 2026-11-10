@@ -40,7 +40,7 @@ export interface PayloadEnvelope {
 }
 
 /** LinkedIn leg state for the heartbeat/digest lines (D6/D13). */
-export type LegStatus = "ok" | "stale" | "absent" | "malformed";
+type LegStatus = "ok" | "stale" | "absent" | "malformed";
 
 /** The leg state minus the posts — rides HeartbeatStats and the digest. */
 export interface LegLine {

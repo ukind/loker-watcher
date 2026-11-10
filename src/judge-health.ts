@@ -36,7 +36,7 @@ import { stateTempPath } from "./state.js";
 import type { AccountFailure } from "./types.js";
 
 /** Envelope version; bump on a shape change, keep the reader tolerant. */
-export const HEALTH_VERSION = 1;
+const HEALTH_VERSION = 1;
 
 /**
  * Consecutive hard-failed ticks (terminal 5xx / transport / 401 / 403 —
