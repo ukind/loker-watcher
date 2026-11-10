@@ -1461,18 +1461,18 @@ describe("createSmtpResolver (the N023 memo)", () => {
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the FR7 mid-loop injection pin (tests/index.test.ts:1063-1114) and the two-consecutive-skips exhaustion pin (:1440-1486) pass unchanged: `npm test`
-- [ ] ONE Gmail options shape: `git grep -c 'service: "gmail"' src/email.ts` returns 1
-- [ ] sendText's fallback uses the factory: `git grep -c "transport ?? createGmailTransport" src/email.ts` returns 1
-- [ ] The entry module consumes the resolver: `git grep -c "createSmtpResolver" src/index.ts` returns 1
-- [ ] No nodemailer value import in the entry module: `git grep -n "nodemailer" src/index.ts` shows only `import type`
-- [ ] The memo pins pass offline: `npx tsx --test tests/email.test.ts` exits 0
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the FR7 mid-loop injection pin (tests/index.test.ts:1063-1114) and the two-consecutive-skips exhaustion pin (:1440-1486) pass unchanged: `npm test`
+- [x] ONE Gmail options shape: `git grep -c 'service: "gmail"' src/email.ts` returns 1
+- [x] sendText's fallback uses the factory: `git grep -c "transport ?? createGmailTransport" src/email.ts` returns 1
+- [x] The entry module consumes the resolver: `git grep -c "createSmtpResolver" src/index.ts` returns 1
+- [x] No nodemailer value import in the entry module: `git grep -n "nodemailer" src/index.ts` shows only `import type`
+- [x] The memo pins pass offline: `npx tsx --test tests/email.test.ts` exits 0
 
 #### Manual Verification:
-- [ ] The entry catch fence is untouched: `git grep -n "transport: undefined" src/index.ts` still names the catch path
-- [ ] Each consuming frame unwraps AFTER its own resolveEmailConfig — the three throw disciplines read unchanged
+- [x] The entry catch fence is untouched: `git grep -n "transport: undefined" src/index.ts` still names the catch path
+- [x] Each consuming frame unwraps AFTER its own resolveEmailConfig — the three throw disciplines read unchanged
 
 
 ## Phase 6: N026 + N029 — config dedupe + canary delete

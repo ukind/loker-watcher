@@ -10,6 +10,8 @@ import {
 } from "./config-file.js";
 import { LINKEDIN_PAYLOAD_PATH, STATE_PATH, isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
 import {
+  type EmailConfig,
+  createSmtpResolver,
   groupMatchesBySurface,
   resolveEmailConfig,
   sendExhaustionEmail,
@@ -73,7 +75,7 @@ async function heartbeat(
   candidateTerms: readonly string[],
   env: Record<string, string | undefined>,
   now: () => number,
-  transport?: Transporter,
+  transport?: Transporter | ((config: EmailConfig) => Transporter),
 ): Promise<void> {
   if (!isHeartbeatEnabled(env)) {
     console.log("heartbeat: disabled by HEARTBEAT_ENABLED");
@@ -82,7 +84,13 @@ async function heartbeat(
   try {
     const config = resolveEmailConfig(env);
     const candidates = selectCandidates(recent, judged, candidateTerms);
-    await sendHeartbeat(stats, candidates, config, now(), transport);
+    await sendHeartbeat(
+      stats,
+      candidates,
+      config,
+      now(),
+      typeof transport === "function" ? transport(config) : transport,
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`heartbeat: not sent — ${message}`);
@@ -119,7 +127,7 @@ export async function flushAndSendExhaustionAlarm(deps: {
   readonly outcomes: TickOutcomes;
   readonly failures: readonly AccountFailure[];
   readonly env: Record<string, string | undefined>;
-  readonly transport: Transporter | undefined;
+  readonly transport: Transporter | ((config: EmailConfig) => Transporter) | undefined;
   readonly judgeHealthPath: string | undefined;
 }): Promise<void> {
   const episodeAlreadyOpen = !episodeAlarmDue(deps.health.file);
@@ -131,10 +139,11 @@ export async function flushAndSendExhaustionAlarm(deps: {
     return;
   }
   try {
+    const emailConfig = resolveEmailConfig(deps.env);
     await sendExhaustionEmail(
       deps.failures,
-      resolveEmailConfig(deps.env),
-      deps.transport,
+      emailConfig,
+      typeof deps.transport === "function" ? deps.transport(emailConfig) : deps.transport,
       deps.accounts.length,
     );
   } catch (error) {
@@ -232,6 +241,12 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
   const now = deps.now ?? Date.now;
   const sleepFn = deps.sleepFn ?? sleep;
   const statePath = deps.statePath ?? STATE_PATH;
+  // One SMTP transport per run (N023): the resolver memoizes lazily; the
+  // injected deps.transport wins structurally. Each consuming frame invokes
+  // it AFTER its own resolveEmailConfig, so every path's throw discipline
+  // (heartbeat catch, exhaustion helper catch, notify closure) stays
+  // byte-identical.
+  const smtpFor = createSmtpResolver(deps.transport);
   // The health file lives beside the state file: dirname(STATE_PATH) is the
   // committed state/ dir, so the default derives exactly JUDGE_HEALTH_PATH
   // in production while tests that point statePath at a temp dir keep the
@@ -382,7 +397,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     // Gate 1 (zero unseen): nothing was judged, so nothing persists — the
     // state file stays byte-identical. The heartbeat still runs (timed).
     const { durationMs: notifyMs } = await timeStage(() =>
-      heartbeat(stats, recent, newPosts, config.candidateTerms, env, now, deps.transport),
+      heartbeat(stats, recent, newPosts, config.candidateTerms, env, now, smtpFor),
     );
     console.log(`timing: notify ${notifyMs}ms`);
     console.log("no new matches");
@@ -424,7 +439,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
       outcomes: { ok: [], failed: new Map<number, string>() },
       failures: availability.failures,
       env,
-      transport: deps.transport,
+      transport: smtpFor,
       judgeHealthPath,
     });
     return { judged: 0, matches: 0, skipped: newPosts.length, saved: false };
@@ -480,7 +495,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
     // feeds the same posts to the LLM again. Skipped ids stay unseen and
     // retry next run (D3).
     const { durationMs: notifyMs } = await timeStage(() =>
-      heartbeat(stats, recent, newPosts, config.candidateTerms, env, now, deps.transport),
+      heartbeat(stats, recent, newPosts, config.candidateTerms, env, now, smtpFor),
     );
     console.log(`timing: notify ${notifyMs}ms`);
     const saved = await persistJudged(state, judged, statePath, now());
@@ -531,7 +546,7 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<WatcherRun> {
         group.surface,
         group.posts,
         emailConfig,
-        deps.transport,
+        smtpFor(emailConfig),
         linkedinLeg,
         degradedLine,
       );

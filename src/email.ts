@@ -17,6 +17,36 @@ export interface EmailConfig {
   to?: string;
 }
 
+/**
+ * The canonical Gmail transport construction — ONE options shape for every
+ * site (the sendText fallback and the runWatcher memo, N023). Never sends:
+ * nodemailer connects lazily on sendMail.
+ */
+function createGmailTransport(config: EmailConfig): Transporter {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+  });
+}
+
+/** A per-run SMTP factory: injected transport wins structurally.
+ *  Tests inject recording transports; production memoizes. */
+type SmtpFactory = (config: EmailConfig) => Transporter;
+
+/**
+ * Build the run-scoped resolver (N023): without injection, the FIRST call
+ * constructs one Gmail transport and every later call reuses it — one
+ * nodemailer construction per run instead of one per email. With injection
+ * the injected transport wins via ?? (the memo is never consulted nor
+ * written), so the ~30 injected test transports keep winning structurally.
+ */
+export function createSmtpResolver(injected: Transporter | undefined): SmtpFactory {
+  let memo: Transporter | undefined;
+  return (config) => injected ?? (memo ??= createGmailTransport(config));
+}
 export interface SendDigestResult {
   sent: boolean;
   messageId?: string;
@@ -164,15 +194,7 @@ export async function sendText(
   transport?: Transporter,
 ): Promise<string | undefined> {
   const recipient = config.to ?? config.user;
-  const mailer =
-    transport ??
-    nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: config.user,
-        pass: config.pass,
-      },
-    });
+  const mailer = transport ?? createGmailTransport(config);
 
   try {
     const info = await mailer.sendMail({

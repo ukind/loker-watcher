@@ -7,6 +7,7 @@ import {
   buildExhaustionText,
   buildSurfaceDigest,
   buildSurfaceSubject,
+  createSmtpResolver,
   groupMatchesBySurface,
   renderSurface,
   resolveEmailConfig,
@@ -572,5 +573,23 @@ describe("buildExhaustionText health reasons", () => {
     assert.ok(text?.includes("account 1 (https://api.a.com/v1) — HTTP 503"));
     assert.ok(text?.includes("account 2 (https://api.b.com/v1) — HTTP 401 — key dead"));
     assert.ok(text?.includes("account 3 (https://api.c.com/v1) — network error: socket hang up"));
+  });
+});
+
+describe("createSmtpResolver (the N023 memo)", () => {
+  const CONFIG: EmailConfig = { user: "user@gmail.com", pass: "app-password" };
+
+  it("returns the injected transport untouched and never memoizes it", () => {
+    const injected = { sendMail: async () => ({}) } as unknown as Transporter;
+    const smtp = createSmtpResolver(injected);
+    assert.equal(smtp(CONFIG), injected);
+    assert.equal(smtp(CONFIG), injected);
+  });
+
+  it("constructs once and reuses one transport for the whole run", () => {
+    const smtp = createSmtpResolver(undefined);
+    const first = smtp(CONFIG);
+    assert.equal(smtp(CONFIG), first);
+    assert.equal(typeof first.sendMail, "function");
   });
 });
