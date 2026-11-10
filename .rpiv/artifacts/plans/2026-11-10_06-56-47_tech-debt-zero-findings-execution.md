@@ -1623,17 +1623,17 @@ const DOWNLOAD_TIMEOUT_MS = 120_000;
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the setup-curl doubles take the extra fetch argument unchanged: `npm test`
-- [ ] The module-scope env read is gone: `git grep -c "^const ENV" scripts/watch-linkedin.ts` returns 0
-- [ ] The entry guard landed: `git grep -c "pathToFileURL(process.argv" scripts/watch-linkedin.ts` returns 1 and `git grep -c "envWithDotEnv()" scripts/watch-linkedin.ts` returns 1 (inside main)
-- [ ] The download is bounded: `git grep -c "AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS)" scripts/setup-curl-impersonate.ts` returns 1
-- [ ] The escape-hatch contract holds on a timeout: `git grep -c "download failed for" scripts/setup-curl-impersonate.ts` returns 1 (the fail() path)
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the setup-curl doubles take the extra fetch argument unchanged: `npm test`
+- [x] The module-scope env read is gone: `git grep -c "^const ENV" scripts/watch-linkedin.ts` returns 0
+- [x] The entry guard landed: `git grep -c "pathToFileURL(process.argv" scripts/watch-linkedin.ts` returns 1 and `git grep -c "envWithDotEnv()" scripts/watch-linkedin.ts` returns 1 (inside main)
+- [x] The download is bounded: `git grep -c "AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS)" scripts/setup-curl-impersonate.ts` returns 1
+- [x] The escape-hatch contract holds on a timeout: `git grep -c "download failed for" scripts/setup-curl-impersonate.ts` returns 1 (the fail() path)
 
 #### Manual Verification:
-- [ ] Importing scripts/watch-linkedin.ts in a scratch `npx tsx` REPL prints nothing, starts no loop, and exits
-- [ ] The messages still match the byte-exact log vocabulary (`tick FAILED`, `FAILED —`)
+- [x] Importing scripts/watch-linkedin.ts in a scratch `npx tsx` REPL prints nothing, starts no loop, and exits
+- [x] The messages still match the byte-exact log vocabulary (`tick FAILED`, `FAILED —`)
 
 
 ## Phase 8: N022 paired-constant pin

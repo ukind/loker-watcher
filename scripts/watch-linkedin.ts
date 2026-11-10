@@ -7,6 +7,7 @@
  *
  * Run from a dedicated clone of main: `npm run watch-linkedin`.
  */
+import { pathToFileURL } from "node:url";
 import { envWithDotEnv } from "../src/env-file.js";
 import { isLegDead } from "../src/linkedin-fetch.js";
 import { fetchTick, handleLegDeadEpisode } from "./fetch-linkedin.js";
@@ -14,10 +15,12 @@ import { fetchTick, handleLegDeadEpisode } from "./fetch-linkedin.js";
 /** The 10-minute cadence, in code (D1: an always-on npm script). */
 const TICK_MS = 600_000;
 
-/** The merged env, resolved once: .env fills unset keys, the real shell wins. */
-const ENV = envWithDotEnv();
-
 async function main(): Promise<void> {
+  // Resolved once per process, before the first tick (semantics unchanged:
+  // the merged env feeds every tick via the loop below). Moved from module
+  // scope (N027): the module-scope readFileSync of .env is a side effect
+  // the entry guard alone cannot suppress.
+  const ENV = envWithDotEnv();
   for (;;) {
     try {
       await fetchTick({ env: ENV });
@@ -35,4 +38,14 @@ async function main(): Promise<void> {
   }
 }
 
-void main();
+// Entry guard (the PC-script contract, fetch-linkedin.ts shape): importing
+// stays side-effect free. A throw outside the loop body is not expected —
+// fetchTick catches tick faults and envWithDotEnv is a quiet no-op on a
+// missing .env — but it exits 1 fail-visibly, mirroring the sibling wrapper.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`watch-linkedin: FAILED — ${message}`);
+    process.exit(1);
+  });
+}

@@ -81,6 +81,9 @@ const execFilePromised = promisify(execFile);
 const realTar: TarRunner = (file, args) =>
   execFilePromised(file, [...args], { timeout: 120_000, windowsHide: true });
 
+/** Download wall-clock cap — mirrors the tar runner's 120_000 timeout. */
+const DOWNLOAD_TIMEOUT_MS = 120_000;
+
 /** Injectable existence probe (the already-configured gate). */
 type ExistsFn = (path: string) => Promise<boolean>;
 
@@ -160,7 +163,13 @@ export async function runSetupCurl(deps: SetupCurlDeps = {}): Promise<void> {
   const expectedSha256 = deps.expectedSha256 ?? selected.sha256;
   const url = `${CURL_IMPERSONATE_ASSET_BASE}${selected.asset}`;
   console.log(`setup-curl: downloading ${selected.asset} (tag ${CURL_IMPERSONATE_TAG})...`);
-  const response = await fetchFn(url);
+  let response: Response;
+  try {
+    response = await fetchFn(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw fail(`download failed for ${url} — ${message}`);
+  }
   if (!response.ok) {
     throw fail(`${url} answered HTTP ${response.status} — download failed`);
   }
