@@ -89,6 +89,10 @@
          "value":"https://www.threads.com/search?exact_match=false&q=Loker&serp_type=default&filter=recent"
       },
       {
+         "type":"url",
+         "value":"https://www.threads.com"
+      },
+      {
          "type":"linkedin",
          "value":"hiring indonesia"
       },
@@ -110,8 +114,8 @@
       }
    ],
    "platforms":{
-      "linkedin":true,
-      "threads":false
+      "linkedin":false,
+      "threads":true
    },
    "recencyHours":72
 }

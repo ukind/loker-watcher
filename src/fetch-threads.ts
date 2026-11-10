@@ -193,6 +193,11 @@ function isTagSurface(surface: ResolvedSurface): boolean {
 export interface SurfaceFetch {
   label: string;
   html: string;
+  /** The raw surface pair (email-per-surface stamp, design D2): the page
+   *  carries its own identity past the successes filter, which compacts
+   *  the slot array so position no longer identifies the surface. */
+  type: "tag" | "url";
+  value: string;
 }
 
 /**
@@ -214,7 +219,12 @@ export async function fetchSurfaces(
     await runPool(surfaces, FETCH_CONCURRENCY, async (surface, index) => {
       try {
         const html = await fetchOne(context, surface);
-        results[index] = { label: surface.label, html };
+        results[index] = {
+          label: surface.label,
+          html,
+          type: surface.type,
+          value: surface.value,
+        };
         console.log(`fetch: ${surface.label} OK`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -311,11 +321,16 @@ export async function fetchSurfacesAuthenticated(
       try {
         const posts = await fetchOneAuthenticated(context, surface, scrollRounds);
         console.log(`extract: ${surface.label}: ${posts.length} post(s) (authenticated)`);
+        // Stamp at the slot write (email-per-surface): a fresh post object
+        // per row — the walk's input arrays are never mutated.
+        perSurface[index] = posts.map((post) => ({
+          ...post,
+          surfaces: [{ type: surface.type, value: surface.value }],
+        }));
         // A surface that yields 0 posts is NOT a thrown failure, so it never
         // reaches `failures`. Track it separately or the all-fail error below
         // lists nothing and the run dies with no diagnostic.
         if (posts.length === 0) emptyLabels[index] = surface.label;
-        perSurface[index] = posts;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         failures[index] = `${surface.label}: ${message}`;

@@ -171,8 +171,9 @@ export function buildHeartbeatBody(
 /**
  * Send the heartbeat email. Reuses the digest transport path so both emails
  * share one credential resolution and one fail-visible error shape.
- * Accepts an optional Transporter for unit testing, exactly as sendDigest
- * does — without it the function would open a real Gmail connection.
+ * Accepts an optional Transporter for unit testing, exactly as
+ * sendSurfaceDigest does — without it the function would open a real
+ * Gmail connection.
  */
 export async function sendHeartbeat(
   stats: HeartbeatStats,

@@ -572,7 +572,13 @@ export async function fetchLinkedInPosts(
           throw legDead(`${label} page 0: unparsable 200 body — ${parsed.reason}`);
         }
         dropped += parsed.dropped;
-        perSurface[entry.index] = parsed.posts;
+        // Stamp at the slot write (email-per-surface): the surface is a
+        // LinkedinSurface, so type is always "linkedin" here. Fresh post
+        // objects — the walk's parsed array is never mutated.
+        perSurface[entry.index] = parsed.posts.map((post) => ({
+          ...post,
+          surfaces: [{ type: surface.type, value: surface.value }],
+        }));
         // Empty-is-success keyed on the observable signal (defb8af): a
         // surface that yields 0 posts is an outcome, not a fault.
         console.log(`fetch: ${label} OK — ${parsed.posts.length} post(s)`);

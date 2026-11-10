@@ -299,6 +299,7 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
       author: `author ${idAt(1)}`,
       permalink: `https://www.linkedin.com/posts/x-${idAt(1)}`,
       timestamp: new Date(Number(BigInt(idAt(1)) >> 22n)).toISOString(),
+      surfaces: [{ type: "linkedin", value: "#hiring react" }],
     };
     assert.deepEqual(envelope.posts, [expected]);
     assert.equal(transport.disposeCount(), 0); // caller-owned: fetchTick never disposes it

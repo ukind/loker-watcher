@@ -23,6 +23,8 @@ const surface = (label: string): ResolvedSurface => ({
   platform: "threads",
   label,
   url: `https://www.threads.com/${label}`,
+  type: label.startsWith("tag/") ? "tag" : "url",
+  value: label.startsWith("tag/") ? label.slice("tag/".length) : `https://www.threads.com/${label}`,
 });
 
 /** 19-digit post id, mirroring the judge tests' id helper. */
@@ -215,6 +217,36 @@ describe("fetchSurfaces", () => {
     );
   });
 
+  it("carries the raw surface pair past the successes filter (the stamp survives compaction)", async () => {
+    const surfaces: ResolvedSurface[] = [
+      {
+        platform: "threads",
+        label: "tag/hiring",
+        url: "https://www.threads.com/tag/hiring",
+        type: "tag",
+        value: "hiring",
+      },
+      {
+        platform: "threads",
+        label: "https://www.threads.com/@hiresflow",
+        url: "https://www.threads.com/@hiresflow",
+        type: "url",
+        value: "https://www.threads.com/@hiresflow",
+      },
+    ];
+    const failUrls = new Set(["tag/hiring"]);
+
+    const result = await fetchSurfaces(
+      surfaces,
+      fakeContextFactory({ concurrency: { inFlight: 0, peak: 0 }, failUrls }),
+    );
+
+    assert.deepEqual(
+      result.map((fetched) => ({ type: fetched.type, value: fetched.value })),
+      [{ type: "url", value: "https://www.threads.com/@hiresflow" }],
+    );
+  });
+
   it("throws with per-surface errors in input order when every surface fails", async () => {
     const surfaces = [1, 2].map((i) => surface(`tag/s${i}`));
     const failUrls = new Set(["tag/s1", "tag/s2"]);
@@ -251,6 +283,27 @@ describe("fetchSurfacesAuthenticated", () => {
     assert.deepEqual(
       result.map((post) => post.id),
       [id19(1), id19(2), id19(3)],
+    );
+  });
+
+  it("stamps every captured post with the surface that collected it (email-per-surface)", async () => {
+    const surfaces = [surface("tag/a1"), surface("url/x")];
+    const xhrBySubstring = new Map(
+      surfaces.map((s, i) => [s.label, graphqlBody(id19(i + 1))] as const),
+    );
+
+    const result = await fetchSurfacesAuthenticated(
+      surfaces,
+      "session-state.json",
+      fakeContextFactory({ concurrency: { inFlight: 0, peak: 0 }, xhrBySubstring }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => ({ id: post.id, surfaces: post.surfaces })),
+      [
+        { id: id19(1), surfaces: [{ type: "tag", value: "a1" }] },
+        { id: id19(2), surfaces: [{ type: "url", value: "https://www.threads.com/url/x" }] },
+      ],
     );
   });
 
