@@ -11,3 +11,5 @@ run.log
 tools/
 state/linkedin-get-budget.json
 state/linkedin-halt.flag
+outputs/.drafts/
+outputs/.plans/
