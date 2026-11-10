@@ -56,12 +56,15 @@ describe("findSessionCookies", () => {
   });
 });
 
+const STAMP = "2026-11-10T00:00:00.000Z";
+
 describe("writeCookieFile", () => {
   it("writes the canonical JSON atomically and the session resolver reads it back", async () => {
     const path = await workPath("cookies.json");
     await writeCookieFile(
       { liAt: "AQE-live-li-at", jsessionid: '"ajax:0123456789012345678"' },
       path,
+      STAMP,
     );
     const entries = await readdir(dirname(path));
     assert.ok(entries.every((entry) => !entry.endsWith(".tmp")));
@@ -69,6 +72,17 @@ describe("writeCookieFile", () => {
     assert.deepEqual(resolveLinkedInCookies({ [ENV_NAMES.linkedinCookiesFile]: path }), {
       liAt: "AQE-live-li-at",
       jsessionId: "ajax:0123456789012345678",
+      harvestedAt: STAMP,
+    });
+  });
+
+  it("records the FR-0 stamp verbatim in the file", async () => {
+    const path = await workPath("stamped.json");
+    await writeCookieFile({ liAt: "AQE", jsessionid: '"ajax:1"' }, path, STAMP);
+    assert.deepEqual(JSON.parse(await readFile(path, "utf8")), {
+      liAt: "AQE",
+      jsessionid: '"ajax:1"',
+      harvestedAt: STAMP,
     });
   });
 });
@@ -98,6 +112,7 @@ describe("runLoginHelper", () => {
       sleepFn: async (ms) => {
         sleeps.push(ms);
       },
+      now: () => Date.UTC(2026, 10, 10, 0, 0, 0),
     });
     assert.deepEqual(result, { cookiePath, dotEnvUpdated: true });
     assert.deepEqual(sleeps, [2_000, 2_000]); // two empty polls, then the harvest
@@ -106,6 +121,12 @@ describe("runLoginHelper", () => {
       await readFile(dotEnvPath, "utf8"),
       `${ENV_NAMES.linkedinCookiesFile}=${cookiePath}\n`,
     );
+    // The stamp comes from the injected clock, never the ambient one.
+    assert.deepEqual(resolveLinkedInCookies({ [ENV_NAMES.linkedinCookiesFile]: cookiePath }), {
+      liAt: "AQE-live-li-at",
+      jsessionId: "ajax:0123456789012345678",
+      harvestedAt: STAMP,
+    });
   });
 
   it("times out fail-visibly and still closes the context", async () => {

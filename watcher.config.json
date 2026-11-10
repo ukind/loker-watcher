@@ -39,9 +39,12 @@
    "negativeKeywords":[
       "internship",
       "fresher candidate",
-      "outsourcing",
+      "msbu",
+      "accord",
       "LP or Job from India",
-      "remote india"
+      "Dikshatek",
+      "remote india",
+      "Liferay"
    ],
    "surfaces":[
       {
@@ -94,51 +97,7 @@
       },
       {
          "type":"linkedin",
-         "value":"hiring react jakarta"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring engineer jakarta"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring developer jakarta"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring engineer indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring developer indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"developer indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"engineer indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"software indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"react indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring react indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring frontend"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring react"
+         "value":"hiring indonesia"
       },
       {
          "type":"linkedin",
@@ -146,20 +105,21 @@
       },
       {
          "type":"linkedin",
-         "value":"hiring indonesia"
+         "value":"hiring developer indonesia"
       },
       {
          "type":"linkedin",
-         "value":"engineer jakarta"
+         "value":"hiring engineer jakarta"
       },
       {
          "type":"linkedin",
-         "value":"developer jakarta"
+         "value":"react indonesia"
       }
    ],
    "platforms":{
-      "linkedin":false,
+      "linkedin":true,
       "threads":true
    },
+   "reasoningEffort": "high",
    "recencyHours":72
 }

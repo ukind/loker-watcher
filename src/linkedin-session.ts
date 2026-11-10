@@ -31,6 +31,15 @@ import { ENV_NAMES } from "./config.js";
 export interface LinkedInCookies {
   readonly liAt: string;
   readonly jsessionId: string;
+  /**
+   * Machine-written harvest stamp (FR-0, design 2026-11-09): an ISO-8601
+   * instant scripts/login-linkedin.ts records at harvest time. Optional on
+   * read by contract — the resolver tolerates its absence (a legacy cookie
+   * file keeps working for scripts/probe-linkedin.ts); ENFORCEMENT is the
+   * fetchTick gate in scripts/fetch-linkedin.ts, where presence is required
+   * and age is never checked.
+   */
+  readonly harvestedAt?: string;
 }
 
 function fail(reason: string): Error {
@@ -120,10 +129,16 @@ export function resolveLinkedInCookies(
   }
   const doc = parsed as Record<string, unknown>;
   const where = `${envName} points at ${filePath} with`;
-  return {
-    liAt: readCookieField(doc, "liAt", where),
-    jsessionId: canonicalJsessionid(readCookieField(doc, "jsessionid", where), where),
-  };
+  const liAt = readCookieField(doc, "liAt", where);
+  const jsessionId = canonicalJsessionid(readCookieField(doc, "jsessionid", where), where);
+  // FR-0, tolerant read (design 2026-11-09): present + non-empty string rides
+  // through trimmed; anything else leaves the key ABSENT — enforcement is the
+  // fetchTick gate's job, never this resolver's (the probe must keep working
+  // on a legacy stampless file).
+  const stamp = doc.harvestedAt;
+  return typeof stamp === "string" && stamp.trim() !== ""
+    ? { liAt, jsessionId, harvestedAt: stamp.trim() }
+    : { liAt, jsessionId };
 }
 
 /**

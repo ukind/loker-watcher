@@ -40,9 +40,12 @@ threads-session.ts → session.test.ts         # GRANDFATHERED name drift — ne
 scripts/fetch-linkedin.ts → fetch-linkedin.test.ts   # CLI suite: scriptGit argv-transcript doubles (the transcript IS
 #                                              #   the oracle), transportFor counters, parked deferred() flush,
 #                                              #   marker-file episode edges (preflight, rebase/retry, leg-dead)
-scripts/watch-linkedin.ts, probe-judge.ts, probe-linkedin.ts — NO TESTS BY DESIGN: the loop wraps the tested
-#                                              #   tick; probe-judge drives a LIVE LLM endpoint (the dispatch gate
-#                                              #   is its check); probe-linkedin's run IS the gate
+watch-linkedin.ts  → watch-linkedin.test.ts   # seeded cadence transcript (28-33 min, never the old 600 s),
+#                                              #   tick-before-sleep order, cap 0, both fault arms, the
+#                                              #   entry-guard pin (importing starts no loop) — the suite
+#                                              #   deliberately supersedes the old NO-TESTS-BY-DESIGN line
+scripts/probe-judge.ts, probe-linkedin.ts — NO TESTS BY DESIGN: probe-judge drives a LIVE LLM endpoint (the
+#                                              #   dispatch gate is its check); probe-linkedin's run IS the gate
 scripts/hooks/*    → gate-destructive.test.ts, format-on-edit.test.ts   # black-box spawnSync; import no src code
 scripts/commit-state-rebase.sh → commit-state-rebase.test.ts   # black-box scratch-repo git scenarios; bash gate + explicit skip
 ```

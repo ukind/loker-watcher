@@ -39,6 +39,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { Surface } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
+import { HALT_RATE_LIMIT_REASON, type RandomFn } from "./linkedin-behavior.js";
 import {
   type LinkedInCookies,
   buildCookieHeader,
@@ -62,8 +63,15 @@ const LINKEDIN_FETCH_CONCURRENCY = 2;
 /** §12.1: count 50 is unclamped server-side; `start += count` pages. */
 export const PAGE_SIZE = 50;
 
-/** Minimum spacing between voyager GETs, shared across surfaces (§13.3). */
-const PACE_MS = 5_000;
+/** Pace floor: minimum spacing between voyager GETs, shared across surfaces (§13.3). */
+export const PACE_MIN_MS = 5_000;
+
+/**
+ * Pace ceiling: EXCLUSIVE upper bound of the spacing draw (the anti-
+ * restriction profile's 5-15 s band, design 2026-11-09). floor() keeps a
+ * draw at most MAX - 1 ms, mirroring the wake-cadence bounds.
+ */
+export const PACE_MAX_MS = 15_000;
 
 /** One curl exec's wall-clock cap; mirrored by --max-time inside curl. */
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -158,9 +166,34 @@ export function isAllSurfacesFaulted(error: unknown): error is AllSurfacesFaulte
   );
 }
 
+// --- HaltError: the tagged-error idiom (judge-rotation.ts:51-75) ---
+// The account-safety terminal (design 2026-11-09): a 429 or a spent daily
+// budget stops the walk and fetchTick trips the operator-cleared latch.
+// It deliberately does NOT ride LegDeadError: a dead session self-heals on
+// a cookie refresh, a halt must not.
+
+export const HALT = "HaltError";
+
+/** Thrown once per walk when the account hit a slow-down signal. */
+export interface Halt extends Error {
+  name: string;
+  reason: string;
+}
+
+export function halt(reason: string): Halt {
+  const error = new Error(`linkedin-fetch: halt — ${reason}`) as Halt;
+  error.name = HALT;
+  error.reason = reason;
+  return error;
+}
+
+export function isHalt(error: unknown): error is Halt {
+  return typeof error === "object" && error !== null && (error as { name?: unknown }).name === HALT;
+}
+
 // --- §13.3 fault classification ---
 
-type FaultKind = "legDead" | "fault";
+type FaultKind = "legDead" | "fault" | "halt";
 
 export interface Fault {
   readonly kind: FaultKind;
@@ -203,6 +236,14 @@ export function classifyFault(status: number, body: string): Fault {
       kind: "legDead",
       reason: `HTTP ${status} redirect loop — dead session or edge block; refresh the cookie file (live-observed 2026-11-05, §13.1 amendment)`,
     };
+  }
+  // 429: the account is rate-limited (the anti-restriction profile) — a
+  // HALT, never a leg-dead: the session is fine, the account must slow
+  // down (design 2026-11-09). The reason reuses the behavior module's
+  // canonical string so the latch file, the alarm, and this log line
+  // always carry the same words.
+  if (status === 429) {
+    return { kind: "halt", reason: HALT_RATE_LIMIT_REASON };
   }
   if (status === 403) {
     const challenge = /Just a moment|challenge|cf-ray/i.test(trimmed);
@@ -305,8 +346,21 @@ export function createCurlTransport(
       try {
         ({ stdout } = await execFn(bin, args));
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        throw new Error(`linkedin-fetch: curl exec failed — ${message}`);
+        // Credential hygiene (revise 2026-11-10): Node's execFile error
+        // message embeds the ENTIRE command line — cookie and csrf-token
+        // headers included — and a live probe printed the whole jar to the
+        // console. Never forward it. The diagnostic value rides the exit
+        // code + curl's own stderr: headers never go to stderr.
+        const failure = error as { code?: unknown; stderr?: unknown };
+        const code =
+          typeof failure.code === "number" || typeof failure.code === "string"
+            ? failure.code
+            : "unknown";
+        const stderr =
+          typeof failure.stderr === "string" && failure.stderr.trim() !== ""
+            ? failure.stderr.trim().slice(0, 200)
+            : "no stderr captured";
+        throw new Error(`linkedin-fetch: curl exec failed (exit ${code}): ${stderr}`);
       }
       const marker = stdout.lastIndexOf(STATUS_SENTINEL);
       if (marker === -1) {
@@ -409,21 +463,27 @@ interface PacingGate {
 }
 
 /**
- * Shared pacing gate: every voyager GET starts PACE_MS or more after the
- * previous one, regardless of which surface issued it. The slot is
- * RESERVED BEFORE SLEEPING — the stamp advances synchronously on entry, so
- * concurrent workers can never compute the same wake time and fire a burst;
- * with width 2 the GET starts still space PACE_MS apart globally
- * (pacing-bound, not width-bound, D11). A per-walk closure (not module
- * state): two ticks must not inherit each other's stamp, and each test
- * run gets a fresh gate.
+ * Shared pacing gate: every voyager GET starts a fresh draw in
+ * [PACE_MIN_MS, PACE_MAX_MS) after the previous one, regardless of which
+ * surface issued it. The slot is RESERVED BEFORE SLEEPING — the stamp
+ * advances synchronously on entry, so concurrent workers can never compute
+ * the same wake time and fire a burst; with width 2 the GET starts still
+ * space one draw apart globally (pacing-bound, not width-bound, D11). A
+ * per-walk closure (not module state): two ticks must not inherit each
+ * other’s stamp, and each test run gets a fresh gate.
  */
-function makePacingGate(now: () => number, sleepFn: SleepFn): PacingGate {
+function makePacingGate(
+  now: () => number,
+  sleepFn: SleepFn,
+  rng: RandomFn = Math.random,
+): PacingGate {
   let nextFreeAt = Number.NEGATIVE_INFINITY;
   return {
     wait: async () => {
       const slotAt = Math.max(now(), nextFreeAt);
-      nextFreeAt = slotAt + PACE_MS;
+      // The gap is a fresh uniform draw in [PACE_MIN_MS, PACE_MAX_MS) per
+      // reservation — randomized spacing, same reserve-before-sleep shape.
+      nextFreeAt = slotAt + Math.floor(PACE_MIN_MS + rng() * (PACE_MAX_MS - PACE_MIN_MS));
       const waitMs = slotAt - now();
       if (waitMs > 0) {
         await sleepFn(waitMs);
@@ -455,53 +515,83 @@ export async function fetchLinkedInPosts(
   transport: VoyagerGet | Transport,
   sleepFn: SleepFn = defaultSleep,
   now: () => number = Date.now,
+  rng: RandomFn = Math.random,
 ): Promise<Post[]> {
   const ownsTransport = typeof transport !== "function";
   const get: VoyagerGet = ownsTransport ? (transport as Transport).get : transport;
-  const gate = makePacingGate(now, sleepFn);
-  // Side arrays indexed by runPool's claim index — runPool returns void
-  // (src/pool.ts:33-52); reassembly order comes from the filter+flat walk.
+  const gate = makePacingGate(now, sleepFn, rng);
+  // FR-5 (shuffled surface order): Fisher-Yates over {surface, index}
+  // pairs with the injected rng — the GET dispatch order varies per tick
+  // while perSurface keeps ORIGINAL indexes, so the flat() reassembly
+  // order stays input-order structural no matter how the shuffle lands.
+  const order = surfaces.map((surface, index) => ({ surface, index }));
+  for (let i = order.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = order[i]!;
+    order[i] = order[j]!;
+    order[j] = tmp;
+  }
+  // Side arrays indexed by the ORIGINAL surface index — runPool returns
+  // void (src/pool.ts:33-52); reassembly order comes from the filter+flat walk.
   const perSurface: Array<Post[] | undefined> = Array.from({ length: surfaces.length });
   let dropped = 0;
   let faultedCount = 0;
   let deadReason: string | undefined;
+  let haltReason: string | undefined;
 
   try {
-    await runPool(surfaces, LINKEDIN_FETCH_CONCURRENCY, async (surface, index) => {
+    await runPool(order, LINKEDIN_FETCH_CONCURRENCY, async (entry) => {
+      const surface = entry.surface;
       const label = `linkedin/${surface.value}`;
       try {
-        const collected: Post[] = [];
-        let start = 0;
-        for (;;) {
-          if (deadReason !== undefined) return; // stop claiming; the join re-throws
-          await gate.wait();
-          if (deadReason !== undefined) return;
-          const response = await get(buildSearchUrl(surface.value, start, PAGE_SIZE));
-          if (response.status !== 200) {
-            const fault = classifyFault(response.status, response.body);
-            if (fault.kind === "legDead") throw legDead(fault.reason);
-            throw new Error(`${label} page ${start}: ${fault.reason}`);
+        // Drain checks: stop claiming the moment a halt or leg-dead is
+        // flagged; the join re-throws once.
+        if (deadReason !== undefined || haltReason !== undefined) return;
+        await gate.wait();
+        if (deadReason !== undefined || haltReason !== undefined) return;
+        // FR-3 (one page per surface per tick): page 0 only — count 50 is
+        // unclamped server-side, so a full page still caps at ONE GET.
+        const response = await get(buildSearchUrl(surface.value, 0, PAGE_SIZE));
+        if (response.status !== 200) {
+          const fault = classifyFault(response.status, response.body);
+          if (fault.kind === "halt") {
+            haltReason ??= fault.reason;
+            console.warn(`fetch: ${label} HALT — ${fault.reason}`);
+            return;
           }
-          const parsed = parseSearchResponse(response.body);
-          if (parsed.kind === "unparsable") {
-            throw new Error(`${label} page ${start}: unparsable 200 body — ${parsed.reason}`);
-          }
-          dropped += parsed.dropped;
-          collected.push(...parsed.posts);
-          if (parsed.posts.length < PAGE_SIZE) break;
-          start += PAGE_SIZE;
+          if (fault.kind === "legDead") throw legDead(fault.reason);
+          throw new Error(`${label} page 0: ${fault.reason}`);
         }
+        const parsed = parseSearchResponse(response.body);
+        if (parsed.kind === "unparsable") {
+          // FR-4 (ratified 2026-11-09): one unparsable 200 stops the whole
+          // tick — drain-then-throw via the leg-dead channel, whose episode
+          // marker emails once per episode and auto-clears on the next
+          // good tick. A changed response shape is exactly when the machine
+          // must stop hitting the endpoint, not push through.
+          throw legDead(`${label} page 0: unparsable 200 body — ${parsed.reason}`);
+        }
+        dropped += parsed.dropped;
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
-        // objects — the walk's collected array is never mutated.
-        perSurface[index] = collected.map((post) => ({
+        // objects — the walk's parsed array is never mutated.
+        perSurface[entry.index] = parsed.posts.map((post) => ({
           ...post,
           surfaces: [{ type: surface.type, value: surface.value }],
         }));
         // Empty-is-success keyed on the observable signal (defb8af): a
         // surface that yields 0 posts is an outcome, not a fault.
-        console.log(`fetch: ${label} OK — ${collected.length} post(s)`);
+        console.log(`fetch: ${label} OK — ${parsed.posts.length} post(s)`);
       } catch (error) {
+        if (isHalt(error)) {
+          // A halt thrown INSIDE the worker (the budget wrapper riding the
+          // seam) must drain like a leg-dead, never land in the fault arm —
+          // a surface fault would quietly COMPLETE the tick with partial
+          // posts (design 2026-11-09; caught by the Slice 4 mid-walk test).
+          haltReason ??= error.reason;
+          console.warn(`fetch: ${label} HALT — ${error.reason}`);
+          return;
+        }
         if (isLegDead(error)) {
           // Drain-then-throw (judgePosts D11 shape): flag, stop claiming,
           // re-throw once after the join. The tick aborts whole — partial
@@ -510,7 +600,7 @@ export async function fetchLinkedInPosts(
           console.warn(`fetch: ${label} LEG DEAD — ${error.reason}`);
           return;
         }
-        faultedCount += 1; // non-leg-dead arm only; the leg-dead arm returns above
+        faultedCount += 1; // fault arm only; the leg-dead/halt arms return above
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`fetch: ${label} FAILED — ${message}`);
       }
@@ -519,6 +609,11 @@ export async function fetchLinkedInPosts(
     if (ownsTransport) await (transport as Transport).dispose();
   }
 
+  // Halt outranks leg-dead at the join: a rate-limit signal is the
+  // account-safety terminal; a same-walk dead session still self-heals.
+  if (haltReason !== undefined) {
+    throw halt(haltReason);
+  }
   if (deadReason !== undefined) {
     throw legDead(deadReason);
   }
