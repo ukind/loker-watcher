@@ -1,7 +1,7 @@
 {
   "https://inference.coralbricks.ai/v1": 4,
   "https://ai.nube-api.com/v1": 32,
-  "https://openrouter.ai/api/v1": 32,
+  "https://openrouter.ai/api/v1": 1,
   "https://api.z.ai/api/coding/paas/v4": 4,
-  "probedAt": 1794305709
+  "probedAt": 1794334933
 }
