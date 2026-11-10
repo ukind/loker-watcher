@@ -39,9 +39,12 @@
    "negativeKeywords":[
       "internship",
       "fresher candidate",
-      "outsourcing",
+      "msbu",
+      "accord",
       "LP or Job from India",
-      "remote india"
+      "Dikshatek",
+      "remote india",
+      "Liferay"
    ],
    "surfaces":[
       {
@@ -115,7 +118,7 @@
    ],
    "platforms":{
       "linkedin":true,
-      "threads":false
+      "threads":true
    },
    "recencyHours":72
 }
