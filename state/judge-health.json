@@ -1,7 +1,5 @@
 {
   "version": 1,
-  "marks": {
-    "https://inference.coralbricks.ai/v1": 1
-  },
+  "marks": {},
   "outageOpen": false
 }
