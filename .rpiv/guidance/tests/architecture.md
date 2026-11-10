@@ -25,7 +25,8 @@ login-linkedin.ts (core) → login-linkedin.test.ts  # context seam injected, sl
 scripts/setup-curl-impersonate.ts → setup-curl-impersonate.test.ts  # fetch/tar doubles, suite-computed fixture sha, failure pins
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
-judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins
+judge.ts           → judge.test.ts           # orchestration: env parsing, judgePosts options object, pools/pipeline
+judge-dispatch.ts  → (no dedicated file — judge.test.ts + judge-rotation.test.ts own it: prompts, warn strings, wrappers, rotation integration)
 judge-parse.ts     → judge-parse.test.ts     # verdict parsers — pure string-in/string-out
 judge-rotation.ts  → judge-rotation.test.ts  # cooldown, park budget, exhaustion suites
 judge-ceilings.ts  → judge-ceilings.test.ts  # committed ceilings: resolver matrix, never-throw reader

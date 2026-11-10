@@ -19,7 +19,7 @@ env-file.ts                              # PC-script support: <cwd>/.env auto-lo
                                          #   login-linkedin + setup-curl-impersonate import it)
 threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
 linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (voyager/session/fetch/payload) | data-sjs walk
-recency.ts, judge.ts, judge-rotation.ts, # FUNNEL: window filter | dispatchLlmCall + wrappers | rotation | parsers |
+recency.ts, judge.ts, judge-dispatch.ts, # FUNNEL: window filter | judge orchestration | dispatch seam (core + wrappers) | rotation | parsers |
 judge-parse.ts, pool.ts                  #   bounded shared runPool (zero imports)
 email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 atomic save
 ```
@@ -124,8 +124,10 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // not width-bound.
 // linkedin-payload.ts: {version, writtenAt, posts}; writePayloadAtomic (temp+rename); readPayloadPosts
 // NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(30min)→stale+age; non-ENOENT unreadable→
-// malformed; bad envelope→malformed; bad rows→drop+count. {posts, leg} feeds HeartbeatStats.linkedinLeg
-// (heartbeat line ALWAYS; digest line when not ok).
+// malformed; bad envelope→malformed; bad rows→drop+count; unknown version→malformed (STRICT, N018:
+// accepted-and-documented — the remedy is updating the PC loop's clone of main (git pull) + restart
+// watch-linkedin). {posts, leg} feeds HeartbeatStats.linkedinLeg (heartbeat line ALWAYS; digest line
+// when not ok).
 // index.ts arm: linkedinFetch re-keyed to (payloadPath, now) => PayloadRead; no token gate — absence
 // is the PC-off normal; the D12 belt catch remains for unanticipated faults only.
 // The PC scripts themselves live in scripts/ (tick, loop, gate, login, setup-curl) — see

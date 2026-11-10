@@ -1824,20 +1824,20 @@ judge-dispatch.ts  → (no dedicated file — judge.test.ts + judge-rotation.tes
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Type checking passes: `npm run typecheck`
-- [ ] Lint passes: `npm run lint`
-- [ ] Tests pass — the version pins survive the doc edit (tests/linkedin-payload.test.ts:231-237 v1 → malformed, :120-125 version 99; tests/index.test.ts:720-730; tests/heartbeat.test.ts:159-163): `npm test`
-- [ ] The retired subject claim is gone from README: `git grep -c "+ LinkedIn" README.md` returns 0
-- [ ] The config table names the veto key: `git grep -c "negativeKeywords" README.md` returns >= 1
-- [ ] AGENTS.md names both modules: `git grep -c "judge-dispatch" AGENTS.md` >= 1 and `git grep -c "judge-availability" AGENTS.md` >= 1
-- [ ] The guidance mirrors landed: `git grep -c "judge-dispatch" .rpiv/guidance/src/architecture.md` >= 1 and `git grep -c "judge-dispatch" .rpiv/guidance/tests/architecture.md` >= 1
-- [ ] The payload contract is documented in code: `git grep -c "N018" src/linkedin-payload.ts` >= 1
-- [ ] WHOLE-PLAN final gates (validate owns this): `npm run typecheck && npm run lint && npm test && npx knip` all exit 0
+- [x] Type checking passes: `npm run typecheck`
+- [x] Lint passes: `npm run lint`
+- [x] Tests pass — the version pins survive the doc edit (tests/linkedin-payload.test.ts:231-237 v1 → malformed, :120-125 version 99; tests/index.test.ts:720-730; tests/heartbeat.test.ts:159-163): `npm test`
+- [x] The retired subject claim is gone from README: `git grep -c "+ LinkedIn" README.md` returns 0
+- [x] The config table names the veto key: `git grep -c "negativeKeywords" README.md` returns >= 1
+- [x] AGENTS.md names both modules: `git grep -c "judge-dispatch" AGENTS.md` >= 1 and `git grep -c "judge-availability" AGENTS.md` >= 1
+- [x] The guidance mirrors landed: `git grep -c "judge-dispatch" .rpiv/guidance/src/architecture.md` >= 1 and `git grep -c "judge-dispatch" .rpiv/guidance/tests/architecture.md` >= 1
+- [x] The payload contract is documented in code: `git grep -c "N018" src/linkedin-payload.ts` >= 1
+- [x] WHOLE-PLAN final gates (validate owns this): `npm run typecheck && npm run lint && npm test && npx knip` all exit 0
 
 #### Manual Verification:
-- [ ] The payload doc's remedy sentence mirrors the orphan warning's wording ("update the PC loop's clone of main (git pull) and restart watch-linkedin")
-- [ ] AGENTS.md reads funnel-ordered: judge-dispatch between judge-rotation and judge-ceilings; judge-availability between judge-health and judge-parse
-- [ ] No false sentence survived anywhere (docs match the post-Phase-8 code, the run-4 docs-drift lesson)
+- [x] The payload doc's remedy sentence mirrors the orphan warning's wording ("update the PC loop's clone of main (git pull) and restart watch-linkedin")
+- [x] AGENTS.md reads funnel-ordered: judge-dispatch between judge-rotation and judge-ceilings; judge-availability between judge-health and judge-parse
+- [x] No false sentence survived anywhere (docs match the post-Phase-8 code, the run-4 docs-drift lesson)
 
 
 ## Ordering Constraints

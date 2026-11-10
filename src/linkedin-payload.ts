@@ -25,8 +25,14 @@ import { LINKEDIN_PAYLOAD_PATH } from "./config.js";
 import { stateTempPath } from "./state.js";
 import type { Post } from "./types.js";
 
-/** Envelope version; bump on a shape change, keep the reader tolerant.
- *  v2 (email-per-surface): rows may carry surfaces stamps. */
+/**
+ * Envelope version; bump on a shape change. The reader accepts ONLY this
+ * version (strict reject in readPayloadPosts — warn + leg "malformed";
+ * N018, accepted-and-documented). A committed payload reading malformed
+ * means the PC loop's clone of main is behind: update it (git pull) and
+ * restart watch-linkedin so the next successful tick rewrites the payload
+ * at the current version — the version-axis twin of the orphan warning in
+ * src/index.ts. v2 (email-per-surface): rows may carry surfaces stamps. */
 export const PAYLOAD_VERSION = 2;
 
 /** Twice the 10-minute cadence: a payload older than this reads as stale. */

@@ -118,6 +118,14 @@ against the configured keywords, email digest, commit state.
 - `src/judge-rotation.ts` - account-pool rotation primitives: the cooldown
   + in-flight + ceilings state, the dispatch dial (claim/release, ceiling
   waiters), the tagged exhaustion error, and the park helper
+- `src/judge-dispatch.ts` - the judge dispatch seam: the shared HTTP retry
+  core behind judgeBatch/judgePost, the wrappers themselves (they own the
+  byte-exact operator warn strings), the prompt builders, and the wire
+  helpers (`normalizeEndpoint`, `terminalFailureReason` — the availability
+  pre-check and the probe reuse them). The core 429-cools the account and
+  re-picks, backs 5xx off on the same account with the slot released (the
+  backoff sleep runs after the release), and RETURNS the exhausted terminal
+  — only the wrapper throws it, outside any try the core owns
 - `src/judge-ceilings.ts` - the committed ceilings file reader
   (degrade-everything: absent or malformed `state/judge-ceilings.json`
   floors every account at ceiling 1 with one warning, never fails a run)
@@ -126,6 +134,10 @@ against the configured keywords, email digest, commit state.
   tick-flush (success + exhaustion), and the episode helpers
   (degrade-everything: absent or malformed `state/judge-health.json`
   reads as everything healthy, never fails a run)
+- `src/judge-availability.ts` - the parallel account pre-check before any
+  judge batch: one tiny chat-completions probe per account; per-account
+  refusals come back in the judge's own failure vocabulary, a checker fault
+  degrades to all-available with one warning, and it never throws
 - `src/judge-parse.ts` - verdict parsers for the judge's responses
   (single-post and bulk)
 - `src/pool.ts` - shared bounded worker pool (`runPool`) used by the judge

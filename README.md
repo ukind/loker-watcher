@@ -55,9 +55,10 @@ streaks and the outage-episode bit).
    stays quiet in the log and still fails the run.
 7. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
    fails is skipped — the post stays unseen and retries on the next run.
-8. New relevant + located posts are emailed as the job digest; LinkedIn
-   item lines carry a `[linkedin]` marker and the subject appends
-   `+ LinkedIn` when at least one LinkedIn post matched.
+8. New relevant + located posts are emailed as one plain-text digest per
+   configured surface that produced matches; each subject names its surface
+   (`3 new job posts — tag: "hiring"`), and LinkedIn item lines carry a
+   `[linkedin]` marker.
 9. On match runs the state file is committed back as `github-actions[bot]`.
 10. **Zero-match runs email a status digest instead** — the scan funnel plus
     the closest candidate posts with their permalinks — so a quiet run is
@@ -137,6 +138,7 @@ no code change and no Actions variable is involved.
 | `platforms` | Which platforms this run watches: `{ "linkedin": true, "threads": true }`. Required — an absent block, a missing member, or a non-boolean member fails the run naming the key. `false` skips that platform's fetch, judge, and digest rows; both `false` parks the run (exit 0, no email, no state read or write). The PC LinkedIn leg keeps fetching — this gates the hosted run only. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
+| `negativeKeywords` | The veto list: a post matching any of these is never relevant, even when it matches a keyword. Optional — absent or `[]` leaves the prompt byte-identical. |
 | `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
 | `scrollRounds` | Upper bound on scroll rounds per Threads surface walk. Must be a whole number >= 1; absent defaults to `8`. |
