@@ -1,7 +1,8 @@
 {
   "version": 1,
   "marks": {
-    "https://api.z.ai/api/coding/paas/v4": 1
+    "https://api.z.ai/api/coding/paas/v4": 2,
+    "https://openrouter.ai/api/v1": 1
   },
   "outageOpen": false
 }
