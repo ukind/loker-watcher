@@ -2042,8 +2042,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     await fetchLinkedInPosts([surface("#scroll")], PROFILE, factory, 1, instantSleep);
     const page = pageFor(factory, "%23scroll");
-    // One scroll per click round, the exact Threads idiom.
-    assert.deepEqual(page.evaluates, ["window.scrollTo(0, document.body.scrollHeight)"]);
+    // Round 1: DOM probe, column scroll, then a re-probe after the settle.
+    assert.equal(page.evaluates.length, 3);
+    assert.match(page.evaluates[0] ?? "", /loadMore/); // probe before the scroll
+    assert.match(page.evaluates[1] ?? "", /lazy-column/); // the column scroll
+    assert.match(page.evaluates[1] ?? "", /scrollIntoView/); // brings the button into view
+    assert.match(page.evaluates[2] ?? "", /colScrollH/); // probe after the scroll
     // The scroll precedes the click, not the other way round.
     assert.equal(page.clicks.length, 1);
   });
