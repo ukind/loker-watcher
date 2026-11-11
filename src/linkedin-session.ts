@@ -1,5 +1,5 @@
 /**
- * LinkedIn session material for the local voyager leg (design D4).
+ * LinkedIn session material for the PC-local browser leg (design D4).
  *
  * One cookie file OUTSIDE the repo — exported interactively from a
  * logged-in browser (DOCUMENTATION.md §2.4 VERIFIED; 2FA dead-ends headless
@@ -9,12 +9,12 @@
  * - resolveLinkedInCookies: fail-visible read + validation. The leg has no
  *   reason to exist without a session, so this is stricter than the
  *   silent-null Threads model (resolveSession in src/threads-session.ts).
- * - buildCookieHeader: the voyager GET's Cookie header. li_at rides first
+ * - buildCookieHeader: the browser session's Cookie header. li_at rides first
  *   and unquoted; JSESSIONID keeps its quotes and rides last (§10 template;
  *   §14.5 keeps JSESSIONID last in the header).
  * - csrfToken: the csrf-token header value — the JSESSIONID value with the
  *   quotes stripped (§3, §7 gotcha 5). A wrong or absent value is a 403
- *   "CSRF check failed." on every voyager GET (§13.1).
+ *   "CSRF check failed." on every authenticated request (§13.1).
  * - toStorageState: a storageState document for the Playwright adapter
  *   (slice 3), synthesized from the same pair.
  *
@@ -142,7 +142,7 @@ export function resolveLinkedInCookies(
 }
 
 /**
- * The voyager GET's Cookie header (§10 template): li_at first, unquoted;
+ * The browser session's Cookie header (§10 template): li_at first, unquoted;
  * JSESSIONID last, keeping the quotes the browser jar stores (§14.5 keeps
  * JSESSIONID last in the header).
  */
@@ -156,7 +156,7 @@ export function csrfToken(cookies: LinkedInCookies): string {
 }
 
 /** One cookie entry shaped for Playwright's storageState contract (extras stay optional on Playwright's side). */
-export interface VoyagerStorageCookie {
+export interface LinkedInStorageCookie {
   name: string;
   value: string;
   domain: string;
@@ -170,8 +170,8 @@ export interface VoyagerStorageCookie {
  * storageState context option; this factory returns a fresh object per
  * call, so purity is not at risk.
  */
-export interface VoyagerStorageState {
-  cookies: VoyagerStorageCookie[];
+export interface LinkedInStorageState {
+  cookies: LinkedInStorageCookie[];
   origins: never[];
 }
 
@@ -182,7 +182,7 @@ export interface VoyagerStorageState {
  * (§10). domain ".linkedin.com" covers the www host; both cookies are
  * Secure in a real browser jar.
  */
-export function toStorageState(cookies: LinkedInCookies): VoyagerStorageState {
+export function toStorageState(cookies: LinkedInCookies): LinkedInStorageState {
   return {
     cookies: [
       { name: "li_at", value: cookies.liAt, domain: ".linkedin.com", path: "/", secure: true },

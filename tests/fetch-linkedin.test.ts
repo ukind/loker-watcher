@@ -1,15 +1,17 @@
 /**
- * Offline suite for the PC fetch tick (slice 4).
+ * Offline suite for the PC fetch tick (browser-walk migration, slice 5).
  *
  * Pins pushPayload's single-path rebase+retry discipline over a fake
- * GitRunner, fetchTick's composition over the injected seams, the
- * leg-dead episode-marker edge, the Phase 8 tick guards (an all-faulted
- * walk is a quiet-zeros no-op while a fine-empty walk still writes and
- * pushes, defb8af), and the Phase 10 preflight + honest git failures: the
- * checkout guard (branch main + clean porcelain) runs BEFORE any fetch,
- * and every push-discipline failure carries git's own merged output.
- * Zero network, zero real email; the doubles carry every behavior pin
- * (realGit is exercised only by two read-only git spawns in its block).
+ * GitRunner, fetchTick's composition over the injected seams — the tick
+ * hands the walk a LinkedInContextFactory and the config scrollRounds,
+ * and owns no browser lifecycle of its own — the leg-dead episode-marker
+ * edge, the fault arms (an all-faulted walk is a quiet-zeros no-op while
+ * a fine-empty walk still writes and pushes, defb8af; a checkpoint walk
+ * trips the halt latch with the canonical reason), and the preflight
+ * band: window -> latch -> checkout guard BEFORE any browser launch.
+ * Zero network, zero real email, zero Playwright; the doubles carry every
+ * behavior pin (realGit is exercised only by two read-only git spawns in
+ * its block). The budget suites died with the budget machine (slice 5).
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -24,14 +26,11 @@ import {
   pushPayload,
   realGit,
 } from "../scripts/fetch-linkedin.js";
-import type { Surface, WatcherConfig } from "../src/config-file.js";
+import type { WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
-import {
-  HALT_BUDGET_REASON,
-  HALT_RATE_LIMIT_REASON,
-  localDateKey,
-} from "../src/linkedin-behavior.js";
-import { type Transport, isHalt, isLegDead, legDead } from "../src/linkedin-fetch.js";
+import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
+import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
+import { type LinkedInContextFactory, isLegDead } from "../src/linkedin-fetch.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
@@ -98,51 +97,145 @@ function scriptGit(
   return Object.assign(git, { calls });
 }
 
-/** Build a §6-shaped 200 body carrying the given activity ids (linkedin-fetch suite shape). */
-const pageBody = (ids: readonly string[]): string =>
-  JSON.stringify({
-    data: {
-      searchDashClustersByAll: {
-        elements: [
-          {
-            items: ids.map((id) => ({
-              item: {
-                searchFeedUpdate: {
-                  update: {
-                    metadata: { backendUrn: `urn:li:activity:${id}` },
-                    commentary: { text: { text: `post ${id}` } },
-                    actor: { name: { text: `author ${id}` } },
-                    socialContent: { shareUrl: `https://www.linkedin.com/posts/x-${id}` },
-                  },
-                },
-              },
-            })),
-          },
-        ],
+// --- the browser-walk doubles (capture-shaped flight bodies + one context factory) ---
+
+const FLAGSHIP_SEARCH_URL = "https://www.linkedin.com/flagship-web/search/results/content/";
+const PAGINATION_URL = "https://www.linkedin.com/flagship-web/rsc-action/actions/pagination";
+const CHECKPOINT_URL = "https://www.linkedin.com/checkpoint/challenge";
+
+/**
+ * Capture-shaped ids: BigInt(epochMs) << 22n — the exact inverse of the
+ * parser's BigInt(id) >> 22n clock. One minute of spacing keeps every id
+ * distinct and time-ordered by n.
+ */
+const BASE_MS = Date.UTC(2026, 9, 26, 9, 14, 0);
+const idAt = (n: number): string => (BigInt(BASE_MS + n * 60_000) << 22n).toString();
+
+/** One flight line. */
+const row = (id: string, payload: unknown): string => `${id}:${JSON.stringify(payload)}`;
+
+let cardSeq = 0;
+
+/** One capture-shaped card: the activityUrn row precedes the commentary_text row. */
+const cardBody = (id: string, text: string): string => {
+  const n = (cardSeq += 1) * 10;
+  return [
+    row(String(n), { tracking: { activityUrn: { activityId: id } } }),
+    row(String(n + 1), [
+      "$",
+      "$Lmark",
+      null,
+      {
+        viewTrackingSpecs: { viewName: "feed-commentary", legacyControlName: "commentary_text" },
+        children: ["$", "$Ldiv", null, { textProps: { children: [text] } }],
       },
-    },
-    included: [],
-  });
-
-/** Distinct activity ids at 1-second spacing (linkedin-fetch suite idiom). */
-const idAt = (n: number): string => (BigInt(Date.UTC(2026, 9, 26, 9, 14, n)) << 22n).toString();
-
-const transportFor = (
-  body: string | Error,
-): Transport & { disposeCount: () => number; gets: () => number } => {
-  let disposeCount = 0;
-  let getCount = 0;
-  const get = async (): Promise<{ status: number; body: string }> => {
-    getCount += 1;
-    if (body instanceof Error) throw body;
-    return { status: 200, body };
-  };
-  const dispose = async (): Promise<void> => {
-    disposeCount += 1;
-  };
-  const transport: Transport = { get, dispose };
-  return Object.assign(transport, { disposeCount: () => disposeCount, gets: () => getCount });
+    ]),
+  ].join("\n");
 };
+
+/** A parseable flight body that mints ZERO posts (an empty-results page). */
+const EMPTY_BODY = "9:{}";
+
+/** What the fake page does at goto, click, and settle time (one script per factory). */
+interface PageScript {
+  /** The URL the page reports (default: the search results page). */
+  readonly url?: string;
+  /** Goto throws this message (the surface fault arm, never leg-dead). */
+  readonly gotoError?: string;
+  /** The initial flagship-web body fired during goto; absent = silence (leg-dead). */
+  readonly initialBody?: string;
+  /** True when round N's Load-more waitFor resolves (default never: zero clicks). */
+  readonly loadMoreVisible?: (round: number) => boolean;
+  /** The pagination body fired by round N's click settle (index 0 = round 1). */
+  readonly clickBodies?: readonly string[];
+}
+
+/**
+ * The LinkedInContextFactory double: one context, one page, one script.
+ * Records the built count and the profile path the walk opened; the click
+ * transcript rides the returned handle; context closes set the closed flag
+ * so teardown pins ride on it.
+ */
+function contextFactoryFor(options: {
+  closed?: { value: boolean };
+  profileDirs?: unknown[];
+  built?: { value: number };
+  script: PageScript;
+}): LinkedInContextFactory & { clicks: () => number[] } {
+  const clicks: number[] = [];
+  const factory: LinkedInContextFactory = async (profileDir): Promise<ContextLike> => {
+    if (options.built !== undefined) options.built.value += 1;
+    options.profileDirs?.push(profileDir);
+    const listeners: Array<(response: ResponseLike) => void> = [];
+    const fire = (response: ResponseLike): void => {
+      for (const listener of listeners) listener(response);
+    };
+    let clickCount = 0;
+    let settleArmed = false;
+    const context: ContextLike = {
+      newPage: async (): Promise<PageLike> => ({
+        url: () => options.script.url ?? "https://www.linkedin.com/search/results/content/",
+        goto: async () => {
+          if (options.script.gotoError !== undefined) throw new Error(options.script.gotoError);
+          const initial = options.script.initialBody;
+          if (initial !== undefined) {
+            fire({
+              url: () => FLAGSHIP_SEARCH_URL,
+              status: () => 200,
+              text: async () => initial,
+            });
+          }
+          return undefined;
+        },
+        waitForFunction: async () => undefined,
+        content: async () => "<html></html>",
+        on: (_event, listener) => {
+          listeners.push(listener);
+          return undefined;
+        },
+        locator: () => {
+          const handle: LocatorLike = {
+            first: () => handle,
+            waitFor: async () => {
+              const visible = options.script.loadMoreVisible?.(clickCount + 1) ?? false;
+              if (!visible) throw new Error("locator wait timeout");
+            },
+            click: async () => {
+              clickCount += 1;
+              clicks.push(clickCount);
+              settleArmed = true;
+            },
+          };
+          return handle;
+        },
+        // The liveness gate reads the rendered post count (the initial
+        // results are server-rendered, not a flagship body). A script with
+        // an initial body simulates a healthy page; a silent script
+        // simulates a dead session.
+        evaluate: async () => (options.script.initialBody !== undefined ? 8 : 0),
+        waitForTimeout: async () => {
+          if (settleArmed) {
+            settleArmed = false;
+            const body = options.script.clickBodies?.[clickCount - 1];
+            if (body !== undefined) {
+              fire({ url: () => PAGINATION_URL, status: () => 200, text: async () => body });
+            }
+          }
+          // One macrotask tick: the walk's async body reads drain first
+          // (the deterministic handoff the walk suite pins).
+          await new Promise<void>((resolve) => setImmediate(resolve));
+        },
+        close: async () => undefined,
+      }),
+      addInitScript: async () => undefined,
+      close: async () => {
+        if (options.closed !== undefined) options.closed.value = true;
+      },
+    };
+    return context;
+  };
+  return Object.assign(factory, { clicks: (): number[] => clicks });
+}
 
 describe("realGit (git's merged output, resolved and rejected paths)", () => {
   it("captures git's stdout on success and its stderr + exit code on failure", async (t) => {
@@ -268,20 +361,24 @@ describe("pushPayload (single-path rebase+retry discipline)", () => {
     );
   });
 });
-describe("fetchTick (compose cookies → transport → walk → payload → push)", () => {
+
+describe("fetchTick (compose cookies → context factory → walk → payload → push)", () => {
   it("composes the tick end to end: payload written, single-path push, marker cleared", async () => {
     const payload = await workPath("tick-ok.json");
     const marker = await workPath("tick-ok.flag");
     await writeFile(marker, "dead session\n", "utf8"); // a stale episode: a clean tick clears it
-    const transport = transportFor(pageBody([idAt(1)]));
+    const closed = { value: false };
+    const contextFactory = contextFactoryFor({
+      closed,
+      script: { initialBody: cardBody(idAt(1), "hiring post — Jakarta") },
+    });
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-1.flag"),
-      budgetPath: await workPath("budget-1.json"),
       bypassWindow: true,
       config: CONFIG,
       cookies: COOKIES,
-      transport,
+      contextFactory,
       payloadPath: payload,
       git,
       env: {},
@@ -295,14 +392,14 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const expected: Post = {
       platform: "linkedin",
       id: `urn:li:activity:${idAt(1)}`,
-      text: `post ${idAt(1)}`,
-      author: `author ${idAt(1)}`,
-      permalink: `https://www.linkedin.com/posts/x-${idAt(1)}`,
-      timestamp: new Date(Number(BigInt(idAt(1)) >> 22n)).toISOString(),
+      text: "hiring post — Jakarta",
+      author: "linkedin-member",
+      permalink: `https://www.linkedin.com/feed/update/urn:li:activity:${idAt(1)}`,
+      timestamp: new Date(BASE_MS + 60_000).toISOString(),
       surfaces: [{ type: "linkedin", value: "#hiring react" }],
     };
     assert.deepEqual(envelope.posts, [expected]);
-    assert.equal(transport.disposeCount(), 0); // caller-owned: fetchTick never disposes it
+    assert.equal(closed.value, true); // the walk closed the context; the tick owns no browser lifecycle
     assert.equal(await exists(marker), false); // the healthy tick cleared the episode
     // The two preflight reads (clean main, empty porcelain) precede the push discipline.
     assert.deepEqual(git.calls[0], ["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -313,21 +410,21 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     assert.ok(git.calls.some((args) => args[0] === "push"));
   });
 
-  it("propagates leg-dead without writing the payload, pushing, or disposing", async () => {
+  it("propagates leg-dead without writing the payload, pushing, or leaving a context open", async () => {
     const payload = await workPath("tick-dead.json");
     const marker = await workPath("tick-dead.flag");
     const alarms: string[] = [];
-    const transport = transportFor(legDead("bare HTTP 400 — dead session"));
+    const closed = { value: false };
+    const contextFactory = contextFactoryFor({ closed, script: {} }); // silence: the liveness window dies
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     await assert.rejects(
       async () =>
         fetchTick({
           latchPath: await workPath("latch-2.flag"),
-          budgetPath: await workPath("budget-2.json"),
           bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
-          transport,
+          contextFactory,
           payloadPath: payload,
           git,
           env: {},
@@ -336,9 +433,9 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
             alarms.push(reason);
           },
         }),
-      (error: unknown) => isLegDead(error) && /dead session/.test(error.reason),
+      (error: unknown) => isLegDead(error) && /no flagship-web response/.test(error.reason),
     );
-    assert.equal(transport.disposeCount(), 0); // caller-owned, even on failure
+    assert.equal(closed.value, true); // the walk still closed its context on the dead path
     assert.equal(await exists(payload), false); // the walk aborted before any write
     // Only the two preflight reads ran (the guard precedes the walk); zero push-discipline calls.
     assert.deepEqual(git.calls, [
@@ -353,15 +450,14 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const payload = await workPath("tick-all-faulted.json");
     const marker = await workPath("tick-all-faulted.flag");
     await writeFile(marker, "stale episode\n", "utf8"); // must survive untouched
-    const transport = transportFor(new Error("surface blew up"));
+    const contextFactory = contextFactoryFor({ script: { gotoError: "navigation failed" } });
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-3.flag"),
-      budgetPath: await workPath("budget-3.json"),
       bypassWindow: true,
       config: CONFIG,
       cookies: COOKIES,
-      transport,
+      contextFactory,
       payloadPath: payload,
       git,
       env: {},
@@ -376,23 +472,24 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
       ["status", "--porcelain"],
     ]);
     assert.equal(await readFile(marker, "utf8"), "stale episode\n"); // never cleared
-    assert.equal(transport.disposeCount(), 0); // caller-owned, even on the no-op path
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /all 1 linkedin surface\(s\) faulted/.test(line)));
+    assert.ok(
+      lines.some((line) => /linkedin\/#hiring react FAILED — navigation failed/.test(line)),
+    );
   });
 
   it("still writes and pushes a fine-empty walk's payload (defb8af: 0 faults + 0 posts is an outcome)", async () => {
     const payload = await workPath("tick-fine-empty.json");
     const marker = await workPath("tick-fine-empty.flag");
-    const transport = transportFor(pageBody([])); // 200, zero posts, zero faults
+    const contextFactory = contextFactoryFor({ script: { initialBody: EMPTY_BODY } });
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-4.flag"),
-      budgetPath: await workPath("budget-4.json"),
       bypassWindow: true,
       config: CONFIG,
       cookies: COOKIES,
-      transport,
+      contextFactory,
       payloadPath: payload,
       git,
       env: {},
@@ -410,7 +507,6 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     const git = scriptGit({});
     const result = await fetchTick({
       latchPath: await workPath("latch-5.flag"),
-      budgetPath: await workPath("budget-5.json"),
       bypassWindow: true,
       config: { ...CONFIG, surfaces: [{ type: "tag", value: "hiring" }] },
       git,
@@ -421,26 +517,26 @@ describe("fetchTick (compose cookies → transport → walk → payload → push
     assert.equal(git.calls.length, 0); // the guard sits AFTER this return — a threads-only config never demands a main checkout
   });
 
-  it("opens the transport through resolveLinkedInTransport when none is injected", async () => {
-    const payloadPath = await workPath("tick-resolver.json");
-    const markerPath = await workPath("tick-resolver.flag");
+  it("resolves cookies before building any browser context (the production factory is lazy)", async () => {
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     await assert.rejects(
       async () =>
         fetchTick({
-          latchPath: await workPath("latch-6.flag"),
-          budgetPath: await workPath("budget-6.json"),
+          latchPath: await workPath("latch-factory.flag"),
           bypassWindow: true,
           config: CONFIG,
-          cookies: COOKIES,
-          env: { LINKEDIN_TRANSPORT: "wget" },
-          payloadPath,
+          contextFactory,
           git: scriptGit({ "rev-parse": { code: 0, output: "main" } }),
-          markerPath,
+          env: {}, // no LINKEDIN_COOKIES_FILE — the resolver throws first
+          now: () => T0,
         }),
-      /LINKEDIN_TRANSPORT="wget" is not one of: curl, playwright/,
+      /LINKEDIN_COOKIES_FILE/,
     );
+    assert.equal(built.value, 0); // no browser was ever built
   });
 });
+
 describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () => {
   it("passes on clean main with exactly the two guard reads (direct pin)", async () => {
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } }); // status → empty porcelain
@@ -451,10 +547,11 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
     ]);
   });
 
-  it("rejects a wrong branch naming it and the wrong-ref consequence — zero GETs, no payload", async () => {
+  it("rejects a wrong branch naming it and the wrong-ref consequence — zero navigations, no payload", async () => {
     const payload = await workPath("tick-wrong-branch.json");
     const marker = await workPath("tick-wrong-branch.flag");
-    const transport = transportFor(pageBody([idAt(1)]));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit({
       "rev-parse": { code: 0, output: "feature/add-support-for-linkeind" },
     });
@@ -462,11 +559,10 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
       async () =>
         fetchTick({
           latchPath: await workPath("latch-7.flag"),
-          budgetPath: await workPath("budget-7.json"),
           bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
-          transport,
+          contextFactory,
           payloadPath: payload,
           git,
           env: {},
@@ -479,15 +575,16 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
         return true;
       },
     );
-    assert.equal(transport.gets(), 0); // the guard precedes the walk — zero voyager GETs
+    assert.equal(built.value, 0); // the guard precedes the walk — no browser was ever built
     assert.equal(await exists(payload), false); // nothing written before the rejection
     assert.deepEqual(git.calls, [["rev-parse", "--abbrev-ref", "HEAD"]]); // throws before status
   });
 
-  it("rejects a dirty tree naming the path count and the paths — zero GETs, no payload", async () => {
+  it("rejects a dirty tree naming the path count and the paths — zero navigations, no payload", async () => {
     const payload = await workPath("tick-dirty.json");
     const marker = await workPath("tick-dirty.flag");
-    const transport = transportFor(pageBody([idAt(1)]));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit({
       "rev-parse": { code: 0, output: "main" },
       status: { code: 0, output: " M src/linkedin-fetch.ts\n M README.md" },
@@ -496,11 +593,10 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
       async () =>
         fetchTick({
           latchPath: await workPath("latch-8.flag"),
-          budgetPath: await workPath("budget-8.json"),
           bypassWindow: true,
           config: CONFIG,
           cookies: COOKIES,
-          transport,
+          contextFactory,
           payloadPath: payload,
           git,
           env: {},
@@ -514,7 +610,7 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
         return true;
       },
     );
-    assert.equal(transport.gets(), 0); // no live fetch burned on a mis-homed checkout
+    assert.equal(built.value, 0); // no live fetch burned on a mis-homed checkout
     assert.equal(await exists(payload), false);
     assert.deepEqual(git.calls, [
       ["rev-parse", "--abbrev-ref", "HEAD"],
@@ -580,173 +676,111 @@ describe("handleLegDeadEpisode (one alarm per episode)", () => {
   });
 });
 
-// --- the anti-restriction preflight band + budget wrapper + latch (design 2026-11-09) ---
+// --- the anti-restriction preflight band (design 2026-11-09; window -> latch, slice 5) ---
 
-describe("the anti-restriction preflight band (design 2026-11-09)", () => {
-  it("blocks a latched tick: zero GETs, zero git spawns, quiet zeros", async () => {
-    const latchPath = await workPath("latch-1.flag");
-    await writeFile(latchPath, "HTTP 429 rate limit\n", "utf8");
-    const transport = transportFor(pageBody([idAt(1)]));
+describe("the anti-restriction preflight band (window -> latch)", () => {
+  it("blocks a latched tick: zero browser builds, zero git spawns, quiet zeros", async () => {
+    const latchPath = await workPath("latch-9.flag");
+    await writeFile(latchPath, "LinkedIn security checkpoint\n", "utf8");
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit();
     const result = await fetchTick({
       config: CONFIG,
-      transport,
+      contextFactory,
       git,
       payloadPath: await workPath("payload-latched.json"),
       latchPath,
-      budgetPath: await workPath("budget-9.json"),
       bypassWindow: true,
       env: {},
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
-    assert.equal(transport.gets(), 0);
+    assert.equal(built.value, 0);
     assert.equal(git.calls.length, 0);
   });
 
   it("outside the working window the tick is a quiet no-op (Saturday noon local)", async () => {
     const saturdayNoon = new Date(2026, 9, 31, 12, 0).getTime(); // 2026-10-31 is a Saturday
-    const transport = transportFor(pageBody([idAt(1)]));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit();
     const result = await fetchTick({
       config: CONFIG,
-      transport,
+      contextFactory,
       git,
       payloadPath: await workPath("payload-weekend.json"),
-      latchPath: await workPath("latch-9.flag"),
-      budgetPath: await workPath("budget-10.json"),
+      latchPath: await workPath("latch-10.flag"),
       now: () => saturdayNoon,
       env: {},
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
-    assert.equal(transport.gets(), 0);
+    assert.equal(built.value, 0);
     assert.equal(git.calls.length, 0);
   });
 
   it("inside the window (Monday 10:00 local, latch absent) the tick reaches the checkout guard", async () => {
     const mondayTen = new Date(2026, 9, 26, 10, 0).getTime(); // 2026-10-26 is a Monday
-    const transport = transportFor(pageBody([idAt(1)]));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit({ "rev-parse": { code: 0, output: "feature\n" } });
     await assert.rejects(
       async () =>
         fetchTick({
           config: CONFIG,
-          transport,
+          contextFactory,
           git,
           payloadPath: await workPath("payload-weekday.json"),
-          latchPath: await workPath("latch-10.flag"),
-          budgetPath: await workPath("budget-11.json"),
+          latchPath: await workPath("latch-11.flag"),
           now: () => mondayTen,
           env: {},
         }),
       /not main/,
     );
     assert.ok(git.calls.length >= 1); // the band let it through to the guard
-    assert.equal(transport.gets(), 0); // the guard threw before any GET
+    assert.equal(built.value, 0); // the guard threw before any browser was built
   });
+});
 
-  it("a spent daily budget skips the walk before any GET or git spawn", async () => {
-    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
-    const budgetPath = await workPath("budget-1.json");
-    const dayKey = localDateKey(new Date(mondayTen));
-    await writeFile(budgetPath, JSON.stringify({ localDate: dayKey, count: 150 }), "utf8");
-    const transport = transportFor(pageBody([idAt(1)]));
-    const git = scriptGit();
+describe("the scrollRounds click bound rides the config into the walk", () => {
+  it("threads config.scrollRounds into the walk as the per-surface click ceiling", async () => {
+    const contextFactory = contextFactoryFor({
+      script: {
+        initialBody: cardBody(idAt(1), "hiring post — Jakarta"),
+        loadMoreVisible: () => true, // every round's button resolves; the gains stay dry
+      },
+    });
+    const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
-      config: CONFIG,
-      transport,
+      config: { ...CONFIG, scrollRounds: 3 },
+      cookies: COOKIES,
+      contextFactory,
       git,
-      payloadPath: await workPath("payload-spent.json"),
-      latchPath: await workPath("latch-11.flag"),
-      budgetPath,
-      now: () => mondayTen,
+      payloadPath: await workPath("payload-rounds.json"),
+      latchPath: await workPath("latch-rounds.flag"),
+      bypassWindow: true,
       env: {},
+      now: () => T0,
     });
-    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
-    assert.equal(transport.gets(), 0);
-    assert.equal(git.calls.length, 0);
+    assert.deepEqual(result, { wrote: true, pushed: true, postCount: 1 });
+    assert.deepEqual(contextFactory.clicks(), [1, 2, 3]); // the knob, not the dry-round exit, stopped the loop
   });
 });
 
-describe("the budget wrapper on the VoyagerGet seam (design 2026-11-09)", () => {
-  it("reserves and persists BEFORE each GET: the ledger counts every GET", async () => {
+describe("the halt-latch trip (FR-7)", () => {
+  it("a checkpoint walk trips the latch with the canonical reason and alarms once", async () => {
     const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
-    const budgetPath = await workPath("budget-2.json");
-    const payloadPath = await workPath("payload-budget.json");
-    const twoSurfaces = {
-      ...CONFIG,
-      surfaces: [
-        { type: "linkedin", value: "#a" } as Surface,
-        { type: "linkedin", value: "#b" } as Surface,
-      ],
-    };
-    await fetchTick({
-      config: twoSurfaces,
-      cookies: COOKIES,
-      transport: transportFor(pageBody([idAt(1)])),
-      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
-      payloadPath,
-      latchPath: await workPath("latch-12.flag"),
-      budgetPath,
-      now: () => mondayTen,
-      bypassWindow: true,
-      env: {},
-    });
-    const dayKey = localDateKey(new Date(mondayTen));
-    const ledger = JSON.parse(await readFile(budgetPath, "utf8")) as {
-      localDate: string;
-      count: number;
-    };
-    assert.deepEqual(ledger, { localDate: dayKey, count: 2 });
-  });
-
-  it("a malformed budget file degrades to fresh with one warning naming the path", async (t) => {
-    const warns = t.mock.method(console, "warn", console.warn.bind(console));
-    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
-    const budgetPath = await workPath("budget-3.json");
-    await writeFile(budgetPath, "{not json", "utf8");
-    await fetchTick({
+    const latchPath = await workPath("latch-cp.flag");
+    const payloadPath = await workPath("payload-cp.json");
+    const alarms: string[] = [];
+    const contextFactory = contextFactoryFor({ script: { url: CHECKPOINT_URL } });
+    const git = scriptGit({ "rev-parse": { code: 0, output: "main\n" } });
+    const result = await fetchTick({
       config: CONFIG,
       cookies: COOKIES,
-      transport: transportFor(pageBody([idAt(1)])),
-      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
-      payloadPath: await workPath("payload-degraded.json"),
-      latchPath: await workPath("latch-13.flag"),
-      budgetPath,
-      now: () => mondayTen,
-      bypassWindow: true,
-      env: {},
-    });
-    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    const budgetLine = lines.find((line) => line.includes("budget file unreadable"));
-    assert.ok(budgetLine !== undefined);
-    assert.ok(budgetLine!.includes(budgetPath));
-    // The walk proceeded and the ledger came back valid.
-    const ledger = JSON.parse(await readFile(budgetPath, "utf8")) as { count: number };
-    assert.equal(ledger.count, 1);
-  });
-
-  it("a budget spent MID-WALK trips the latch with the budget reason", async () => {
-    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
-    const budgetPath = await workPath("budget-4.json");
-    const latchPath = await workPath("latch-2.flag");
-    const dayKey = localDateKey(new Date(mondayTen));
-    await writeFile(budgetPath, JSON.stringify({ localDate: dayKey, count: 149 }), "utf8");
-    const alarms: string[] = [];
-    const twoSurfaces = {
-      ...CONFIG,
-      surfaces: [
-        { type: "linkedin", value: "#a" } as Surface,
-        { type: "linkedin", value: "#b" } as Surface,
-      ],
-    };
-    const result = await fetchTick({
-      config: twoSurfaces,
-      cookies: COOKIES,
-      transport: transportFor(pageBody([idAt(1)])),
-      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
-      payloadPath: await workPath("payload-midwalk.json"),
+      contextFactory,
+      git,
+      payloadPath,
       latchPath,
-      budgetPath,
       now: () => mondayTen,
       bypassWindow: true,
       haltAlarm: async (reason) => {
@@ -756,59 +790,23 @@ describe("the budget wrapper on the VoyagerGet seam (design 2026-11-09)", () => 
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
     const flag = await readFile(latchPath, "utf8");
-    assert.equal(flag, `${HALT_BUDGET_REASON}\n`);
-    assert.deepEqual(alarms, [HALT_BUDGET_REASON]);
-  });
-});
-
-describe("the halt-latch trip (FR-7, design 2026-11-09)", () => {
-  it("a 429 walks to a halt, trips the latch with the canonical reason, alarms once", async () => {
-    const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
-    const latchPath = await workPath("latch-3.flag");
-    const payloadPath = await workPath("payload-429.json");
-    const alarms: string[] = [];
-    const transport: Transport = {
-      get: async () => ({ status: 429, body: "" }),
-      dispose: async () => undefined,
-    };
-    const result = await fetchTick({
-      config: CONFIG,
-      cookies: COOKIES,
-      transport,
-      git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
-      payloadPath,
-      latchPath,
-      budgetPath: await workPath("budget-12.json"),
-      now: () => mondayTen,
-      bypassWindow: true,
-      haltAlarm: async (reason) => {
-        alarms.push(reason);
-      },
-      env: {},
-    });
-    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
-    const flag = await readFile(latchPath, "utf8");
-    assert.equal(flag, `${HALT_RATE_LIMIT_REASON}\n`);
-    assert.deepEqual(alarms, [HALT_RATE_LIMIT_REASON]);
+    assert.equal(flag, `${HALT_CHECKPOINT_REASON}\n`);
+    assert.deepEqual(alarms, [HALT_CHECKPOINT_REASON]);
     assert.equal(await exists(payloadPath), false); // no payload on a halted tick
   });
 
   it("the latch trip never writes the leg-dead episode marker (separate channels)", async () => {
     const mondayTen = new Date(2026, 9, 26, 10, 0).getTime();
-    const latchPath = await workPath("latch-4.flag");
+    const latchPath = await workPath("latch-channels.flag");
     const markerPath = await workPath("episode.flag");
-    const transport: Transport = {
-      get: async () => ({ status: 429, body: "" }),
-      dispose: async () => undefined,
-    };
+    const contextFactory = contextFactoryFor({ script: { url: CHECKPOINT_URL } });
     await fetchTick({
       config: CONFIG,
       cookies: COOKIES,
-      transport,
+      contextFactory,
       git: scriptGit({ "rev-parse": { code: 0, output: "main\n" } }),
       payloadPath: await workPath("payload-channels.json"),
       latchPath,
-      budgetPath: await workPath("budget-13.json"),
       markerPath,
       now: () => mondayTen,
       bypassWindow: true,
@@ -821,14 +819,15 @@ describe("the halt-latch trip (FR-7, design 2026-11-09)", () => {
 });
 
 describe("FR-0 stamp gate (slice 5)", () => {
-  it("rejects a stampless cookie file before the transport opens or any GET", async () => {
+  it("rejects a stampless cookie file before the browser is built or any navigation", async () => {
     const stampless: LinkedInCookies = {
       liAt: "AQE-test",
       jsessionId: "ajax:0123456789012345678",
     };
     const payloadPath = await workPath("payload-stamp.json");
     const latchPath = await workPath("latch-stamp.flag");
-    const budgetPath = await workPath("budget-stamp.json");
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
     const gitCalls: string[] = [];
     const git: GitRunner = async (args) => {
       gitCalls.push(args.join(" "));
@@ -839,24 +838,19 @@ describe("FR-0 stamp gate (slice 5)", () => {
         fetchTick({
           config: CONFIG,
           cookies: stampless,
-          transport: {
-            get: async () => {
-              throw new Error("no GET may leave on a stampless tick");
-            },
-            dispose: async () => undefined,
-          },
+          contextFactory,
           git,
           payloadPath,
           latchPath,
-          budgetPath,
           now: () => new Date(2026, 9, 26, 10, 0).getTime(),
           bypassWindow: true,
           env: {},
         }),
       /harvestedAt.*login-linkedin/,
     );
-    // The gate sits after the checkout guard: two git reads happened, zero writes.
+    // The gate sits after the checkout guard: two git reads happened, zero writes, zero browsers.
     assert.deepEqual(gitCalls, ["rev-parse --abbrev-ref HEAD", "status --porcelain"]);
+    assert.equal(built.value, 0);
     assert.equal(await exists(payloadPath), false);
   });
 });

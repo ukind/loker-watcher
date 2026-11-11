@@ -89,6 +89,12 @@ export interface LocatorLike {
 /** One browser page, narrowed to the surface the walks actually drive. */
 export interface PageLike {
   goto(url: string, options?: { waitUntil: "domcontentloaded"; timeout: number }): Promise<unknown>;
+  /**
+   * The page's current URL after navigation, for URL-level detectors (the
+   * LinkedIn walk's checkpoint detector is the only consumer). Optional so
+   * the existing structural doubles stay assignable without edits.
+   */
+  url?(): string;
   waitForFunction(
     pageFunction: string,
     arg?: unknown,
@@ -141,6 +147,7 @@ function makeChromiumContextFactory(headless: boolean): ContextFactory {
       newPage: async (): Promise<PageLike> => {
         const page = await context.newPage();
         return {
+          url: () => page.url(),
           goto: (url, options) => page.goto(url, options),
           waitForFunction: async (pageFunction, arg, options) => {
             await page.waitForFunction(pageFunction, arg, options);

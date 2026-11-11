@@ -1,21 +1,22 @@
 /**
  * Behavioral policy machines for the PC-local LinkedIn leg (the
- * anti-restriction profile, design 2026-11-09): the working-hours window,
- * the jittered wake cadence, the daily GET budget, and the halt-latch
+ * anti-restriction profile, design 2026-11-09; the daily GET budget
+ * machine deleted by the browser-walk migration 2026-11-11): the
+ * working-hours window, the jittered wake cadence, and the halt-latch
  * reason vocabulary.
  *
  * Extraction idiom (src/judge-rotation.ts:5-7): pure machines + constants
  * live here; IO and policy placement stay at the consumer
- * (scripts/fetch-linkedin.ts wires the preflight band and the budget
- * wrapper, scripts/watch-linkedin.ts wires the loop cadence). The module
- * is IO-free: dates, rng draws, and persisted state arrive as arguments,
- * so the offline suite pins every edge with zero doubles.
+ * (scripts/fetch-linkedin.ts wires the preflight band,
+ * scripts/watch-linkedin.ts wires the loop cadence). The module is
+ * IO-free: dates and rng draws arrive as arguments, so the offline suite
+ * pins every edge with zero doubles.
  *
- * Worst-case arithmetic (the account-safety invariant): the window is 13
+ * Worst-case arithmetic (the account-safety bound): the window is 13
  * hours = 780 minutes; at the 28-minute floor that is at most 28 wake-ups
- * x 5 surfaces x 1 page = 140 voyager GETs per local day — under the 150
- * daily budget (FR-9). Both bounds live here so the invariant reads in
- * one place.
+ * per local day, and each wake walks at most 5 surfaces x (1 navigation
+ * + scrollRounds Load-more clicks). The window lives here; the click cap
+ * rides the walk (src/linkedin-fetch.ts).
  */
 
 /**
@@ -74,69 +75,6 @@ export function sampleTickDelayMs(rng: RandomFn): number {
 }
 
 /**
- * The hard daily GET budget (FR-9), in code: 150 voyager GETs per LOCAL
- * day across all surfaces. Worst-case walk arithmetic (28 wake-ups x 5
- * surfaces) stays under it; the budget exists so a mis-configured future
- * cannot silently multiply the volume.
- */
-export const DAILY_GET_BUDGET = 150;
-
-/**
- * The budget machine's persisted shape — the whole content of
- * state/linkedin-get-budget.json (untracked, PC-local, same discipline as
- * the leg-dead marker: repo-local, persistent, never committed).
- */
-export interface DailyBudgetState {
-  /** LOCAL "YYYY-MM-DD" the count belongs to; a different key is a new day. */
-  readonly localDate: string;
-  /** GETs reserved so far on that local date. */
-  readonly count: number;
-}
-
-/** The absent-file state: nothing reserved, no day attached. */
-export function freshBudget(): DailyBudgetState {
-  return { localDate: "", count: 0 };
-}
-
-/**
- * The LOCAL calendar key for `at` — "YYYY-MM-DD" in the machine's local
- * zone. Never toISOString(): that is UTC and would roll the day at 07:00
- * local in UTC+7. Two-digit padding keeps keys comparable as strings.
- */
-export function localDateKey(at: Date): string {
-  const month = String(at.getMonth() + 1).padStart(2, "0");
-  const day = String(at.getDate()).padStart(2, "0");
-  return `${at.getFullYear()}-${month}-${day}`;
-}
-
-/**
- * True when one more GET fits under `limit` on local date `key`. A state
- * stamped for a PREVIOUS day (or the fresh state) is always allowed — the
- * new day's first reserve starts a fresh count, so there is no explicit
- * reset step and local midnight rolls the budget for free (FR-9).
- */
-export function budgetAllows(
-  state: DailyBudgetState,
-  key: string,
-  limit: number = DAILY_GET_BUDGET,
-): boolean {
-  if (state.localDate !== key) return true;
-  return state.count < limit;
-}
-
-/**
- * Reserve ONE GET on local date `key`, returning the NEXT state — pure,
- * no mutation of the caller's object. The wrapper pairs budgetAllows +
- * budgetReserve inside ONE synchronous window (no await between) and
- * persists the result BEFORE the GET leaves: a crash between reserve and
- * GET over-counts, the safe direction (under-fetch, never over).
- */
-export function budgetReserve(state: DailyBudgetState, key: string): DailyBudgetState {
-  const base = state.localDate === key ? state.count : 0;
-  return { localDate: key, count: base + 1 };
-}
-
-/**
  * Canonical reason string a 429 writes into the halt-latch flag and its
  * alarm (FR-7). One constant, two readers (flag content, email body), so
  * the latch file's content always explains itself.
@@ -145,8 +83,11 @@ export const HALT_RATE_LIMIT_REASON =
   "HTTP 429 rate limit — LinkedIn told this account to slow down";
 
 /**
- * Canonical reason string a spent daily budget writes into the halt-latch
- * flag and its alarm (FR-7).
+ * Canonical reason string a security checkpoint or login wall writes into
+ * the halt-latch flag and its alarm (FR-7, browser-walk migration
+ * 2026-11-11). One constant, two readers (flag content, email body), so
+ * the latch file's content always explains itself. The message names the
+ * one remedy: a re-harvest.
  */
-export const HALT_BUDGET_REASON =
-  "daily GET budget spent — fetching halts until the latch is cleared";
+export const HALT_CHECKPOINT_REASON =
+  "LinkedIn security checkpoint or login wall — re-harvest the session (npm run login-linkedin)";

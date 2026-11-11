@@ -4,8 +4,8 @@
 The entire application: a single-shot CLI pipeline that fetches job posts from Threads and LinkedIn surfaces, filters them, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM, emails matches, and persists judged post ids. One exported unit seam — `runWatcher(deps)` — no server, no daemon.
 
 ## Dependencies and consumers
-- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, `request.newContext` in linkedin-fetch.ts (ContextLike exposes no request surface, verified 2026-11-04), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep — curl spawns the PC-local curl-impersonate binary (CURL_IMPERSONATE_BIN, not an npm package)
-- **nodemailer**: single creation site in email.ts (heartbeat + exhaustion + leg-dead alarms ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
+- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, the LinkedIn-local headless-Chromium context factory in linkedin-fetch.ts (own `await import("playwright")`), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep
+- **nodemailer**: single creation site in email.ts (heartbeat + exhaustion + leg-dead/halt alarms ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
 - **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports buildBulkMessages, resolveJudgeConfig, loadWatcherConfig
 
 ## Module Structure (role groups; imports point downward only)
@@ -16,9 +16,9 @@ judge-ceilings.ts, judge-health.ts       #   validation (closed ALLOWED_KEYS inc
                                          #   reasoningEffort) | the committed judge ceilings + provider health reader/writer
 env-file.ts                              # PC-script support: <cwd>/.env auto-load (fills ONLY unset keys, real env wins)
                                          #   + the shared .env line writer upsertDotEnvLine (hoisted here Phase 9;
-                                         #   login-linkedin + setup-curl-impersonate import it)
+                                         #   login-linkedin imports it)
 threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
-linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (voyager/session/fetch/payload) | data-sjs walk
+linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (parser/session/fetch/payload) | data-sjs walk
 recency.ts, judge.ts, judge-rotation.ts, # FUNNEL: window filter | dispatchLlmCall + wrappers | rotation | parsers |
 judge-parse.ts, pool.ts                  #   bounded shared runPool (zero imports)
 email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 atomic save
@@ -100,35 +100,50 @@ on the PRE-FLUSH episodeAlarmDue read (a duplicate alarm costs one email; a supp
 RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 ```
 
-## linkedin-*.ts: the second platform is a PC-local voyager leg (2026-11-04)
+## linkedin-*.ts: the second platform is a PC-local browser walk (2026-11-11)
 
 ```typescript
-// SPEC OF RECORD: linkedin-reverse/DOCUMENTATION.md — endpoint, restli encoding (§4.1+§12.5,
-// '#'→%23), §12.7 canonical recipe (sortBy:date_posted; orderBy IGNORED §12.4), §13 fault matrix.
-// linkedin-voyager.ts: PURE core — constants + restli encoder + URL builder + parser (drop+count,
-// never throws). Timestamp = BigInt(id)>>22n (§12.4 drift caveat).
+// SPEC OF RECORD: the live content-search page (capture 2026-11-11) — the walk opens the
+// canonical search URL, clicks "Load more" up to scrollRounds times, and parses the
+// pagination Flight responses the page itself makes (page JSON is dead: no data-sjs).
+// linkedin-parser.ts: PURE core — the LINKEDIN_RESPONSE_RE response filter, the Flight row
+// splitter, the $-ref commentary_text walker (longest text per row — the hashtag chip is a
+// second commentary component), buildContentSearchUrl (keywords → the content-search URL),
+// and the guarded mintPost (drop+count, never throws). Timestamp = BigInt(id)>>22n,
+// ms<=0n rejected. Pairing: the timestamp-ordered zip — the i-th distinct commentary text
+// (stream order) pairs with the i-th distinct id sorted by derived timestamp ascending; a
+// count mismatch warns naming the counts and mints the paired prefix. Every call logs ONE
+// pairing-oracle line naming each minted id ↔ text head — the stream carries no id↔text
+// link, so that line is the only mis-pair detector that exists.
 // linkedin-session.ts: LINKEDIN_COOKIES_FILE resolver (fail-visible D4 — the stricter contrast to
 // silent-null resolveSession); quote asymmetry canonicalized once (header quoted+last §10/§14.5;
 // csrf stripped §3; storageState re-quotes).
-// linkedin-fetch.ts: VoyagerGet seam; curl transport (CURL_IMPERSONATE_BIN fail-visible — the message
-// names BOTH remedies: npm run setup-curl, or LINKEDIN_TRANSPORT=playwright in .env; lexiforest single
-// binary, --impersonate chrome116 pinned — the profile OWNS the UA+TLS+H2 set, so the transport sends no
-// user-agent header and BROWSER_UA feeds ONLY the playwright adapter; injectable
-// exec, -w status sentinel) + playwright request.newContext transport (own quarantine); resolve
-// LINKEDIN_TRANSPORT curl|playwright, no auto-fallback; classifyFault §13.3; LegDeadError +
-// AllSurfacesFaulted tagged errors (all surfaces faulted = the walk's leg-dead); runPool walk — runPool
-// RETURNS VOID: side arrays by claim index (fetchSurfacesAuthenticated idiom), worker total for surface
-// faults, leg-dead drain-then-throw (judgePosts D11 shape); shared per-walk 5s pacing gate — makePacingGate
-// RESERVES the slot BEFORE the await (nextFreeAt advances synchronously, so width-2 workers can never
-// compute the same wake time; per-walk closure, ticks never inherit stamps) — the rate is pacing-bound,
-// not width-bound.
+// linkedin-fetch.ts: the browser walk — a LinkedIn-local LinkedInContextFactory (~120 lines duplicated
+// from the shared factory: widening breaks the 3 doubles under strictFunctionTypes, re-exporting the
+// private factory re-introduces knip N012; headless Chromium, own dynamic-import quarantine, the
+// harvested cookie DOCUMENT remapped per cookie — expires -1, httpOnly false, sameSite Lax — locale
+// en-US) walks each surface: one paced navigation (shared per-walk 5-15s gate, makePacingGate RESERVES
+// the slot BEFORE the await so width-2 workers never compute the same wake time; per-walk closure,
+// ticks never inherit stamps) plus up to scrollRounds Load-more clicks (LOAD_MORE_SELECTOR =
+// button:has-text("Load more") — no aria-label, no id, deploy-hashed classes; ~2.5s settle window;
+// dry-round exit); every interception whose URL matches LINKEDIN_RESPONSE_RE with status 200 parses
+// through linkedin-parser.ts; parsed-body counter (N008); first-wins urn dedupe across bodies;
+// context + page close on every path. Fault vocabulary: a checkpoint/login/authwall page URL
+// (post-goto, every liveness poll tick, post-click-settle) throws the tagged
+// HaltError(HALT_CHECKPOINT_REASON) — the operator-cleared latch, NEVER leg-dead; no flagship-web 200
+// inside the 30s liveness window throws the tagged LegDeadError (one alarm per episode); a results
+// page with zero posts is SUCCESS (the OK — 0 post(s) log, defb8af); anything else is a per-surface
+// fault (warn + skip). The kept skeleton rides unchanged — runPool RETURNS VOID: side arrays by claim
+// index (fetchSurfacesAuthenticated idiom), worker total for surface faults, leg-dead drain-then-throw
+// (judgePosts D11 shape); FR-5 shuffle; join priority halt > leg-dead > all-faulted;
+// stamp-at-slot-write; the rate is pacing-bound, not width-bound.
 // linkedin-payload.ts: {version, writtenAt, posts}; writePayloadAtomic (temp+rename); readPayloadPosts
 // NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(30min)→stale+age; non-ENOENT unreadable→
 // malformed; bad envelope→malformed; bad rows→drop+count. {posts, leg} feeds HeartbeatStats.linkedinLeg
 // (heartbeat line ALWAYS; digest line when not ok).
 // index.ts arm: linkedinFetch re-keyed to (payloadPath, now) => PayloadRead; no token gate — absence
 // is the PC-off normal; the D12 belt catch remains for unanticipated faults only.
-// The PC scripts themselves live in scripts/ (tick, loop, gate, login, setup-curl) — see
+// The PC scripts themselves live in scripts/ (tick, loop, gate, login) — see
 // .rpiv/guidance/scripts/architecture.md; env-file.ts merges <cwd>/.env UNDER the real env for every
 // PC script (missing .env = quiet normal).
 ```
@@ -200,7 +215,7 @@ function stateTempPath(dir: string, nowMs = Date.now()): string {
 
 <important if="you are adding an email variant">
 ## Adding an Email Variant
-1. Pure `buildX(...)` builders in email.ts/heartbeat.ts — `string | null`, null means "nothing to send"; the sanctioned exceptions are builders that always have content (`buildLegDeadAlarmText`, `buildHeartbeatSubject` return plain `string`)
+1. Pure `buildX(...)` builders in email.ts/heartbeat.ts — `string | null`, null means "nothing to send"; the sanctioned exceptions are builders that always have content (`buildLegDeadAlarmText`, `buildHaltAlarmText`, `buildHeartbeatSubject` return plain `string`)
 2. Thin `sendX(..., config, transport?)` wrapper: gate → build → sendText → prefix log; never call nodemailer directly
 3. The caller sets the failure policy in index.ts: digest = fail the run; status/alarm = best-effort try/catch + warn
 4. Tests: builders assert exact strings (incl. the null case); senders use a fake Transporter recording sendMail args

@@ -1,53 +1,55 @@
 /**
- * The LinkedIn voyager fetch leg: transport adapters, §13 fault
- * classification, and the runPool surface walk (design slices 3/D11).
+ * The LinkedIn fetch leg (browser-walk migration, design 2026-11-11):
+ * a real Playwright browser walks the logged-in content-search page —
+ * one paced navigation plus up to `scrollRounds` "Load more" clicks per
+ * surface — through the runPool surface walk the transport leg built.
  *
- * Two transports behind one seam — `VoyagerGet`, one GET per call:
+ * Session: the LinkedInContextFactory (below) opens the persistent PROFILE
+ * scripts/login-linkedin.ts maintains, headed; the walk owns the context
+ * and closes it on every path. REVISED 2026-11-11T18:40+0700 after the live
+ * rehearsal: a fresh browser with the harvested cookie document gets a page
+ * with no Load-more button, so the click loop had nothing to click. The
+ * profile gets the button and paginates 6 posts per click.
  *
- * - curl (default): spawns the lexiforest curl-impersonate single binary
- *   (CURL_IMPERSONATE_BIN, fail-visible when unset — the message names
- *   both remedies: npm run setup-curl, or the playwright .env line) with
- *   the §3/§10 header set on top of the pinned chrome116 profile. The
- *   profile owns the UA + TLS + HTTP/2 fingerprint as one consistent set
- *   (D2 amendment 2026-11-05); the HTTP status rides a write-out sentinel
- *   after the body — one exec, no temp files. The exec runner is
- *   injectable for offline tests.
- * - playwright: a standalone API-request context
- *   (`request.newContext({ storageState })`) behind the SAME dynamic-import
- *   quarantine idiom as makeChromiumContextFactory (fetch-threads.ts:129).
- *   NOT ContextFactory: ContextLike (fetch-threads.ts:106) exposes no
- *   request surface, and an API GET needs no browser launch (verified
- *   2026-11-04). storageState carries the cookie pair; csrf-token and the
- *   static headers ride extraHTTPHeaders.
+ * Extraction: every response whose URL matches LINKEDIN_RESPONSE_RE and
+ * whose status is 200 parses through src/linkedin-parser.ts (pure,
+ * never throws); minted posts dedupe FIRST-WINS by urn — a post seen on
+ * an earlier body keeps its first mint.
  *
- * `LINKEDIN_TRANSPORT` selects the adapter (`curl` default | `playwright`,
- * else throw — switching after a failed probe is an operator action, D2).
+ * Fault vocabulary (design decision "Fault vocabulary re-mapped"):
+ * - a checkpoint/login/authwall page URL (checked after the navigation,
+ *   on every liveness poll tick, and after every click settle) throws
+ *   the tagged HaltError carrying HALT_CHECKPOINT_REASON — the
+ *   operator-cleared latch, never leg-dead;
+ * - no flagship-web response inside the liveness window throws the
+ *   tagged LegDeadError — one alarm per episode via the repo-local
+ *   marker; a plain Error (the b1/b2 class) never reaches the join;
+ * - anything else is a per-surface fault (warn + skip, the index arm
+ *   owns the per-surface skip summary).
  *
- * The walk (D11) reuses runPool — verified contract: runPool RETURNS VOID
- * (src/pool.ts:33-52), so results ride caller-owned side arrays indexed by
- * the claim index, the worker stays total for surface faults (warn + skip,
- * the caller-owned skip warn stays in index.ts), and leg-dead aborts via
- * the repo's drain-then-throw shape (judgePosts fallback pool,
- * src/judge.ts:681; fast-workflow-runtime D11): catch isLegDead in the
- * worker, set a shared flag, stop claiming, throw once after the join.
- * A shared per-walk pacing gate (5s between voyager GETs, any surface)
- * keeps the global call rate identical to a sequential walk — the anti-bot
- * rate is pacing-bound, not width-bound (§13.3 throttling was observed at
- * ~40 rapid calls).
+ * The walk reuses runPool — verified contract: runPool RETURNS VOID
+ * (src/pool.ts:33-52), so results ride caller-owned side arrays indexed
+ * by the claim index, the worker stays total for surface faults, and
+ * leg-dead/halt abort via the repo's drain-then-throw shape (judgePosts
+ * fallback pool, src/judge.ts:681; fast-workflow-runtime D11). A shared
+ * per-walk pacing gate (5-15 s between NAVIGATIONS, any surface) keeps
+ * the global navigation rate identical to a sequential walk — the
+ * anti-bot rate is pacing-bound, not width-bound. Intra-surface
+ * Load-more clicks ride the ~2.5 s settle window and never trip the gate.
+ *
+ * Testability: importing this module never loads Playwright — the one
+ * dynamic await import lives inside makeLinkedInContextFactory (the site
+ * the deleted playwright request transport frees) — and the offline
+ * suite injects structural ContextLike doubles.
  */
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { Surface } from "./config-file.js";
-import { ENV_NAMES } from "./config.js";
-import { HALT_RATE_LIMIT_REASON, type RandomFn } from "./linkedin-behavior.js";
+import type { ContextLike, LocatorLike, PageLike } from "./fetch-threads.js";
+import { HALT_CHECKPOINT_REASON, type RandomFn } from "./linkedin-behavior.js";
 import {
-  type LinkedInCookies,
-  buildCookieHeader,
-  csrfToken,
-  resolveLinkedInCookies,
-  toStorageState,
-} from "./linkedin-session.js";
-import { VOYAGER_STATIC_HEADERS, buildSearchUrl, parseSearchResponse } from "./linkedin-voyager.js";
+  LINKEDIN_RESPONSE_RE,
+  buildContentSearchUrl,
+  collectLinkedInPosts,
+} from "./linkedin-parser.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
 
@@ -57,13 +59,10 @@ export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
 /** Injectable sleep for the pacing gate (judge.ts trailing-param idiom). */
 export type SleepFn = (ms: number) => Promise<void>;
 
-/** Walk width. The pacing gate, not this number, bounds the voyager rate. */
+/** Walk width. The pacing gate, not this number, bounds the navigation rate. */
 export const LINKEDIN_FETCH_CONCURRENCY = 2;
 
-/** §12.1: count 50 is unclamped server-side; `start += count` pages. */
-export const PAGE_SIZE = 50;
-
-/** Pace floor: minimum spacing between voyager GETs, shared across surfaces (§13.3). */
+/** Pace floor: minimum spacing between page navigations, shared across surfaces (§13.3). */
 export const PACE_MIN_MS = 5_000;
 
 /**
@@ -73,45 +72,99 @@ export const PACE_MIN_MS = 5_000;
  */
 export const PACE_MAX_MS = 15_000;
 
-/** One curl exec's wall-clock cap; mirrored by --max-time inside curl. */
-const REQUEST_TIMEOUT_MS = 30_000;
-
-/** curl -w appends this sentinel + status after the response body. */
-const STATUS_SENTINEL = "___CURL_STATUS:";
+// --- browser-walk tuning (the deleted walk's constants that carry over,
+//     plus the Load-more mechanics new in the 2026-11-11 design) ---
 
 /**
- * The pinned impersonation profile (lexiforest single binary, §D2
- * amendment 2026-11-05). The profile owns the UA + TLS + HTTP/2 headers
- * as ONE consistent set — chrome116 is the Windows-10 Chrome profile the
- * release ships. The transport's own `user-agent` header is deliberately
- * GONE: overriding the profile's UA with a different Chrome version is a
- * mismatched fingerprint signal. Our §3/§10 -H overrides (cookie,
- * csrf-token, the static set) ride ON TOP of the profile defaults.
+ * The Load-more button handle (live capture 2026-11-11, design Decision
+ * "LOAD_MORE_SELECTOR"): the button carries no aria-label and no id, and
+ * its class list is a per-deploy hash — the visible text is the only
+ * stable attribute. The context pins locale en-US, which pins this
+ * English label; a LinkedIn copy change breaks the selector VISIBLY (a
+ * stream of dry rounds with zero minted posts), never silently.
  */
-export const CURL_IMPERSONATE_PROFILE = "chrome116";
+const LOAD_MORE_SELECTOR = 'button:has-text("Load more")';
+
+/** Per-click settle: the pagination response lands inside this window (the deleted walk's constant). */
+const LINKEDIN_SETTLE_MS = 2_500;
+
+/** The Load-more visibility window before a round counts dry. */
+const LINKEDIN_LOAD_MORE_WAIT_MS = 5_000;
+
+/** Consecutive low-gain rounds before the surface exits early (the Threads loop's shape). */
+const LINKEDIN_MAX_DRY_ROUNDS = 3;
+
+/** A round gaining fewer posts than this is dry (the Threads loop's threshold). */
+const LINKEDIN_MIN_GAIN = 2;
+
+/** Loop-bound default (the config scrollRounds key overrides; the Threads walk carries the same fallback). */
+const LINKEDIN_DEFAULT_SCROLL_ROUNDS = 8;
+
+/** Per-surface post cap (rides from the deleted walk; the perf budget assumes it). */
+const LINKEDIN_MAX_POSTS = 150;
+
+/** Final drain: let in-flight response bodies land before the page closes. */
+const LINKEDIN_XHR_DRAIN_MS = 1_500;
+
+/** One page navigation's wall-clock cap. */
+const LINKEDIN_NAV_TIMEOUT_MS = 30_000;
+
+/** The first flagship-web response must land inside this window, or the leg is dead. */
+const LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS = 30_000;
+
+/** Liveness poll interval for the first flagship-web response. */
+const LINKEDIN_FIRST_RESPONSE_POLL_MS = 250;
 
 /**
- * §10 client fingerprint for the PLAYWRIGHT adapter only (no profile
- * system there — `request.newContext` presents no TLS fingerprint, so the
- * explicit UA header is the only browser signal it can send).
+ * The one-shot DOM probe (live rehearsal 2026-11-11). Reports the button
+ * count, the Load-more count, and the lazy column's scroll metrics, so one
+ * run distinguishes three cases: the button is absent (loadMore 0), it is
+ * present but off-screen (loadMore 1, top > viewportH), or the column is
+ * scrollable and the walk scrolled the wrong node (colScrollH > colClientH
+ * with colScrollTop still 0).
  */
-const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+const DOM_PROBE_JS = `(() => {
+  const col = document.querySelector('[data-testid="lazy-column"]');
+  const all = [...document.querySelectorAll("button")];
+  const lm = all.filter((b) => /load more/i.test(b.textContent || ""));
+  const rect = lm[0]?.getBoundingClientRect();
+  return JSON.stringify({
+    buttons: all.length,
+    loadMore: lm.length,
+    top: rect ? Math.round(rect.top) : null,
+    colScrollH: col ? col.scrollHeight : null,
+    colClientH: col ? col.clientHeight : null,
+    colScrollTop: col ? Math.round(col.scrollTop) : null,
+    docH: document.documentElement.scrollHeight,
+    viewportH: window.innerHeight,
+  });
+})()`;
 
-/** One voyager GET's outcome: the HTTP status and the raw body. */
-export interface VoyagerResponse {
-  readonly status: number;
-  readonly body: string;
-}
+/**
+ * Scroll the lazy column (its own scroll container — window.scrollTo moves
+ * nothing, measured 18:05), then bring the button into view if it rendered.
+ * The return value names which case we are in.
+ */
+const SCROLL_JS = `(() => {
+  const col = document.querySelector('[data-testid="lazy-column"]');
+  if (col) col.scrollTo(0, col.scrollHeight);
+  window.scrollTo(0, document.body.scrollHeight);
+  const btn = [...document.querySelectorAll("button")].find((b) =>
+    /load more/i.test(b.textContent || ""),
+  );
+  if (btn) btn.scrollIntoView({ block: "center" });
+  return btn ? "button-scrolled" : "no-button-in-dom";
+})()`;
 
-/** The transport seam: one GET per call, shared by both adapters. */
-export type VoyagerGet = (url: string) => Promise<VoyagerResponse>;
-
-/** An opened transport: the GET plus its teardown (a no-op for curl). */
-export interface Transport {
-  readonly get: VoyagerGet;
-  readonly dispose: () => Promise<void>;
-}
+/**
+ * The checkpoint/login/authwall page-URL detector (FR-7): LinkedIn
+ * interposes these paths when the session tripped a security challenge
+ * or died — the account-safety terminal (halt), never a leg-dead.
+ * Segment-bounded, so a keyword that contains "login" can never false-
+ * positive: query values ride after "=" or percent-encoded, never as a
+ * bare path segment.
+ */
+const LINKEDIN_CHECKPOINT_URL_RE = /(^|\/)(checkpoint|authwall|login)(\/|$|\?)/i;
 
 // --- LegDeadError: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
@@ -167,14 +220,14 @@ export function isAllSurfacesFaulted(error: unknown): error is AllSurfacesFaulte
 }
 
 // --- HaltError: the tagged-error idiom (judge-rotation.ts:51-75) ---
-// The account-safety terminal (design 2026-11-09): a 429 or a spent daily
-// budget stops the walk and fetchTick trips the operator-cleared latch.
-// It deliberately does NOT ride LegDeadError: a dead session self-heals on
-// a cookie refresh, a halt must not.
+// The account-safety terminal (design 2026-11-09): a security checkpoint
+// or login wall stops the walk and fetchTick trips the operator-cleared
+// latch. It deliberately does NOT ride LegDeadError: a dead session
+// self-heals on a cookie refresh, a halt must not.
 
 export const HALT = "HaltError";
 
-/** Thrown once per walk when the account hit a slow-down signal. */
+/** Thrown once per walk when the account hit the account-safety terminal. */
 export interface Halt extends Error {
   name: string;
   reason: string;
@@ -191,271 +244,131 @@ export function isHalt(error: unknown): error is Halt {
   return typeof error === "object" && error !== null && (error as { name?: unknown }).name === HALT;
 }
 
-// --- §13.3 fault classification ---
-
-export type FaultKind = "legDead" | "fault" | "halt";
-
-export interface Fault {
-  readonly kind: FaultKind;
-  readonly reason: string;
-}
+// --- the LinkedIn browser context factory (browser-walk migration,
+//     design 2026-11-11) ---
 
 /**
- * §13.3 detection recipe, HTTP responses only (connection-level failures
- * throw from the transport and land as surface faults, never leg-dead —
- * a dead network is not a dead session):
+ * The LinkedIn walk's context factory seam: one persistent PROFILE PATH in,
+ * one session-carrying browser context out. NOT the shared ContextFactory
+ * (fetch-threads.ts): that seam carries a storage-state PATH and a headless
+ * launch, and widening it breaks all three existing doubles under
+ * strictFunctionTypes — the launch/adapter mechanics duplicate here instead
+ * (design decision "Structural layer duplicated, not shared"; re-exporting
+ * the private shared factory re-introduces the knip N012 dead-export
+ * finding).
  *
- * - 302/3xx redirect loop: live-observed 2026-11-05 (validate rehearsal) —
- *   a dead session presents as a 302 loop on this client stack, with
- *   `set-cookie: li_at=delete me` and Cloudflare `__cf_bm` cookies in the
- *   chain. DOCUMENTATION.md §13.1's API-vs-browser redirect claim does not
- *   hold for this stack; root cause (session death vs edge fingerprint
- *   block) is unresolved ON PURPOSE — both carry the same operator remedy.
- *   The endpoint never legitimately redirects a GET — any 3xx is leg dead
- *   (§13.1 amendment: same remedy as 401).
- * - 403 "CSRF check failed." text, or a Cloudflare challenge page: the
- *   session/CSRF pair is broken or the IP reputation is burned — leg dead.
- * - 401 {"status":401}: dead or absent li_at — leg dead.
- * - bare 400 {"status":400} on the finder: no member context (dead
- *   session) — leg dead (§13.1: same remedy as 401).
- * - graphql-envelope 400: known query, bad variables — OUR bug, a fault.
- * - 500: unknown queryId — the hash expired server-side (§15); re-derive
- *   from a current APK, do not debug variables — a fault.
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the original seam took a
+ * storageState DOCUMENT synthesized from the harvested cookie pair and
+ * opened a FRESH browser. LinkedIn serves that identity a content-search
+ * page with NO Load-more button (54 buttons present, 0 matching), so the
+ * click loop had nothing to click and the walk reported 3 posts. The
+ * profile + headed configuration gets the button and paginates 6 posts per
+ * click. See the design's Key Discoveries for the four-config matrix.
  */
-export function classifyFault(status: number, body: string): Fault {
-  const trimmed = body.trim();
-  // Live-observed 2026-11-05 (validate rehearsal): a dead session presents
-  // as a 302 redirect loop on this endpoint — DOCUMENTATION.md §13.1 says
-  // only browser navigations redirect; the claim does not hold for this
-  // client stack. Root cause (session death vs edge fingerprint block) is
-  // unresolved ON PURPOSE: both carry the same operator remedy, so the
-  // classification must not wait on it. The endpoint never legitimately
-  // redirects a GET — any 3xx is leg-dead, same remedy as 401 (§13.1).
-  if (status >= 300 && status < 400) {
-    return {
-      kind: "legDead",
-      reason: `HTTP ${status} redirect loop — dead session or edge block; refresh the cookie file (live-observed 2026-11-05, §13.1 amendment)`,
-    };
-  }
-  // 429: the account is rate-limited (the anti-restriction profile) — a
-  // HALT, never a leg-dead: the session is fine, the account must slow
-  // down (design 2026-11-09). The reason reuses the behavior module's
-  // canonical string so the latch file, the alarm, and this log line
-  // always carry the same words.
-  if (status === 429) {
-    return { kind: "halt", reason: HALT_RATE_LIMIT_REASON };
-  }
-  if (status === 403) {
-    const challenge = /Just a moment|challenge|cf-ray/i.test(trimmed);
-    return {
-      kind: "legDead",
-      reason: challenge
-        ? "HTTP 403 challenge page — IP/session reputation burned (§13.3)"
-        : 'HTTP 403 "CSRF check failed." — session/JSESSIONID mismatch (§13.1)',
-    };
-  }
-  if (status === 401) {
-    return {
-      kind: "legDead",
-      reason: `HTTP 401 ${trimmed.slice(0, 60)} — dead li_at session (§13.1)`,
-    };
-  }
-  if (status === 400) {
-    if (trimmed === '{"status":400}') {
-      return {
-        kind: "legDead",
-        reason: 'bare HTTP 400 {"status":400} — no member context; dead session (§13.1)',
-      };
-    }
-    return {
-      kind: "fault",
-      reason: `HTTP 400 graphql envelope — bad variables (our bug): ${trimmed.slice(0, 80)}`,
-    };
-  }
-  if (status === 500) {
-    return {
-      kind: "fault",
-      reason: "HTTP 500 — unknown queryId; the hash expired (§15), re-derive from a current APK",
-    };
-  }
-  return { kind: "fault", reason: `HTTP ${status}` };
-}
+export type LinkedInContextFactory = (profileDir: string) => Promise<ContextLike>;
 
-// --- curl-impersonate transport ---
-
-/** Injectable exec seam for offline tests: binary + args → stdout. */
-export type ExecFn = (file: string, args: readonly string[]) => Promise<{ stdout: string }>;
-
-const execFilePromised = promisify(execFile);
-
-const realExec: ExecFn = (file, args) =>
-  execFilePromised(file, [...args], {
-    timeout: REQUEST_TIMEOUT_MS,
-    maxBuffer: 32 * 1024 * 1024,
-    windowsHide: true,
-  });
+/** The pinned UA (the shared Threads factory's hardening set, duplicated with this section). */
+const LINKEDIN_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 /**
- * curl-impersonate transport (developer-selected primary transport, D2
- * amendment 2026-11-05): the LEXIFOREST single binary — upstream lwthiker
- * ships linux/mac/docker only, so lexiforest is the Windows distribution
- * of record, installed by `npm run setup-curl`. The profile headers + our
- * overrides compose per the fork README (`-H` overrides individual
- * profile headers), so the §3/§10 set rides on top of chrome116's own
- * UA/TLS/HTTP/2 fingerprint. One exec per GET: `--impersonate` selects the
- * pinned profile, `-sS` body to stdout, `--max-time` mirrors the exec
- * timeout, and `-w` appends the status sentinel after the body —
- * parseable without temp files or stderr games. Exec-level failures
- * (connection reset, timeout, missing binary) throw plain errors: surface
- * faults, never leg-dead.
+ * The webdriver patch, kept as a string so the Node build needs no DOM lib
+ * (locked tsconfig: lib ES2023, types node) — the shared factory's idiom.
  */
-export function createCurlTransport(
-  cookies: LinkedInCookies,
-  env: Record<string, string | undefined> = process.env,
-  execFn: ExecFn = realExec,
-): () => Promise<Transport> {
-  return async (): Promise<Transport> => {
-    const bin = env[ENV_NAMES.curlImpersonateBin]?.trim();
-    if (bin === undefined || bin === "") {
-      throw new Error(
-        `linkedin-fetch: ${ENV_NAMES.curlImpersonateBin} is not set — run npm run setup-curl, or put LINKEDIN_TRANSPORT=playwright in .env to skip the binary (README: PC operations)`,
-      );
-    }
-    // No user-agent pair here ON PURPOSE: the chrome116 profile owns the
-    // UA + TLS + HTTP/2 set; overriding its UA is the mismatched-signal
-    // class the fingerprint exists to avoid (D2 amendment).
-    const headerPairs = [
-      `cookie: ${buildCookieHeader(cookies)}`,
-      `csrf-token: ${csrfToken(cookies)}`,
-      ...Object.entries(VOYAGER_STATIC_HEADERS).map(([name, value]) => `${name}: ${value}`),
-    ];
-    const get: VoyagerGet = async (url) => {
-      const args = [
-        "--impersonate",
-        CURL_IMPERSONATE_PROFILE,
-        "-sS",
-        "--max-time",
-        String(Math.round(REQUEST_TIMEOUT_MS / 1000)),
-        "--compressed",
-        url,
-        ...headerPairs.flatMap((header) => ["-H", header]),
-        "-w",
-        `\n${STATUS_SENTINEL}%{http_code}`,
-      ];
-      let stdout: string;
-      try {
-        ({ stdout } = await execFn(bin, args));
-      } catch (error) {
-        // Credential hygiene (revise 2026-11-10): Node's execFile error
-        // message embeds the ENTIRE command line — cookie and csrf-token
-        // headers included — and a live probe printed the whole jar to the
-        // console. Never forward it. The diagnostic value rides the exit
-        // code + curl's own stderr: headers never go to stderr.
-        const failure = error as { code?: unknown; stderr?: unknown };
-        const code =
-          typeof failure.code === "number" || typeof failure.code === "string"
-            ? failure.code
-            : "unknown";
-        const stderr =
-          typeof failure.stderr === "string" && failure.stderr.trim() !== ""
-            ? failure.stderr.trim().slice(0, 200)
-            : "no stderr captured";
-        throw new Error(`linkedin-fetch: curl exec failed (exit ${code}): ${stderr}`);
-      }
-      const marker = stdout.lastIndexOf(STATUS_SENTINEL);
-      if (marker === -1) {
-        throw new Error("linkedin-fetch: curl produced no status marker (binary or flag mismatch)");
-      }
-      const status = Number(stdout.slice(marker + STATUS_SENTINEL.length).trim());
-      if (!Number.isInteger(status) || status <= 0) {
-        throw new Error("linkedin-fetch: curl status marker unparsable");
-      }
-      // The -w template writes "\n" before the sentinel: that separator is
-      // not part of the body (a body with its own trailing newline keeps it).
-      const raw = stdout.slice(0, marker);
-      const body = raw.endsWith("\n") ? raw.slice(0, -1) : raw;
-      return { status, body };
-    };
-    return { get, dispose: async () => undefined };
-  };
-}
+const LINKEDIN_WEBDRIVER_PATCH =
+  "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
 
 /**
- * Playwright API-request transport (the tested fallback, D2). The module's
- * dynamic-import quarantine site — the only `await import("playwright")`
- * outside fetch-threads. storageState carries the cookie pair (toStorageState
- * in linkedin-session.ts); the csrf-token and static headers ride
- * extraHTTPHeaders. Unexercised by the offline suite, like
- * chromiumContextFactory — the VoyagerGet seam carries the tests.
+ * Build the LinkedIn browser context on the persistent PROFILE, headed. The
+ * dynamic await import inside is this module's Playwright quarantine site —
+ * importing this module never loads Playwright, and the offline suites stay
+ * Playwright-free. The factory owns the browser: closing the context closes
+ * the browser.
+ *
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the session rides the
+ * PROFILE, not a synthesized cookie document. A fresh browser with the
+ * harvested pair gets a page with no Load-more button; the profile gets the
+ * button and paginates. Headed is required for the button to render and is
+ * acceptable because this leg runs on the PC (watch-linkedin), never in
+ * GitHub Actions.
+ *
+ * locale pins en-US: the walk's Load-more click is a TEXT selector on the
+ * English label — the only stable handle (live capture 2026-11-11: one
+ * candidate, no aria-label, deploy-hashed classes). A LinkedIn copy change
+ * breaks the selector visibly (a stream of dry rounds), never silently.
+ *
+ * Pages carry url() (the new optional PageLike seam): the walk's
+ * checkpoint detector reads it after every navigation.
  */
-export function createPlaywrightTransport(cookies: LinkedInCookies): () => Promise<Transport> {
-  return async (): Promise<Transport> => {
-    const { request } = await import("playwright");
-    // Complete the session-module cookie shape to Playwright's storageState
-    // wire type: session cookies carry no jar expiry (-1), and an
-    // API-request context runs no scripts, so httpOnly/sameSite are inert
-    // defaults. The session module stays the minimal contract (slice 2).
-    const storageState = {
-      cookies: toStorageState(cookies).cookies.map((cookie) => ({
-        ...cookie,
-        expires: -1,
-        httpOnly: false,
-        sameSite: "Lax" as const,
-      })),
-      origins: [],
-    };
-    const context = await request.newContext({
-      storageState,
-      extraHTTPHeaders: {
-        "csrf-token": csrfToken(cookies),
-        "user-agent": BROWSER_UA, // identical fingerprint to the curl adapter (plan-review amendment)
-        ...VOYAGER_STATIC_HEADERS,
-      },
-      timeout: REQUEST_TIMEOUT_MS,
+export function makeLinkedInContextFactory(profileDir: string): LinkedInContextFactory {
+  const factory: LinkedInContextFactory = async (): Promise<ContextLike> => {
+    const { chromium } = await import("playwright");
+    // launchPersistentContext, not launch + newContext: the profile IS the
+    // session. viewport null lets the operator's window size ride (the
+    // login helper's shape, scripts/login-linkedin.ts:127-130).
+    const context = await chromium.launchPersistentContext(profileDir, {
+      headless: false,
+      viewport: null,
+      userAgent: LINKEDIN_USER_AGENT,
+      locale: "en-US",
     });
-    const get: VoyagerGet = async (url) => {
-      // maxRedirects: 0 — a dead session presents as a 302 redirect loop;
-      // following it burns ~20 unpaced redirects and ends in a plain throw
-      // that bypasses the classifier. The status itself must reach the
-      // §13.3 classifier, where the 3xx branch flags leg-dead (Phase 8).
-      const response = await context.get(url, { maxRedirects: 0 });
-      return { status: response.status(), body: await response.text() };
-    };
+    await context.addInitScript(LINKEDIN_WEBDRIVER_PATCH);
     return {
-      get,
-      dispose: async () => {
-        await context.dispose();
+      newPage: async (): Promise<PageLike> => {
+        const page = await context.newPage();
+        return {
+          url: () => page.url(),
+          goto: (url, options) => page.goto(url, options),
+          waitForFunction: async (pageFunction, arg, options) => {
+            await page.waitForFunction(pageFunction, arg, options);
+          },
+          content: () => page.content(),
+          on: (event, listener) => {
+            page.on(event, (response) => listener(response));
+            return undefined;
+          },
+          locator: (selector) => {
+            const chain = page.locator(selector).first();
+            const adapted: LocatorLike = {
+              first: () => adapted,
+              waitFor: (options) => chain.waitFor(options),
+              click: () => chain.click(),
+            };
+            return adapted;
+          },
+          evaluate: (script) => page.evaluate(script),
+          waitForTimeout: (ms) => page.waitForTimeout(ms),
+          close: () => page.close(),
+        };
+      },
+      addInitScript: async (script) => {
+        await context.addInitScript(script);
+      },
+      close: async () => {
+        // launchPersistentContext owns the browser: closing the context
+        // closes it. There is no separate browser handle to close.
+        await context.close();
       },
     };
   };
+  return factory;
 }
 
 /**
- * Resolve AND open the configured transport: `LINKEDIN_TRANSPORT` selects
- * `curl` (default, empty/unset included) or `playwright`; anything else
- * throws naming the allowed values (D2: no silent auto-switching — a
- * failed probe is followed by an operator edit + re-probe).
+ * The persistent profile the login helper maintains (scripts/login-linkedin.ts:34).
+ * The walk reuses it rather than opening a fresh browser with the harvested
+ * cookie pair — see the factory's REVISED note and the design's Key
+ * Discoveries.
  */
-export async function resolveLinkedInTransport(
-  env: Record<string, string | undefined> = process.env,
-  cookies: LinkedInCookies = resolveLinkedInCookies(env),
-  execFn: ExecFn = realExec,
-): Promise<Transport> {
-  const selection = env[ENV_NAMES.linkedinTransport]?.trim() ?? "";
-  const maker =
-    selection === "" || selection === "curl"
-      ? createCurlTransport(cookies, env, execFn)
-      : selection === "playwright"
-        ? createPlaywrightTransport(cookies)
-        : null;
-  if (maker === null) {
-    throw new Error(
-      `linkedin-fetch: ${ENV_NAMES.linkedinTransport}="${selection}" is not one of: curl, playwright`,
-    );
-  }
-  return maker();
-}
+export const LINKEDIN_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
 
+/**
+ * The production factory: the persistent profile, headed. Module-PRIVATE on
+ * purpose — the browser walk defaults to it in-module, and an exported
+ * factory nobody imports is the knip dead-export finding class, not a seam.
+ */
+const linkedinChromiumContextFactory: LinkedInContextFactory =
+  makeLinkedInContextFactory(LINKEDIN_PROFILE_DIR);
 // --- the surface walk ---
 
 interface PacingGate {
@@ -463,14 +376,14 @@ interface PacingGate {
 }
 
 /**
- * Shared pacing gate: every voyager GET starts PACE_MS or more after the
- * previous one, regardless of which surface issued it. The slot is
- * RESERVED BEFORE SLEEPING — the stamp advances synchronously on entry, so
- * concurrent workers can never compute the same wake time and fire a burst;
- * with width 2 the GET starts still space PACE_MS apart globally
- * (pacing-bound, not width-bound, D11). A per-walk closure (not module
- * state): two ticks must not inherit each other's stamp, and each test
- * run gets a fresh gate.
+ * Shared pacing gate: every page NAVIGATION starts PACE_MIN_MS or more
+ * after the previous one, regardless of which surface issued it. The slot
+ * is RESERVED BEFORE SLEEPING — the stamp advances synchronously on entry,
+ * so concurrent workers can never compute the same wake time and fire a
+ * burst; with width 2 the navigations still space PACE_MIN_MS apart
+ * globally (pacing-bound, not width-bound, D11). A per-walk closure (not
+ * module state): two ticks must not inherit each other's stamp, and each
+ * test run gets a fresh gate.
  */
 function makePacingGate(
   now: () => number,
@@ -498,32 +411,268 @@ const defaultSleep: SleepFn = (ms) =>
   });
 
 /**
- * Walk every configured linkedin surface: count-50 pages with
- * stop on a partial page (§12.8: returned posts < count
- * is the last page; `elements: []` lands as zero posts), one log line per
- * surface (empty-is-success, defb8af). Surface faults warn + skip (the
- * index arm owns the per-surface skip summary); leg-dead aborts the tick
- * whole via drain-then-throw; when EVERY surface faulted (none leg-dead),
- * the tagged AllSurfacesFaulted throws — the caller decides the write
- * (D13: a partial fault still publishes the survivors). Accepts a bare
- * VoyagerGet (tests, probe — no ownership) or an opened Transport
- * (scripts — disposed in finally).
+ * Walk one LinkedIn surface in the shared browser context: navigate the
+ * content-search URL, wait for the first flagship-web response, then
+ * click "Load more" until dry rounds, the click ceiling (scrollRounds,
+ * the config knob shared with the Threads walk) or the post cap stops
+ * the loop.
+ *
+ * Fault vocabulary (design decision "Fault vocabulary re-mapped"):
+ * - a checkpoint/login/authwall page URL — checked after the navigation,
+ *   on every liveness poll tick, and after every click settle — throws
+ *   the tagged HaltError carrying HALT_CHECKPOINT_REASON (FR-7: the
+ *   operator-cleared latch, one alarm; never leg-dead);
+ * - no flagship-web response inside the liveness window throws the
+ *   tagged LegDeadError (a dead session is routine — the b1/b2 plain-
+ *   Error class never reaches the join);
+ * - a page still on the search URL with zero posts is a success — the
+ *   OK — 0 post(s) log, defb8af.
+ *
+ * The response join attaches BEFORE the navigation: the initial results
+ * ride the page's first /flagship-web/ response, and each Load-more
+ * click rides a pagination response (the only pagination trigger —
+ * scrolling fires nothing, verified live 2026-11-11). Bodies parse
+ * through the pure parser; minted posts dedupe first-wins by urn, and
+ * the OK line counts bodies that CARRIED posts (N008: parsed, not
+ * received).
+ */
+async function walkLinkedInSurface(
+  context: ContextLike,
+  surface: LinkedinSurface,
+  label: string,
+  scrollRounds: number,
+  minClicks: number,
+): Promise<Post[]> {
+  const page = await context.newPage();
+  const posts = new Map<string, Post>();
+  let received = 0; // matched flagship-web bodies fully read — the liveness signal
+  let parsed = 0; // bodies that carried at least one post — the OK-line counter (N008)
+  const assertNoCheckpoint = (): void => {
+    // url() is the optional Slice 3 seam; absence (a pre-Slice-3 double)
+    // reads as no checkpoint. The production adapters always supply it.
+    if (LINKEDIN_CHECKPOINT_URL_RE.test(page.url?.() ?? "")) throw halt(HALT_CHECKPOINT_REASON);
+  };
+
+  // Attach before navigation: the initial results stream through the
+  // page's first flagship-web response. The parser never throws, so the
+  // one catch guards only the body read racing the page close.
+  page.on("response", (response) => {
+    const url = response.url();
+    const matched = LINKEDIN_RESPONSE_RE.test(url) && response.status() === 200;
+    // Diagnostic (live rehearsal 2026-11-11): an UNMATCHED flagship-web body
+    // is read once and named with what it carries. A headed run failed LEG
+    // DEAD while the page fired five flagship responses — the results were
+    // arriving on an endpoint LINKEDIN_RESPONSE_RE does not match, and
+    // nothing said so. This line makes that visible instead of silent.
+    if (!matched && /flagship-web/i.test(url)) {
+      void (async () => {
+        try {
+          const body = await response.text();
+          const ids = new Set([...body.matchAll(/urn:li:activity:(\d{10,})/g)].map((m) => m[1]))
+            .size;
+          const markers = (body.match(/legacyControlName":"commentary_text/g) || []).length;
+          console.log(
+            `fetch: ${label} flagship (unmatched): ${response.status()} ids=${ids} markers=${markers} ${url.slice(0, 80)}`,
+          );
+        } catch {
+          // the body read can race the page close; skip it
+        }
+      })();
+      return;
+    }
+    if (!matched) return;
+    void (async () => {
+      try {
+        const body = await response.text();
+        received += 1;
+        const minted = collectLinkedInPosts(body);
+        let fresh = 0;
+        for (const post of minted) {
+          if (posts.has(post.id)) continue; // first-wins by urn
+          posts.set(post.id, post);
+          fresh += 1;
+        }
+        if (minted.length > 0) parsed += 1;
+        // Extensive logging (live rehearsal 2026-11-11): every body names
+        // its size, its mint count, and how many were NEW. Without this,
+        // "no body arrived" and "body arrived, all duplicates" look alike.
+        console.log(
+          `fetch: ${label} body ${received}: ${body.length}B — ${minted.length} minted, ${fresh} new, ${minted.length - fresh} dup (total ${posts.size})`,
+        );
+      } catch {
+        // the body read can race the page close; skip it
+      }
+    })();
+  });
+
+  try {
+    await page.goto(buildContentSearchUrl(surface.value), {
+      waitUntil: "domcontentloaded",
+      timeout: LINKEDIN_NAV_TIMEOUT_MS,
+    });
+    // Log the landing URL BEFORE the checkpoint check: a halt that fires
+    // first leaves the operator without the URL that tripped it.
+    console.log(`fetch: ${label} landed: ${page.url?.() ?? "?"}`);
+    assertNoCheckpoint();
+    // The DOM carries no ids, so there is no hydration probe: the initial
+    // results ride the first flagship-web response instead. A checkpoint
+    // redirect can land on any poll tick — the per-tick URL re-check keeps
+    // the halt class ahead of the dead-session timeout.
+    // Liveness (REVISED 2026-11-11T20:00+0700, measured): the initial
+    // results are SERVER-RENDERED. The page fires actions/component,
+    // server-request and app-config — all with ids=0 markers=0 — and no
+    // flagship-web body carrying posts. Waiting for one therefore times
+    // out on a perfectly healthy page (the LEG DEAD this replaces). The
+    // real signal is the DOM: the lazy column renders post cards. A
+    // flagship body still counts, so either satisfies liveness.
+    const maxPolls = Math.ceil(
+      LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS / LINKEDIN_FIRST_RESPONSE_POLL_MS,
+    );
+    let polls = 0;
+    let domPosts = 0;
+    while (received === 0 && domPosts === 0 && polls < maxPolls) {
+      await page.waitForTimeout(LINKEDIN_FIRST_RESPONSE_POLL_MS);
+      assertNoCheckpoint();
+      domPosts = Number(
+        await page.evaluate(
+          `document.querySelectorAll('[data-testid="lazy-column"] > div').length`,
+        ),
+      );
+      polls += 1;
+    }
+    if (received === 0 && domPosts === 0) {
+      throw legDead(
+        `no flagship-web response and no rendered post within ${LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS}ms — the session may be dead`,
+      );
+    }
+    console.log(`fetch: ${label} liveness: ${received} body(ies), ${domPosts} rendered post(s)`);
+    // The adapter's locator is already the first text match; a transient
+    // 0-match is a harmless dry round (the artifact's dry-round exit).
+    const loadMore = page.locator(LOAD_MORE_SELECTOR);
+    let dryRounds = 0;
+    let clicks = 0;
+    for (let round = 1; round <= scrollRounds && posts.size < LINKEDIN_MAX_POSTS; round += 1) {
+      const before = posts.size;
+      let clicked = false;
+      let clickError = "";
+      if (round === 1) {
+        // One-shot DOM probe (live rehearsal 2026-11-11): a waitFor timeout
+        // cannot distinguish "no button in the DOM" from "button present but
+        // off-screen". Measured 18:15: loadMore 0 with 54 buttons present and
+        // docH === viewportH — the button is absent and the document does not
+        // scroll. The column metrics separate "column is scrollable and we
+        // scrolled the wrong node" from "the page variant has no pagination".
+        const domProbe = await page.evaluate(DOM_PROBE_JS);
+        console.log(`fetch: ${label} dom probe (before scroll): ${String(domProbe)}`);
+      }
+      try {
+        // Scroll the LAZY COLUMN, not the window (live rehearsal
+        // 2026-11-11): the results live in [data-testid="lazy-column"],
+        // which has its own scroll container — window.scrollTo moves
+        // nothing ("no movement - page already at the top"). Scroll the
+        // column to its end, then bring the button into view if it has
+        // rendered. The return value names which case we are in.
+        const scrollResult = await page.evaluate(SCROLL_JS);
+        if (round === 1) {
+          console.log(`fetch: ${label} scroll: ${String(scrollResult)}`);
+          // Re-probe AFTER the scroll settles: the button may render
+          // asynchronously once the column moves.
+          await page.waitForTimeout(1_500);
+          const after = await page.evaluate(DOM_PROBE_JS);
+          console.log(`fetch: ${label} dom probe (after scroll): ${String(after)}`);
+        }
+        await loadMore.waitFor({ state: "visible", timeout: LINKEDIN_LOAD_MORE_WAIT_MS });
+        await loadMore.click();
+        clicked = true;
+      } catch (error) {
+        // No clickable button this round: the feed ended, or the next
+        // batch is slow — a harmless dry round, no settle owed. The
+        // message rides the log so "no button" and "clicked, no posts"
+        // never look alike (live rehearsal 2026-11-11).
+        clickError = error instanceof Error ? error.message : String(error);
+      }
+      if (clicked) {
+        clicks += 1;
+        // The settle window is the deleted walk's constant, unchanged: a
+        // body that lands later costs ONE dry round and recovers on the
+        // next good round (dryRounds resets below) — the same recovery the
+        // Threads loop relies on (src/fetch-threads.ts:437-438).
+        await page.waitForTimeout(LINKEDIN_SETTLE_MS);
+        assertNoCheckpoint();
+      }
+      // Gain is the deduped map's growth: NEW posts only, never a re-served
+      // urn — the same rule as the Threads loop (src/fetch-threads.ts:445).
+      const gained = posts.size - before;
+      const outcome = clicked ? "fired" : `no button (${clickError})`;
+      if (gained < LINKEDIN_MIN_GAIN) {
+        dryRounds += 1;
+        console.log(
+          `fetch: ${label} click ${round}: ${outcome} +${gained} new (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS}, total ${posts.size})`,
+        );
+        // The probe's floor: the dry exit may not fire before minClicks
+        // clicks have landed, so one probe run samples several bodies
+        // (live rehearsal 2026-11-11: 3 posts per body). The floor is
+        // skipped when NO click has ever fired — an absent button would
+        // otherwise burn every remaining round on a 5s waitFor timeout
+        // (measured: 8 rounds x 5s = 40s of pure timeout).
+        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS && (clicks === 0 || clicks >= minClicks)) break;
+      } else {
+        dryRounds = 0;
+        console.log(
+          `fetch: ${label} click ${round}: ${outcome} +${gained} new (total ${posts.size})`,
+        );
+      }
+    }
+    // Let in-flight response bodies settle before the page goes away.
+    await page.waitForTimeout(LINKEDIN_XHR_DRAIN_MS);
+    console.log(
+      `fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s), ${received} body(ies) received, ${clicks} click(s) fired`,
+    );
+    return [...posts.values()];
+  } finally {
+    await page.close();
+  }
+}
+
+/**
+ * Walk every configured linkedin surface through the session browser:
+ * ONE context for the whole walk (opened from the synthesized session
+ * document, closed on every path), one paced navigation plus up to
+ * `scrollRounds` Load-more clicks per surface, one log line per surface
+ * (empty-is-success, defb8af). Surface faults warn + skip; leg-dead
+ * aborts the tick whole via drain-then-throw; a checkpoint aborts via
+ * the halt channel (the latch, not the episode marker); when EVERY
+ * surface faulted, the tagged AllSurfacesFaulted throws — the caller
+ * decides the write (D13: a partial fault still publishes the survivors).
+ *
+ * FR-5 (shuffled surface order): Fisher-Yates over {surface, index}
+ * pairs with the injected rng — the navigation dispatch order varies per
+ * tick while perSurface keeps ORIGINAL indexes, so the flat() reassembly
+ * order stays input-order structural no matter how the shuffle lands.
+ *
+ * contextFactory defaults to the in-module production factory (the persistent
+ * profile, headed); the PC scripts and the offline suite inject explicitly.
  */
 export async function fetchLinkedInPosts(
   surfaces: readonly LinkedinSurface[],
-  cookies: LinkedInCookies,
-  transport: VoyagerGet | Transport,
+  profileDir: string = LINKEDIN_PROFILE_DIR,
+  contextFactory: LinkedInContextFactory = linkedinChromiumContextFactory,
+  scrollRounds: number = LINKEDIN_DEFAULT_SCROLL_ROUNDS,
   sleepFn: SleepFn = defaultSleep,
   now: () => number = Date.now,
   rng: RandomFn = Math.random,
+  minClicks = 0,
 ): Promise<Post[]> {
-  const ownsTransport = typeof transport !== "function";
-  const get: VoyagerGet = ownsTransport ? (transport as Transport).get : transport;
+  // An empty surface list must never launch a browser: the callers guard
+  // surfaces.length > 0, and this early return keeps the invariant local
+  // (a zero-surface walk opens no context and closes nothing).
+  if (surfaces.length === 0) return [];
+  // REVISED 2026-11-11T18:40+0700: the browser opens on the persistent
+  // profile, not a synthesized cookie document. The cookie file is a
+  // preflight validity check in the CALLERS (resolveLinkedInCookies throws
+  // on a missing/malformed file before the walk is reached).
+  const context = await contextFactory(profileDir);
   const gate = makePacingGate(now, sleepFn, rng);
-  // FR-5 (shuffled surface order): Fisher-Yates over {surface, index}
-  // pairs with the injected rng — the GET dispatch order varies per tick
-  // while perSurface keeps ORIGINAL indexes, so the flat() reassembly
-  // order stays input-order structural no matter how the shuffle lands.
   const order = surfaces.map((surface, index) => ({ surface, index }));
   for (let i = order.length - 1; i > 0; i -= 1) {
     const j = Math.floor(rng() * (i + 1));
@@ -534,7 +683,6 @@ export async function fetchLinkedInPosts(
   // Side arrays indexed by the ORIGINAL surface index — runPool returns
   // void (src/pool.ts:33-52); reassembly order comes from the filter+flat walk.
   const perSurface: Array<Post[] | undefined> = Array.from({ length: surfaces.length });
-  let dropped = 0;
   let faultedCount = 0;
   let deadReason: string | undefined;
   let haltReason: string | undefined;
@@ -549,45 +697,19 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        // FR-3 (one page per surface per tick): page 0 only — count 50 is
-        // unclamped server-side, so a full page still caps at ONE GET.
-        const response = await get(buildSearchUrl(surface.value, 0, PAGE_SIZE));
-        if (response.status !== 200) {
-          const fault = classifyFault(response.status, response.body);
-          if (fault.kind === "halt") {
-            haltReason ??= fault.reason;
-            console.warn(`fetch: ${label} HALT — ${fault.reason}`);
-            return;
-          }
-          if (fault.kind === "legDead") throw legDead(fault.reason);
-          throw new Error(`${label} page 0: ${fault.reason}`);
-        }
-        const parsed = parseSearchResponse(response.body);
-        if (parsed.kind === "unparsable") {
-          // FR-4 (ratified 2026-11-09): one unparsable 200 stops the whole
-          // tick — drain-then-throw via the leg-dead channel, whose episode
-          // marker emails once per episode and auto-clears on the next
-          // good tick. A changed response shape is exactly when the machine
-          // must stop hitting the endpoint, not push through.
-          throw legDead(`${label} page 0: unparsable 200 body — ${parsed.reason}`);
-        }
-        dropped += parsed.dropped;
+        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds, minClicks);
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.
-        perSurface[entry.index] = parsed.posts.map((post) => ({
+        perSurface[entry.index] = posts.map((post) => ({
           ...post,
           surfaces: [{ type: surface.type, value: surface.value }],
         }));
-        // Empty-is-success keyed on the observable signal (defb8af): a
-        // surface that yields 0 posts is an outcome, not a fault.
-        console.log(`fetch: ${label} OK — ${parsed.posts.length} post(s)`);
       } catch (error) {
         if (isHalt(error)) {
-          // A halt thrown INSIDE the worker (the budget wrapper riding the
-          // seam) must drain like a leg-dead, never land in the fault arm —
-          // a surface fault would quietly COMPLETE the tick with partial
-          // posts (design 2026-11-09; caught by the Slice 4 mid-walk test).
+          // The checkpoint terminal drains like a leg-dead but lands in
+          // the halt arm at the join — the account-safety latch, whose
+          // alarm the operator must clear (design 2026-11-09).
           haltReason ??= error.reason;
           console.warn(`fetch: ${label} HALT — ${error.reason}`);
           return;
@@ -600,17 +722,17 @@ export async function fetchLinkedInPosts(
           console.warn(`fetch: ${label} LEG DEAD — ${error.reason}`);
           return;
         }
-        faultedCount += 1; // fault arm only; the leg-dead/halt arms return above
+        faultedCount += 1; // fault arm only; the halt/leg-dead arms return above
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`fetch: ${label} FAILED — ${message}`);
       }
     });
   } finally {
-    if (ownsTransport) await (transport as Transport).dispose();
+    await context.close();
   }
 
-  // Halt outranks leg-dead at the join: a rate-limit signal is the
-  // account-safety terminal; a same-walk dead session still self-heals.
+  // Halt outranks leg-dead at the join: a checkpoint is the account-
+  // safety terminal; a same-walk dead session still self-heals.
   if (haltReason !== undefined) {
     throw halt(haltReason);
   }
@@ -619,9 +741,6 @@ export async function fetchLinkedInPosts(
   }
   if (surfaces.length > 0 && faultedCount === surfaces.length) {
     throw allSurfacesFaulted(faultedCount);
-  }
-  if (dropped > 0) {
-    console.warn(`fetch: linkedin dropped ${dropped} malformed row(s)`);
   }
   return perSurface.filter((entry): entry is Post[] => entry !== undefined).flat();
 }

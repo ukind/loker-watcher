@@ -44,14 +44,14 @@ describe("parseDotEnv", () => {
         "# a comment",
         "",
         "LINKEDIN_COOKIES_FILE=C:/loker-secrets/linkedin-cookies.json",
-        'CURL_IMPERSONATE_BIN="C:/tools/curl-impersonate/curl-impersonate-chrome.exe"',
+        'SAMPLE_BIN="C:/tools/sample/sample.exe"',
         "QUOTED='single'",
         "EMPTY=",
       ].join("\n"),
     );
     assert.deepEqual(parsed, {
       LINKEDIN_COOKIES_FILE: "C:/loker-secrets/linkedin-cookies.json",
-      CURL_IMPERSONATE_BIN: "C:/tools/curl-impersonate/curl-impersonate-chrome.exe",
+      SAMPLE_BIN: "C:/tools/sample/sample.exe",
       QUOTED: "single",
       EMPTY: "",
     });

@@ -1,7 +1,8 @@
 /**
- * One LinkedIn fetch tick (PC-local leg, design D5/D7):
+ * One LinkedIn fetch tick (PC-local leg, design D5/D7; browser-walk
+ * migration 2026-11-11):
  *
- *   cookies → transport → voyager walk → payload write → single-path push
+ *   cookies → browser walk → payload write → single-path push
  *
  * The push mirrors scripts/commit-state-rebase.sh's discipline, scoped to
  * the payload path: add ONLY state/linkedin-posts.json, no-op guard,
@@ -10,8 +11,8 @@
  * file has exactly one writer, so an exact-simultaneous push pair costs
  * the loser one retry — never a lost update. Run from a DEDICATED clone of
  * main: the checkout preflight (guardCheckout) enforces branch main + a
- * clean tree BEFORE cookies, transport, or any voyager GET — a dirty tree
- * wedges the rebase only AFTER a live fetch is burned, and a non-main
+ * clean tree BEFORE cookies, the walk, or any browser navigation — a dirty
+ * tree wedges the rebase only AFTER a live fetch is burned, and a non-main
  * branch would push the payload to the wrong ref. The rebase doubles as
  * the loop's own code auto-update.
  *
@@ -27,7 +28,7 @@
  * side-effect free.
  */
 import { execFile } from "node:child_process";
-import { mkdir, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -35,30 +36,18 @@ import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/email.js";
 import { envWithDotEnv } from "../src/env-file.js";
+import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
 import {
-  DAILY_GET_BUDGET,
-  type DailyBudgetState,
-  HALT_BUDGET_REASON,
-  budgetAllows,
-  budgetReserve,
-  freshBudget,
-  isWithinWorkingHours,
-  localDateKey,
-} from "../src/linkedin-behavior.js";
-import {
+  LINKEDIN_PROFILE_DIR,
+  type LinkedInContextFactory,
   type LinkedinSurface,
-  type Transport,
-  type VoyagerGet,
   fetchLinkedInPosts,
-  halt,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
-  resolveLinkedInTransport,
 } from "../src/linkedin-fetch.js";
 import { writePayloadAtomic } from "../src/linkedin-payload.js";
 import { type LinkedInCookies, resolveLinkedInCookies } from "../src/linkedin-session.js";
-import { stateTempPath } from "../src/state.js";
 import type { Post } from "../src/types.js";
 
 /** Injectable git runner: args → exit code + git's own merged output (never rejects). */
@@ -70,13 +59,18 @@ const execFilePromised = promisify(execFile);
 export const realGit: GitRunner = async (args) => {
   try {
     const { stdout, stderr } = await execFilePromised("git", [...args], { windowsHide: true });
-    return { code: 0, output: `${stdout}\n${stderr}`.trim() };
+    return {
+      code: 0,
+      output: `${stdout}
+${stderr}`.trim(),
+    };
   } catch (error) {
     // execFile rejects on a nonzero code with {stdout, stderr} attached;
     // both channels merge into one trimmed output either way.
     const raw = error as { code?: unknown; stdout?: unknown; stderr?: unknown };
     const code = typeof raw.code === "number" ? raw.code : 1;
-    const output = `${String(raw.stdout ?? "")}\n${String(raw.stderr ?? "")}`.trim();
+    const output = `${String(raw.stdout ?? "")}
+${String(raw.stderr ?? "")}`.trim();
     return { code: Number.isInteger(code) ? code : 1, output };
   }
 };
@@ -93,8 +87,13 @@ export interface FetchTickDeps {
   config?: WatcherConfig;
   /** Pre-resolved cookies. Default: resolveLinkedInCookies(env). */
   cookies?: LinkedInCookies;
-  /** Opened transport. Default: resolveLinkedInTransport(env, cookies). The caller owns a provided transport. */
-  transport?: Transport;
+  /**
+   * Browser-context factory for the walk (the LinkedInContextFactory seam).
+   * Default: the walk module's own production factory (headless Chromium,
+   * the session document in). The walk opens and closes the context on
+   * every path — the tick owns no browser lifecycle of its own.
+   */
+  contextFactory?: LinkedInContextFactory;
   /** Payload location. Default: LINKEDIN_PAYLOAD_PATH (the pushed path). */
   payloadPath?: string;
   /** Git runner. Default: the real git on PATH. */
@@ -109,8 +108,6 @@ export interface FetchTickDeps {
   now?: () => number;
   /** Halt-latch flag file. Default: repo-local beside the payload (survives restarts). */
   latchPath?: string;
-  /** Daily GET budget file. Default: repo-local beside the payload (survives restarts). */
-  budgetPath?: string;
   /** Jitter draw for the walk pacing + shuffle. Default: Math.random. */
   rng?: () => number;
   /** Halt-latch alarm. Default: sendHaltAlarm, best-effort (warn on failure). */
@@ -141,13 +138,6 @@ const DEFAULT_MARKER = join(dirname(LINKEDIN_PAYLOAD_PATH), "linkedin-leg-dead.f
  */
 export const DEFAULT_LATCH = join(dirname(LINKEDIN_PAYLOAD_PATH), "linkedin-halt.flag");
 
-/**
- * The daily GET budget ledger (FR-9): {localDate, count}, persisted atomically
- * BEFORE each GET leaves. Repo-local beside the payload; untracked via the
- * .gitignore entries this slice adds.
- */
-export const DEFAULT_BUDGET = join(dirname(LINKEDIN_PAYLOAD_PATH), "linkedin-get-budget.json");
-
 async function markerExists(path: string): Promise<boolean> {
   try {
     await readFile(path, "utf8");
@@ -172,7 +162,12 @@ export async function handleLegDeadEpisode(
     console.warn(`fetch-linkedin: leg still dead — ${reason} (alarm already sent this episode)`);
     return;
   }
-  await writeFile(marker, `${reason}\n`, "utf8");
+  await writeFile(
+    marker,
+    `${reason}
+`,
+    "utf8",
+  );
   console.error(`fetch-linkedin: LEG DEAD — ${reason}`);
   const alarm =
     deps.alarm ??
@@ -216,74 +211,12 @@ async function latchPresent(path: string): Promise<boolean> {
  */
 async function tripLatch(path: string, reason: string): Promise<void> {
   if (await latchPresent(path)) return;
-  await writeFile(path, `${reason}\n`, "utf8");
-}
-
-/**
- * The budget reader's degrade lattice (design decision 2026-11-09): absent
- * (ENOENT) -> fresh, quiet — the normal first-run state; malformed or a
- * wrong shape -> fresh + ONE warning naming the path. A corrupt file must
- * never wedge the leg (the 140 < 150 margin absorbs the reset risk);
- * partial reads are impossible by construction — the writer is atomic.
- */
-async function readBudgetState(path: string): Promise<DailyBudgetState> {
-  let raw: string;
-  try {
-    raw = await readFile(path, "utf8");
-  } catch {
-    return freshBudget();
-  }
-  const warn = (why: string): DailyBudgetState => {
-    console.warn(`fetch-linkedin: budget file unreadable (${why}) — starting fresh: ${path}`);
-    return freshBudget();
-  };
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return warn("not valid JSON");
-  }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return warn("not an object");
-  }
-  const record = parsed as { localDate?: unknown; count?: unknown };
-  if (
-    typeof record.localDate !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(record.localDate) ||
-    typeof record.count !== "number" ||
-    !Number.isInteger(record.count) ||
-    record.count < 0
-  ) {
-    return warn("wrong shape");
-  }
-  return { localDate: record.localDate, count: record.count };
-}
-
-/**
- * Atomic budget write (sibling unique temp + rename, the payload idiom):
- * the reserve lands BEFORE the GET leaves, so a crash between reserve and
- * GET over-counts — the safe direction.
- */
-async function writeBudgetAtomic(
-  state: DailyBudgetState,
-  path: string,
-  nowMs: number,
-): Promise<void> {
-  const dir = dirname(path);
-  const tempPath = stateTempPath(dir, nowMs);
-  try {
-    await mkdir(dir, { recursive: true });
-    await writeFile(tempPath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
-    await rename(tempPath, path);
-  } catch (error) {
-    try {
-      await unlink(tempPath);
-    } catch {
-      // Best-effort temp cleanup
-    }
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`fetch-linkedin: budget write failed for ${path}: ${message}`);
-  }
+  await writeFile(
+    path,
+    `${reason}
+`,
+    "utf8",
+  );
 }
 
 /**
@@ -306,9 +239,9 @@ function defaultHaltAlarm(
  * Dedicated-clone preflight (D5, Phase 10): the push discipline assumes a
  * clean checkout of main. A dirty tree kills the rebase AFTER a live fetch;
  * a non-main branch silently pushes the payload to the wrong ref (the
- * hosted run reads main). Both fail here — before cookies, transport, or
- * any voyager GET — naming what is wrong and the remedy. Two git reads,
- * zero network.
+ * hosted run reads main). Both fail here — before cookies, the walk, or
+ * any browser navigation — naming what is wrong and the remedy. Two git
+ * reads, zero network.
  */
 export async function guardCheckout(git: GitRunner): Promise<void> {
   const head = await git(["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -390,11 +323,11 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
     console.log("fetch-linkedin: no linkedin surfaces configured — nothing to do");
     return { wrote: false, pushed: false, postCount: 0 };
   }
-  // The anti-restriction preflight band (design 2026-11-09) runs BEFORE the
+  // The anti-restriction preflight band (design 2026-11-09; the budget step
+  // deleted by the browser-walk migration 2026-11-11) runs BEFORE the
   // checkout guard: a gated no-op costs zero git spawns, zero cookie reads,
-  // and zero voyager GETs. Order: window -> latch -> budget.
+  // and zero browser navigations. Order: window -> latch.
   const latchPath = deps.latchPath ?? DEFAULT_LATCH;
-  const budgetPath = deps.budgetPath ?? DEFAULT_BUDGET;
   const rng = deps.rng ?? Math.random;
   const at = new Date(now());
   if (deps.bypassWindow !== true && !isWithinWorkingHours(at)) {
@@ -409,52 +342,46 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
     );
     return { wrote: false, pushed: false, postCount: 0 };
   }
-  const dayKey = localDateKey(at);
-  const budget = await readBudgetState(budgetPath);
-  if (!budgetAllows(budget, dayKey, DAILY_GET_BUDGET)) {
-    console.log(
-      `fetch-linkedin: daily GET budget spent for ${dayKey} — nothing to do until local midnight`,
-    );
-    return { wrote: false, pushed: false, postCount: 0 };
-  }
-  // The checkout preflight runs BEFORE the cookie/transport resolvers: a
-  // mis-homed checkout costs zero voyager GETs and writes nothing. The loop
-  // catches this plain error and keeps running (a mis-homed loop warns
-  // every 10 min instead of burning live fetches); the one-shot entry exits 1.
+  // The checkout preflight runs BEFORE the cookie resolver: a mis-homed
+  // checkout costs zero navigations and writes nothing. The loop catches
+  // this plain error and keeps running (a mis-homed loop warns every 10
+  // min instead of burning live fetches); the one-shot entry exits 1.
   await guardCheckout(deps.git ?? realGit);
   const cookies = deps.cookies ?? resolveLinkedInCookies(env);
   // FR-0 (design 2026-11-09): the dedicated-account gate — the cookie file must
   // carry the machine-written "harvestedAt" stamp; presence required, age never
-  // checked. A stampless file is a hand-exported or legacy file: fail BEFORE the
-  // transport opens or any GET leaves, naming the one remedy (a re-harvest). The
-  // loop treats this like any plain tick fault (warn + keep running); the
-  // one-shot entry exits 1.
+  // checked. A stampless file is a hand-exported or legacy file: fail BEFORE
+  // the walk opens a browser or any navigation leaves, naming the one remedy
+  // (a re-harvest). The loop treats this like any plain tick fault (warn +
+  // keep running); the one-shot entry exits 1.
   if (cookies.harvestedAt === undefined) {
     throw new Error(
       'fetch-linkedin: the cookie file carries no machine-written "harvestedAt" stamp — run "npm run login-linkedin" to re-harvest the session (README: PC operations)',
     );
   }
-  const transport = deps.transport ?? (await resolveLinkedInTransport(env, cookies));
-  // The budget wrapper rides the VoyagerGet seam: reserve + persist BEFORE
-  // the GET leaves (a crash between reserve and GET over-counts — the safe
-  // direction), and a spent budget mid-walk throws the tagged halt the
-  // walk drains to the join.
-  let budgetState = budget;
-  const wrappedGet: VoyagerGet = async (url) => {
-    if (!budgetAllows(budgetState, dayKey, DAILY_GET_BUDGET)) {
-      throw halt(HALT_BUDGET_REASON);
-    }
-    budgetState = budgetReserve(budgetState, dayKey);
-    await writeBudgetAtomic(budgetState, budgetPath, now());
-    return transport.get(url);
-  };
   let posts: Post[];
   try {
-    // The bare GET rides the walk (never the Transport object — the walk
-    // disposes any Transport it receives); disposal is this finally's job alone.
-    posts = await fetchLinkedInPosts(surfaces, cookies, wrappedGet, undefined, now, rng);
+    // The walk owns the browser: it opens one context on the persistent
+    // PROFILE and closes it on every path, so the tick has no dispose arm
+    // of its own. scrollRounds (the config knob shared with the Threads
+    // walk) bounds the Load-more clicks per surface; the factory defaults
+    // to the walk module's production profile factory (headed).
+    //
+    // REVISED 2026-11-11T18:40+0700: the resolved cookies above are a
+    // PREFLIGHT only (the harvestedAt gate). The browser rides the profile,
+    // not the cookie document — a fresh browser with the document gets a
+    // page with no Load-more button.
+    posts = await fetchLinkedInPosts(
+      surfaces,
+      LINKEDIN_PROFILE_DIR,
+      deps.contextFactory,
+      config.scrollRounds,
+      undefined,
+      now,
+      rng,
+    );
   } catch (error) {
-    // The halt arm (design 2026-11-09): a 429 or a spent budget trips the
+    // The halt arm (FR-7): a security checkpoint or login wall trips the
     // operator-cleared latch, alarms once (best-effort), and lands as a
     // quiet-zeros no-op — the loop keeps running, fetching nothing.
     if (isHalt(error)) {
@@ -475,9 +402,6 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
       return { wrote: false, pushed: false, postCount: 0 };
     }
     throw error;
-  } finally {
-    // The caller owns a provided transport; a locally opened one dies here.
-    if (deps.transport === undefined) await transport.dispose();
   }
   const payloadPath = deps.payloadPath ?? LINKEDIN_PAYLOAD_PATH;
   await writePayloadAtomic(posts, payloadPath, now);
