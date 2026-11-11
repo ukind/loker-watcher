@@ -1,7 +1,7 @@
 {
   "https://api.opencheap.si/v1": 1,
   "https://ai.nube-api.com/v1": 32,
-  "https://openrouter.ai/api/v1": 32,
+  "https://openrouter.ai/api/v1": 1,
   "https://api.z.ai/api/coding/paas/v4": 4,
-  "probedAt": 1794397516
+  "probedAt": 1794426728
 }
