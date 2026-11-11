@@ -1,5 +1,6 @@
 /**
- * Offline suite for the behavioral policy machines (design 2026-11-09).
+ * Offline suite for the behavioral policy machines (design 2026-11-09;
+ * the budget suites deleted by the browser-walk migration 2026-11-11).
  *
  * Local Date constructors throughout — every pin is zone-independent: the
  * local (Y, M, D, ...) constructor and the local getters round-trip in any
@@ -9,18 +10,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  DAILY_GET_BUDGET,
-  HALT_BUDGET_REASON,
+  HALT_CHECKPOINT_REASON,
   HALT_RATE_LIMIT_REASON,
   WAKE_MAX_MS,
   WAKE_MIN_MS,
   WINDOW_END_HOUR,
   WINDOW_START_HOUR,
-  budgetAllows,
-  budgetReserve,
-  freshBudget,
   isWithinWorkingHours,
-  localDateKey,
   sampleTickDelayMs,
 } from "../src/linkedin-behavior.js";
 
@@ -95,61 +91,14 @@ describe("sampleTickDelayMs", () => {
   });
 });
 
-describe("localDateKey", () => {
-  it("formats a local date zero-padded as YYYY-MM-DD", () => {
-    assert.equal(localDateKey(at(2026, 8, 5, 13)), "2026-09-05");
-  });
-
-  it("reads the LOCAL calendar, not UTC — local midnight keeps its own date", () => {
-    // Local 00:30 on Oct 26 is a different UTC date in every zone east of
-    // UTC; the local-constructor/local-getter round-trip pins the date.
-    assert.equal(localDateKey(at(MONDAY.y, MONDAY.m, MONDAY.d, 0, 30)), "2026-10-26");
-  });
-});
-
-describe("budgetAllows / budgetReserve", () => {
-  it("allows the fresh state on any key", () => {
-    assert.equal(budgetAllows(freshBudget(), "2026-10-26"), true);
-  });
-
-  it("allows count 149 and blocks count 150 at the default budget", () => {
-    const key = "2026-10-26";
-    let state = freshBudget();
-    for (let i = 0; i < DAILY_GET_BUDGET; i += 1) {
-      assert.equal(budgetAllows(state, key), true, `GET ${i + 1}`);
-      state = budgetReserve(state, key);
-    }
-    assert.equal(state.count, DAILY_GET_BUDGET);
-    assert.equal(budgetAllows(state, key), false);
-  });
-
-  it("blocks at a custom limit", () => {
-    const key = "2026-10-26";
-    const state = budgetReserve(budgetReserve(freshBudget(), key), key);
-    assert.equal(budgetAllows(state, key, 2), false);
-    assert.equal(budgetAllows(state, key, 3), true);
-  });
-
-  it("rolls over at local midnight: a spent budget never blocks the new day", () => {
-    const yesterday = { localDate: "2026-10-25", count: DAILY_GET_BUDGET };
-    assert.equal(budgetAllows(yesterday, "2026-10-26"), true);
-    const reserved = budgetReserve(yesterday, "2026-10-26");
-    assert.deepEqual(reserved, { localDate: "2026-10-26", count: 1 });
-  });
-
-  it("accumulates within one day and never mutates the caller's state", () => {
-    const key = "2026-10-26";
-    const frozen = Object.freeze({ localDate: key, count: 5 });
-    const next = budgetReserve(frozen, key);
-    assert.deepEqual(frozen, { localDate: key, count: 5 });
-    assert.deepEqual(next, { localDate: key, count: 6 });
-  });
-});
-
 describe("halt latch reason vocabulary", () => {
-  it("exports two non-empty, distinguishable canonical reasons", () => {
+  it("exports two non-empty, mutually distinguishable canonical reasons", () => {
     assert.ok(HALT_RATE_LIMIT_REASON.length > 0);
-    assert.ok(HALT_BUDGET_REASON.length > 0);
-    assert.notEqual(HALT_RATE_LIMIT_REASON, HALT_BUDGET_REASON);
+    assert.ok(HALT_CHECKPOINT_REASON.length > 0);
+    assert.notEqual(HALT_RATE_LIMIT_REASON, HALT_CHECKPOINT_REASON);
+  });
+
+  it("names the one remedy in the checkpoint reason (a re-harvest)", () => {
+    assert.match(HALT_CHECKPOINT_REASON, /login-linkedin/);
   });
 });

@@ -4,16 +4,15 @@
  * Real files on OS temp: the suite creates the three delete targets (the
  * cookie file, the persistent profile dir, the halt-latch flag), runs the
  * reset over injected paths, and pins the contract — the three targets
- * gone, the daily GET budget ledger deliberately KEPT (the day's GET count
- * protects the account, not the session), and absent targets a quiet
- * no-op. Nothing inside the repo is touched.
+ * gone and absent targets a quiet no-op. Nothing inside the repo is
+ * touched. (The kept budget-ledger reporting died with the budget
+ * machine — browser-walk migration, slice 5.)
  */
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
-import { DEFAULT_BUDGET } from "../scripts/fetch-linkedin.js";
 import { resetLinkedIn } from "../scripts/reset-linkedin.js";
 
 let dir: string | undefined;
@@ -27,20 +26,19 @@ async function target(name: string): Promise<string> {
 }
 
 describe("resetLinkedIn", () => {
-  it("deletes the cookie file, the profile dir, and the halt latch — and keeps the budget ledger", async () => {
+  it("deletes the cookie file, the profile dir, and the halt latch", async () => {
     const cookiePath = await target("cookies.json");
     const profileDir = await target("chromium-profile");
     const latchPath = await target("linkedin-halt.flag");
     await writeFile(cookiePath, '{"liAt":"AQE","jsessionid":"ajax:1"}\n', "utf8");
     await mkdir(profileDir, { recursive: true });
     await writeFile(join(profileDir, "jar"), "x", "utf8");
-    await writeFile(latchPath, "HTTP 429 rate limit\n", "utf8");
+    await writeFile(latchPath, "LinkedIn security checkpoint\n", "utf8");
 
     const result = await resetLinkedIn({ cookiePath, profileDir, latchPath });
     assert.deepEqual(result, {
       removed: [cookiePath, profileDir, latchPath],
       absent: [],
-      kept: [DEFAULT_BUDGET],
     });
     for (const path of [cookiePath, profileDir, latchPath]) {
       await assert.rejects(() => stat(path), /ENOENT/);
@@ -55,7 +53,6 @@ describe("resetLinkedIn", () => {
     assert.deepEqual(result, {
       removed: [],
       absent: [cookiePath, profileDir, latchPath],
-      kept: [DEFAULT_BUDGET],
     });
   });
 

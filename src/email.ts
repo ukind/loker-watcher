@@ -356,8 +356,8 @@ export function buildHaltAlarmText(reason: string): string {
     "To resume: delete state/linkedin-halt.flag (or run npm run reset-linkedin",
     "to clear the session and the latch together).",
     "",
-    "A 429 means LinkedIn told this account to slow down. Wait before",
-    "resuming, and check the daily GET budget in state/linkedin-get-budget.json.",
+    "A checkpoint means LinkedIn challenged this account. Re-harvest the",
+    "session (npm run login-linkedin) before clearing the latch.",
   ].join("\n");
 }
 

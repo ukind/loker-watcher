@@ -8,7 +8,6 @@ slice*-recon/
 linkedin-cookies*.json
 state/linkedin-leg-dead.flag
 run.log
-tools/
 state/linkedin-get-budget.json
 state/linkedin-halt.flag
 outputs/.drafts/

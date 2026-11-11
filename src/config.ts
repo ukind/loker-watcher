@@ -14,8 +14,6 @@
 export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
   linkedinCookiesFile: "LINKEDIN_COOKIES_FILE",
-  linkedinTransport: "LINKEDIN_TRANSPORT",
-  curlImpersonateBin: "CURL_IMPERSONATE_BIN",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
   gmailUser: "GMAIL_USER",
@@ -52,7 +50,7 @@ export function runUrlFromEnv(env: Record<string, string | undefined>): string |
 export const STATE_PATH = "state/seen-posts.json";
 
 /**
- * PC-leg payload (design D5): the local voyager loop writes fetched raw
+ * PC-leg payload (design D5): the PC-local browser walk writes fetched raw
  * posts here and pushes this single path to main; the hosted run reads it
  * (src/linkedin-payload.ts). Exactly one writer per file — the bot owns
  * seen-posts.json, the PC owns this one — so the two rebase+retry push

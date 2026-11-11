@@ -77,8 +77,8 @@ export function envWithDotEnv(
  * games needed for paths with spaces).
  *
  * Hoisted here (Phase 9) from scripts/login-linkedin.ts VERBATIM:
- * env-file owns the whole .env contract, and a second PC script
- * (setup-curl-impersonate) now needs the same writer.
+ * env-file owns the whole .env contract, and scripts/login-linkedin.ts
+ * imports the writer back from here.
  */
 export async function upsertDotEnvLine(
   filePath: string,
