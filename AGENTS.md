@@ -10,8 +10,9 @@ GitHub Actions workflow loads the surfaces listed in `watcher.config.json`,
 asks an OpenAI-compatible LLM judge to keep posts matching the configured
 keywords, and emails new matches as a plain-text digest.
 LinkedIn posts come from an always-on loop on the developer's PC (`npm run
-watch-linkedin`), which fetches the voyager search API and pushes
-`state/linkedin-posts.json`; the hosted run reads that payload.
+watch-linkedin`), which walks the LinkedIn content-search page in a real
+browser and pushes `state/linkedin-posts.json`; the hosted run reads that
+payload.
 Committed state is three files, one writer each: `state/seen-posts.json`
 (committed back by the workflow after match runs),
 `state/judge-ceilings.json` (probe-measured judge ceilings, committed by
@@ -31,27 +32,23 @@ failure path).
 - `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars;
   an absent or stale `state/linkedin-posts.json` degrades to a
   threads-only run with one log line)
-- `npm run probe-linkedin` - gate the LinkedIn transport: exit 1 on a dead,
-  short, or faulted leg; run twice >=6h apart with stored cookies before
-  trusting the loop (needs `LINKEDIN_COOKIES_FILE`)
+- `npm run probe-linkedin` - gate the LinkedIn browser walk: a read-only
+  walk of the first configured surface; exit 1 on a checkpoint wall
+  (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted walk
+  (`probe: FAILED`), or fewer than 2 posts; run twice >=6h apart with
+  stored cookies before trusting the loop (needs `LINKEDIN_COOKIES_FILE`)
 - `npm run fetch-linkedin` - one LinkedIn fetch tick from a dedicated clone
   of main: exits 1 BEFORE any fetch on a mis-homed checkout (branch ≠ main
   or dirty tree), then fetch, write the payload, push that single path
   (leg-dead exits 1 after the episode alarm)
 - `npm run watch-linkedin` - the always-on PC loop: one tick, then a
-  10-minute sleep, forever; leg-dead sends ONE alarm per episode and the
-  loop keeps running
+  28-33-minute sleep, forever; leg-dead sends ONE alarm per episode and
+  the loop keeps running
 - `npm run login-linkedin` - headed LinkedIn login helper: the operator
   logs in by hand in the opened window (2FA included); the helper writes
   the cookie file and the `LINKEDIN_COOKIES_FILE` line in `.env` (exit 1
   on timeout/no session; re-run on a still-signed-in profile harvests
   without a new login)
-- `npm run setup-curl` - one-time curl-impersonate setup: downloads the
-  checksum-pinned lexiforest binary (release-published sha256 digests)
-  into gitignored `tools/curl-impersonate/` and writes the
-  `CURL_IMPERSONATE_BIN` line in `.env`; any failure exits 1 naming both
-  remedies (re-run setup-curl, or `LINKEDIN_TRANSPORT=playwright` in
-  `.env`)
 - `npx playwright install chromium` - one-time browser install for local runs
 
 ## Architecture
@@ -63,19 +60,28 @@ against the configured keywords, email digest, commit state.
 - `src/fetch-threads.ts`, `src/threads-session.ts` - Playwright loading of tag,
   profile, and search surfaces; signed-in via `THREADS_SESSION_STATE` with a
   logged-out fallback
-- `src/linkedin-voyager.ts` - pure voyager search client core: endpoint
-  constants, restli encoding (# -> %23), the canonical search-URL builder,
-  and the response parser (drop+count, never throws); timestamp derives
-  from `BigInt(id) >> 22n`
+- `src/linkedin-parser.ts` - pure Flight parser core: the response-URL
+  filter, the row splitter, the $-ref commentary-text walker, the
+  canonical content-search-URL builder, and the guarded `mintPost`
+  (drop+count, never throws); timestamp derives from `BigInt(id) >> 22n`,
+  and the timestamp-ordered zip pairs the i-th distinct text with the
+  i-th distinct id by timestamp (a count mismatch warns and mints the
+  paired prefix)
 - `src/linkedin-session.ts` - the `LINKEDIN_COOKIES_FILE` resolver
   (fail-visible; the cookie file lives OUTSIDE the repo), the Cookie
   header (JSESSIONID quoted, last), the csrf token, and the storageState
-  synthesis for the Playwright transport
-- `src/linkedin-fetch.ts` - the voyager fetch leg: curl-impersonate
-  (`CURL_IMPERSONATE_BIN`) and Playwright transports behind one
-  `VoyagerGet` seam (`LINKEDIN_TRANSPORT`, no auto-fallback), the §13.3
-  fault classifier with the tagged `LegDeadError`, and the runPool surface
-  walk under a shared 5s pacing gate
+  synthesis the walk's context factory consumes
+- `src/linkedin-fetch.ts` - the browser-walk fetch leg: a LinkedIn-local
+  `LinkedInContextFactory` (headless Chromium from its own dynamic-import
+  quarantine, the harvested cookie DOCUMENT completed per cookie, locale
+  en-US) walks each surface — one paced navigation (shared 5-15s gate)
+  plus up to `scrollRounds` "Load more" clicks — parses every intercepted
+  flagship-web response through `src/linkedin-parser.ts`, and keeps the
+  walk skeleton: the FR-5 shuffle, the runPool surface walk, the drain
+  arms, the join priority halt > leg-dead > all-faulted, and
+  stamp-at-slot-write; a checkpoint/login-wall URL throws the tagged halt
+  (`HALT_CHECKPOINT_REASON`, the operator-cleared latch); no first
+  response inside the liveness window throws the tagged `LegDeadError`
 - `src/linkedin-payload.ts` - the atomic payload envelope writer/reader;
   reading never throws: absent -> quiet log, stale -> age log, malformed
   -> warn, bad rows -> drop+count
@@ -85,20 +91,14 @@ against the configured keywords, email digest, commit state.
   `state/linkedin-posts.json` -> commit -> pull --rebase -> push with one
   retry (mirrors `scripts/commit-state-rebase.sh`; leg-dead = ONE alarm per
   episode via a repo-local marker, then exit 1)
-- `scripts/watch-linkedin.ts` - the always-on PC loop (tick + 600s sleep)
-- `scripts/probe-linkedin.ts` - the transport gate probe (exit contracts:
-  tick = leg-dead exits 1; loop = never exits on leg-dead; probe = gate
-  exit 1)
+- `scripts/watch-linkedin.ts` - the always-on PC loop (tick + a 28-33-minute sleep)
+- `scripts/probe-linkedin.ts` - the browser-walk gate probe (exit
+  contracts: tick = leg-dead exits 1; loop = never exits on leg-dead;
+  probe = a read-only walk of the first configured surface, gate exit 1)
 - `scripts/login-linkedin.ts` - headed cookie harvest: the operator logs
   in by hand; the script polls the jar, writes the cookie file atomically,
   and upserts the `.env` line (exit 1 on timeout/no session; entry-guarded,
   importing stays side-effect free)
-- `scripts/setup-curl-impersonate.ts` - one-command curl-impersonate
-  setup: checksum-pinned lexiforest v2.3.2 download, OS-`tar` extraction
-  into gitignored `tools/curl-impersonate/` (inner layout never assumed —
-  the tree is walked for `curl-impersonate*.exe`), `.env` line upsert;
-  every failure path names the playwright escape hatch (exit 1;
-  entry-guarded)
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)
@@ -130,8 +130,8 @@ against the configured keywords, email digest, commit state.
   (single-post and bulk)
 - `src/pool.ts` - shared bounded worker pool (`runPool`) used by the judge
   and by the surface fetches
-- `src/email.ts` - nodemailer transport for the digest and the leg-dead
-  alarm
+- `src/email.ts` - nodemailer transport for the digest and the leg-dead/halt
+  alarms
 - `src/heartbeat.ts` - zero-match status email so quiet runs stay legible
 - `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation
 

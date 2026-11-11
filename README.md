@@ -4,8 +4,9 @@ Threads + LinkedIn #hiring Indonesia job alerts. A GitHub Actions workflow
 loads the Threads surfaces listed in `watcher.config.json` every 10 minutes,
 has an LLM judge posts against the configured keywords (Indonesia or remote
 roles), and emails new matches as a plain-text digest. LinkedIn posts ride a
-separate always-on loop on the developer's PC: it fetches the voyager search
-API and pushes `state/linkedin-posts.json`, which the hosted run reads. No
+separate always-on loop on the developer's PC: a real browser walks the
+LinkedIn content-search page for each surface and pushes
+`state/linkedin-posts.json`, which the hosted run reads. No
 web UI; persistence is three committed state files — `state/seen-posts.json`
 (seen ids), `state/judge-ceilings.json` (the judge's per-account ceilings),
 and `state/judge-health.json` (per-account provider health: hard-failure
@@ -19,8 +20,9 @@ streaks and the outage-episode bit).
    posts from the `graphql` XHR responses; otherwise it loads each surface
    logged out and reads posts from the embedded `data-sjs` JSON blobs.
 2. LinkedIn surfaces ride the PC fetch leg: an always-on loop on the
-   developer's PC runs the voyager search for each linkedin surface
-   (`sortBy: date_posted`, past 24 hours, 50-post pages), writes
+   developer's PC walks the LinkedIn content-search page for each linkedin
+   surface — signed in via the harvested cookie session, one paced page
+   load plus up to `scrollRounds` "Load more" clicks per surface — writes
    `state/linkedin-posts.json`, and pushes that single file to `main`. The
    hosted run reads the payload from its checkout; an absent or stale
    payload (PC off) degrades to a threads-only run with one log line.
@@ -133,13 +135,13 @@ no code change and no Actions variable is involved.
 
 | Key | What it does |
 |---|---|
-| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries feed a keywords string to the PC leg's voyager search (newest first, past 24 hours) — they need no GitHub secret. |
+| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries feed a keywords string to the PC leg's browser walk of the content-search page — they need no GitHub secret. |
 | `platforms` | Which platforms this run watches: `{ "linkedin": true, "threads": true }`. Required — an absent block, a missing member, or a non-boolean member fails the run naming the key. `false` skips that platform's fetch, judge, and digest rows; both `false` parks the run (exit 0, no email, no state read or write). The PC LinkedIn leg keeps fetching — this gates the hosted run only. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
 | `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
-| `scrollRounds` | Upper bound on scroll rounds per Threads surface walk. Must be a whole number >= 1; absent defaults to `8`. |
+| `scrollRounds` | Upper bound on scroll rounds per Threads surface walk, and on "Load more" clicks per LinkedIn surface walk. Must be a whole number >= 1; absent defaults to `8`. |
 
 Adding a profile or a search URL is the same edit as adding a tag:
 
@@ -148,7 +150,7 @@ Adding a profile or a search URL is the same edit as adding a tag:
 ```
 
 A LinkedIn search is the same kind of edit — a keywords string the PC fetch
-leg's voyager search runs, not a URL:
+leg's browser walk runs on the content-search page, not a URL:
 
 ```json
 { "type": "linkedin", "value": "#hiring frontend developer indonesia" }
@@ -275,14 +277,16 @@ logging the logged-out fallback warning or post counts drop back to ~19 per
 tag, repeat the export. With the secret unset or invalid the watcher falls
 back to the logged-out fetch and still runs.
 
-## The LinkedIn leg on your PC (voyager)
+## The LinkedIn leg on your PC (browser walk)
 
-LinkedIn posts come from the voyager search API, fetched on the developer's
-PC by an always-on npm loop — not from GitHub Actions. The endpoint, headers
-and encodings follow the reverse-engineering spec of record
-(`linkedin-reverse/DOCUMENTATION.md`); when the server expires the queryId
-hash, re-derive it per that spec's §9 — a sudden 500 on a formerly-200
-endpoint is the signature, not a variables bug.
+LinkedIn posts come from a real browser walk of the LinkedIn content-search
+page, run on the developer's PC by an always-on npm loop — not from GitHub
+Actions. The walk signs in with the harvested cookie session, opens each
+linkedin surface's search URL, clicks **Load more** up to `scrollRounds`
+times per surface, and parses the pagination responses the page itself
+makes. A security checkpoint or login wall halts the leg with one alarm
+email (the operator clears it); a dead session sends ONE alarm per episode
+and the loop keeps running.
 
 The loop never touches Threads, the judge, the digest or seen-state. It
 only fetches the linkedin surfaces, writes `state/linkedin-posts.json`
@@ -303,33 +307,30 @@ unconfigured identity fails the tick loudly instead of pushing nothing.
    `{ "liAt": "...", "jsessionid": "ajax:..." }`) still works: point
    LINKEDIN_COOKIES_FILE at the file in .env or the shell.
    No headless re-login exists (2FA dead-ends automated login); the
-   headed helper keeps the operator in the loop. A dead session sends
-   ONE alarm email per episode and the loop keeps running — refresh the
-   file, the next tick heals.
-2. `npm run setup-curl` — downloads the checksum-pinned curl-impersonate
-   binary (lexiforest release v2.3.2, release-published sha256 digests),
-   extracts it into gitignored `tools/curl-impersonate/`, and writes the
-   CURL_IMPERSONATE_BIN line to .env. Manual fallback (replaces the old
-   install paragraph): install the binary by hand and point
-   CURL_IMPERSONATE_BIN at it. If you skip the binary, put
-   `LINKEDIN_TRANSPORT=playwright` in .env instead — that switches after
-   a failed probe; no auto-fallback in code.
-3. `npm run probe-linkedin` — twice, ≥6h apart, stored cookies only; exit 1
-   on leg-dead/short/fault. Re-run after any `LINKEDIN_TRANSPORT` change.
-4. `npm run watch-linkedin` — tick every 10 min, leave the console open.
+   headed helper keeps the operator in the loop.
+2. `npm run probe-linkedin` — twice, ≥6h apart, stored cookies only; walks
+   the first configured surface read-only and exits 1 on a checkpoint
+   wall (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted
+   walk (`probe: FAILED`), or fewer than 2 posts. Re-run after every
+   `npm run login-linkedin` re-harvest.
+3. `npm run watch-linkedin` — tick, then a 28-33-minute sleep, forever;
+   leave the console open.
 
 Env setup note: the PC scripts read `.env` beside the clone root
-(`LINKEDIN_COOKIES_FILE` written by `login-linkedin`,
-`CURL_IMPERSONATE_BIN` written by `setup-curl`); a variable already set
-in the shell always wins and `.env` fills only unset keys, so the setup
-commands' lines work without any shell profile edit.
+(`LINKEDIN_COOKIES_FILE` written by `login-linkedin`); a variable already
+set in the shell always wins and `.env` fills only unset keys, so the
+setup commands' lines work without any shell profile edit. Upgrading from
+a pre-walk checkout: the two old `.env` lines (the transport picker and
+the curl binary path) are inert — delete both; keep or delete the old
+local tools folder; the old daily-GET ledger file
+(`state/linkedin-get-budget.json`) is orphaned — delete it or ignore it.
 
 Troubleshooting: `git: rebase failed` / `git: payload push failed twice` —
 the tick ran from a non-dedicated or dirty checkout; the preflight (branch
 `main` + clean tree, checked BEFORE any fetch) names the branch or the
 dirty paths. Run from a dedicated clean clone of `main`, and re-run
-`npm run login-linkedin` + `npm run setup-curl` inside the clone — both
-write `<cwd>/.env`, so each clone carries its own line.
+`npm run login-linkedin` inside the clone — it writes `<cwd>/.env`, so
+each clone carries its own line.
 
 Hosted side: the */10 cron reads the payload from its checkout, merges,
 judges, emails as usual; the heartbeat/digest render one `LinkedIn leg:`
@@ -347,15 +348,14 @@ export GMAIL_USER=... GMAIL_APP_PASSWORD=...
 npm start
 ```
 
-The five LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
+The four LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
 them, and the cookie file must exist):
 
 ```bash
 npm run login-linkedin   # headed login: writes the cookie file + the .env line
-npm run setup-curl       # one-time: fetch the curl-impersonate binary + the .env line
-npm run probe-linkedin   # transport gate: exit 1 on a dead/short/faulted leg
-npm run fetch-linkedin   # one tick: fetch → payload → push
-npm run watch-linkedin   # the always-on loop: tick + 10-minute sleep
+npm run probe-linkedin   # browser-walk gate: exit 1 on a wall/dead/short walk
+npm run fetch-linkedin   # one tick: walk → payload → push
+npm run watch-linkedin   # the always-on loop: tick + 28-33-minute sleep
 ```
 
 ## Maintenance

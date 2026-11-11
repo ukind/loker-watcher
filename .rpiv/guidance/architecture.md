@@ -12,7 +12,7 @@ A fourth committed file, `state/linkedin-posts.json`, is written and pushed by t
 .github/workflows/  # ci.yml gate + watch.yml: cron */10 → npx tsx src/index.ts → state commit-back via scripts/commit-state-rebase.sh (+ dispatch-only probe job behind an 8h freshness gate)
 src/                # the pipeline: fetch (threads Playwright walks + the PC-linked linkedin payload read) → extract → dedupe → recency → seen → judge → notify → persist
 tests/              # offline unit suite (node:test via tsx), ~1:1 with src module names + script/hook subprocess tests
-scripts/            # commit-state-rebase.sh (commit-back body for ALL THREE state files: rebase + skip + push + one internal retry), probe-judge.ts (LLM endpoint gate → state/judge-ceilings.json), the PC-local LinkedIn leg (fetch/watch/probe/login/setup-curl), + Claude Code hooks
+scripts/            # commit-state-rebase.sh (commit-back body for ALL THREE state files: rebase + skip + push + one internal retry), probe-judge.ts (LLM endpoint gate → state/judge-ceilings.json), the PC-local LinkedIn leg (fetch/watch/probe/login), + Claude Code hooks
 .claude/, .cursor/, # agent meta: hook registration + agents/commands/skills | editor rules | husky pre-commit
 .husky/             #   (lint-staged)
 state/              # runtime state only: seen-posts.json (watch job) + judge-ceilings.json (probe job) + judge-health.json (watch job) + linkedin-posts.json (PC loop, its own clone of main — the hosted run only reads it)
@@ -37,10 +37,9 @@ Detailed guidance:
 | `npx biome check --write <path>` | scoped check+fix for the given files (the lint-staged form) |
 | `npm start` | run the watcher locally (needs LLM_* and GMAIL_* env vars; an absent or stale `state/linkedin-posts.json` degrades to a threads-only run with one log line) |
 | `npx tsx scripts/probe-judge.ts` | gate every LLM_ACCOUNTS entry: latency, bulk shape, per-account `ceiling=N`; exit 1 on a dead account (needs LLM_ACCOUNTS) |
-| `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + 10-min sleep) from a dedicated clone of main |
-| `npm run probe-linkedin` | gate the LinkedIn transport: exit 1 on a dead, short, or faulted leg |
+| `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + 28-33-min sleep) from a dedicated clone of main |
+| `npm run probe-linkedin` | gate the LinkedIn browser walk: a read-only walk of the first configured surface; exit 1 on a checkpoint wall, a dead session, a faulted walk, or fewer than 2 posts |
 | `npm run login-linkedin` | headed cookie harvest: the operator logs in by hand; writes the cookie file + the `.env` line |
-| `npm run setup-curl` | one-time curl-impersonate setup: checksum-pinned download into gitignored `tools/curl-impersonate/` + the `.env` line |
 | `npx playwright install chromium` | one-time browser install for local runs |
 
 ## Business Context

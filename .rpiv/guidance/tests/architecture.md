@@ -5,7 +5,7 @@ Full-pipeline offline verification of src/ (plus the commit-state-rebase shell s
 
 ## Dependencies
 - **node:test + node:assert/strict**, run via tsx — the only runner/assertion stack
-- nodemailer contributes types only (fake transports); Playwright is never imported at test time (structural `*Like` doubles); the linkedin transport stays unexercised like chromiumContextFactory — the VoyagerGet seam carries the tests
+- nodemailer contributes types only (fake transports); Playwright is never imported at test time (structural `*Like` doubles); the linkedin walk is exercised through scripted `PageLike` doubles — fake interception events drive the response join
 - Consumers: `npm test` (the `tests/*.test.ts` glob auto-picks new files; CI's final gate); watch.yml does NOT run tests — merge gate only
 
 ## Coverage map (the 1:1 mirror rule, today)
@@ -14,15 +14,17 @@ config.ts, types.ts   — no test (names/paths/kill switch — the "false" branc
 config-file.ts     → config-file.test.ts
 email.ts, heartbeat.ts → email.test.ts, heartbeat.test.ts
 extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/tag-page.html, graphql-response.json
-linkedin-voyager.ts → linkedin-voyager.test.ts   # §12.5 escaping matrix, §12.7 URL pin, id>>22n clock,
-#                                              #   fixture/voyager-search-response.json (edges 1-4)
+linkedin-parser.ts → linkedin-parser.test.ts     # response-filter matrix, $-ref text walk (chip = longest
+#                                              #   per row), guarded id clock, URL builder pin,
+#                                              #   timestamp-zip pairing 3/3, mismatch warn + prefix
 linkedin-session.ts → linkedin-session.test.ts   # resolver reject matrix (all name LINKEDIN_COOKIES_FILE), quote asymmetry, storageState
-linkedin-fetch.ts → linkedin-fetch.test.ts        # §13.3 classifier table, curl-over-fake-exec, resolver matrix, scripted VoyagerGet walk
+linkedin-fetch.ts → linkedin-fetch.test.ts        # checkpoint→halt pin, no-first-response→leg-dead, click
+#                                              #   transcript, dry-round exit, first-wins urn dedupe,
+#                                              #   pacing spacing, teardown on every path
 linkedin-payload.ts → linkedin-payload.test.ts    # all four failure classes + atomic round trip
 env-file.ts        → env-file.test.ts            # parser pins + merge contract (fills ONLY unset keys; real env
                                                  #   wins; missing = quiet no-op) + the hoisted upsertDotEnvLine writer pins
 login-linkedin.ts (core) → login-linkedin.test.ts  # context seam injected, sleeps/clock injected — no headed Chromium in tests
-scripts/setup-curl-impersonate.ts → setup-curl-impersonate.test.ts  # fetch/tar doubles, suite-computed fixture sha, failure pins
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins
@@ -37,7 +39,7 @@ recency.ts         → recency.test.ts
 state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
 threads-session.ts → session.test.ts         # GRANDFATHERED name drift — new files mirror <module>.test.ts
 scripts/fetch-linkedin.ts → fetch-linkedin.test.ts   # CLI suite: scriptGit argv-transcript doubles (the transcript IS
-#                                              #   the oracle), transportFor counters, parked deferred() flush,
+#                                              #   the oracle), contextFactory pass-through, parked deferred() flush,
 #                                              #   marker-file episode edges (preflight, rebase/retry, leg-dead)
 watch-linkedin.ts  → watch-linkedin.test.ts   # seeded cadence transcript (28-33 min, never the old 600 s),
 #                                              #   tick-before-sleep order, cap 0, both fault arms, the
@@ -135,8 +137,8 @@ No keyword-agreement rule: fixture text stays verbatim-realistic to the capture 
 
 <important if="you are adding a test for a scripts/ CLI entry point">
 ## Adding a Test for a scripts/ CLI Entry Point
-1. File: `tests/<script>.test.ts` (mirror the scripts/ name — fetch-linkedin, login-linkedin, setup-curl-impersonate)
-2. Ensure the injection seam FIRST: a deps object on the exported core function (`git`, `transport`, `env`, `markerPath`, `now`, `sleepFn`, `context`) with lazy production defaults; keep the `import.meta.url === pathToFileURL(process.argv[1]).href` main-guard so importing never runs the CLI
+1. File: `tests/<script>.test.ts` (mirror the scripts/ name — fetch-linkedin, login-linkedin)
+2. Ensure the injection seam FIRST: a deps object on the exported core function (`git`, `contextFactory`, `env`, `markerPath`, `now`, `sleepFn`) with lazy production defaults; keep the `import.meta.url === pathToFileURL(process.argv[1]).href` main-guard so importing never runs the CLI
 3. Script external processes per subcommand (`scriptGit({ diff: 1, push: [1, 0] })` — push fails once, then succeeds); real-binary probes are read-only and guarded by an in-test `t.skip`
 4. Pin the argv/sleep transcript with `assert.deepEqual(calls, [...])`, not just return values — ordering IS the contract; zero calls on an early return is also an assertion
 5. Concurrency flows: parked `deferred` responses + a `setImmediate` flush between resolution steps

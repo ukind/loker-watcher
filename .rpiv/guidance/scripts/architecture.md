@@ -1,12 +1,12 @@
 # scripts/ — production commit-back script, endpoint probe + agent hooks
 
 ## Responsibility
-Nine files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings, and watch.yml's Commit health), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate, plus a `probedAt` freshness stamp) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `setup-curl-impersonate.ts` is the one-command curl-impersonate setup (checksum-pinned download + .env wire); `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
+Eight files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings, and watch.yml's Commit health), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate, plus a `probedAt` freshness stamp) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
 
 ## Invokers
 - **commit-state-rebase.sh**: THREE invokers, one call each — watch.yml's Commit state step, the probe job's Commit ceilings step, and watch.yml's Commit health step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
 - **probe-judge.ts**: the dispatch-only `probe` GATE job in watch.yml, or locally `npx tsx scripts/probe-judge.ts` (needs `LLM_ACCOUNTS`; loads `watcher.config.json` at startup, so run from the repo root)
-- **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts / setup-curl-impersonate.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` / `setup-curl` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm (an all-faulted walk is a tagged no-op exit 0, payload untouched), loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session, setup-curl = exit 1 on any failure (every message names the playwright escape hatch)
+- **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm (an all-faulted walk is a tagged no-op exit 0, payload untouched), loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session
 - **hooks/**: `.claude/settings.json` only — PreToolUse matcher `Bash` → gate, PostToolUse matcher `Edit|Write` → formatter. NOT husky: husky runs only `lint-staged`
 
 ## Structure
@@ -28,23 +28,24 @@ probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (
                              #   INSIDE typecheck + lint + lint-staged
 fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect free); exports fetchTick /
                              #   pushPayload / handleLegDeadEpisode / guardCheckout; tick = preflight
-                             #   (guardCheckout: branch main + clean porcelain, BEFORE cookies/transport/
-                             #   any voyager GET) → fetch → payload → add ONLY state/linkedin-posts.json
+                             #   (the working-hours window and the checkpoint latch, then guardCheckout:
+                             #   branch main + clean porcelain, BEFORE the cookie gate or any fetch)
+                             #   → fetch → payload → add ONLY state/linkedin-posts.json
                              #   → commit → pull --rebase → push, ONE retry (realGit injectable; every
                              #   failure carries git's own merged output); INSIDE typecheck + lint + lint-staged
-watch-linkedin.ts            # .ts, always-on loop: one tick + 600s sleep; leg-dead → ONE alarm per episode
+watch-linkedin.ts            # .ts, always-on loop: one tick + a jittered 28-33-minute sleep; leg-dead →
+                             #   ONE alarm per episode
                              #   (repo-local marker beside the payload) + continue; INSIDE typecheck + lint
-probe-linkedin.ts            # .ts, top-level await gate: cookie resolver → transport → one small voyager page;
+probe-linkedin.ts            # .ts, top-level await gate: the production walk READ-ONLY — one headless
+                             #   context from the harvested cookie DOCUMENT, the FIRST configured surface,
+                             #   config.scrollRounds as the click bound; no payload write, no push, no latch,
+                             #   no episode-marker write;
                              #   INSIDE typecheck + lint + lint-staged
 login-linkedin.ts            # .ts, entry-guarded (imports runLoginHelper side-effect free); exports runLoginHelper /
                              #   findSessionCookies / writeCookieFile; HEADED persistent-profile
                              #   login assist (INTERACTIVE — the operator logs in by hand; no headless re-login);
                              #   writes the cookie file atomically + the .env line (upsertDotEnvLine imported
                              #   from src/env-file.ts since the Phase 9 hoist); INSIDE typecheck + lint + lint-staged
-setup-curl-impersonate.ts    # .ts, entry-guarded; exports runSetupCurl / pinned constants (lexiforest v2.3.2 assets
-                             #   + release-published sha256 digests) / SETUP_CURL_ESCAPE_HATCH; already-configured
-                             #   short-circuit → platform gate → fetch + sha256 pin → OS tar extract → exe walk → .env
-                             #   upsert; EVERY failure names the playwright escape hatch; INSIDE typecheck + lint + lint-staged
 hooks/gate-destructive.js    # plain .js for bare node (instant start, no tsx); INSIDE lint ONLY — lint-staged's
 hooks/format-on-edit.js      #   *.ts glob never matches .js; hooks are covered by npm run lint + their own tests
 ```
@@ -84,9 +85,10 @@ probe-judge.ts              exit 1 on any failed leg, auth-dead 401/403, or ceil
 fetch-linkedin.ts           exit 1 on a mis-homed checkout (branch ≠ main or dirty tree — guardCheckout, BEFORE
                             any fetch), on leg-dead (after the ONE episode alarm), or a failed push — the one-off entry;
                             an all-faulted walk is a tagged no-op exit 0 (payload untouched, alarm-free)
-curl/watch entries          watch-linkedin.ts never exits on leg-dead; probe-linkedin.ts exits 1 on leg-dead/short/fault (gate)
+watch entries               watch-linkedin.ts never exits on leg-dead; probe-linkedin.ts exits 1 on a checkpoint
+                            wall (probe: HALT), a dead session (probe: LEG DEAD), a faulted walk (probe: FAILED),
+                            or fewer than 2 posts (gate)
 login-linkedin.ts           exit 1 on timeout (no session within the budget) or a failed poll/context — one alarm-free operator gate
-setup-curl-impersonate.ts   exit 1 on any failure path (non-200 download, sha mismatch, tar, exe-not-found, non-win32) — the message names the escape hatch: re-run setup-curl, or LINKEDIN_TRANSPORT=playwright in .env
 gate-destructive.js         exit 2 = DENY the tool call (reason on stderr); unreadable stdin → exit 0 (fail-open, never block)
 format-on-edit.js           ALWAYS exit 0 — post-edit feedback only, can never veto an edit
 ```
@@ -124,10 +126,10 @@ process.exit(0);                              // allow
 <important if="you are adding a new PC-local script">
 ## Adding a PC-local Script
 1. Create `scripts/<name>.ts` (TS ESM, imports `../src/*.js`) — it lands inside typecheck automatically (`tsconfig.json` includes src, tests, scripts)
-2. Export the logic, not a side effect: a deps object (`FetchTickDeps` / `LoginHelperDeps` / `SetupCurlDeps` shapes) lets tests inject fakes; default deps resolve lazily (`deps.env ?? envWithDotEnv()`)
+2. Export the logic, not a side effect: a deps object (`FetchTickDeps` / `LoginHelperDeps` shapes) lets tests inject fakes; default deps resolve lazily (`deps.env ?? envWithDotEnv()`)
 3. Entry guard at the bottom: `if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href)` — importing the module must open no browser and spawn no git
 4. Env = merged `.env`: `envWithDotEnv()` fills only unset keys, the shell wins (`fetchTick({ env: envWithDotEnv() })`)
-5. Exit contract up front: a catch-all wrapper prints `FAILED — <message>` and `process.exit(1)`; domain gates (leg-dead, timeout, sha mismatch) throw and the wrapper owns the exit
+5. Exit contract up front: a catch-all wrapper prints `FAILED — <message>` and `process.exit(1)`; domain gates (leg-dead, halt, timeout) throw and the wrapper owns the exit
 6. Alarm policy = best-effort, never masks the exit code (`handleLegDeadEpisode` try/catches the mailer and warns); one alarm per episode via a repo-local marker beside the payload, not OS temp
 7. Atomic writes: temp + rename via `stateTempPath`; every failure message names the remedy/escape hatch
 8. Wire it: add `"name": "tsx scripts/<name>.ts"` to package.json AND append the file to the explicit `lint` (and `format`) script lists — scripts are enumerated, not globbed; add a black-box `tests/<name>.test.ts` (see `.rpiv/guidance/tests/architecture.md`, "Adding a Test for a scripts/ CLI Entry Point")
