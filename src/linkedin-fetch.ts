@@ -4,12 +4,12 @@
  * one paced navigation plus up to `scrollRounds` "Load more" clicks per
  * surface — through the runPool surface walk the transport leg built.
  *
- * Session: the LinkedInContextFactory (below) synthesizes one browser
- * context from the harvested cookie DOCUMENT (toStorageState in
- * linkedin-session.ts); the walk owns the context and closes it on every
- * path. Headless stays the production default pending the first live
- * rehearsal (design Verification Notes: headless detectability is
- * unmeasured — expect a retune commit after the rehearsal).
+ * Session: the LinkedInContextFactory (below) opens the persistent PROFILE
+ * scripts/login-linkedin.ts maintains, headed; the walk owns the context
+ * and closes it on every path. REVISED 2026-11-11T18:40+0700 after the live
+ * rehearsal: a fresh browser with the harvested cookie document gets a page
+ * with no Load-more button, so the click loop had nothing to click. The
+ * profile gets the button and paginates 6 posts per click.
  *
  * Extraction: every response whose URL matches LINKEDIN_RESPONSE_RE and
  * whose status is 200 parses through src/linkedin-parser.ts (pure,
@@ -50,11 +50,6 @@ import {
   buildContentSearchUrl,
   collectLinkedInPosts,
 } from "./linkedin-parser.js";
-import {
-  type LinkedInCookies,
-  type LinkedInStorageState,
-  toStorageState,
-} from "./linkedin-session.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
 
@@ -253,17 +248,24 @@ export function isHalt(error: unknown): error is Halt {
 //     design 2026-11-11) ---
 
 /**
- * The LinkedIn walk's context factory seam: one storageState DOCUMENT in
- * (the synthesized cookie pair — toStorageState in linkedin-session.ts),
+ * The LinkedIn walk's context factory seam: one persistent PROFILE PATH in,
  * one session-carrying browser context out. NOT the shared ContextFactory
- * (fetch-threads.ts): that seam carries a storage-state PATH, which cannot
- * hold the in-memory document, and widening it breaks all three existing
- * doubles under strictFunctionTypes — the launch/adapter mechanics
- * duplicate here instead (design decision "Structural layer duplicated,
- * not shared"; re-exporting the private shared factory re-introduces the
- * knip N012 dead-export finding).
+ * (fetch-threads.ts): that seam carries a storage-state PATH and a headless
+ * launch, and widening it breaks all three existing doubles under
+ * strictFunctionTypes — the launch/adapter mechanics duplicate here instead
+ * (design decision "Structural layer duplicated, not shared"; re-exporting
+ * the private shared factory re-introduces the knip N012 dead-export
+ * finding).
+ *
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the original seam took a
+ * storageState DOCUMENT synthesized from the harvested cookie pair and
+ * opened a FRESH browser. LinkedIn serves that identity a content-search
+ * page with NO Load-more button (54 buttons present, 0 matching), so the
+ * click loop had nothing to click and the walk reported 3 posts. The
+ * profile + headed configuration gets the button and paginates 6 posts per
+ * click. See the design's Key Discoveries for the four-config matrix.
  */
-export type LinkedInContextFactory = (storageState: LinkedInStorageState) => Promise<ContextLike>;
+export type LinkedInContextFactory = (profileDir: string) => Promise<ContextLike>;
 
 /** The pinned UA (the shared Threads factory's hardening set, duplicated with this section). */
 const LINKEDIN_USER_AGENT =
@@ -277,16 +279,18 @@ const LINKEDIN_WEBDRIVER_PATCH =
   "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
 
 /**
- * Build the LinkedIn browser context at a fixed headless mode. The dynamic
- * await import inside is this module's Playwright quarantine site —
- * importing this module never loads Playwright, and the offline suites
- * stay Playwright-free. The factory owns the browser: closing the context
- * closes the browser.
+ * Build the LinkedIn browser context on the persistent PROFILE, headed. The
+ * dynamic await import inside is this module's Playwright quarantine site —
+ * importing this module never loads Playwright, and the offline suites stay
+ * Playwright-free. The factory owns the browser: closing the context closes
+ * the browser.
  *
- * The session rides the DOCUMENT, never a path: a synthesized pair carries
- * no jar expiry, and newContext rejects incomplete storageState cookies —
- * every cookie is completed to the wire shape (expires -1, httpOnly false,
- * sameSite Lax).
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the session rides the
+ * PROFILE, not a synthesized cookie document. A fresh browser with the
+ * harvested pair gets a page with no Load-more button; the profile gets the
+ * button and paginates. Headed is required for the button to render and is
+ * acceptable because this leg runs on the PC (watch-linkedin), never in
+ * GitHub Actions.
  *
  * locale pins en-US: the walk's Load-more click is a TEXT selector on the
  * English label — the only stable handle (live capture 2026-11-11: one
@@ -296,22 +300,16 @@ const LINKEDIN_WEBDRIVER_PATCH =
  * Pages carry url() (the new optional PageLike seam): the walk's
  * checkpoint detector reads it after every navigation.
  */
-export function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
-  const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
+export function makeLinkedInContextFactory(profileDir: string): LinkedInContextFactory {
+  const factory: LinkedInContextFactory = async (): Promise<ContextLike> => {
     const { chromium } = await import("playwright");
-    const browser = await chromium.launch({ headless });
-    const context = await browser.newContext({
-      storageState: {
-        cookies: storageState.cookies.map((cookie) => ({
-          ...cookie,
-          expires: -1,
-          httpOnly: false,
-          sameSite: "Lax" as const,
-        })),
-        origins: [],
-      },
+    // launchPersistentContext, not launch + newContext: the profile IS the
+    // session. viewport null lets the operator's window size ride (the
+    // login helper's shape, scripts/login-linkedin.ts:127-130).
+    const context = await chromium.launchPersistentContext(profileDir, {
+      headless: false,
+      viewport: null,
       userAgent: LINKEDIN_USER_AGENT,
-      viewport: { width: 1366, height: 768 },
       locale: "en-US",
     });
     await context.addInitScript(LINKEDIN_WEBDRIVER_PATCH);
@@ -347,8 +345,9 @@ export function makeLinkedInContextFactory(headless: boolean): LinkedInContextFa
         await context.addInitScript(script);
       },
       close: async () => {
+        // launchPersistentContext owns the browser: closing the context
+        // closes it. There is no separate browser handle to close.
         await context.close();
-        await browser.close();
       },
     };
   };
@@ -356,12 +355,20 @@ export function makeLinkedInContextFactory(headless: boolean): LinkedInContextFa
 }
 
 /**
- * The production factory: headless, hardened, session-document aware.
- * Module-PRIVATE on purpose — the browser walk defaults to it in-module,
- * and an exported factory nobody imports is the knip dead-export finding
- * class, not a seam.
+ * The persistent profile the login helper maintains (scripts/login-linkedin.ts:34).
+ * The walk reuses it rather than opening a fresh browser with the harvested
+ * cookie pair — see the factory's REVISED note and the design's Key
+ * Discoveries.
  */
-const linkedinChromiumContextFactory: LinkedInContextFactory = makeLinkedInContextFactory(true);
+export const LINKEDIN_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
+
+/**
+ * The production factory: the persistent profile, headed. Module-PRIVATE on
+ * purpose — the browser walk defaults to it in-module, and an exported
+ * factory nobody imports is the knip dead-export finding class, not a seam.
+ */
+const linkedinChromiumContextFactory: LinkedInContextFactory =
+  makeLinkedInContextFactory(LINKEDIN_PROFILE_DIR);
 // --- the surface walk ---
 
 interface PacingGate {
@@ -450,14 +457,30 @@ async function walkLinkedInSurface(
   // page's first flagship-web response. The parser never throws, so the
   // one catch guards only the body read racing the page close.
   page.on("response", (response) => {
-    // Diagnostic (live rehearsal 2026-11-11): name every flagship-web
-    // response, matched or not. A headed run failed LEG DEAD with no
-    // matching body, and this line shows whether the page fired anything
-    // at all or served a different variant.
-    if (/flagship-web/i.test(response.url())) {
-      console.log(`fetch: ${label} flagship: ${response.status()} ${response.url().slice(0, 110)}`);
+    const url = response.url();
+    const matched = LINKEDIN_RESPONSE_RE.test(url) && response.status() === 200;
+    // Diagnostic (live rehearsal 2026-11-11): an UNMATCHED flagship-web body
+    // is read once and named with what it carries. A headed run failed LEG
+    // DEAD while the page fired five flagship responses — the results were
+    // arriving on an endpoint LINKEDIN_RESPONSE_RE does not match, and
+    // nothing said so. This line makes that visible instead of silent.
+    if (!matched && /flagship-web/i.test(url)) {
+      void (async () => {
+        try {
+          const body = await response.text();
+          const ids = new Set([...body.matchAll(/urn:li:activity:(\d{10,})/g)].map((m) => m[1]))
+            .size;
+          const markers = (body.match(/legacyControlName":"commentary_text/g) || []).length;
+          console.log(
+            `fetch: ${label} flagship (unmatched): ${response.status()} ids=${ids} markers=${markers} ${url.slice(0, 80)}`,
+          );
+        } catch {
+          // the body read can race the page close; skip it
+        }
+      })();
+      return;
     }
-    if (!LINKEDIN_RESPONSE_RE.test(response.url()) || response.status() !== 200) return;
+    if (!matched) return;
     void (async () => {
       try {
         const body = await response.text();
@@ -487,26 +510,42 @@ async function walkLinkedInSurface(
       waitUntil: "domcontentloaded",
       timeout: LINKEDIN_NAV_TIMEOUT_MS,
     });
-    assertNoCheckpoint();
+    // Log the landing URL BEFORE the checkpoint check: a halt that fires
+    // first leaves the operator without the URL that tripped it.
     console.log(`fetch: ${label} landed: ${page.url?.() ?? "?"}`);
+    assertNoCheckpoint();
     // The DOM carries no ids, so there is no hydration probe: the initial
     // results ride the first flagship-web response instead. A checkpoint
     // redirect can land on any poll tick — the per-tick URL re-check keeps
     // the halt class ahead of the dead-session timeout.
+    // Liveness (REVISED 2026-11-11T20:00+0700, measured): the initial
+    // results are SERVER-RENDERED. The page fires actions/component,
+    // server-request and app-config — all with ids=0 markers=0 — and no
+    // flagship-web body carrying posts. Waiting for one therefore times
+    // out on a perfectly healthy page (the LEG DEAD this replaces). The
+    // real signal is the DOM: the lazy column renders post cards. A
+    // flagship body still counts, so either satisfies liveness.
     const maxPolls = Math.ceil(
       LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS / LINKEDIN_FIRST_RESPONSE_POLL_MS,
     );
     let polls = 0;
-    while (received === 0 && polls < maxPolls) {
+    let domPosts = 0;
+    while (received === 0 && domPosts === 0 && polls < maxPolls) {
       await page.waitForTimeout(LINKEDIN_FIRST_RESPONSE_POLL_MS);
       assertNoCheckpoint();
+      domPosts = Number(
+        await page.evaluate(
+          `document.querySelectorAll('[data-testid="lazy-column"] > div').length`,
+        ),
+      );
       polls += 1;
     }
-    if (received === 0) {
+    if (received === 0 && domPosts === 0) {
       throw legDead(
-        `no flagship-web response within ${LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS}ms — the session may be dead`,
+        `no flagship-web response and no rendered post within ${LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS}ms — the session may be dead`,
       );
     }
+    console.log(`fetch: ${label} liveness: ${received} body(ies), ${domPosts} rendered post(s)`);
     // The adapter's locator is already the first text match; a transient
     // 0-match is a harmless dry round (the artifact's dry-round exit).
     const loadMore = page.locator(LOAD_MORE_SELECTOR);
@@ -611,12 +650,12 @@ async function walkLinkedInSurface(
  * tick while perSurface keeps ORIGINAL indexes, so the flat() reassembly
  * order stays input-order structural no matter how the shuffle lands.
  *
- * contextFactory defaults to the in-module production factory (headless);
- * the PC scripts and the offline suite inject explicitly.
+ * contextFactory defaults to the in-module production factory (the persistent
+ * profile, headed); the PC scripts and the offline suite inject explicitly.
  */
 export async function fetchLinkedInPosts(
   surfaces: readonly LinkedinSurface[],
-  cookies: LinkedInCookies,
+  profileDir: string = LINKEDIN_PROFILE_DIR,
   contextFactory: LinkedInContextFactory = linkedinChromiumContextFactory,
   scrollRounds: number = LINKEDIN_DEFAULT_SCROLL_ROUNDS,
   sleepFn: SleepFn = defaultSleep,
@@ -628,7 +667,11 @@ export async function fetchLinkedInPosts(
   // surfaces.length > 0, and this early return keeps the invariant local
   // (a zero-surface walk opens no context and closes nothing).
   if (surfaces.length === 0) return [];
-  const context = await contextFactory(toStorageState(cookies));
+  // REVISED 2026-11-11T18:40+0700: the browser opens on the persistent
+  // profile, not a synthesized cookie document. The cookie file is a
+  // preflight validity check in the CALLERS (resolveLinkedInCookies throws
+  // on a missing/malformed file before the walk is reached).
+  const context = await contextFactory(profileDir);
   const gate = makePacingGate(now, sleepFn, rng);
   const order = surfaces.map((surface, index) => ({ surface, index }));
   for (let i = order.length - 1; i > 0; i -= 1) {

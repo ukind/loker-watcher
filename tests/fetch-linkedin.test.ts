@@ -152,20 +152,20 @@ interface PageScript {
 
 /**
  * The LinkedInContextFactory double: one context, one page, one script.
- * Records the built count and the synthesized session document; the
- * click transcript rides the returned handle; context closes set the
- * closed flag so teardown pins ride on it.
+ * Records the built count and the profile path the walk opened; the click
+ * transcript rides the returned handle; context closes set the closed flag
+ * so teardown pins ride on it.
  */
 function contextFactoryFor(options: {
   closed?: { value: boolean };
-  sessionStates?: unknown[];
+  profileDirs?: unknown[];
   built?: { value: number };
   script: PageScript;
 }): LinkedInContextFactory & { clicks: () => number[] } {
   const clicks: number[] = [];
-  const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
+  const factory: LinkedInContextFactory = async (profileDir): Promise<ContextLike> => {
     if (options.built !== undefined) options.built.value += 1;
-    options.sessionStates?.push(storageState);
+    options.profileDirs?.push(profileDir);
     const listeners: Array<(response: ResponseLike) => void> = [];
     const fire = (response: ResponseLike): void => {
       for (const listener of listeners) listener(response);
@@ -208,7 +208,11 @@ function contextFactoryFor(options: {
           };
           return handle;
         },
-        evaluate: async () => undefined,
+        // The liveness gate reads the rendered post count (the initial
+        // results are server-rendered, not a flagship body). A script with
+        // an initial body simulates a healthy page; a silent script
+        // simulates a dead session.
+        evaluate: async () => (options.script.initialBody !== undefined ? 8 : 0),
         waitForTimeout: async () => {
           if (settleArmed) {
             settleArmed = false;

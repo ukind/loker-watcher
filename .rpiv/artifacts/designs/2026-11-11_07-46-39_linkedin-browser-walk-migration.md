@@ -65,6 +65,8 @@ Six posts per click, one pagination response each. The click loop, settle window
 
 **The rotation was self-inflicted.** `login-linkedin` holds the persistent profile; the walk opened a second, differently-fingerprinted browser with the same token. Two identities on one account produced every `ERR_TOO_MANY_REDIRECTS`. Reusing the profile directly, two consecutive runs both succeeded.
 
+**Session lifetime is short even with a single client (measured 2026-11-11T20:15+0700).** After a fresh `npm run login-linkedin`, the first probe run landed on the search URL and fired flagship responses; a second probe run roughly ten minutes later landed on `https://www.linkedin.com/uas/login?session_redirect=...` and halted. Zero stray Chromium processes were on the profile at that point, so this is not a lock or a second-identity problem — the session itself expired. **Operational consequence:** the always-on loop (`watch-linkedin`, one tick every 28-33 minutes) cannot rely on a session surviving between ticks. Either the loop re-harvests on a halt, or the session model needs a longer-lived credential. This is unresolved and it is the next blocking question after the walk itself works.
+
 **The parser count-mismatch is real data, not a parser bug — and it fires on 2 of 3 bodies in the WORKING config.** Three pagination bodies captured from the working configuration (profile + headed, 3 clicks, 8→26 posts) and parsed offline:
 
 | body | ids | commentary markers | texts harvested | minted |
@@ -166,6 +168,22 @@ The original rule: on a count mismatch, warn and mint the paired prefix. Measure
 **Revised rule (SUPERSEDED):** on a count mismatch, warn and mint NOTHING for that body. **Measured 2026-11-11T19:10+0700 against working-config bodies: this drops 2 of 3 bodies.** The mismatch is real data (media-only posts with no caption), so refusing trades a mis-pair for starvation. The rule is NOT implemented. The correct fix is to filter CTA components out of the text harvest so the counts match, then the zip is safe without either trade.
 
 **Rejected alternative (measured):** row-local pairing. `collectLinkedInPosts` accumulates `rowIds` and `rowTexts` per row, so pairing row-locally looked viable. Measured against the real capture (136 rows carrying ids or texts): 3 rows have both an id and a text, 130 have ids only, 3 have texts only. Ids and texts live in DIFFERENT rows, so row-local pairing resolves 3 of 6 text rows. Disproved.
+
+### Liveness is the rendered DOM, not a flagship body (REVISED, measured 2026-11-11T20:00+0700)
+
+With the profile + headed model in place, the probe landed on the search URL and fired four flagship responses. The walk's unmatched-body logging named what each carried:
+
+```
+flagship (unmatched): 200 ids=0 markers=0 .../rsc-action/actions/component?componentId=...
+flagship (unmatched): 200 ids=0 markers=0 .../rsc-action/actions/server-request?sduiid=...
+flagship (unmatched): 200 ids=0 markers=0 .../rsc-action/actions/server-request?sduiid=...
+flagship (unmatched): 200 ids=0 markers=0 .../rsc-action/actions/app-config
+LEG DEAD — no flagship-web response within 30000ms
+```
+
+**None of them carries post data.** The initial results are server-rendered in the HTML; no flagship body delivers them. The liveness gate — which waited for a flagship body — therefore timed out on a perfectly healthy page. That gate was the defect, not the session.
+
+**Revised:** liveness is the rendered post count (`[data-testid="lazy-column"] > div`), with a flagship body still accepted as an alternative signal. The pagination bodies that DO carry posts (3 each, measured) only fire on Load-more clicks, which the walk can now reach.
 
 ### Structural layer duplicated, not shared (artifact-locked)
 

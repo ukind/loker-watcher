@@ -38,6 +38,7 @@ import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/emai
 import { envWithDotEnv } from "../src/env-file.js";
 import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
 import {
+  LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
   type LinkedinSurface,
   fetchLinkedInPosts,
@@ -360,14 +361,19 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
   }
   let posts: Post[];
   try {
-    // The walk owns the browser: it opens one context from the synthesized
-    // session document and closes it on every path, so the tick has no
-    // dispose arm of its own. scrollRounds (the config knob shared with
-    // the Threads walk) bounds the Load-more clicks per surface; the
-    // factory defaults to the walk module's production headless factory.
+    // The walk owns the browser: it opens one context on the persistent
+    // PROFILE and closes it on every path, so the tick has no dispose arm
+    // of its own. scrollRounds (the config knob shared with the Threads
+    // walk) bounds the Load-more clicks per surface; the factory defaults
+    // to the walk module's production profile factory (headed).
+    //
+    // REVISED 2026-11-11T18:40+0700: the resolved cookies above are a
+    // PREFLIGHT only (the harvestedAt gate). The browser rides the profile,
+    // not the cookie document — a fresh browser with the document gets a
+    // page with no Load-more button.
     posts = await fetchLinkedInPosts(
       surfaces,
-      cookies,
+      LINKEDIN_PROFILE_DIR,
       deps.contextFactory,
       config.scrollRounds,
       undefined,

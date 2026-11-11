@@ -37,14 +37,10 @@ import {
   isLegDead,
   legDead,
 } from "../src/linkedin-fetch.js";
-import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
 
-const COOKIES: LinkedInCookies = {
-  liAt: "AQE-test",
-  jsessionId: "0123456789012345678",
-  harvestedAt: "2026-11-10T00:00:00.000Z", // present; the walk never checks age
-};
+/** The profile path the walk opens; the suite pins it rides through untouched. */
+const PROFILE = "C:/loker-secrets/linkedin-chromium-profile";
 
 /** An instant sleepFn: multi-surface tests pin dispatch order, not pacing. */
 const instantSleep = async (): Promise<void> => undefined;
@@ -153,14 +149,14 @@ interface FakePage {
 /** The factory double: one page per newPage call, scripts matched by goto-URL fragment. */
 function fakeContextFactory(options: {
   closed?: { value: boolean };
-  sessionStates?: unknown[];
+  profileDirs?: unknown[];
   built?: { value: number };
   scripts: ReadonlyArray<{ fragment: string; script: PageScript }>;
-}): ((storageState: unknown) => Promise<ContextLike>) & { pages: FakePage[] } {
+}): ((profileDir: string) => Promise<ContextLike>) & { pages: FakePage[] } {
   const pages: FakePage[] = [];
-  const factory = async (storageState: unknown): Promise<ContextLike> => {
+  const factory = async (profileDir: string): Promise<ContextLike> => {
     if (options.built !== undefined) options.built.value += 1;
-    options.sessionStates?.push(storageState);
+    options.profileDirs?.push(profileDir);
     const context: ContextLike = {
       newPage: async (): Promise<PageLike> => {
         let open = true;
@@ -224,7 +220,11 @@ function fakeContextFactory(options: {
           },
           evaluate: async (script: string) => {
             evaluates.push(script);
-            return undefined;
+            // The liveness gate reads the rendered post count: the initial
+            // results are server-rendered, not a flagship body. A script
+            // with an initial body simulates a healthy page; a silent
+            // script simulates a dead session.
+            return script.includes("lazy-column") && matched?.initialBody !== undefined ? 8 : 0;
           },
           waitForTimeout: async (ms: number) => {
             waits.push(ms);
@@ -289,7 +289,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#a"), surface("#b")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -308,26 +308,17 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     assert.equal(closed.value, true); // teardown on the happy path
   });
 
-  it("hands the factory the synthesized session document (li_at + re-quoted JSESSIONID)", async () => {
-    const sessionStates: unknown[] = [];
+  it("hands the factory the persistent profile path, not a cookie document", async () => {
+    // REVISED 2026-11-11T18:40+0700: the browser rides the profile. A fresh
+    // context with the synthesized cookie document gets a page with no
+    // Load-more button (measured), so the walk must never build one.
+    const profileDirs: unknown[] = [];
     const factory = fakeContextFactory({
-      sessionStates,
+      profileDirs,
       scripts: [{ fragment: "%23s", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    await fetchLinkedInPosts([surface("#s")], COOKIES, factory, 8, instantSleep);
-    assert.deepEqual(sessionStates[0], {
-      cookies: [
-        { name: "li_at", value: "AQE-test", domain: ".linkedin.com", path: "/", secure: true },
-        {
-          name: "JSESSIONID",
-          value: '"0123456789012345678"',
-          domain: ".linkedin.com",
-          path: "/",
-          secure: true,
-        },
-      ],
-      origins: [],
-    });
+    await fetchLinkedInPosts([surface("#s")], PROFILE, factory, 8, instantSleep);
+    assert.deepEqual(profileDirs, [PROFILE]);
   });
 
   it("clicks Load more up to the scrollRounds ceiling while every round gains", async (t) => {
@@ -356,7 +347,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#ceil")], COOKIES, factory, 2, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#ceil")], PROFILE, factory, 2, instantSleep);
     assert.deepEqual(pageFor(factory, "%23ceil").clicks, [1, 2]); // the knob, not the staged third body
     assert.equal(posts.length, 5); // 1 initial + 2 rounds x 2 posts
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
@@ -385,7 +376,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#dry")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#dry")], PROFILE, factory, 8, instantSleep);
     assert.deepEqual(pageFor(factory, "%23dry").clicks, [1]);
     assert.deepEqual(
       posts.map((post) => post.id),
@@ -407,7 +398,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts([surface("#scroll")], COOKIES, factory, 1, instantSleep);
+    await fetchLinkedInPosts([surface("#scroll")], PROFILE, factory, 1, instantSleep);
     const page = pageFor(factory, "%23scroll");
     // Round 1: DOM probe, column scroll, then a re-probe after the settle.
     assert.equal(page.evaluates.length, 3);
@@ -428,7 +419,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#floor")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -456,7 +447,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     await fetchLinkedInPosts(
       [surface("#absent")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -484,7 +475,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts([surface("#nobtn")], COOKIES, factory, 8, instantSleep);
+    await fetchLinkedInPosts([surface("#nobtn")], PROFILE, factory, 8, instantSleep);
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /click 1: no button \(locator wait timeout\)/.test(line)));
     assert.equal(
@@ -498,7 +489,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23cap", script: { initialBody: cardBodyMany(all) } }],
     });
-    const posts = await fetchLinkedInPosts([surface("#cap")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#cap")], PROFILE, factory, 8, instantSleep);
     assert.equal(posts.length, 150); // one body may carry all 150 (the cap bounds clicks, not a body)
     assert.deepEqual(pageFor(factory, "%23cap").clicks, []);
   });
@@ -520,7 +511,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#dup")], COOKIES, factory, 1, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#dup")], PROFILE, factory, 1, instantSleep);
     assert.deepEqual(
       posts.map((post) => [post.id, post.text]),
       [
@@ -554,7 +545,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#noise")], COOKIES, factory, 1, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#noise")], PROFILE, factory, 1, instantSleep);
     assert.deepEqual(
       posts.map((post) => post.id),
       [`urn:li:activity:${idAt(1)}`],
@@ -575,7 +566,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#empty")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#empty")], PROFILE, factory, 8, instantSleep);
     assert.deepEqual(posts, []);
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
@@ -592,20 +583,27 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#silent")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#silent")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
     assert.ok(isLegDead(caught));
     assert.equal(isHalt(caught), false);
-    assert.match((caught as Error).message, /no flagship-web response within 30000ms/);
+    assert.match(
+      (caught as Error).message,
+      /no flagship-web response and no rendered post within 30000ms/,
+    );
     assert.equal(pageFor(factory, "%23silent").waits.length, 120); // the full poll budget, 250ms x 120
     assert.equal(closed.value, true); // teardown on the leg-dead path
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /linkedin\/#silent LEG DEAD/.test(line)));
   });
 
-  it("a non-200 flagship response never satisfies liveness — leg-dead, not a mint", async () => {
+  it("ignores a non-200 flagship body — the rendered DOM satisfies liveness, the body mints nothing", async () => {
+    // REVISED 2026-11-11T20:00+0700: liveness is the rendered post count,
+    // not a flagship body (the initial results are server-rendered). A 503
+    // body is still never parsed, so it mints nothing — but it no longer
+    // decides whether the walk is alive.
     const factory = fakeContextFactory({
       scripts: [
         {
@@ -614,13 +612,8 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    let caught: unknown;
-    try {
-      await fetchLinkedInPosts([surface("#slow5")], COOKIES, factory, 8, instantSleep);
-    } catch (error) {
-      caught = error;
-    }
-    assert.ok(isLegDead(caught));
+    const posts = await fetchLinkedInPosts([surface("#slow5")], PROFILE, factory, 8, instantSleep);
+    assert.deepEqual(posts, []);
   });
 
   it("halts on a checkpoint URL right after the navigation (never leg-dead, never a fault)", async (t) => {
@@ -632,7 +625,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#cp")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#cp")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -659,7 +652,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#slow")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#slow")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -684,7 +677,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#mid")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#mid")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -705,7 +698,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#a"), surface("#b"), surface("#c")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -734,7 +727,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#dead"), surface("#ok")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -745,7 +738,10 @@ describe("fetchLinkedInPosts (browser walk)", () => {
       caught = error;
     }
     assert.ok(isLegDead(caught));
-    assert.match((caught as Error).message, /no flagship-web response within 30000ms/);
+    assert.match(
+      (caught as Error).message,
+      /no flagship-web response and no rendered post within 30000ms/,
+    );
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /linkedin\/#dead LEG DEAD/.test(line)));
   });
@@ -760,7 +756,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#bad"), surface("#good")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -787,7 +783,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#x"), surface("#y")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -805,12 +801,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
 
   it("never launches a browser for an empty surface list", async () => {
     const built = { value: 0 };
-    const sessionStates: unknown[] = [];
-    const factory = fakeContextFactory({ built, sessionStates, scripts: [] });
-    const posts = await fetchLinkedInPosts([], COOKIES, factory, 8, instantSleep);
+    const profileDirs: unknown[] = [];
+    const factory = fakeContextFactory({ built, profileDirs, scripts: [] });
+    const posts = await fetchLinkedInPosts([], PROFILE, factory, 8, instantSleep);
     assert.deepEqual(posts, []);
     assert.equal(built.value, 0);
-    assert.deepEqual(sessionStates, []);
+    assert.deepEqual(profileDirs, []);
   });
 
   it("halts outrank leg-dead at the join when both flags set in one walk", async () => {
@@ -824,7 +820,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#cp"), surface("#dead")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -851,7 +847,7 @@ describe("fetchLinkedInPosts surface shuffle (FR-5)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#a"), surface("#b"), surface("#c")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -880,7 +876,7 @@ describe("pacing rides navigations", () => {
     });
     await fetchLinkedInPosts(
       [surface("#a"), surface("#b")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       (ms) => {
@@ -907,7 +903,7 @@ describe("pacing rides navigations", () => {
     });
     await fetchLinkedInPosts(
       five,
-      COOKIES,
+      PROFILE,
       factory,
       8,
       (ms) => {
@@ -951,7 +947,7 @@ describe("pacing rides navigations", () => {
     });
     const walk = fetchLinkedInPosts(
       [surface("#a"), surface("#b")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       sleepFn,
@@ -994,7 +990,7 @@ describe("walk guards and post shape", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23x", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    const posts = await fetchLinkedInPosts([surface("#x")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#x")], PROFILE, factory, 8, instantSleep);
     const first = posts[0] as Post;
     assert.equal(first.platform, "linkedin");
     assert.equal(first.author, "linkedin-member");
