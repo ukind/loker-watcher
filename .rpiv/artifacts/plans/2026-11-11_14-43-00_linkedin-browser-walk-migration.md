@@ -71,6 +71,8 @@ Lands the pure Flight extraction core — search-URL builder, row splitter, $-re
 **File**: `src/linkedin-parser.ts`
 **Changes**: NEW — pure Flight parser + timestamp-zip pairing + search URL builder
 
+**The pairing rule is UNCHANGED by the 2026-11-11 revision.** A refuse-the-body rule was proposed and then measured against three working-config bodies: the mismatch is real data (media-only posts with no caption), so refusing drops 2 of 3 bodies while the prefix rule mis-pairs. Neither is acceptable. The fix is filtering CTA components out of the harvest — unmeasured, and deferred to its own design pass. The design's Key Discoveries carries the measurement; this fence stays byte-identical to the source.
+
 
 Pure Flight extraction core: search-URL builder, Flight row splitter, $-ref text walker, guarded mintPost, timestamp-zip pairing, and the response-URL filter (LINKEDIN_RESPONSE_RE) the Slice 4 walk reuses.
 
@@ -109,8 +111,7 @@ Slice 7 (deletion sweep) reworded four comment lines inside this fence — no co
  * i-th distinct commentary text (stream order) therefore pairs with the
  * i-th usable id sorted by derived time ascending — the page sorts by
  * date_posted, so stream order is time order; the id's high bits ARE the
- * creation clock. A count mismatch warns and mints NOTHING (a shifted
- * zip mis-pairs every post after the gap — measured 2026-11-11)
+ * creation clock. A count mismatch warns and mints the paired prefix
  * (the remainder drops VISIBLY, never silently). The deleted register
  * mis-paired 1 of 3 posts on the live capture; the zip pairs 3/3.
  *
@@ -289,7 +290,7 @@ function mintPost(activityId: string, text: string): Post | null {
  * walk tracks, per row: every activity id it passes (urn strings,
  * activityId fields, urn object keys) and ONE text candidate — the row's
  * longest commentary text, so the sibling hashtag chip never wins. A
- * text/id count mismatch warns and refuses the body; a marker row whose
+ * text/id count mismatch warns and pairs the prefix; a marker row whose
  * text harvest is empty, and an id that fails the timestamp guard, drop
  * without minting.
  */
@@ -378,22 +379,14 @@ export function collectLinkedInPosts(body: string): Post[] {
     const right = BigInt(b);
     return left < right ? -1 : left > right ? 1 : 0;
   });
-  // A count mismatch means the zip is UNSAFE, not merely short (measured
-  // 2026-11-11): with ids A, B, C and texts [A, C], the zip pairs A↔A
-  // (correct) then B↔C (WRONG) and drops C — the gap shifts every pairing
-  // after it, minting one post's text under another's permalink. Refuse the
-  // whole body instead: the warning stays visible and no post is ever
-  // attributed to the wrong id. The cost is coverage (one media-only post
-  // drops that body's posts), which is the correct trade for a judge that
-  // scores content against a permalink.
+  const paired = Math.min(sorted.length, texts.length);
   if (sorted.length !== texts.length) {
     console.warn(
-      `linkedin-parser: id/text count mismatch (${texts.length} text(s), ${sorted.length} id(s)) — refusing to mint this body (a shifted zip would mis-pair)`,
+      `linkedin-parser: id/text count mismatch (${texts.length} text(s), ${sorted.length} id(s)) — pairing the first ${paired} by timestamp order`,
     );
-    return [];
   }
   const posts: Post[] = [];
-  for (let i = 0; i < sorted.length; i += 1) {
+  for (let i = 0; i < paired; i += 1) {
     const post = mintPost(sorted[i] ?? "", texts[i] ?? "");
     if (post !== null) posts.push(post);
   }
@@ -668,30 +661,34 @@ describe("collectLinkedInPosts", () => {
     assert.ok(posts.every((post) => post.text !== "#hiring"));
   });
 
-  it("refuses the whole body on a 2-text/1-id mismatch — a shifted zip would mis-pair", (t) => {
+  it("dedupes a repeated activity id, keeps the first mint, and warns the 2-text/1-id mismatch", (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const body = [cardBody(ID_A, "first"), cardBody(ID_A, "second")].join("\n");
     const posts = collectLinkedInPosts(body);
-    // NOT [A↔"first"]: minting the prefix would attribute "second"'s slot
-    // to a post that never had it. Refuse instead (measured 2026-11-11).
-    assert.deepEqual(posts, []);
+    assert.deepEqual(
+      posts.map((post) => [post.id, post.text]),
+      [[`urn:li:activity:${ID_A}`, "first"]],
+    );
     assert.match(
       String(warns.mock.calls[0]?.arguments[0] ?? ""),
-      /id\/text count mismatch \(2 text\(s\), 1 id\(s\)\) — refusing to mint/,
+      /id\/text count mismatch \(2 text\(s\), 1 id\(s\)\)/,
     );
   });
 
-  it("refuses the whole body when ids outnumber texts (1 text, 2 ids)", (t) => {
+  it("pairs the prefix when ids outnumber texts (1 text, 2 ids) and warns", (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const body = [
       cardBody(ID_A, "only text"),
       row("9", { tracking: { activityUrn: { activityId: ID_B } } }),
     ].join("\n");
     const posts = collectLinkedInPosts(body);
-    assert.deepEqual(posts, []);
+    assert.deepEqual(
+      posts.map((post) => post.id),
+      [`urn:li:activity:${ID_A}`],
+    );
     assert.match(
       String(warns.mock.calls[0]?.arguments[0] ?? ""),
-      /id\/text count mismatch \(1 text\(s\), 2 id\(s\)\) — refusing to mint/,
+      /id\/text count mismatch \(1 text\(s\), 2 id\(s\)\)/,
     );
   });
 
