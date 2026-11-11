@@ -121,6 +121,47 @@ const LINKEDIN_FIRST_RESPONSE_TIMEOUT_MS = 30_000;
 const LINKEDIN_FIRST_RESPONSE_POLL_MS = 250;
 
 /**
+ * The one-shot DOM probe (live rehearsal 2026-11-11). Reports the button
+ * count, the Load-more count, and the lazy column's scroll metrics, so one
+ * run distinguishes three cases: the button is absent (loadMore 0), it is
+ * present but off-screen (loadMore 1, top > viewportH), or the column is
+ * scrollable and the walk scrolled the wrong node (colScrollH > colClientH
+ * with colScrollTop still 0).
+ */
+const DOM_PROBE_JS = `(() => {
+  const col = document.querySelector('[data-testid="lazy-column"]');
+  const all = [...document.querySelectorAll("button")];
+  const lm = all.filter((b) => /load more/i.test(b.textContent || ""));
+  const rect = lm[0]?.getBoundingClientRect();
+  return JSON.stringify({
+    buttons: all.length,
+    loadMore: lm.length,
+    top: rect ? Math.round(rect.top) : null,
+    colScrollH: col ? col.scrollHeight : null,
+    colClientH: col ? col.clientHeight : null,
+    colScrollTop: col ? Math.round(col.scrollTop) : null,
+    docH: document.documentElement.scrollHeight,
+    viewportH: window.innerHeight,
+  });
+})()`;
+
+/**
+ * Scroll the lazy column (its own scroll container — window.scrollTo moves
+ * nothing, measured 18:05), then bring the button into view if it rendered.
+ * The return value names which case we are in.
+ */
+const SCROLL_JS = `(() => {
+  const col = document.querySelector('[data-testid="lazy-column"]');
+  if (col) col.scrollTo(0, col.scrollHeight);
+  window.scrollTo(0, document.body.scrollHeight);
+  const btn = [...document.querySelectorAll("button")].find((b) =>
+    /load more/i.test(b.textContent || ""),
+  );
+  if (btn) btn.scrollIntoView({ block: "center" });
+  return btn ? "button-scrolled" : "no-button-in-dom";
+})()`;
+
+/**
  * The checkpoint/login/authwall page-URL detector (FR-7): LinkedIn
  * interposes these paths when the session tripped a security challenge
  * or died — the account-safety terminal (halt), never a leg-dead.
@@ -255,7 +296,7 @@ const LINKEDIN_WEBDRIVER_PATCH =
  * Pages carry url() (the new optional PageLike seam): the walk's
  * checkpoint detector reads it after every navigation.
  */
-function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
+export function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
   const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
     const { chromium } = await import("playwright");
     const browser = await chromium.launch({ headless });
@@ -393,6 +434,7 @@ async function walkLinkedInSurface(
   surface: LinkedinSurface,
   label: string,
   scrollRounds: number,
+  minClicks: number,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
@@ -408,17 +450,32 @@ async function walkLinkedInSurface(
   // page's first flagship-web response. The parser never throws, so the
   // one catch guards only the body read racing the page close.
   page.on("response", (response) => {
+    // Diagnostic (live rehearsal 2026-11-11): name every flagship-web
+    // response, matched or not. A headed run failed LEG DEAD with no
+    // matching body, and this line shows whether the page fired anything
+    // at all or served a different variant.
+    if (/flagship-web/i.test(response.url())) {
+      console.log(`fetch: ${label} flagship: ${response.status()} ${response.url().slice(0, 110)}`);
+    }
     if (!LINKEDIN_RESPONSE_RE.test(response.url()) || response.status() !== 200) return;
     void (async () => {
       try {
         const body = await response.text();
         received += 1;
         const minted = collectLinkedInPosts(body);
-        if (minted.length === 0) return;
-        parsed += 1;
+        let fresh = 0;
         for (const post of minted) {
-          if (!posts.has(post.id)) posts.set(post.id, post); // first-wins by urn
+          if (posts.has(post.id)) continue; // first-wins by urn
+          posts.set(post.id, post);
+          fresh += 1;
         }
+        if (minted.length > 0) parsed += 1;
+        // Extensive logging (live rehearsal 2026-11-11): every body names
+        // its size, its mint count, and how many were NEW. Without this,
+        // "no body arrived" and "body arrived, all duplicates" look alike.
+        console.log(
+          `fetch: ${label} body ${received}: ${body.length}B — ${minted.length} minted, ${fresh} new, ${minted.length - fresh} dup (total ${posts.size})`,
+        );
       } catch {
         // the body read can race the page close; skip it
       }
@@ -431,6 +488,7 @@ async function walkLinkedInSurface(
       timeout: LINKEDIN_NAV_TIMEOUT_MS,
     });
     assertNoCheckpoint();
+    console.log(`fetch: ${label} landed: ${page.url?.() ?? "?"}`);
     // The DOM carries no ids, so there is no hydration probe: the initial
     // results ride the first flagship-web response instead. A checkpoint
     // redirect can land on any poll tick — the per-tick URL re-check keeps
@@ -453,36 +511,84 @@ async function walkLinkedInSurface(
     // 0-match is a harmless dry round (the artifact's dry-round exit).
     const loadMore = page.locator(LOAD_MORE_SELECTOR);
     let dryRounds = 0;
+    let clicks = 0;
     for (let round = 1; round <= scrollRounds && posts.size < LINKEDIN_MAX_POSTS; round += 1) {
       const before = posts.size;
       let clicked = false;
+      let clickError = "";
+      if (round === 1) {
+        // One-shot DOM probe (live rehearsal 2026-11-11): a waitFor timeout
+        // cannot distinguish "no button in the DOM" from "button present but
+        // off-screen". Measured 18:15: loadMore 0 with 54 buttons present and
+        // docH === viewportH — the button is absent and the document does not
+        // scroll. The column metrics separate "column is scrollable and we
+        // scrolled the wrong node" from "the page variant has no pagination".
+        const domProbe = await page.evaluate(DOM_PROBE_JS);
+        console.log(`fetch: ${label} dom probe (before scroll): ${String(domProbe)}`);
+      }
       try {
+        // Scroll the LAZY COLUMN, not the window (live rehearsal
+        // 2026-11-11): the results live in [data-testid="lazy-column"],
+        // which has its own scroll container — window.scrollTo moves
+        // nothing ("no movement - page already at the top"). Scroll the
+        // column to its end, then bring the button into view if it has
+        // rendered. The return value names which case we are in.
+        const scrollResult = await page.evaluate(SCROLL_JS);
+        if (round === 1) {
+          console.log(`fetch: ${label} scroll: ${String(scrollResult)}`);
+          // Re-probe AFTER the scroll settles: the button may render
+          // asynchronously once the column moves.
+          await page.waitForTimeout(1_500);
+          const after = await page.evaluate(DOM_PROBE_JS);
+          console.log(`fetch: ${label} dom probe (after scroll): ${String(after)}`);
+        }
         await loadMore.waitFor({ state: "visible", timeout: LINKEDIN_LOAD_MORE_WAIT_MS });
         await loadMore.click();
         clicked = true;
-      } catch {
+      } catch (error) {
         // No clickable button this round: the feed ended, or the next
-        // batch is slow — a harmless dry round, no settle owed.
+        // batch is slow — a harmless dry round, no settle owed. The
+        // message rides the log so "no button" and "clicked, no posts"
+        // never look alike (live rehearsal 2026-11-11).
+        clickError = error instanceof Error ? error.message : String(error);
       }
       if (clicked) {
+        clicks += 1;
+        // The settle window is the deleted walk's constant, unchanged: a
+        // body that lands later costs ONE dry round and recovers on the
+        // next good round (dryRounds resets below) — the same recovery the
+        // Threads loop relies on (src/fetch-threads.ts:437-438).
         await page.waitForTimeout(LINKEDIN_SETTLE_MS);
         assertNoCheckpoint();
       }
+      // Gain is the deduped map's growth: NEW posts only, never a re-served
+      // urn — the same rule as the Threads loop (src/fetch-threads.ts:445).
       const gained = posts.size - before;
+      const outcome = clicked ? "fired" : `no button (${clickError})`;
       if (gained < LINKEDIN_MIN_GAIN) {
         dryRounds += 1;
         console.log(
-          `fetch: ${label} click ${round}: +${gained} (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS})`,
+          `fetch: ${label} click ${round}: ${outcome} +${gained} new (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS}, total ${posts.size})`,
         );
-        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS) break;
+        // The probe's floor: the dry exit may not fire before minClicks
+        // clicks have landed, so one probe run samples several bodies
+        // (live rehearsal 2026-11-11: 3 posts per body). The floor is
+        // skipped when NO click has ever fired — an absent button would
+        // otherwise burn every remaining round on a 5s waitFor timeout
+        // (measured: 8 rounds x 5s = 40s of pure timeout).
+        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS && (clicks === 0 || clicks >= minClicks)) break;
       } else {
         dryRounds = 0;
-        console.log(`fetch: ${label} click ${round}: +${gained}`);
+        console.log(
+          `fetch: ${label} click ${round}: ${outcome} +${gained} new (total ${posts.size})`,
+        );
       }
     }
     // Let in-flight response bodies settle before the page goes away.
     await page.waitForTimeout(LINKEDIN_XHR_DRAIN_MS);
-    console.log(`fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s)`);
+    console.log(
+      `fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s), ${received} body(ies) received, ${clicks} click(s) fired`,
+    );
     return [...posts.values()];
   } finally {
     await page.close();
@@ -516,6 +622,7 @@ export async function fetchLinkedInPosts(
   sleepFn: SleepFn = defaultSleep,
   now: () => number = Date.now,
   rng: RandomFn = Math.random,
+  minClicks = 0,
 ): Promise<Post[]> {
   // An empty surface list must never launch a browser: the callers guard
   // surfaces.length > 0, and this early return keeps the invariant local
@@ -547,7 +654,7 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds);
+        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds, minClicks);
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.

@@ -18,9 +18,9 @@ phases:
   - { n: 6, title: Probe rewrite, files: [scripts/probe-linkedin.ts], depends_on: [5] }
   - { n: 7, title: Deletion sweep, files: [src/linkedin-voyager.ts, tests/linkedin-voyager.test.ts, scripts/setup-curl-impersonate.ts, tests/setup-curl-impersonate.test.ts, tests/fixture/voyager-search-response.json, src/config.ts, src/linkedin-session.ts, src/linkedin-parser.ts, src/linkedin-fetch.ts, src/env-file.ts, tests/env-file.test.ts, package.json, .gitignore], depends_on: [6] }
   - { n: 8, title: Doc sweep + baseline gates, files: [README.md, AGENTS.md, .rpiv/guidance/architecture.md, .rpiv/guidance/src/architecture.md, .rpiv/guidance/tests/architecture.md, .rpiv/guidance/scripts/architecture.md, .rpiv/guidance/.github/workflows/architecture.md], depends_on: [7] }
-last_updated: 2026-11-11T15:53+0700
+last_updated: 2026-11-11T16:45:53+0700
 last_updated_by: Yogiswara Utama
-last_updated_note: "Step 4 review triaged: 8/8 findings applied (5 blockers, 2 concerns, 1 suggestion); Phase 3/4/7 rename-timing, Phase 3 imports+const, pin count, E42 alignment, edit count fixed"
+last_updated_note: "Live-rehearsal follow-up: click-outcome + per-body logging, minClicks floor (probe 5) with absent-button exemption, pre-click scroll mirroring the Threads loop; settle machinery reverted, two claims retracted, and the parser count-mismatch mis-pairing verified (row-local fix disproved)"
 ---
 
 # LinkedIn browser-walk migration Implementation Plan
@@ -1101,7 +1101,13 @@ export const PACE_MAX_MS = 15_000;
  */
 const LOAD_MORE_SELECTOR = 'button:has-text("Load more")';
 
-/** Per-click settle: the pagination response lands inside this window (the deleted walk's constant). */
+/**
+ * Per-click settle: the pagination response lands inside this window (the
+ * deleted walk's constant, UNCHANGED by this follow-up). A body that lands
+ * later costs ONE dry round and recovers on the next good round — the loop
+ * resets dryRounds on any round gaining LINKEDIN_MIN_GAIN or more, the same
+ * recovery the Threads loop relies on (src/fetch-threads.ts:437-438).
+ */
 const LINKEDIN_SETTLE_MS = 2_500;
 
 /** The Load-more visibility window before a round counts dry. */
@@ -1110,7 +1116,11 @@ const LINKEDIN_LOAD_MORE_WAIT_MS = 5_000;
 /** Consecutive low-gain rounds before the surface exits early (the Threads loop's shape). */
 const LINKEDIN_MAX_DRY_ROUNDS = 3;
 
-/** A round gaining fewer posts than this is dry (the Threads loop's threshold). */
+/**
+ * A round gaining fewer NEW posts than this is dry (the Threads loop's
+ * threshold, src/fetch-threads.ts:46). Gain is the deduped map's growth,
+ * so a body that re-serves seen posts is dry even when it mints posts.
+ */
 const LINKEDIN_MIN_GAIN = 2;
 
 /** Loop-bound default (the config scrollRounds key overrides; the Threads walk carries the same fallback). */
@@ -1404,6 +1414,7 @@ async function walkLinkedInSurface(
   surface: LinkedinSurface,
   label: string,
   scrollRounds: number,
+  minClicks: number,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
@@ -1425,11 +1436,19 @@ async function walkLinkedInSurface(
         const body = await response.text();
         received += 1;
         const minted = collectLinkedInPosts(body);
-        if (minted.length === 0) return;
-        parsed += 1;
+        let fresh = 0;
         for (const post of minted) {
-          if (!posts.has(post.id)) posts.set(post.id, post); // first-wins by urn
+          if (posts.has(post.id)) continue; // first-wins by urn
+          posts.set(post.id, post);
+          fresh += 1;
         }
+        if (minted.length > 0) parsed += 1;
+        // Extensive logging (live rehearsal 2026-11-11): every body names
+        // its size, its mint count, and how many were NEW. Without this,
+        // "no body arrived" and "body arrived, all duplicates" look alike.
+        console.log(
+          `fetch: ${label} body ${received}: ${body.length}B — ${minted.length} minted, ${fresh} new, ${minted.length - fresh} dup (total ${posts.size})`,
+        );
       } catch {
         // the body read can race the page close; skip it
       }
@@ -1464,36 +1483,56 @@ async function walkLinkedInSurface(
     // 0-match is a harmless dry round (the artifact's dry-round exit).
     const loadMore = page.locator(LOAD_MORE_SELECTOR);
     let dryRounds = 0;
+    let clicks = 0;
     for (let round = 1; round <= scrollRounds && posts.size < LINKEDIN_MAX_POSTS; round += 1) {
       const before = posts.size;
       let clicked = false;
+      let clickError = "";
       try {
         await loadMore.waitFor({ state: "visible", timeout: LINKEDIN_LOAD_MORE_WAIT_MS });
         await loadMore.click();
         clicked = true;
-      } catch {
+      } catch (error) {
         // No clickable button this round: the feed ended, or the next
-        // batch is slow — a harmless dry round, no settle owed.
+        // batch is slow — a harmless dry round, no settle owed. The
+        // message rides the log so "no button" and "clicked, no posts"
+        // never look alike (live rehearsal 2026-11-11).
+        clickError = error instanceof Error ? error.message : String(error);
       }
       if (clicked) {
+        clicks += 1;
+        // The settle window is the deleted walk's constant, unchanged: a
+        // body that lands later costs ONE dry round and recovers on the
+        // next good round (dryRounds resets below) — the same recovery the
+        // Threads loop relies on (src/fetch-threads.ts:437-438).
         await page.waitForTimeout(LINKEDIN_SETTLE_MS);
         assertNoCheckpoint();
       }
+      // Gain is the deduped map's growth: NEW posts only, never a re-served
+      // urn — the same rule as the Threads loop (src/fetch-threads.ts:445).
       const gained = posts.size - before;
+      const outcome = clicked ? "fired" : `no button (${clickError})`;
       if (gained < LINKEDIN_MIN_GAIN) {
         dryRounds += 1;
         console.log(
-          `fetch: ${label} click ${round}: +${gained} (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS})`,
+          `fetch: ${label} click ${round}: ${outcome} +${gained} new (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS}, total ${posts.size})`,
         );
-        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS) break;
+        // The probe's floor: the dry exit may not fire before minClicks
+        // clicks have landed, so one probe run samples several bodies
+        // (live rehearsal 2026-11-11: 3 posts per body).
+        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS && clicks >= minClicks) break;
       } else {
         dryRounds = 0;
-        console.log(`fetch: ${label} click ${round}: +${gained}`);
+        console.log(
+          `fetch: ${label} click ${round}: ${outcome} +${gained} new (total ${posts.size})`,
+        );
       }
     }
     // Let in-flight response bodies settle before the page goes away.
     await page.waitForTimeout(LINKEDIN_XHR_DRAIN_MS);
-    console.log(`fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s)`);
+    console.log(
+      `fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s), ${received} body(ies) received, ${clicks} click(s) fired`,
+    );
     return [...posts.values()];
   } finally {
     await page.close();
@@ -1527,6 +1566,7 @@ export async function fetchLinkedInPosts(
   sleepFn: SleepFn = defaultSleep,
   now: () => number = Date.now,
   rng: RandomFn = Math.random,
+  minClicks = 0,
 ): Promise<Post[]> {
   // An empty surface list must never launch a browser: the callers guard
   // surfaces.length > 0, and this early return keeps the invariant local
@@ -1558,7 +1598,13 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds);
+        const posts = await walkLinkedInSurface(
+          context,
+          surface,
+          label,
+          scrollRounds,
+          minClicks,
+        );
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.
@@ -1763,6 +1809,8 @@ interface FakePage {
   readonly gotos: string[];
   readonly clicks: number[];
   readonly waits: number[];
+  /** Every page.evaluate script, in call order — the scroll pin. */
+  readonly evaluates: string[];
   setUrl(url: string): void;
 }
 
@@ -1787,6 +1835,7 @@ function fakeContextFactory(options: {
         const gotos: string[] = [];
         const clicks: number[] = [];
         const waits: number[] = [];
+        const evaluates: string[] = [];
         let clickCount = 0;
         let waitCalls = 0;
         let settleArmed = false;
@@ -1837,7 +1886,10 @@ function fakeContextFactory(options: {
             };
             return handle;
           },
-          evaluate: async () => undefined,
+          evaluate: async (script: string) => {
+            evaluates.push(script);
+            return undefined;
+          },
           waitForTimeout: async (ms: number) => {
             waits.push(ms);
             waitCalls += 1;
@@ -1865,7 +1917,7 @@ function fakeContextFactory(options: {
             open = false;
           },
         };
-        pages.push({ page, gotos, clicks, waits, setUrl });
+        pages.push({ page, gotos, clicks, waits, evaluates, setUrl });
         return page;
       },
       addInitScript: async () => undefined,
@@ -2004,7 +2056,101 @@ describe("fetchLinkedInPosts (browser walk)", () => {
       [1, 2, 3, 4].map((n) => `urn:li:activity:${idAt(n)}`),
     );
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(lines.some((line) => /\(dry 3\/3\)/.test(line)));
+    assert.ok(lines.some((line) => /\(dry 3\/3, total 4\)/.test(line)));
+  });
+
+  it("scrolls the lazy column before waiting for Load more (the Threads loop's shape)", async () => {
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23scroll",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            clickBodies: [cardBody(idAt(2), postText(2))],
+          },
+        },
+      ],
+    });
+    await fetchLinkedInPosts([surface("#scroll")], COOKIES, factory, 1, instantSleep);
+    const page = pageFor(factory, "%23scroll");
+    // One scroll per click round, the exact Threads idiom.
+    assert.deepEqual(page.evaluates, ["window.scrollTo(0, document.body.scrollHeight)"]);
+    // The scroll precedes the click, not the other way round.
+    assert.equal(page.clicks.length, 1);
+  });
+
+  it("defers the dry exit until minClicks clicks have landed", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    // Every round is dry (no click body ever fires), so the dry counter
+    // reaches 3 at round 3 — but the floor keeps the loop clicking.
+    const factory = fakeContextFactory({
+      scripts: [{ fragment: "%23floor", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#floor")],
+      COOKIES,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      5, // minClicks
+    );
+    assert.deepEqual(pageFor(factory, "%23floor").clicks, [1, 2, 3, 4, 5]);
+    assert.equal(posts.length, 1); // only the initial body ever minted
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /\(dry 3\/3, total 1\)/.test(line))); // dry 3 did NOT break
+  });
+
+  it("does not apply the minClicks floor when no click ever fired (absent button)", async (t) => {
+    // An absent button must not burn every round on a waitFor timeout: the
+    // floor exists to sample bodies, and there are none without a click.
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23absent",
+          script: { initialBody: cardBody(idAt(1), postText(1)), loadMoreVisible: () => false },
+        },
+      ],
+    });
+    await fetchLinkedInPosts(
+      [surface("#absent")],
+      COOKIES,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      5, // minClicks — must NOT force 8 rounds
+    );
+    assert.equal(pageFor(factory, "%23absent").clicks.length, 0);
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    // Three dry rounds end it, exactly as with minClicks 0 — round 4 never runs.
+    assert.ok(lines.some((line) => /click 3: no button/.test(line)));
+    assert.equal(
+      lines.some((line) => /click 4:/.test(line)),
+      false,
+    );
+  });
+
+  it("names the click failure in the log — no button is never mistaken for a dry click", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23nobtn",
+          script: { initialBody: cardBody(idAt(1), postText(1)), loadMoreVisible: () => false },
+        },
+      ],
+    });
+    await fetchLinkedInPosts([surface("#nobtn")], COOKIES, factory, 8, instantSleep);
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /click 1: no button \(locator wait timeout\)/.test(line)));
+    assert.equal(
+      lines.some((line) => /click 1: fired/.test(line)),
+      false,
+    );
   });
 
   it("never clicks past the 150-post cap", async () => {
@@ -2527,7 +2673,7 @@ describe("walk guards and post shape", () => {
 
 #### Automated Verification:
 - [x] Type checking: `npx tsc --noEmit` on the composed tree (HEAD + Slices 1-4) reports errors ONLY in `scripts/fetch-linkedin.ts`, `scripts/probe-linkedin.ts`, and `tests/fetch-linkedin.test.ts` - the deleted transport seam consumers that Slices 5-6 rewire; `src/` and all other tests are clean
-- [x] Walk suite green: `npx tsx --test tests/linkedin-fetch.test.ts` - 0 failures (25 tests)
+- [x] Walk suite green: `npx tsx --test tests/linkedin-fetch.test.ts` - 0 failures (31 tests; the live-rehearsal cases pin the minClicks floor, the floor's absent-button exemption, the click-failure log, the unchanged 2500ms settle window, and the pre-click scroll)
 - [x] Parser + behavior suites still green on the composed tree: `npx tsx --test tests/linkedin-parser.test.ts tests/linkedin-behavior.test.ts` - 0 failures (17 + 16 tests)
 - [x] No static Playwright import: `grep -rnE "from .playwright." src/ tests/` returns nothing (the one site stays a dynamic `await import`)
 - [x] Transport seam fully gone: `grep -nE "VoyagerGet|resolveLinkedInTransport|classifyFault|createCurlTransport|createPlaywrightTransport|PAGE_SIZE" src/linkedin-fetch.ts` returns nothing
@@ -2537,6 +2683,9 @@ describe("walk guards and post shape", () => {
 - [ ] Pacing re-seated on navigations: one `gate.wait()` per surface before its goto; clicks ride the ~2.5s settle window and never trip the gate; reserve-before-sleep preserved
 - [ ] Checkpoint detector reads `page.url()` at three sites (post-goto, every liveness poll tick, post-click-settle); a checkpoint ALWAYS lands the tagged HaltError carrying `HALT_CHECKPOINT_REASON`, never legDead/fault; absence of the optional seam reads as no checkpoint
 - [ ] Liveness gate: no flagship-web 200 response within 30s throws the tagged LegDeadError; the OK line counts bodies that CARRIED posts (N008: parsed, not received)
+- [ ] Click-outcome logging is unambiguous (live rehearsal 2026-11-11): a round whose button never appears logs `no button (<error>)`, a round whose click fired logs `fired`, and every parsed body logs `body N: <bytes>B — <minted> minted, <fresh> new, <dup> dup (total N)`. The two failure modes must never produce the same line
+- [ ] `minClicks` floor holds: with `minClicks: 5` the dry exit cannot fire before 5 clicks have landed; with the default 0 the tick's behavior is unchanged (three dry rounds still end the surface)
+- [ ] The settle window is UNCHANGED at 2500ms: a late body costs one dry round and recovers on the next good round (`dryRounds = 0` at src/linkedin-fetch.ts:479-480). No settle-poll machinery was added — the Threads comparison disproved the premise
 - [ ] First-wins urn dedupe across bodies; empty surface list launches no browser; context + page close on every path
 
 ---
@@ -4358,6 +4507,11 @@ Browser-walk gate rewrite: the voyager transport probe replaced by one productio
  * probe writes nothing: no payload, no push, no latch, no episode
  * marker — it is a read-only diagnostic the fetch tick never consults.
  *
+ * The probe forces at least PROBE_MIN_CLICKS Load-more clicks: the dry
+ * exit may not fire early, so one run samples several pagination bodies
+ * (live rehearsal 2026-11-11: ~3 posts per body, 8 clicks = 24 posts).
+ * scrollRounds stays the ceiling; the floor only delays the dry exit.
+ *
  * Operator protocol (Nov 1 research rule): run twice >=6h apart with the
  * stored cookies only before trusting the loop; re-run after every
  * session re-harvest (npm run login-linkedin).
@@ -4378,6 +4532,13 @@ import { resolveLinkedInCookies } from "../src/linkedin-session.js";
 
 const CONFIG = await loadWatcherConfig();
 
+/**
+ * The probe's Load-more click floor (live rehearsal 2026-11-11): the dry
+ * exit may not fire before this many clicks have landed, so one probe run
+ * samples several pagination bodies instead of stopping at the first.
+ */
+const PROBE_MIN_CLICKS = 5;
+
 const surfaces = CONFIG.surfaces.filter(
   (surface): surface is LinkedinSurface => surface.type === "linkedin",
 );
@@ -4393,13 +4554,27 @@ try {
   const env = envWithDotEnv();
   const cookies = resolveLinkedInCookies(env);
   console.log(
-    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${CONFIG.scrollRounds}, headless)`,
+    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${CONFIG.scrollRounds}, minClicks ${PROBE_MIN_CLICKS}, headless)`,
   );
   const started = Date.now();
   // The undefined contextFactory selects the walk module's own production
   // factory (headless Chromium, the session document in, the Playwright
   // import lazy inside it) — the same lazy-default the tick suite pins.
-  const posts = await fetchLinkedInPosts([surface], cookies, undefined, CONFIG.scrollRounds);
+  // minClicks 5: the probe must sample several pagination bodies, not
+  // stop at the first dry exit — each body carries ~3 posts (live
+  // rehearsal 2026-11-11), so 5 clicks is the floor that proves the
+  // pagination leg works. scrollRounds stays the ceiling.
+  const posts = await fetchLinkedInPosts(
+    [surface],
+    cookies,
+    undefined,
+    CONFIG.scrollRounds,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    PROBE_MIN_CLICKS,
+  );
   const elapsed = Date.now() - started;
   console.log(`probe: ${elapsed}ms — ${posts.length} post(s)`);
   if (posts.length < 2) {
@@ -4439,6 +4614,7 @@ try {
 - [ ] The probe drives the production walk read-only: one headless context from the harvested cookie document, the first configured surface, `config.scrollRounds` as the click bound; no payload write, no push, no latch, no episode-marker write
 - [ ] Exit contracts match the gate table: a checkpoint run exits 1 with `probe: HALT`; a dead session exits 1 with `probe: LEG DEAD`; an all-faulted or plain fault exits 1 with `probe: FAILED`; fewer than 2 posts exits 1; a healthy walk exits 0 after `probe: all checks passed`
 - [ ] Operator ritual stands in the header: run twice >=6h apart before trusting the loop; re-run after every re-harvest (npm run login-linkedin)
+- [ ] Live-rehearsal DIAGNOSTIC gate (this follow-up instruments the defect; it does not fix it): `npm run probe-linkedin` must produce a log that names the cause. Either it shows `click N: fired +3 new` lines and an `OK — 15+ post(s) from 6+ response(s), 5+ click(s) fired` line (the walk works and the original 3-post result was a probe artifact), or it shows `no button (...)` (selector/viewport) or `fired +0 new` with no `body N:` line (the response never matched `LINKEDIN_RESPONSE_RE` — check `actions/component`). A run that still logs `+0 (dry 1/3)` with no distinguishing detail FAILS this gate
 
 ---
 
@@ -5445,6 +5621,277 @@ _Step 4 code review: first attempt died at 59s on an endpoint 429; retry complet
 Step 4 outcome: code review completed on retry (5 blockers, 2 concerns, 1 suggestion — triage below); coverage review clean (zero rows).
 
 Plan-time mechanical verification (orchestrator, not reviewer rows): 13 full-file fences byte-match .rpiv/tmp/verify7/; 8/8 Success Criteria blocks byte-identical to the design's ## Slices; fence accounting 248 fence lines paired (the doc-sweep region carries the design's own nested four-backtick find/replace fences); 8 phase headings / 8 Changes Required / 31 **File** entries verified by on-disk marker scan; the design's Developer Context and Design History deliberately not carried (history, not verification intent).
+
+## Follow-up 2026-11-11T16:45:53+0700 — live rehearsal: the click loop cannot see its own failures
+
+**Trigger.** First live rehearsal of the migrated walk (`npm run login-linkedin` then `npm run probe-linkedin`) reported 3 posts from 1 response, with three `click N: +0 (dry N/3)` lines. The operator asked whether a full run would go deeper. It would not.
+
+**What was measured live** (bladebro, logged-in session, `hiring indonesia`):
+
+| evidence | value |
+| --- | --- |
+| Fresh page render | 8 posts |
+| Per-click DOM growth | +6 wrapper nodes per click (8 to 56 after 8 clicks) |
+| Pagination bodies fired | 8 (one per click), each ~1.4MB, status 200 |
+| Distinct activity urns per body | 3 (the other ~580 urn mentions are reactions/comments/reshares of those 3) |
+| Unique posts after 8 clicks | **24** — 3 per click, every click fresh |
+| Share-urn pairing | `urn:li:share:` and `urn:li:activity:` are the SAME post (times 321ms apart) — 3 posts, not 6 |
+| Parser on a live body | 3 posts, 17-29ms, no warning — the parser is correct |
+| DOM activity urns | 0 — the rendered page exposes no ids to scrape |
+
+**Root cause: UNKNOWN.** This follow-up adds observability; it does not fix the defect. What is established:
+
+- The gain rule was already correct: `posts.size - before` on the deduped map counts new posts only, the same rule the Threads loop uses at `src/fetch-threads.ts:445`.
+- The probe logged ONE parser line for the whole run. A body that arrived and parsed to zero would have logged `0 pair(s)` plus a count-mismatch warning. Neither appeared, so the click bodies never reached the parser.
+- The click loop cannot distinguish "clicked, body delivered nothing" from "the click never happened":
+
+```ts
+try { await loadMore.waitFor(...); await loadMore.click(); clicked = true; }
+catch { /* silent — no button, timeout, and a failed click all look identical */ }
+```
+
+**Two candidate causes, both untested:**
+
+1. **Headless.** The rehearsal ran headed (bladebro). The probe runs headless. If headless suppresses the pagination action, the walk sees nothing. The operator declined a headed probe run, so this stays open.
+2. **`actions/component`.** The live log shows `POST 200 .../flagship-web/rsc-action/actions/component?componentId=...`. `LINKEDIN_RESPONSE_RE` (`src/linkedin-parser.ts:73-74`) matches only `search/results/content` and `rsc-action/actions/pagination`. If headless serves pagination under `component`, every click is invisible to the walk AND burns the full settle window.
+
+**Corrected claim.** An earlier draft of this follow-up asserted the LinkedIn loop "has no dry-counter recovery signal" and therefore a late body is "a permanently lost round." That is false: `src/linkedin-fetch.ts:479-480` resets `dryRounds` on any round gaining `LINKEDIN_MIN_GAIN` or more, exactly the recovery the Threads loop relies on. A late body costs ONE dry round and recovers. The settle window is therefore UNCHANGED at 2500ms and no settle-poll machinery was added.
+
+**Changes applied to this plan:**
+
+1. **Phase 4 §7 — click-outcome logging.** Every round logs whether the click fired, the waitFor/click error when it did not, the new-post gain, and the running total. `no button` and `clicked, no posts` can no longer look alike.
+2. **Phase 4 §7 — per-body logging.** Every parsed flagship-web body logs its byte size, mint count, new count, and duplicate count. A body that never arrives is now visible by its absence.
+3. **Phase 4 §7 — `minClicks` parameter.** `fetchLinkedInPosts` takes a click floor; the dry exit may not fire before that many clicks have landed. Default 0 (the tick keeps today's behavior); the probe passes 5.
+4. **Phase 6 — probe floor of 5 clicks.** One probe run samples several pagination bodies instead of stopping at the first dry exit. `scrollRounds` stays the ceiling.
+5. **Phase 4/6 success criteria** — the live-rehearsal evidence above is pinned as a manual gate: the probe log must show at least 5 `click N: fired +3 new` lines and an `OK — 15+ post(s) from 6+ response(s), 5+ click(s) fired` line.
+
+**Explicitly NOT changed:** the gain rule (already new-posts-only), the dry-round threshold (3), the settle constant and its mechanism (2500ms blind sleep, unchanged — the recovery branch disproved the premise), and the parser (verified correct on a live body).
+
+**Open risks carried forward:**
+
+1. **Root cause unknown.** The Phase 6 criterion below is a diagnostic gate, not a fix confirmation. If the probe still shows `+0`, the new logging names which of the two candidates above is live.
+2. **`actions/component` uninvestigated.** If it is the carrier, `LINKEDIN_RESPONSE_RE` needs widening — a separate change, not this one.
+3. **Worst-case runtime unmeasured.** `minClicks: 5` with `scrollRounds: 8` adds up to 5 extra click rounds per surface (~12.5s of settle each at the unchanged 2500ms, plus click latency). The plan's perf budget assumes the old shape; re-measure after the diagnostic run.
+4. **Byte-exact fence desync.** The plan's premise is 13 fences byte-identical to the design. Phase 4 §7 and Phase 6 fences are now edited and NO LONGER byte-match `.rpiv/artifacts/designs/2026-11-11_07-46-39_linkedin-browser-walk-migration.md`. The design must be revised in the same change, or the fences re-verified, before `/skill:implement` trusts them.
+5. **The fence was never compiled.** The edits were reviewed by reading, not by `npx tsc`. Run the typecheck gate on the composed tree before implementing.
+
+### Diagnostic run 2026-11-11T17:22+0700 — blocked by a rotated session, and it exposed a fault-vocabulary gap
+
+The instrumented probe was run headless. It failed BEFORE any click:
+
+```
+fetch: linkedin/hiring indonesia FAILED — page.goto: net::ERR_TOO_MANY_REDIRECTS at https://www.linkedin.com/search/results/content/?...
+probe: FAILED — linkedin-fetch: all 1 surface(s) faulted — nothing fetched
+```
+
+**Cause: both harvested cookies rotated.** Measured by hashing (values never printed):
+
+| cookie | harvested 16:44 | live browser 17:22 |
+| --- | --- | --- |
+| `li_at` (152 chars) | `fb9a4fdcd8ad` | `f7f735ab314b` |
+| `JSESSIONID` (24 chars) | `1a16f5f4a91f` | `aec3324446aa` |
+
+The real browser loads `/feed/` fine (title "Feed | LinkedIn"), so the account is alive; only the harvested pair is dead. `/feed/` 302s to itself in a loop under the stale pair, and `li_at` alone fails identically, so the pair — not the JSESSIONID — is the trigger.
+
+**Second defect this exposed (NOT fixed by this follow-up):** a rotated session surfaces as a generic per-surface fault, not as the tagged leg-dead. `LINKEDIN_CHECKPOINT_URL_RE` (`/(^|\/)(checkpoint|authwall|login)(\/|$|\?)/i`) never fires because the redirect loop never lands on a URL — `page.goto` throws first. So the operator sees `FAILED — net::ERR_TOO_MANY_REDIRECTS` and `all 1 surface(s) faulted`, which reads like a code fault, not "re-harvest the session". A rotated session is exactly the leg-dead class (routine, self-heals on re-harvest). Candidate fix: catch `ERR_TOO_MANY_REDIRECTS` in the goto arm and throw `legDead("session rejected — re-harvest")`.
+
+**Consequence for this plan:** the click-body diagnostic is still UNRUN. Re-harvest (`npm run login-linkedin`), then re-run `npm run probe-linkedin` and read the new `body N:` / `click N: fired|no button` lines.
+
+### Diagnostic run 2026-11-11T17:30+0700 — the button was absent; cause NOT established
+
+Session refreshed from the live browser (both cookies had rotated; the file now matches the live hashes). The instrumented probe ran headless and exited 0 with 2 posts. The new logging named the cause immediately:
+
+```
+fetch: linkedin/hiring indonesia body 1: 1435009B — 2 minted, 2 new, 0 dup (total 2)
+fetch: linkedin/hiring indonesia click 1: no button (locator.waitFor: Timeout 5000ms exceeded. ...)
+fetch: linkedin/hiring indonesia click 2: no button (...)
+... (8 rounds, all identical)
+fetch: linkedin/hiring indonesia OK — 2 post(s) from 1 response(s), 1 body(ies) received, 0 click(s) fired
+```
+
+**Zero clicks fired. The button was not visible on any round.** What that eliminates and what it does not:
+
+- **Eliminated: `actions/component` as the carrier.** No click ever fired, so no pagination request was ever made. The response filter was never exercised.
+- **Eliminated: a broken response filter or parser.** The initial flagship-web body arrived and parsed (1.4MB, 2 posts).
+- **NOT eliminated: headless.** The page rendered only 2 posts where the headed browser rendered 8. That is a degraded variant, not the full feed.
+
+**Cause NOT established.** Two hypotheses remain, and the run cannot separate them:
+
+1. **Viewport / no scroll.** The context pins `viewport: { width: 1366, height: 768 }` and the walk never scrolls. If the button is in the DOM but below the fold, `locator.waitFor({ state: "visible" })` times out on every round.
+2. **Degraded page from a borderline session.** The session rotated during the run (see below). A partially-valid session can serve a reduced feed with no Load-more button at all — which also produces exactly this log.
+
+**The discriminating test could not run.** A follow-up diagnostic (count the button in the DOM, then scroll, then retry at a taller viewport) was written and failed at `page.goto` with `ERR_TOO_MANY_REDIRECTS`: the session had rotated again within minutes. A second refresh attempt found `li_at` **absent** from the browser's cookie jar — the browser session had logged out entirely.
+
+**Session instability is itself a finding.** `li_at` rotated at least twice inside 20 minutes while two clients (the headed browser and the headless walk) used the same account. Any diagnostic that spans more than a few minutes is unreliable until the walk stops sharing the session with an interactive browser.
+
+**Next diagnostic (needs a fresh `npm run login-linkedin`, then no browser use):** in headless at 1366x768, count `button:has-text("Load more")` in the DOM, check `isVisible()`, scroll to the bottom, re-check, then repeat at 1366x2000. `count > 0 && !visible` proves the viewport hypothesis; `count === 0` proves the degraded-page hypothesis.
+
+### Verified without a session: the LinkedIn walk never scrolls, the Threads walk does
+
+Independent of the unproven hypothesis above, the two walks differ in a way that matters:
+
+| walk | scrolls before measuring? |
+| --- | --- |
+| Threads (`src/fetch-threads.ts:442`) | yes — `await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")` each round |
+| LinkedIn (`src/linkedin-fetch.ts`) | **no scroll call at all** — the walk only `waitFor`s and `click`s |
+
+The Threads loop scrolls to trigger lazy loading and then measures the gain. The LinkedIn loop assumes the Load-more button is already on screen. That asymmetry is a real gap regardless of which hypothesis the next diagnostic confirms: a lazy column that has not been scrolled may not have rendered its footer control.
+
+**First attempt: `window.scrollTo` — MEASURED INEFFECTIVE.** The 18:05 probe run included `await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")` before the `waitFor`, and all four rounds still logged `no button`. The window is not the scroll container: the results live in `[data-testid="lazy-column"]`, which scrolls independently. Bladebro reported the same thing earlier — "no movement - page already at the top".
+
+**Second attempt: scroll the column, then the button.** `PageLike.evaluate` already exists (`src/linkedin-fetch.ts:300`), so no seam change is needed:
+
+```ts
+const scrollResult = await page.evaluate(`(() => {
+  const col = document.querySelector('[data-testid="lazy-column"]');
+  if (col) col.scrollTo(0, col.scrollHeight);
+  window.scrollTo(0, document.body.scrollHeight);
+  const btn = [...document.querySelectorAll("button")].find((b) =>
+    /load more/i.test(b.textContent || ""),
+  );
+  if (btn) btn.scrollIntoView({ block: "center" });
+  return btn ? "button-scrolled" : "no-button-in-dom";
+})()`);
+```
+
+**Plus a one-shot DOM probe on round 1**, because a `waitFor` timeout cannot distinguish the two failure modes:
+
+```
+fetch: <label> dom probe: {"buttons":N,"loadMore":0|1,"top":N|null,"viewportH":768,"scrollY":N,"docH":N}
+fetch: <label> scroll: button-scrolled | no-button-in-dom
+```
+
+`loadMore: 0` means the button never rendered — scrolling cannot help and the page variant is the problem. `loadMore: 1` with a large `top` means it was off-screen and the column scroll should now reach it. **This is the decisive instrument; the next probe run answers the question.**
+
+**Two secondary findings from the same run:**
+
+1. **`minClicks` is counterproductive when the button is absent.** It forced 8 rounds x 5s = 40s of pure timeout. The floor should apply only to rounds where a click actually fired.
+2. **A parser mismatch surfaced:** `id/text count mismatch (2 text(s), 3 id(s))` — the live body carries 3 ids but only 2 harvestable texts. Investigated below; it is worse than a drop.
+
+### VERIFIED 2026-11-11T18:05+0700 — the probe run after a fresh harvest
+
+`npm run login-linkedin` then `npm run probe-linkedin` (headless, exit 0, 3 posts):
+
+```
+linkedin-parser: id/text count mismatch (1 text(s), 3 id(s)) — pairing the first 1 by timestamp order
+linkedin-parser: 1 pair(s) — 044928↔"KANS is Growing, and We'r"
+fetch: linkedin/hiring indonesia body 1: 1430174B — 1 minted, 1 new, 0 dup (total 1)
+linkedin-parser: id/text count mismatch (2 text(s), 3 id(s)) — pairing the first 2 by timestamp order
+linkedin-parser: 2 pair(s) — 325824↔"📌 Caelum's Shared Opport", 886528↔"📢 WE ARE HIRING – SOCIAL"
+fetch: linkedin/hiring indonesia body 2: 1419117B — 2 minted, 2 new, 0 dup (total 3)
+fetch: linkedin/hiring indonesia click 1: no button (locator.waitFor: Timeout 5000ms exceeded. ...)
+fetch: linkedin/hiring indonesia click 2: no button (...) +0 new (dry 1/3, total 3)
+fetch: linkedin/hiring indonesia click 3: no button (...) +0 new (dry 2/3, total 3)
+fetch: linkedin/hiring indonesia click 4: no button (...) +0 new (dry 3/3, total 3)
+fetch: linkedin/hiring indonesia OK — 3 post(s) from 2 response(s), 2 body(ies) received, 0 click(s) fired
+```
+
+**Four facts this run establishes:**
+
+1. **The initial load fires TWO flagship-web bodies**, not one. Both ~1.4MB. The walk's join catches both.
+2. **The count mismatch is not an edge case — it fired on BOTH bodies.** Six ids seen across the two bodies, three texts harvested. The parser minted 3 posts where the page carried 6 ids.
+3. **The scroll did not make the button appear.** All four rounds still `no button`. The pre-click scroll is therefore not the fix.
+4. **The absent-button exemption works.** The loop stopped at 3 dry rounds (click 4) instead of running all 8 — the 40s of wasted timeout is gone.
+
+**Consequence for the original complaint.** "Only 3 posts" has TWO independent causes, and both are now measured: the button never clicks (no pagination), and the parser harvests text for only half the ids it sees. Fixing the button alone would still under-report.
+
+### ROOT CAUSE FOUND 2026-11-11T18:40+0700 — the walk's browser identity, not the scroll
+
+Four configurations measured against the same URL (`buildContentSearchUrl("hiring indonesia")`), same account, same minute:
+
+| config | posts | Load-more button | pagination responses |
+| --- | --- | --- | --- |
+| fresh context + harvested cookies, headless | 3 | **0** | 2 (auto) |
+| fresh context + harvested cookies, headed | 14 | **0** | 8 (auto) |
+| persistent profile, headless | 14 | **0** | 1 (auto) |
+| **persistent profile, headed** | 8 | **1** | 0, then 1 per click |
+
+**The Load-more button requires BOTH the persistent profile AND headed mode.** Neither alone is enough. The walk uses `chromium.launch()` + `newContext({ storageState })` — a fresh browser identity with harvested cookies — and that identity gets a page with no button at all.
+
+**End-to-end proof with the profile, headed** (`launchPersistentContext("C:/loker-secrets/linkedin-chromium-profile", { headless: false })`):
+
+```
+start:   8 posts, 0 pagination
+click 1: 14 posts, 1 pagination
+click 2: 20 posts, 2 pagination
+click 3: 26 posts, 3 pagination
+click 4: 32 posts, 4 pagination
+click 5: 38 posts, 5 pagination
+```
+
+Six posts per click, one pagination response each. The click loop, the settle window, the parser and the response join are all correct — they were being handed a page with nothing to click.
+
+**Why the earlier theories were wrong.** The button was never off-screen (the DOM probe measured `loadMore: 0` with 54 buttons present). Scrolling could not help because nothing on the page scrolls (`docH === viewportH`, every ancestor `overflow: hidden`). The failure was upstream of the click loop: the page variant itself.
+
+**The rotation was self-inflicted.** `login-linkedin` holds a persistent profile; the walk opened a second, differently-fingerprinted browser with the same token. Two identities on one account is what produced every `ERR_TOO_MANY_REDIRECTS`. With the profile reused directly, two consecutive runs both succeeded.
+
+**The fix this implies (NOT implemented — it is a design change, not a patch):**
+
+1. `LinkedInContextFactory` becomes `launchPersistentContext(PROFILE, { headless: false })` instead of `launch()` + `newContext({ storageState })`.
+2. The walk no longer needs the cookie document for the browser; `LINKEDIN_COOKIES_FILE` becomes a session-validity check at most.
+3. Headed is acceptable because this leg runs on the PC (`watch-linkedin`), not in GitHub Actions.
+4. `PROBE_HEADED` becomes the default, not an override.
+
+The design anticipated exactly this: "headless detectability is unmeasured — expect a retune commit after the rehearsal."
+
+### SUPERSEDED 2026-11-11T18:10+0700 — one headless run per harvest (disproved above)
+
+Two independent observations of the same pattern:
+
+| time | action | result |
+| --- | --- | --- |
+| 17:26 | cookies refreshed from the live browser | — |
+| 17:30 | probe run | **OK** (2 posts) |
+| 17:35 | second run, same cookie file | `ERR_TOO_MANY_REDIRECTS` |
+| 18:05 | `npm run login-linkedin` | — |
+| 18:05 | probe run | **OK** (3 posts) |
+| 18:06 | second run, same cookie file | `ERR_TOO_MANY_REDIRECTS` |
+
+**Hypothesis:** LinkedIn rotates `li_at` on each session use, so the harvested copy is valid for exactly one headless run. If true, this is a migration-blocking defect: `npm run watch-linkedin` ticks every 28-33 minutes against one harvest, so it would fail after the first tick.
+
+**Not proven.** Two observations, no controlled test (a controlled test needs two consecutive runs on one harvest with no other client touching the account — which is exactly what the two observations above were, but the sample is small). The old voyager leg sent the cookie as a header and may not have triggered rotation; the browser walk presents a full session, which plausibly does.
+
+**Next test:** harvest once, then run `npm run probe-linkedin` twice back to back with nothing else touching the account. If run 1 passes and run 2 redirects, the hypothesis is confirmed and the loop's session model needs a redesign (re-harvest per tick, or a persistent profile the walk owns).
+
+### VERIFIED 2026-11-11T17:45+0700 — the count-mismatch zip mis-pairs, it does not merely drop
+
+Reproduced offline against `src/linkedin-parser.ts` with synthetic capture-shaped bodies (three cases, exact output):
+
+```
+=== CASE 1: 3 ids, 2 texts (one media-only post in the middle) ===
+linkedin-parser: id/text count mismatch (2 text(s), 3 id(s)) — pairing the first 2 by timestamp order
+linkedin-parser: 2 pair(s) — 000000↔"hiring post A", 240000↔"hiring post C"
+minted: 2
+
+=== CASE 2: 3 ids, 2 texts (two posts share identical text) ===
+linkedin-parser: id/text count mismatch (2 text(s), 3 id(s)) — pairing the first 2 by timestamp order
+linkedin-parser: 2 pair(s) — 000000↔"same text", 240000↔"unique C"
+minted: 2
+
+=== CASE 3: 3 ids, 3 texts (control) ===
+linkedin-parser: 3 pair(s) — 000000↔"text A", 240000↔"text B", 480000↔"text C"
+minted: 3
+```
+
+**The defect.** With ids A (8:00), B (8:01), C (8:02) and texts `["hiring post A", "hiring post C"]`, the zip pairs A↔A (correct), then **B↔"hiring post C" (wrong)** and drops C. The gap shifts every pairing after it. A post is minted carrying another post's text under its own permalink, so the judge scores the wrong content against the wrong URL. Case 2 shows the same shift when two posts share identical text (the `seenTexts` dedupe removes one).
+
+**Two triggers, both plausible in production:** a media-only or reshare post with no `commentary_text` marker, and two posts with byte-identical text.
+
+**Why the design's rule does not cover it.** The design says "a count mismatch warns and mints the paired prefix (the remainder drops VISIBLY, never silently)." That rule assumed a mismatch only truncates. It does not: the prefix pairs against the WRONG ids. The warning fires, but the minted posts are still wrong.
+
+**A row-local fix was proposed and then DISPROVED.** `collectLinkedInPosts` accumulates `rowIds` and `rowTexts` per row before flattening them, so pairing row-locally looked viable. Measured against the real 2026-11-10 capture (`.rpiv/tmp/linkedin-pagination-body.txt`, 136 rows carrying ids or texts):
+
+```
+  3 rows have both an id and a text
+130 rows have ids only
+  3 rows have texts only
+```
+
+Ids and texts live in DIFFERENT rows. Row-local pairing would resolve 3 of the 6 text rows and leave the rest unpaired, so it does not fix the defect. The design's premise — the stream carries no reachable id↔text link — holds.
+
+**The safe fix is to refuse the mint on a mismatch.** The current rule mints the paired prefix, which is provably wrong once the counts differ. Minting nothing and warning keeps the failure visible without ever attributing one post's text to another's permalink. The cost is coverage: one media-only post in a body would drop that whole body's posts. That trade needs a decision, not a silent default.
+
+**Not implemented.** This is a parser change with its own test surface, and it is outside the click-loop work this follow-up covers. It needs its own phase and an explicit decision on the coverage trade.
 
 ## References
 

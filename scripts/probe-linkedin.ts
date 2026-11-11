@@ -26,10 +26,27 @@ import {
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
+  makeLinkedInContextFactory,
 } from "../src/linkedin-fetch.js";
 import { resolveLinkedInCookies } from "../src/linkedin-session.js";
 
 const CONFIG = await loadWatcherConfig();
+
+/**
+ * The probe's Load-more click floor (live rehearsal 2026-11-11): the dry
+ * exit may not fire before this many clicks have landed, so one probe run
+ * samples several pagination bodies instead of stopping at the first.
+ */
+const PROBE_MIN_CLICKS = 5;
+
+/**
+ * Headed override (live rehearsal 2026-11-11): the headless walk renders a
+ * page with NO Load-more button (54 buttons present, 0 matching), so the
+ * pagination leg cannot run. PROBE_HEADED=1 opens a visible browser to test
+ * whether the button appears there — the design's "expect a retune commit
+ * after the rehearsal" note, made runnable.
+ */
+const PROBE_HEADED = process.env.PROBE_HEADED === "1";
 
 const surfaces = CONFIG.surfaces.filter(
   (surface): surface is LinkedinSurface => surface.type === "linkedin",
@@ -46,13 +63,28 @@ try {
   const env = envWithDotEnv();
   const cookies = resolveLinkedInCookies(env);
   console.log(
-    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${CONFIG.scrollRounds}, headless)`,
+    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${CONFIG.scrollRounds}, minClicks ${PROBE_MIN_CLICKS}, ${PROBE_HEADED ? "HEADED" : "headless"})`,
   );
   const started = Date.now();
   // The undefined contextFactory selects the walk module's own production
   // factory (headless Chromium, the session document in, the Playwright
   // import lazy inside it) — the same lazy-default the tick suite pins.
-  const posts = await fetchLinkedInPosts([surface], cookies, undefined, CONFIG.scrollRounds);
+  // minClicks 5: the probe must sample several pagination bodies, not
+  // stop at the first dry exit — each body carries ~3 posts (live
+  // rehearsal 2026-11-11), so 5 clicks is the floor that proves the
+  // pagination leg works. scrollRounds stays the ceiling.
+  const posts = await fetchLinkedInPosts(
+    [surface],
+    cookies,
+    // undefined selects the module's own headless production factory;
+    // PROBE_HEADED=1 builds a visible one instead.
+    PROBE_HEADED ? makeLinkedInContextFactory(false) : undefined,
+    CONFIG.scrollRounds,
+    undefined, // default sleep
+    undefined, // Date.now
+    undefined, // Math.random
+    PROBE_MIN_CLICKS,
+  );
   const elapsed = Date.now() - started;
   console.log(`probe: ${elapsed}ms — ${posts.length} post(s)`);
   if (posts.length < 2) {

@@ -145,6 +145,8 @@ interface FakePage {
   readonly gotos: string[];
   readonly clicks: number[];
   readonly waits: number[];
+  /** Every page.evaluate script, in call order — the scroll pin. */
+  readonly evaluates: string[];
   setUrl(url: string): void;
 }
 
@@ -169,6 +171,7 @@ function fakeContextFactory(options: {
         const gotos: string[] = [];
         const clicks: number[] = [];
         const waits: number[] = [];
+        const evaluates: string[] = [];
         let clickCount = 0;
         let waitCalls = 0;
         let settleArmed = false;
@@ -219,7 +222,10 @@ function fakeContextFactory(options: {
             };
             return handle;
           },
-          evaluate: async () => undefined,
+          evaluate: async (script: string) => {
+            evaluates.push(script);
+            return undefined;
+          },
           waitForTimeout: async (ms: number) => {
             waits.push(ms);
             waitCalls += 1;
@@ -247,7 +253,7 @@ function fakeContextFactory(options: {
             open = false;
           },
         };
-        pages.push({ page, gotos, clicks, waits, setUrl });
+        pages.push({ page, gotos, clicks, waits, evaluates, setUrl });
         return page;
       },
       addInitScript: async () => undefined,
@@ -386,7 +392,105 @@ describe("fetchLinkedInPosts (browser walk)", () => {
       [1, 2, 3, 4].map((n) => `urn:li:activity:${idAt(n)}`),
     );
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(lines.some((line) => /\(dry 3\/3\)/.test(line)));
+    assert.ok(lines.some((line) => /\(dry 3\/3, total 4\)/.test(line)));
+  });
+
+  it("scrolls the lazy column before waiting for Load more (the Threads loop's shape)", async () => {
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23scroll",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            clickBodies: [cardBody(idAt(2), postText(2))],
+          },
+        },
+      ],
+    });
+    await fetchLinkedInPosts([surface("#scroll")], COOKIES, factory, 1, instantSleep);
+    const page = pageFor(factory, "%23scroll");
+    // Round 1: DOM probe, column scroll, then a re-probe after the settle.
+    assert.equal(page.evaluates.length, 3);
+    assert.match(page.evaluates[0] ?? "", /loadMore/); // probe before the scroll
+    assert.match(page.evaluates[1] ?? "", /lazy-column/); // the column scroll
+    assert.match(page.evaluates[1] ?? "", /scrollIntoView/); // brings the button into view
+    assert.match(page.evaluates[2] ?? "", /colScrollH/); // probe after the scroll
+    // The scroll precedes the click, not the other way round.
+    assert.equal(page.clicks.length, 1);
+  });
+
+  it("defers the dry exit until minClicks clicks have landed", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    // Every round is dry (no click body ever fires), so the dry counter
+    // reaches 3 at round 3 — but the floor keeps the loop clicking.
+    const factory = fakeContextFactory({
+      scripts: [{ fragment: "%23floor", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#floor")],
+      COOKIES,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      5, // minClicks
+    );
+    assert.deepEqual(pageFor(factory, "%23floor").clicks, [1, 2, 3, 4, 5]);
+    assert.equal(posts.length, 1); // only the initial body ever minted
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /\(dry 3\/3, total 1\)/.test(line))); // dry 3 did NOT break
+  });
+
+  it("does not apply the minClicks floor when no click ever fired (absent button)", async (t) => {
+    // An absent button must not burn every round on a waitFor timeout: the
+    // floor exists to sample bodies, and there are none without a click.
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23absent",
+          script: { initialBody: cardBody(idAt(1), postText(1)), loadMoreVisible: () => false },
+        },
+      ],
+    });
+    await fetchLinkedInPosts(
+      [surface("#absent")],
+      COOKIES,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      5, // minClicks — must NOT force 8 rounds
+    );
+    assert.equal(pageFor(factory, "%23absent").clicks.length, 0);
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    // Three dry rounds end it, exactly as with minClicks 0 — round 4 never runs.
+    assert.ok(lines.some((line) => /click 3: no button/.test(line)));
+    assert.equal(
+      lines.some((line) => /click 4:/.test(line)),
+      false,
+    );
+  });
+
+  it("names the click failure in the log — no button is never mistaken for a dry click", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23nobtn",
+          script: { initialBody: cardBody(idAt(1), postText(1)), loadMoreVisible: () => false },
+        },
+      ],
+    });
+    await fetchLinkedInPosts([surface("#nobtn")], COOKIES, factory, 8, instantSleep);
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /click 1: no button \(locator wait timeout\)/.test(line)));
+    assert.equal(
+      lines.some((line) => /click 1: fired/.test(line)),
+      false,
+    );
   });
 
   it("never clicks past the 150-post cap", async () => {
