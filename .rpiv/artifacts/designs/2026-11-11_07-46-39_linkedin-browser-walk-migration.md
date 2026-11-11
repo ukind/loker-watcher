@@ -8,9 +8,9 @@ topic: "linkedin-browser-walk-migration"
 tags: [design, linkedin-fetch, browser-walk, flight-parser, linkedin-behavior, fetch-linkedin, probe-linkedin]
 status: ready
 parent: ".rpiv/artifacts/solutions/2026-11-11_07-17-47_linkedin-browser-walk-migration.md"
-last_updated: 2026-11-11T14:31+0700
+last_updated: 2026-11-11T18:45+0700
 last_updated_by: Yogiswara Utama
-last_updated_note: "Verification completed (byte-check green, gates A/B 0, E33 grounded); gate-C catch fixed as E51 (AGENTS watch-linkedin bullet 600s → 28-33-min)"
+last_updated_note: "Live rehearsal disproved the session model: the fresh-context factory gets a page with no Load-more button. Session model revised to launchPersistentContext + headed (four-config matrix in Key Discoveries); parser count-mismatch escalated to a correctness blocker"
 ---
 
 # Design: LinkedIn browser-walk migration
@@ -27,7 +27,7 @@ Replace the voyager-endpoint transport inside `src/linkedin-fetch.ts` with a rea
 - FR-7: a security checkpoint or login wall halts the leg and alarms once (the operator-cleared latch).
 - FR-9 (amended by the developer): pacing rides page navigations (5-15s shared gate); pagination is the "Load more" button, bounded by `scrollRounds` (default 8).
 - FR-8 (dropped by developer decision 2026-11-11): the daily 150-GET budget machine is deleted; volume bounds are the working-hours window, the 28-33 min cadence, and the per-surface click cap.
-- Session: login stays headed-only (`scripts/login-linkedin.ts` untouched); the walk consumes the harvested cookie session (`harvestedAt` gate stays).
+- Session (REVISED 2026-11-11T18:45+0700, rehearsal-driven): login stays headed-only (`scripts/login-linkedin.ts` untouched); the walk REUSES the same persistent profile via `launchPersistentContext` instead of opening a fresh browser with the harvested cookie document. The cookie file degrades to a preflight validity check. Evidence: the four-config matrix in Key Discoveries.
 - Payload: same file, same v2 envelope; `state/linkedin-posts.json` round-trips through `readPayloadPosts` with zero dropped rows.
 - Hard: the offline suite stays Playwright-free (dynamic-import quarantine only).
 - Hard: state writes stay atomic; one writer per file; fail visible.
@@ -39,6 +39,46 @@ The LinkedIn leg is a voyager transport: `VoyagerResponse`/`VoyagerGet`/`Transpo
 
 ### Key Discoveries
 
+**The session model was wrong (live rehearsal 2026-11-11T18:40+0700).** Four configurations measured against the same URL, same account, same minute:
+
+| config | posts | Load-more button | pagination responses |
+| --- | --- | --- | --- |
+| fresh context + harvested cookies, headless | 3 | **0** | 2 (auto) |
+| fresh context + harvested cookies, headed | 14 | **0** | 8 (auto) |
+| persistent profile, headless | 14 | **0** | 1 (auto) |
+| **persistent profile, headed** | 8 | **1** | 0, then 1 per click |
+
+The Load-more button requires BOTH the persistent profile AND headed mode. The design's factory (`chromium.launch()` + `newContext({ storageState })`) produces a fresh, differently-fingerprinted browser identity, and LinkedIn serves that identity a page with no button at all — so the click loop had nothing to click, which is why the first rehearsal reported 3 posts.
+
+End-to-end proof with the profile, headed (`launchPersistentContext("C:/loker-secrets/linkedin-chromium-profile", { headless: false })`):
+
+```
+start:   8 posts, 0 pagination
+click 1: 14 posts, 1 pagination
+click 2: 20 posts, 2 pagination
+click 3: 26 posts, 3 pagination
+click 4: 32 posts, 4 pagination
+click 5: 38 posts, 5 pagination
+```
+
+Six posts per click, one pagination response each. The click loop, settle window, parser and response join are all correct.
+
+**The rotation was self-inflicted.** `login-linkedin` holds the persistent profile; the walk opened a second, differently-fingerprinted browser with the same token. Two identities on one account produced every `ERR_TOO_MANY_REDIRECTS`. Reusing the profile directly, two consecutive runs both succeeded.
+
+**The parser count-mismatch is real data, not a parser bug — and it fires on 2 of 3 bodies in the WORKING config.** Three pagination bodies captured from the working configuration (profile + headed, 3 clicks, 8→26 posts) and parsed offline:
+
+| body | ids | commentary markers | texts harvested | minted |
+| --- | --- | --- | --- | --- |
+| 1 | 3 | 3 | 2 | 2 (mismatch) |
+| 2 | 3 | 4 | 2 | 2 (mismatch) |
+| 3 | 3 | 4 | 3 | 3 (clean) |
+
+**Cause, measured:** the empty markers are `translatable-commentary` placeholders with `contentUrnCommentUrn=null` — media-only posts with no caption. Row 31 of body-1 has 95 leaf strings and not one is post text; row 21 (a real post) has 4,558. The parser correctly harvests nothing for a post that has no text. **The mismatch is the data, not a defect.**
+
+**Second finding: CTA contamination.** A 33-char `hellohr@neokosmetikaindonesia.com` is harvested as a post's entire text. It is a `commentary_text` marker on a contact CTA component, and its specs are byte-identical to a real post's (`viewName, interactionTypes, contentTrackingId, legacyControlName`) — the marker fields do NOT distinguish them. The only signal is the text itself.
+
+**Consequence for the pairing rule.** The zip is unsafe whenever the counts differ, and they differ on 2 of 3 bodies. But refusing the body drops 2 of every 3 bodies' posts. The real fix is upstream: filter CTA components out of the text harvest so the counts match. Until then, the prefix rule mis-pairs and the refuse rule starves — neither is acceptable, which is why the pairing change is NOT implemented.
+
 - **No id↔text pairing signal exists in the Flight stream.** Offline analysis of the live capture (`.rpiv/tmp/linkedin-pagination-body.txt`, 1,533,238 bytes, 448 rows): BFS over the full `$`-ref graph from every `commentary_text` marker row reaches ZERO id-carrying rows (depth 12, both directions sampled); no row co-locates an id with a marker; `contentTrackingId` is shared across all posts (list-level). The artifact's "bounded register fix" claim is refuted — the register cannot be repaired, only replaced.
 - **Timestamp zip pairs 3/3 on the capture.** Distinct texts in stream order (Full-Stack row 21, Chef row 34, PCB row 47) zipped against distinct ids sorted by derived timestamp (…655298 → 22:11:39.858Z, …919681 → 22:16:28.628Z, …094017 → 22:18:16.583Z) pairs all three correctly; first-appearance order does NOT (row 0 emits B before A).
 - **The hashtag chip is a second `commentary_text` component** in the same row as the real text (row 34: 1923-char post + 7-char "#hiring", identical specs except `interactionTypes` is a `$`-ref). Longest-text-per-row handles it; a consume-once id scan wastes an id on the chip and starves a real post.
@@ -47,7 +87,7 @@ The LinkedIn leg is a voyager transport: `VoyagerResponse`/`VoyagerGet`/`Transpo
 - **Page JSON route is dead**: no `data-sjs`, no `thread_items`, one urn in 164 KB of HTML. The DOM route is insufficient: 2 of 9 posts carry permalinks, one a `ugcPost` urn the row contract rejects.
 - **The structural layer is copyable but private**: knip N012 killed the exported factory (`.rpiv/artifacts/TECH_DEBT_AUDIT.md:27`, :65) — ~120 lines duplicate into `linkedin-fetch.ts` rather than widen `ContextFactory` (widening breaks the 3 doubles under `strictFunctionTypes`).
 - **The intercepted-response join conflicts on three specifics**: the Threads body gate (the includes check plus JSON.parse, `src/fetch-threads.ts:378-380`) throws on Flight streams; counter semantics (count parsed, not received — N008 direction); dedupe stays first-wins by urn.
-- **The walk's context factory takes a storageState DOCUMENT, not a path.** `toStorageState` (`src/linkedin-session.ts:178-199`) returns an in-memory document whose JSESSIONID keeps its quotes; the deleted playwright transport (`src/linkedin-fetch.ts:407-420`) remapped every cookie to `expires: -1, httpOnly: false, sameSite: "Lax"` before `newContext`. The LinkedIn-local factory must do the same remap and accept the document — the shared `ContextFactory`'s `storageStatePath?: string` shape cannot carry it (one more reason the factory duplicates rather than widens).
+- ~~**The walk's context factory takes a storageState DOCUMENT, not a path.**~~ **DISPROVED 2026-11-11T18:40+0700.** This discovery drove the original factory design and the rehearsal killed it: a fresh browser carrying the synthesized document gets a content-search page with no Load-more button. The factory now takes the persistent PROFILE PATH. `toStorageState` (`src/linkedin-session.ts:178-199`) and its cookie-completion remap stay in the module for the caller-side preflight, but they are no longer on the walk's path. See the Session model decision.
 - **The Load-more button is captured; `LOAD_MORE_SELECTOR` is fixed.** Live DOM 2026-11-11 (logged-in bladebro session, surface `hiring indonesia`): exactly ONE matching candidate on the page — `<button class="i87lxe …" type="button"><span…><span>Load more</span></span></button>` — no aria-label, no id, and the class list is a per-deploy hash (useless as a selector). The text node is the only stable handle: `LOAD_MORE_SELECTOR = "button:has-text(\"Load more\")"`. The sdui component id (`…replaceableLoadMoreComments…FeedType_FLAGSHIP_SEARCH`, 18 hits in the Flight capture) never renders as a DOM attribute, so it stays a cross-check, not a selector. The walk's `.first()` and the dry-round exit make a transient 0-match a harmless dry round.
 - **Budget machine anatomy** (deletion set): `DAILY_GET_BUDGET`, `DailyBudgetState`, `freshBudget`, `budgetAllows`, `budgetReserve`, `HALT_BUDGET_REASON` (`src/linkedin-behavior.ts`), the wrapper + `DEFAULT_BUDGET` + preflight budget step (`scripts/fetch-linkedin.ts`), the budget suites (`tests/linkedin-behavior.test.ts`, `tests/fetch-linkedin.test.ts`).
 - **Probe breakage**: `scripts/probe-linkedin.ts:19-24` imports `resolveLinkedInTransport` (dies slice 4) and `{buildSearchUrl, parseSearchResponse}` (die slice 7). `scripts/watch-linkedin.ts` survives untouched (`SleepFn` + `isLegDead`).
@@ -101,6 +141,31 @@ No config schema change: `ALLOWED_KEYS`, the validator, and config tests untouch
 ### LOAD_MORE_SELECTOR: the text handle (captured live, 2026-11-11)
 
 `button:has-text("Load more")` — the live button carries no aria-label and no id, and its class list is a per-deploy hash, so the visible text is the only stable attribute. Uniqueness measured on the live results page: exactly one candidate. The context pins `locale: en-US`, which pins the English label; a LinkedIn copy change breaks the selector visibly (a stream of dry rounds with zero minted posts), not silently.
+
+### Session model: reuse the persistent profile, headed (REVISED, live rehearsal 2026-11-11T18:40+0700)
+
+The original design had the walk open a fresh browser with the harvested cookie document: `chromium.launch({ headless: true })` + `newContext({ storageState: toStorageState(cookies) })`. The rehearsal disproved it. LinkedIn serves that identity a content-search page with NO Load-more button (54 buttons present, 0 matching), so the click loop had nothing to click and the walk reported 3 posts.
+
+**Revised model:** the walk reuses the profile `scripts/login-linkedin.ts` already maintains (`DEFAULT_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile"`, `scripts/login-linkedin.ts:34,127`) via `chromium.launchPersistentContext(PROFILE, { headless: false })`. Measured: 8 posts, the button present, 6 posts per click, and two consecutive runs with no rotation.
+
+**Consequences:**
+
+1. `LinkedInContextFactory` no longer takes a storageState document. Its parameter becomes the profile path (or nothing — the default is the module constant).
+2. `toStorageState` and the cookie-completion remap (`expires: -1, httpOnly: false, sameSite: "Lax"`) are no longer on the walk's path. `src/linkedin-session.ts` keeps them for the preflight check.
+3. `LINKEDIN_COOKIES_FILE` becomes a preflight validity check (does a session exist and is it fresh), not the browser's credential. `harvestedAt` stays as that gate.
+4. Headed is acceptable: this leg runs on the PC (`watch-linkedin`), never in GitHub Actions. The hosted run only reads the payload.
+5. `PROBE_HEADED` becomes the default, not an override.
+6. The dynamic-import quarantine is unchanged — `launchPersistentContext` still rides the one `await import("playwright")` inside the factory.
+
+**What this does NOT change:** the click loop, the settle window, the response join, the parser, the fault vocabulary, the pacing gate, the payload writer. Those were measured correct.
+
+### Parser pairing: refuse the mint on a count mismatch (REVISED 2026-11-11T18:45+0700 — SUPERSEDED 2026-11-11T19:10+0700, see the Key Discoveries measurement)
+
+The original rule: on a count mismatch, warn and mint the paired prefix. Measured on live bodies, that is wrong. With ids A (8:00), B (8:01), C (8:02) and texts `["hiring post A", "hiring post C"]`, the zip pairs A↔A (correct), then **B↔"hiring post C" (wrong)** and drops C. The gap shifts every pairing after it, so a post is minted with another post's text under its own permalink.
+
+**Revised rule (SUPERSEDED):** on a count mismatch, warn and mint NOTHING for that body. **Measured 2026-11-11T19:10+0700 against working-config bodies: this drops 2 of 3 bodies.** The mismatch is real data (media-only posts with no caption), so refusing trades a mis-pair for starvation. The rule is NOT implemented. The correct fix is to filter CTA components out of the text harvest so the counts match, then the zip is safe without either trade.
+
+**Rejected alternative (measured):** row-local pairing. `collectLinkedInPosts` accumulates `rowIds` and `rowTexts` per row, so pairing row-locally looked viable. Measured against the real capture (136 rows carrying ids or texts): 3 rows have both an id and a text, 130 have ids only, 3 have texts only. Ids and texts live in DIFFERENT rows, so row-local pairing resolves 3 of 6 text rows. Disproved.
 
 ### Structural layer duplicated, not shared (artifact-locked)
 
@@ -920,7 +985,7 @@ export const HALT_CHECKPOINT_REASON =
 
 Wholesale rewrite (the whole file changes, so the full post-Slice-4 file rides below; the original is on disk at HEAD). Transport half deleted; the browser walk - checkpoint detector, Load-more click loop, flagship-web response join - replaces the voyager walk; `fetchLinkedInPosts` rewired onto the LinkedInContextFactory seam with `scrollRounds` as the per-surface click bound. The locked Slice 3 factory section rides inside, byte-exact.
 
-Slice 7 renames the storageState type at the import block and the factory signature (2 lines). Byte-exact applied state: .rpiv/tmp/verify7/src/linkedin-fetch.ts.
+~~Slice 7 renames the storageState type at the import block and the factory signature (2 lines).~~ **OBSOLETE 2026-11-11T18:40+0700:** the factory no longer imports `LinkedInStorageState` at all — the profile carries the session. Slice 7's rename still applies to `src/linkedin-session.ts` itself; the two consumer lines in `src/linkedin-fetch.ts` are gone.
 
 ```ts
 /**
@@ -929,12 +994,12 @@ Slice 7 renames the storageState type at the import block and the factory signat
  * one paced navigation plus up to `scrollRounds` "Load more" clicks per
  * surface — through the runPool surface walk the transport leg built.
  *
- * Session: the LinkedInContextFactory (below) synthesizes one browser
- * context from the harvested cookie DOCUMENT (toStorageState in
- * linkedin-session.ts); the walk owns the context and closes it on every
- * path. Headless stays the production default pending the first live
- * rehearsal (design Verification Notes: headless detectability is
- * unmeasured — expect a retune commit after the rehearsal).
+ * Session: the LinkedInContextFactory (below) opens the persistent PROFILE
+ * scripts/login-linkedin.ts maintains, headed; the walk owns the context
+ * and closes it on every path. REVISED 2026-11-11T18:40+0700 after the live
+ * rehearsal: a fresh browser with the harvested cookie document gets a page
+ * with no Load-more button, so the click loop had nothing to click. The
+ * profile gets the button and paginates 6 posts per click.
  *
  * Extraction: every response whose URL matches LINKEDIN_RESPONSE_RE and
  * whose status is 200 parses through src/linkedin-parser.ts (pure,
@@ -975,11 +1040,9 @@ import {
   buildContentSearchUrl,
   collectLinkedInPosts,
 } from "./linkedin-parser.js";
-import {
-  type LinkedInCookies,
-  type LinkedInStorageState,
-  toStorageState,
-} from "./linkedin-session.js";
+// REVISED 2026-11-11T18:40+0700: the walk no longer imports the cookie
+// document or toStorageState — the persistent profile carries the session.
+// resolveLinkedInCookies stays a CALLER-side preflight.
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
 
@@ -1137,17 +1200,24 @@ export function isHalt(error: unknown): error is Halt {
 //     design 2026-11-11) ---
 
 /**
- * The LinkedIn walk's context factory seam: one storageState DOCUMENT in
- * (the synthesized cookie pair — toStorageState in linkedin-session.ts),
+ * The LinkedIn walk's context factory seam: one persistent PROFILE PATH in,
  * one session-carrying browser context out. NOT the shared ContextFactory
- * (fetch-threads.ts): that seam carries a storage-state PATH, which cannot
- * hold the in-memory document, and widening it breaks all three existing
- * doubles under strictFunctionTypes — the launch/adapter mechanics
- * duplicate here instead (design decision "Structural layer duplicated,
- * not shared"; re-exporting the private shared factory re-introduces the
- * knip N012 dead-export finding).
+ * (fetch-threads.ts): that seam carries a storage-state PATH and a headless
+ * launch, and widening it breaks all three existing doubles under
+ * strictFunctionTypes — the launch/adapter mechanics duplicate here instead
+ * (design decision "Structural layer duplicated, not shared"; re-exporting
+ * the private shared factory re-introduces the knip N012 dead-export
+ * finding).
+ *
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the original seam took a
+ * storageState DOCUMENT synthesized from the harvested cookie pair and
+ * opened a FRESH browser. LinkedIn serves that identity a content-search
+ * page with NO Load-more button (54 buttons present, 0 matching), so the
+ * click loop had nothing to click and the walk reported 3 posts. The
+ * profile + headed configuration gets the button and paginates 6 posts per
+ * click. See Key Discoveries for the four-config matrix.
  */
-export type LinkedInContextFactory = (storageState: LinkedInStorageState) => Promise<ContextLike>;
+export type LinkedInContextFactory = (profileDir: string) => Promise<ContextLike>;
 
 /** The pinned UA (the shared Threads factory's hardening set, duplicated with this section). */
 const LINKEDIN_USER_AGENT =
@@ -1161,16 +1231,18 @@ const LINKEDIN_WEBDRIVER_PATCH =
   "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
 
 /**
- * Build the LinkedIn browser context at a fixed headless mode. The dynamic
- * await import inside is this module's Playwright quarantine site —
- * importing this module never loads Playwright, and the offline suites
- * stay Playwright-free. The factory owns the browser: closing the context
- * closes the browser.
+ * Build the LinkedIn browser context on the persistent PROFILE, headed. The
+ * dynamic await import inside is this module's Playwright quarantine site —
+ * importing this module never loads Playwright, and the offline suites stay
+ * Playwright-free. The factory owns the browser: closing the context closes
+ * the browser.
  *
- * The session rides the DOCUMENT, never a path: a synthesized pair carries
- * no jar expiry, and newContext rejects incomplete storageState cookies —
- * every cookie is completed to the wire shape (expires -1, httpOnly false,
- * sameSite Lax).
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the session rides the
+ * PROFILE, not a synthesized cookie document. A fresh browser with the
+ * harvested pair gets a page with no Load-more button; the profile gets the
+ * button and paginates. Headed is required for the button to render and is
+ * acceptable because this leg runs on the PC (watch-linkedin), never in
+ * GitHub Actions.
  *
  * locale pins en-US: the walk's Load-more click is a TEXT selector on the
  * English label — the only stable handle (live capture 2026-11-11: one
@@ -1180,22 +1252,16 @@ const LINKEDIN_WEBDRIVER_PATCH =
  * Pages carry url() (the new optional PageLike seam): the walk's
  * checkpoint detector reads it after every navigation.
  */
-function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
-  const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
+function makeLinkedInContextFactory(profileDir: string): LinkedInContextFactory {
+  const factory: LinkedInContextFactory = async (): Promise<ContextLike> => {
     const { chromium } = await import("playwright");
-    const browser = await chromium.launch({ headless });
-    const context = await browser.newContext({
-      storageState: {
-        cookies: storageState.cookies.map((cookie) => ({
-          ...cookie,
-          expires: -1,
-          httpOnly: false,
-          sameSite: "Lax" as const,
-        })),
-        origins: [],
-      },
+    // launchPersistentContext, not launch + newContext: the profile IS the
+    // session. viewport null lets the operator's window size ride (the
+    // login helper's shape, scripts/login-linkedin.ts:127-130).
+    const context = await chromium.launchPersistentContext(profileDir, {
+      headless: false,
+      viewport: null,
       userAgent: LINKEDIN_USER_AGENT,
-      viewport: { width: 1366, height: 768 },
       locale: "en-US",
     });
     await context.addInitScript(LINKEDIN_WEBDRIVER_PATCH);
@@ -1231,8 +1297,9 @@ function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
         await context.addInitScript(script);
       },
       close: async () => {
+        // launchPersistentContext owns the browser: closing the context
+        // closes it. There is no separate browser handle to close.
         await context.close();
-        await browser.close();
       },
     };
   };
@@ -1240,12 +1307,19 @@ function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
 }
 
 /**
- * The production factory: headless, hardened, session-document aware.
- * Module-PRIVATE on purpose — the browser walk defaults to it in-module,
- * and an exported factory nobody imports is the knip dead-export finding
- * class, not a seam.
+ * The persistent profile the login helper maintains (scripts/login-linkedin.ts:34).
+ * The walk reuses it rather than opening a fresh browser with the harvested
+ * cookie pair — see the factory's REVISED note and Key Discoveries.
  */
-const linkedinChromiumContextFactory: LinkedInContextFactory = makeLinkedInContextFactory(true);
+export const LINKEDIN_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
+
+/**
+ * The production factory: the persistent profile, headed. Module-PRIVATE on
+ * purpose — the browser walk defaults to it in-module, and an exported
+ * factory nobody imports is the knip dead-export finding class, not a seam.
+ */
+const linkedinChromiumContextFactory: LinkedInContextFactory =
+  makeLinkedInContextFactory(LINKEDIN_PROFILE_DIR);
 // --- the surface walk ---
 
 interface PacingGate {
@@ -1435,7 +1509,7 @@ async function walkLinkedInSurface(
  */
 export async function fetchLinkedInPosts(
   surfaces: readonly LinkedinSurface[],
-  cookies: LinkedInCookies,
+  profileDir: string = LINKEDIN_PROFILE_DIR,
   contextFactory: LinkedInContextFactory = linkedinChromiumContextFactory,
   scrollRounds: number = LINKEDIN_DEFAULT_SCROLL_ROUNDS,
   sleepFn: SleepFn = defaultSleep,
@@ -1446,7 +1520,11 @@ export async function fetchLinkedInPosts(
   // surfaces.length > 0, and this early return keeps the invariant local
   // (a zero-surface walk opens no context and closes nothing).
   if (surfaces.length === 0) return [];
-  const context = await contextFactory(toStorageState(cookies));
+  // REVISED 2026-11-11T18:40+0700: the browser opens on the persistent
+  // profile, not a synthesized cookie document. The cookie file is a
+  // preflight validity check in the CALLERS (resolveLinkedInCookies throws
+  // on a missing/malformed file before the walk is reached).
+  const context = await contextFactory(profileDir);
   const gate = makePacingGate(now, sleepFn, rng);
   const order = surfaces.map((surface, index) => ({ surface, index }));
   for (let i = order.length - 1; i > 0; i -= 1) {
@@ -2793,7 +2871,7 @@ function contextFactoryFor(options: {
   script: PageScript;
 }): LinkedInContextFactory & { clicks: () => number[] } {
   const clicks: number[] = [];
-  const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
+  const factory: LinkedInContextFactory = async (profileDir): Promise<ContextLike> => {
     if (options.built !== undefined) options.built.value += 1;
     options.sessionStates?.push(storageState);
     const listeners: Array<(response: ResponseLike) => void> = [];
@@ -5174,7 +5252,9 @@ AGENTS.md                           # MODIFY — doc sweep
 - [ ] `npx tsc --noEmit` error sets match the per-slice windows (Slices 4-6).
 - [x] DONE 2026-11-11: `npm run login-linkedin` harvested (exit 0; cookie file + `.env` line written), and the headed capture landed — `LOAD_MORE_SELECTOR = "button:has-text(\"Load more\")"`, one candidate on the live results page (see Key Discoveries). The Slice 4 gate is closed.
 - [ ] Slice 1 pairing oracle: every `collectLinkedInPosts` call logs one `linkedin-parser: N pair(s) — ...` line naming each minted id ↔ text head (verified live 2026-11-11: 3 pairs on the capture).
-- [ ] Manual, before trusting the loop: `npm run login-linkedin` → `npm run probe-linkedin` twice >=6h apart → one `npm run fetch-linkedin` tick (payload lands, push succeeds, one `OK — N post(s)` line per surface) → force a checkpoint and confirm one alarm + latch + untouched payload. Headless detectability is unmeasured — expect a retune commit after the rehearsal.
+- [x] DONE 2026-11-11T18:40+0700: headless detectability is MEASURED, and the answer is worse than "detected" — the fresh-context factory gets a page with no Load-more button in BOTH modes, and the persistent profile gets the button only when headed. Four-config matrix in Key Discoveries. The retune this note predicted is the Session model decision.
+- [ ] Manual, before trusting the loop: `npm run login-linkedin` → `npm run probe-linkedin` twice >=6h apart → one `npm run fetch-linkedin` tick (payload lands, push succeeds, one `OK — N post(s)` line per surface) → force a checkpoint and confirm one alarm + latch + untouched payload. With the profile + headed model, expect `click N: fired +6 new` lines and 30+ posts per surface.
+- [ ] Parser gate (REVISED): a body whose id and text counts differ mints NOTHING and warns. The old "mint the paired prefix" rule is disproved — it mis-pairs every post after the gap.
 
 ## Performance Considerations
 
@@ -5240,6 +5320,7 @@ AGENTS.md                           # MODIFY — doc sweep
 - Slice 7: Deletion sweep — approved as generated (checkpoint-ratified scope additions beyond the locked Files line: src/linkedin-session.ts type renames + comment de-voyagering — amends the "zero changes" Scope line; tests/fixture/voyager-search-response.json deleted with its suite; the tests/env-file.test.ts sample-key swap — the locked Slice 8 grep spans tests/; plus comment/type edits inside the locked Slice 1 parser fence and the Slice 4 fetch fence, applied in place per the merged-fence rule). Advisor-mediated checkpoint (both decisions escalated per developer choice; the rename + full sweep came back recommended and was confirmed). slice-verifier dispatched (6.2, Agent inventory): Cross-slice OK — locked Slice 1/4 fences edited comment/type-name only, every rename consumer resolves, no dangling reference to any deleted file/symbol/fixture; Decisions VIOLATION found and fixed (src/linkedin-parser.ts:182 still named the deleted timestampFromActivityId symbol — reworded to the guarded id-clock contract, re-gated: tsc 0, biome clean, parser 17/17, full 554/554); Research WARNING = the Files/Scope amendment, applied at this lock.
 - Slice 7 micro-checkpoint (2026-11-11T13:28+0700, approved as presented): pure deletion riding the locked Slice 4 seam. Fit recorded: reused nothing new — the LinkedInContextFactory seam (src/linkedin-fetch.ts:225) and the session types it already consumes; new surface none (two type renames, zero new exports); conventions followed: the ENV_NAMES names-only contract (src/config.ts:14), provenance carried by git history + §-refs instead of deleted-file citations. Gates on the fresh scratch materialization .rpiv/tmp/verify7/ (a copy of verify6 + this slice): tsc exit 0, biome clean over 62 files, full suite 554/554 (581 - 27 from the two deleted suites), grep -rni voyager src scripts 0 hits, env/budget greps 0 hits.
 - Slice 8: Doc sweep + baseline gates — approved as generated (checkpoint-ratified scope additions beyond the locked Files line: `.rpiv/guidance/architecture.md` joins the sweep — 3 stale hits the Files line missed: the setup-curl tree entry, the transport-gate probe row, the setup-curl command row; and the 10-minute → 28-33-minute cadence fixes in README ×2, AGENTS ×1, root guidance ×1, scripts guidance ×1 — pre-existing drift vs `scripts/watch-linkedin.ts:3`, 28-33-minute jittered sleep confirmed on disk 2026-11-11). 50 exact find/replace edits over seven files, every find-block byte-for-byte from the full session reads.
+- **Follow-up 2026-11-11T18:45+0700 (live rehearsal — session model revised):** the first real run of the migrated walk reported 3 posts. Instrumentation (committed separately as `6493f2a`) found the cause: the walk's browser identity. Four configurations measured against the same URL in the same minute — fresh context headless (3 posts, no button), fresh context headed (14 posts, no button), profile headless (14 posts, no button), profile headed (8 posts, BUTTON, 6 posts per click). The Load-more button requires BOTH the persistent profile AND headed mode. Revised: `LinkedInContextFactory` takes the profile path and calls `launchPersistentContext(PROFILE, { headless: false })`; `fetchLinkedInPosts` takes `profileDir` instead of `cookies`; the cookie file degrades to a caller-side preflight. Also revised: the parser's count-mismatch rule now refuses the mint (the prefix rule mis-pairs every post after a gap — reproduced offline, 3 cases). Row-local pairing was proposed and DISPROVED against the real capture (136 rows: 3 with both id and text, 130 ids only, 3 texts only). Slices 3-6 need re-planning against this model.
 - Slice 8 micro-checkpoint (2026-11-11T13:49+0700, approved as presented): docs-only terminal slice. Fit recorded: reused nothing new — every replacement word traces to locked decisions (the pairing rule, LOAD_MORE_SELECTOR, the 5-15s navigation gate, the probe exit vocabulary, ENV_NAMES at six, the defb8af zero-post success log); new surface: none; conventions followed: the slice-5/7 checkpoint-ratified scope-addition pattern and the locked Verification-Notes grep-gate wording. Verification note: the in-materialization FIND-uniqueness simulation was blocked by a harness no-op guard before it ran, so the uniqueness check and the three gated greps are encoded as implement-time Success Criteria instead of a verify8 scratch pass.
 - Follow-up 2026-11-11T14:31+0700 (verification completion + gate-C catch): the mandated 6.4 byte-check completed via bash line-range extraction (bypassing the read pager that had corrupted every assembly attempt): all 50 fence bodies byte-match the approved payload, 94/94 four-backtick fences balanced (50 find + 44 replace), E-numbering sequential 1-50; the in-memory apply ran with zero uniqueness problems; gates A (deleted env/budget tokens) and B (voyager/setup-curl/curl-impersonate) returned 0 over the simulated docs; gate C caught ONE real miss — the AGENTS.md architecture bullet for watch-linkedin.ts still said "(tick + 600s sleep)" — fixed as E51 (the command bullet was already corrected; the first stale-scan grepped 10-minute patterns, not 600s). E33 grounding verified against the locked Slice 4 fence: ResponseLike doubles with `on: (_event, listener)` + a `fire(response)` helper — the "fake interception events" claim stands as written.
 

@@ -109,7 +109,8 @@ Slice 7 (deletion sweep) reworded four comment lines inside this fence — no co
  * i-th distinct commentary text (stream order) therefore pairs with the
  * i-th usable id sorted by derived time ascending — the page sorts by
  * date_posted, so stream order is time order; the id's high bits ARE the
- * creation clock. A count mismatch warns and mints the paired prefix
+ * creation clock. A count mismatch warns and mints NOTHING (a shifted
+ * zip mis-pairs every post after the gap — measured 2026-11-11)
  * (the remainder drops VISIBLY, never silently). The deleted register
  * mis-paired 1 of 3 posts on the live capture; the zip pairs 3/3.
  *
@@ -288,7 +289,7 @@ function mintPost(activityId: string, text: string): Post | null {
  * walk tracks, per row: every activity id it passes (urn strings,
  * activityId fields, urn object keys) and ONE text candidate — the row's
  * longest commentary text, so the sibling hashtag chip never wins. A
- * text/id count mismatch warns and pairs the prefix; a marker row whose
+ * text/id count mismatch warns and refuses the body; a marker row whose
  * text harvest is empty, and an id that fails the timestamp guard, drop
  * without minting.
  */
@@ -377,14 +378,22 @@ export function collectLinkedInPosts(body: string): Post[] {
     const right = BigInt(b);
     return left < right ? -1 : left > right ? 1 : 0;
   });
-  const paired = Math.min(sorted.length, texts.length);
+  // A count mismatch means the zip is UNSAFE, not merely short (measured
+  // 2026-11-11): with ids A, B, C and texts [A, C], the zip pairs A↔A
+  // (correct) then B↔C (WRONG) and drops C — the gap shifts every pairing
+  // after it, minting one post's text under another's permalink. Refuse the
+  // whole body instead: the warning stays visible and no post is ever
+  // attributed to the wrong id. The cost is coverage (one media-only post
+  // drops that body's posts), which is the correct trade for a judge that
+  // scores content against a permalink.
   if (sorted.length !== texts.length) {
     console.warn(
-      `linkedin-parser: id/text count mismatch (${texts.length} text(s), ${sorted.length} id(s)) — pairing the first ${paired} by timestamp order`,
+      `linkedin-parser: id/text count mismatch (${texts.length} text(s), ${sorted.length} id(s)) — refusing to mint this body (a shifted zip would mis-pair)`,
     );
+    return [];
   }
   const posts: Post[] = [];
-  for (let i = 0; i < paired; i += 1) {
+  for (let i = 0; i < sorted.length; i += 1) {
     const post = mintPost(sorted[i] ?? "", texts[i] ?? "");
     if (post !== null) posts.push(post);
   }
@@ -659,34 +668,30 @@ describe("collectLinkedInPosts", () => {
     assert.ok(posts.every((post) => post.text !== "#hiring"));
   });
 
-  it("dedupes a repeated activity id, keeps the first mint, and warns the 2-text/1-id mismatch", (t) => {
+  it("refuses the whole body on a 2-text/1-id mismatch — a shifted zip would mis-pair", (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const body = [cardBody(ID_A, "first"), cardBody(ID_A, "second")].join("\n");
     const posts = collectLinkedInPosts(body);
-    assert.deepEqual(
-      posts.map((post) => [post.id, post.text]),
-      [[`urn:li:activity:${ID_A}`, "first"]],
-    );
+    // NOT [A↔"first"]: minting the prefix would attribute "second"'s slot
+    // to a post that never had it. Refuse instead (measured 2026-11-11).
+    assert.deepEqual(posts, []);
     assert.match(
       String(warns.mock.calls[0]?.arguments[0] ?? ""),
-      /id\/text count mismatch \(2 text\(s\), 1 id\(s\)\)/,
+      /id\/text count mismatch \(2 text\(s\), 1 id\(s\)\) — refusing to mint/,
     );
   });
 
-  it("pairs the prefix when ids outnumber texts (1 text, 2 ids) and warns", (t) => {
+  it("refuses the whole body when ids outnumber texts (1 text, 2 ids)", (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const body = [
       cardBody(ID_A, "only text"),
       row("9", { tracking: { activityUrn: { activityId: ID_B } } }),
     ].join("\n");
     const posts = collectLinkedInPosts(body);
-    assert.deepEqual(
-      posts.map((post) => post.id),
-      [`urn:li:activity:${ID_A}`],
-    );
+    assert.deepEqual(posts, []);
     assert.match(
       String(warns.mock.calls[0]?.arguments[0] ?? ""),
-      /id\/text count mismatch \(1 text\(s\), 2 id\(s\)\)/,
+      /id\/text count mismatch \(1 text\(s\), 2 id\(s\)\) — refusing to mint/,
     );
   });
 
@@ -813,25 +818,31 @@ Grows the seams the walk needs — `PageLike.url?()` with both production adapte
 
 The locked Slice 3 factory section rides inside the design's full-file fence (design: "byte-exact"); it is extracted here verbatim.
 
-**Phase-3-era type name (review row 1):** land the section with `VoyagerStorageState` — the HEAD export name in `src/linkedin-session.ts`. `LinkedInStorageState` does not exist until Phase 7 §24 renames the session exports; the fence below is already substituted, and Phase 7 §26 applies the 2-line switch.
+**REVISED 2026-11-11T18:40+0700 (live rehearsal):** the factory no longer takes a storageState document and no longer imports `VoyagerStorageState`/`LinkedInStorageState`/`toStorageState`. It takes the persistent PROFILE PATH and calls `launchPersistentContext(PROFILE, { headless: false })`. The old Phase-3-era type-name substitution note is obsolete.
 
-**Import hunk (review row 2 — required):** HEAD `src/linkedin-fetch.ts` imports nothing from `./fetch-threads.js` or `./linkedin-session.js`. Add these lines to the import block when appending the section (merge into an existing `./linkedin-session.js` import if HEAD already carries one):
+**Import hunk (required):** HEAD `src/linkedin-fetch.ts` imports nothing from `./fetch-threads.js`. Add this line to the import block when appending the section:
 
 ```ts
 import type { ContextLike, LocatorLike, PageLike } from "./fetch-threads.js";
-import { type VoyagerStorageState, toStorageState } from "./linkedin-session.js";
 ```
 
-**Deferred to Phase 4 (review row 3 — do NOT land here):** the module-private production-factory const below is read by nothing until Phase 4's wholesale rewrite, so landing it now fails Phase 3's `npm run lint` gate (biome `noUnusedVariables`). Phase 4's fence carries it verbatim:
+**Deferred to Phase 4 (do NOT land here):** the profile constant and the production-factory const below are read by nothing until Phase 4's wholesale rewrite, so landing them now fails Phase 3's `npm run lint` gate (biome `noUnusedVariables`). Phase 4's fence carries them verbatim:
 
 ```ts
 /**
- * The production factory: headless, hardened, session-document aware.
- * Module-PRIVATE on purpose — the browser walk defaults to it in-module,
- * and an exported factory nobody imports is the knip dead-export finding
- * class, not a seam.
+ * The persistent profile the login helper maintains (scripts/login-linkedin.ts:34).
+ * The walk reuses it rather than opening a fresh browser with the harvested
+ * cookie pair — see the factory's REVISED note and Key Discoveries.
  */
-const linkedinChromiumContextFactory: LinkedInContextFactory = makeLinkedInContextFactory(true);
+export const LINKEDIN_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
+
+/**
+ * The production factory: the persistent profile, headed. Module-PRIVATE on
+ * purpose — the browser walk defaults to it in-module, and an exported
+ * factory nobody imports is the knip dead-export finding class, not a seam.
+ */
+const linkedinChromiumContextFactory: LinkedInContextFactory =
+  makeLinkedInContextFactory(LINKEDIN_PROFILE_DIR);
 ```
 
 If biome flags the now-uncalled `makeLinkedInContextFactory` declaration itself, mark it for the interim — and remove the comment at Phase 4 when the const + walk consume it:
@@ -845,17 +856,24 @@ If biome flags the now-uncalled `makeLinkedInContextFactory` declaration itself,
 //     design 2026-11-11) ---
 
 /**
- * The LinkedIn walk's context factory seam: one storageState DOCUMENT in
- * (the synthesized cookie pair — toStorageState in linkedin-session.ts),
+ * The LinkedIn walk's context factory seam: one persistent PROFILE PATH in,
  * one session-carrying browser context out. NOT the shared ContextFactory
- * (fetch-threads.ts): that seam carries a storage-state PATH, which cannot
- * hold the in-memory document, and widening it breaks all three existing
- * doubles under strictFunctionTypes — the launch/adapter mechanics
- * duplicate here instead (design decision "Structural layer duplicated,
- * not shared"; re-exporting the private shared factory re-introduces the
- * knip N012 dead-export finding).
+ * (fetch-threads.ts): that seam carries a storage-state PATH and a headless
+ * launch, and widening it breaks all three existing doubles under
+ * strictFunctionTypes — the launch/adapter mechanics duplicate here instead
+ * (design decision "Structural layer duplicated, not shared"; re-exporting
+ * the private shared factory re-introduces the knip N012 dead-export
+ * finding).
+ *
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the original seam took a
+ * storageState DOCUMENT synthesized from the harvested cookie pair and
+ * opened a FRESH browser. LinkedIn serves that identity a content-search
+ * page with NO Load-more button (54 buttons present, 0 matching), so the
+ * click loop had nothing to click and the walk reported 3 posts. The
+ * profile + headed configuration gets the button and paginates 6 posts per
+ * click. See Key Discoveries for the four-config matrix.
  */
-export type LinkedInContextFactory = (storageState: VoyagerStorageState) => Promise<ContextLike>;
+export type LinkedInContextFactory = (profileDir: string) => Promise<ContextLike>;
 
 /** The pinned UA (the shared Threads factory's hardening set, duplicated with this section). */
 const LINKEDIN_USER_AGENT =
@@ -869,16 +887,18 @@ const LINKEDIN_WEBDRIVER_PATCH =
   "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
 
 /**
- * Build the LinkedIn browser context at a fixed headless mode. The dynamic
- * await import inside is this module's Playwright quarantine site —
- * importing this module never loads Playwright, and the offline suites
- * stay Playwright-free. The factory owns the browser: closing the context
- * closes the browser.
+ * Build the LinkedIn browser context on the persistent PROFILE, headed. The
+ * dynamic await import inside is this module's Playwright quarantine site —
+ * importing this module never loads Playwright, and the offline suites stay
+ * Playwright-free. The factory owns the browser: closing the context closes
+ * the browser.
  *
- * The session rides the DOCUMENT, never a path: a synthesized pair carries
- * no jar expiry, and newContext rejects incomplete storageState cookies —
- * every cookie is completed to the wire shape (expires -1, httpOnly false,
- * sameSite Lax).
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the session rides the
+ * PROFILE, not a synthesized cookie document. A fresh browser with the
+ * harvested pair gets a page with no Load-more button; the profile gets the
+ * button and paginates. Headed is required for the button to render and is
+ * acceptable because this leg runs on the PC (watch-linkedin), never in
+ * GitHub Actions.
  *
  * locale pins en-US: the walk's Load-more click is a TEXT selector on the
  * English label — the only stable handle (live capture 2026-11-11: one
@@ -888,22 +908,16 @@ const LINKEDIN_WEBDRIVER_PATCH =
  * Pages carry url() (the new optional PageLike seam): the walk's
  * checkpoint detector reads it after every navigation.
  */
-function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
-  const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
+function makeLinkedInContextFactory(profileDir: string): LinkedInContextFactory {
+  const factory: LinkedInContextFactory = async (): Promise<ContextLike> => {
     const { chromium } = await import("playwright");
-    const browser = await chromium.launch({ headless });
-    const context = await browser.newContext({
-      storageState: {
-        cookies: storageState.cookies.map((cookie) => ({
-          ...cookie,
-          expires: -1,
-          httpOnly: false,
-          sameSite: "Lax" as const,
-        })),
-        origins: [],
-      },
+    // launchPersistentContext, not launch + newContext: the profile IS the
+    // session. viewport null lets the operator's window size ride (the
+    // login helper's shape, scripts/login-linkedin.ts:127-130).
+    const context = await chromium.launchPersistentContext(profileDir, {
+      headless: false,
+      viewport: null,
       userAgent: LINKEDIN_USER_AGENT,
-      viewport: { width: 1366, height: 768 },
       locale: "en-US",
     });
     await context.addInitScript(LINKEDIN_WEBDRIVER_PATCH);
@@ -939,8 +953,9 @@ function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
         await context.addInitScript(script);
       },
       close: async () => {
+        // launchPersistentContext owns the browser: closing the context
+        // closes it. There is no separate browser handle to close.
         await context.close();
-        await browser.close();
       },
     };
   };
@@ -987,7 +1002,7 @@ The merged suite fence (Phase 5) is the post-Slice-5 state; Slice 3 adds only th
 #### Manual Verification:
 - [ ] The url() seam is optional and both production adapters supply it: `grep -n "url?(): string" src/fetch-threads.ts` (1 hit) and `grep -c "url: () => page.url()" src/fetch-threads.ts src/linkedin-fetch.ts` (1 each); the Threads walk bodies are untouched
 - [ ] Budget machine intact: `grep -n "DAILY_GET_BUDGET" src/linkedin-behavior.ts scripts/fetch-linkedin.ts` still hits (deletion rides Slice 5)
-- [ ] Factory mechanics mirror the shared factory (launch → newContext → adapter fields, including the mirrored en-US pin) except two intentional deltas: the document storageState with cookie completion, and the url() supply
+- [ ] Factory mechanics (REVISED 2026-11-11T18:40+0700): `launchPersistentContext(PROFILE, { headless: false, viewport: null })` — NOT `launch` + `newContext`. The profile is the session. Teardown closes the context only (no separate browser handle). The en-US pin and the url() supply are the two intentional deltas from the shared factory.
 
 ---
 
@@ -1001,12 +1016,12 @@ Swaps the voyager transport for the real browser walk (checkpoint detector, Load
 
 #### 7. src/linkedin-fetch.ts (wholesale rewrite — full post-Slice-7 file)
 **File**: `src/linkedin-fetch.ts`
-**Changes**: MODIFY — transport half out, factory + browser walk in. Two lines land under the HEAD name `VoyagerStorageState` (review row 5): the linkedin-session import's `type LinkedInStorageState` and the `LinkedInContextFactory` signature parameter `storageState: LinkedInStorageState` — substitute `VoyagerStorageState` for both at landing. Every other line lands byte-exact. Phase 7 §26 applies the 2-line rename.
+**Changes**: MODIFY — transport half out, factory + browser walk in. **REVISED 2026-11-11T18:40+0700 (live rehearsal):** the factory no longer imports `LinkedInStorageState` or `toStorageState` — it takes the persistent PROFILE PATH and calls `launchPersistentContext(PROFILE, { headless: false })`. The old `VoyagerStorageState` substitution note is obsolete. Every other line lands byte-exact from the design's revised fence.
 
 
 Wholesale rewrite (the whole file changes, so the full post-Slice-4 file rides below; the original is on disk at HEAD). Transport half deleted; the browser walk - checkpoint detector, Load-more click loop, flagship-web response join - replaces the voyager walk; `fetchLinkedInPosts` rewired onto the LinkedInContextFactory seam with `scrollRounds` as the per-surface click bound. The locked Slice 3 factory section rides inside, byte-exact.
 
-Slice 7 renames the storageState type at the import block and the factory signature (2 lines). Byte-exact applied state: .rpiv/tmp/verify7/src/linkedin-fetch.ts.
+~~Slice 7 renames the storageState type at the import block and the factory signature (2 lines).~~ **OBSOLETE 2026-11-11T18:40+0700:** the factory no longer imports the storageState type. Slice 7's rename applies to `src/linkedin-session.ts` only.
 
 ```ts
 /**
@@ -1015,12 +1030,12 @@ Slice 7 renames the storageState type at the import block and the factory signat
  * one paced navigation plus up to `scrollRounds` "Load more" clicks per
  * surface — through the runPool surface walk the transport leg built.
  *
- * Session: the LinkedInContextFactory (below) synthesizes one browser
- * context from the harvested cookie DOCUMENT (toStorageState in
- * linkedin-session.ts); the walk owns the context and closes it on every
- * path. Headless stays the production default pending the first live
- * rehearsal (design Verification Notes: headless detectability is
- * unmeasured — expect a retune commit after the rehearsal).
+ * Session: the LinkedInContextFactory (below) opens the persistent PROFILE
+ * scripts/login-linkedin.ts maintains, headed; the walk owns the context
+ * and closes it on every path. REVISED 2026-11-11T18:40+0700 after the live
+ * rehearsal: a fresh browser with the harvested cookie document gets a page
+ * with no Load-more button, so the click loop had nothing to click. The
+ * profile gets the button and paginates 6 posts per click.
  *
  * Extraction: every response whose URL matches LINKEDIN_RESPONSE_RE and
  * whose status is 200 parses through src/linkedin-parser.ts (pure,
@@ -1061,11 +1076,9 @@ import {
   buildContentSearchUrl,
   collectLinkedInPosts,
 } from "./linkedin-parser.js";
-import {
-  type LinkedInCookies,
-  type LinkedInStorageState,
-  toStorageState,
-} from "./linkedin-session.js";
+// REVISED 2026-11-11T18:40+0700: the walk no longer imports the cookie
+// document or toStorageState — the persistent profile carries the session.
+// resolveLinkedInCookies stays a CALLER-side preflight.
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
 
@@ -1101,13 +1114,7 @@ export const PACE_MAX_MS = 15_000;
  */
 const LOAD_MORE_SELECTOR = 'button:has-text("Load more")';
 
-/**
- * Per-click settle: the pagination response lands inside this window (the
- * deleted walk's constant, UNCHANGED by this follow-up). A body that lands
- * later costs ONE dry round and recovers on the next good round — the loop
- * resets dryRounds on any round gaining LINKEDIN_MIN_GAIN or more, the same
- * recovery the Threads loop relies on (src/fetch-threads.ts:437-438).
- */
+/** Per-click settle: the pagination response lands inside this window (the deleted walk's constant). */
 const LINKEDIN_SETTLE_MS = 2_500;
 
 /** The Load-more visibility window before a round counts dry. */
@@ -1116,11 +1123,7 @@ const LINKEDIN_LOAD_MORE_WAIT_MS = 5_000;
 /** Consecutive low-gain rounds before the surface exits early (the Threads loop's shape). */
 const LINKEDIN_MAX_DRY_ROUNDS = 3;
 
-/**
- * A round gaining fewer NEW posts than this is dry (the Threads loop's
- * threshold, src/fetch-threads.ts:46). Gain is the deduped map's growth,
- * so a body that re-serves seen posts is dry even when it mints posts.
- */
+/** A round gaining fewer posts than this is dry (the Threads loop's threshold). */
 const LINKEDIN_MIN_GAIN = 2;
 
 /** Loop-bound default (the config scrollRounds key overrides; the Threads walk carries the same fallback). */
@@ -1233,17 +1236,24 @@ export function isHalt(error: unknown): error is Halt {
 //     design 2026-11-11) ---
 
 /**
- * The LinkedIn walk's context factory seam: one storageState DOCUMENT in
- * (the synthesized cookie pair — toStorageState in linkedin-session.ts),
+ * The LinkedIn walk's context factory seam: one persistent PROFILE PATH in,
  * one session-carrying browser context out. NOT the shared ContextFactory
- * (fetch-threads.ts): that seam carries a storage-state PATH, which cannot
- * hold the in-memory document, and widening it breaks all three existing
- * doubles under strictFunctionTypes — the launch/adapter mechanics
- * duplicate here instead (design decision "Structural layer duplicated,
- * not shared"; re-exporting the private shared factory re-introduces the
- * knip N012 dead-export finding).
+ * (fetch-threads.ts): that seam carries a storage-state PATH and a headless
+ * launch, and widening it breaks all three existing doubles under
+ * strictFunctionTypes — the launch/adapter mechanics duplicate here instead
+ * (design decision "Structural layer duplicated, not shared"; re-exporting
+ * the private shared factory re-introduces the knip N012 dead-export
+ * finding).
+ *
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the original seam took a
+ * storageState DOCUMENT synthesized from the harvested cookie pair and
+ * opened a FRESH browser. LinkedIn serves that identity a content-search
+ * page with NO Load-more button (54 buttons present, 0 matching), so the
+ * click loop had nothing to click and the walk reported 3 posts. The
+ * profile + headed configuration gets the button and paginates 6 posts per
+ * click. See Key Discoveries for the four-config matrix.
  */
-export type LinkedInContextFactory = (storageState: LinkedInStorageState) => Promise<ContextLike>;
+export type LinkedInContextFactory = (profileDir: string) => Promise<ContextLike>;
 
 /** The pinned UA (the shared Threads factory's hardening set, duplicated with this section). */
 const LINKEDIN_USER_AGENT =
@@ -1257,16 +1267,18 @@ const LINKEDIN_WEBDRIVER_PATCH =
   "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
 
 /**
- * Build the LinkedIn browser context at a fixed headless mode. The dynamic
- * await import inside is this module's Playwright quarantine site —
- * importing this module never loads Playwright, and the offline suites
- * stay Playwright-free. The factory owns the browser: closing the context
- * closes the browser.
+ * Build the LinkedIn browser context on the persistent PROFILE, headed. The
+ * dynamic await import inside is this module's Playwright quarantine site —
+ * importing this module never loads Playwright, and the offline suites stay
+ * Playwright-free. The factory owns the browser: closing the context closes
+ * the browser.
  *
- * The session rides the DOCUMENT, never a path: a synthesized pair carries
- * no jar expiry, and newContext rejects incomplete storageState cookies —
- * every cookie is completed to the wire shape (expires -1, httpOnly false,
- * sameSite Lax).
+ * REVISED 2026-11-11T18:40+0700 (live rehearsal): the session rides the
+ * PROFILE, not a synthesized cookie document. A fresh browser with the
+ * harvested pair gets a page with no Load-more button; the profile gets the
+ * button and paginates. Headed is required for the button to render and is
+ * acceptable because this leg runs on the PC (watch-linkedin), never in
+ * GitHub Actions.
  *
  * locale pins en-US: the walk's Load-more click is a TEXT selector on the
  * English label — the only stable handle (live capture 2026-11-11: one
@@ -1276,22 +1288,16 @@ const LINKEDIN_WEBDRIVER_PATCH =
  * Pages carry url() (the new optional PageLike seam): the walk's
  * checkpoint detector reads it after every navigation.
  */
-function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
-  const factory: LinkedInContextFactory = async (storageState): Promise<ContextLike> => {
+function makeLinkedInContextFactory(profileDir: string): LinkedInContextFactory {
+  const factory: LinkedInContextFactory = async (): Promise<ContextLike> => {
     const { chromium } = await import("playwright");
-    const browser = await chromium.launch({ headless });
-    const context = await browser.newContext({
-      storageState: {
-        cookies: storageState.cookies.map((cookie) => ({
-          ...cookie,
-          expires: -1,
-          httpOnly: false,
-          sameSite: "Lax" as const,
-        })),
-        origins: [],
-      },
+    // launchPersistentContext, not launch + newContext: the profile IS the
+    // session. viewport null lets the operator's window size ride (the
+    // login helper's shape, scripts/login-linkedin.ts:127-130).
+    const context = await chromium.launchPersistentContext(profileDir, {
+      headless: false,
+      viewport: null,
       userAgent: LINKEDIN_USER_AGENT,
-      viewport: { width: 1366, height: 768 },
       locale: "en-US",
     });
     await context.addInitScript(LINKEDIN_WEBDRIVER_PATCH);
@@ -1327,8 +1333,9 @@ function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
         await context.addInitScript(script);
       },
       close: async () => {
+        // launchPersistentContext owns the browser: closing the context
+        // closes it. There is no separate browser handle to close.
         await context.close();
-        await browser.close();
       },
     };
   };
@@ -1336,12 +1343,19 @@ function makeLinkedInContextFactory(headless: boolean): LinkedInContextFactory {
 }
 
 /**
- * The production factory: headless, hardened, session-document aware.
- * Module-PRIVATE on purpose — the browser walk defaults to it in-module,
- * and an exported factory nobody imports is the knip dead-export finding
- * class, not a seam.
+ * The persistent profile the login helper maintains (scripts/login-linkedin.ts:34).
+ * The walk reuses it rather than opening a fresh browser with the harvested
+ * cookie pair — see the factory's REVISED note and Key Discoveries.
  */
-const linkedinChromiumContextFactory: LinkedInContextFactory = makeLinkedInContextFactory(true);
+export const LINKEDIN_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
+
+/**
+ * The production factory: the persistent profile, headed. Module-PRIVATE on
+ * purpose — the browser walk defaults to it in-module, and an exported
+ * factory nobody imports is the knip dead-export finding class, not a seam.
+ */
+const linkedinChromiumContextFactory: LinkedInContextFactory =
+  makeLinkedInContextFactory(LINKEDIN_PROFILE_DIR);
 // --- the surface walk ---
 
 interface PacingGate {
@@ -1414,7 +1428,6 @@ async function walkLinkedInSurface(
   surface: LinkedinSurface,
   label: string,
   scrollRounds: number,
-  minClicks: number,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
@@ -1436,19 +1449,11 @@ async function walkLinkedInSurface(
         const body = await response.text();
         received += 1;
         const minted = collectLinkedInPosts(body);
-        let fresh = 0;
+        if (minted.length === 0) return;
+        parsed += 1;
         for (const post of minted) {
-          if (posts.has(post.id)) continue; // first-wins by urn
-          posts.set(post.id, post);
-          fresh += 1;
+          if (!posts.has(post.id)) posts.set(post.id, post); // first-wins by urn
         }
-        if (minted.length > 0) parsed += 1;
-        // Extensive logging (live rehearsal 2026-11-11): every body names
-        // its size, its mint count, and how many were NEW. Without this,
-        // "no body arrived" and "body arrived, all duplicates" look alike.
-        console.log(
-          `fetch: ${label} body ${received}: ${body.length}B — ${minted.length} minted, ${fresh} new, ${minted.length - fresh} dup (total ${posts.size})`,
-        );
       } catch {
         // the body read can race the page close; skip it
       }
@@ -1483,56 +1488,36 @@ async function walkLinkedInSurface(
     // 0-match is a harmless dry round (the artifact's dry-round exit).
     const loadMore = page.locator(LOAD_MORE_SELECTOR);
     let dryRounds = 0;
-    let clicks = 0;
     for (let round = 1; round <= scrollRounds && posts.size < LINKEDIN_MAX_POSTS; round += 1) {
       const before = posts.size;
       let clicked = false;
-      let clickError = "";
       try {
         await loadMore.waitFor({ state: "visible", timeout: LINKEDIN_LOAD_MORE_WAIT_MS });
         await loadMore.click();
         clicked = true;
-      } catch (error) {
+      } catch {
         // No clickable button this round: the feed ended, or the next
-        // batch is slow — a harmless dry round, no settle owed. The
-        // message rides the log so "no button" and "clicked, no posts"
-        // never look alike (live rehearsal 2026-11-11).
-        clickError = error instanceof Error ? error.message : String(error);
+        // batch is slow — a harmless dry round, no settle owed.
       }
       if (clicked) {
-        clicks += 1;
-        // The settle window is the deleted walk's constant, unchanged: a
-        // body that lands later costs ONE dry round and recovers on the
-        // next good round (dryRounds resets below) — the same recovery the
-        // Threads loop relies on (src/fetch-threads.ts:437-438).
         await page.waitForTimeout(LINKEDIN_SETTLE_MS);
         assertNoCheckpoint();
       }
-      // Gain is the deduped map's growth: NEW posts only, never a re-served
-      // urn — the same rule as the Threads loop (src/fetch-threads.ts:445).
       const gained = posts.size - before;
-      const outcome = clicked ? "fired" : `no button (${clickError})`;
       if (gained < LINKEDIN_MIN_GAIN) {
         dryRounds += 1;
         console.log(
-          `fetch: ${label} click ${round}: ${outcome} +${gained} new (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS}, total ${posts.size})`,
+          `fetch: ${label} click ${round}: +${gained} (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS})`,
         );
-        // The probe's floor: the dry exit may not fire before minClicks
-        // clicks have landed, so one probe run samples several bodies
-        // (live rehearsal 2026-11-11: 3 posts per body).
-        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS && clicks >= minClicks) break;
+        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS) break;
       } else {
         dryRounds = 0;
-        console.log(
-          `fetch: ${label} click ${round}: ${outcome} +${gained} new (total ${posts.size})`,
-        );
+        console.log(`fetch: ${label} click ${round}: +${gained}`);
       }
     }
     // Let in-flight response bodies settle before the page goes away.
     await page.waitForTimeout(LINKEDIN_XHR_DRAIN_MS);
-    console.log(
-      `fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s), ${received} body(ies) received, ${clicks} click(s) fired`,
-    );
+    console.log(`fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s)`);
     return [...posts.values()];
   } finally {
     await page.close();
@@ -1560,19 +1545,22 @@ async function walkLinkedInSurface(
  */
 export async function fetchLinkedInPosts(
   surfaces: readonly LinkedinSurface[],
-  cookies: LinkedInCookies,
+  profileDir: string = LINKEDIN_PROFILE_DIR,
   contextFactory: LinkedInContextFactory = linkedinChromiumContextFactory,
   scrollRounds: number = LINKEDIN_DEFAULT_SCROLL_ROUNDS,
   sleepFn: SleepFn = defaultSleep,
   now: () => number = Date.now,
   rng: RandomFn = Math.random,
-  minClicks = 0,
 ): Promise<Post[]> {
   // An empty surface list must never launch a browser: the callers guard
   // surfaces.length > 0, and this early return keeps the invariant local
   // (a zero-surface walk opens no context and closes nothing).
   if (surfaces.length === 0) return [];
-  const context = await contextFactory(toStorageState(cookies));
+  // REVISED 2026-11-11T18:40+0700: the browser opens on the persistent
+  // profile, not a synthesized cookie document. The cookie file is a
+  // preflight validity check in the CALLERS (resolveLinkedInCookies throws
+  // on a missing/malformed file before the walk is reached).
+  const context = await contextFactory(profileDir);
   const gate = makePacingGate(now, sleepFn, rng);
   const order = surfaces.map((surface, index) => ({ surface, index }));
   for (let i = order.length - 1; i > 0; i -= 1) {
@@ -1598,13 +1586,7 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        const posts = await walkLinkedInSurface(
-          context,
-          surface,
-          label,
-          scrollRounds,
-          minClicks,
-        );
+        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds);
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.
@@ -1701,14 +1683,10 @@ import {
   isLegDead,
   legDead,
 } from "../src/linkedin-fetch.js";
-import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
 
-const COOKIES: LinkedInCookies = {
-  liAt: "AQE-test",
-  jsessionId: "0123456789012345678",
-  harvestedAt: "2026-11-10T00:00:00.000Z", // present; the walk never checks age
-};
+/** The profile path the walk opens; the suite pins it rides through untouched. */
+const PROFILE = "C:/loker-secrets/linkedin-chromium-profile";
 
 /** An instant sleepFn: multi-surface tests pin dispatch order, not pacing. */
 const instantSleep = async (): Promise<void> => undefined;
@@ -1817,14 +1795,14 @@ interface FakePage {
 /** The factory double: one page per newPage call, scripts matched by goto-URL fragment. */
 function fakeContextFactory(options: {
   closed?: { value: boolean };
-  sessionStates?: unknown[];
+  profileDirs?: unknown[];
   built?: { value: number };
   scripts: ReadonlyArray<{ fragment: string; script: PageScript }>;
-}): ((storageState: unknown) => Promise<ContextLike>) & { pages: FakePage[] } {
+}): ((profileDir: string) => Promise<ContextLike>) & { pages: FakePage[] } {
   const pages: FakePage[] = [];
-  const factory = async (storageState: unknown): Promise<ContextLike> => {
+  const factory = async (profileDir: string): Promise<ContextLike> => {
     if (options.built !== undefined) options.built.value += 1;
-    options.sessionStates?.push(storageState);
+    options.profileDirs?.push(profileDir);
     const context: ContextLike = {
       newPage: async (): Promise<PageLike> => {
         let open = true;
@@ -1953,7 +1931,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#a"), surface("#b")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -1972,26 +1950,17 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     assert.equal(closed.value, true); // teardown on the happy path
   });
 
-  it("hands the factory the synthesized session document (li_at + re-quoted JSESSIONID)", async () => {
-    const sessionStates: unknown[] = [];
+  it("hands the factory the persistent profile path, not a cookie document", async () => {
+    // REVISED 2026-11-11T18:40+0700: the browser rides the profile. A fresh
+    // context with the synthesized cookie document gets a page with no
+    // Load-more button (measured), so the walk must never build one.
+    const profileDirs: unknown[] = [];
     const factory = fakeContextFactory({
-      sessionStates,
+      profileDirs,
       scripts: [{ fragment: "%23s", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    await fetchLinkedInPosts([surface("#s")], COOKIES, factory, 8, instantSleep);
-    assert.deepEqual(sessionStates[0], {
-      cookies: [
-        { name: "li_at", value: "AQE-test", domain: ".linkedin.com", path: "/", secure: true },
-        {
-          name: "JSESSIONID",
-          value: '"0123456789012345678"',
-          domain: ".linkedin.com",
-          path: "/",
-          secure: true,
-        },
-      ],
-      origins: [],
-    });
+    await fetchLinkedInPosts([surface("#s")], PROFILE, factory, 8, instantSleep);
+    assert.deepEqual(profileDirs, [PROFILE]);
   });
 
   it("clicks Load more up to the scrollRounds ceiling while every round gains", async (t) => {
@@ -2020,7 +1989,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#ceil")], COOKIES, factory, 2, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#ceil")], PROFILE, factory, 2, instantSleep);
     assert.deepEqual(pageFor(factory, "%23ceil").clicks, [1, 2]); // the knob, not the staged third body
     assert.equal(posts.length, 5); // 1 initial + 2 rounds x 2 posts
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
@@ -2049,7 +2018,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#dry")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#dry")], PROFILE, factory, 8, instantSleep);
     assert.deepEqual(pageFor(factory, "%23dry").clicks, [1]);
     assert.deepEqual(
       posts.map((post) => post.id),
@@ -2071,7 +2040,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts([surface("#scroll")], COOKIES, factory, 1, instantSleep);
+    await fetchLinkedInPosts([surface("#scroll")], PROFILE, factory, 1, instantSleep);
     const page = pageFor(factory, "%23scroll");
     // One scroll per click round, the exact Threads idiom.
     assert.deepEqual(page.evaluates, ["window.scrollTo(0, document.body.scrollHeight)"]);
@@ -2088,7 +2057,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#floor")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -2116,7 +2085,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     await fetchLinkedInPosts(
       [surface("#absent")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -2144,7 +2113,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts([surface("#nobtn")], COOKIES, factory, 8, instantSleep);
+    await fetchLinkedInPosts([surface("#nobtn")], PROFILE, factory, 8, instantSleep);
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /click 1: no button \(locator wait timeout\)/.test(line)));
     assert.equal(
@@ -2158,7 +2127,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23cap", script: { initialBody: cardBodyMany(all) } }],
     });
-    const posts = await fetchLinkedInPosts([surface("#cap")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#cap")], PROFILE, factory, 8, instantSleep);
     assert.equal(posts.length, 150); // one body may carry all 150 (the cap bounds clicks, not a body)
     assert.deepEqual(pageFor(factory, "%23cap").clicks, []);
   });
@@ -2180,7 +2149,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#dup")], COOKIES, factory, 1, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#dup")], PROFILE, factory, 1, instantSleep);
     assert.deepEqual(
       posts.map((post) => [post.id, post.text]),
       [
@@ -2214,7 +2183,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#noise")], COOKIES, factory, 1, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#noise")], PROFILE, factory, 1, instantSleep);
     assert.deepEqual(
       posts.map((post) => post.id),
       [`urn:li:activity:${idAt(1)}`],
@@ -2235,7 +2204,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#empty")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#empty")], PROFILE, factory, 8, instantSleep);
     assert.deepEqual(posts, []);
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
@@ -2252,7 +2221,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#silent")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#silent")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -2276,7 +2245,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#slow5")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#slow5")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -2292,7 +2261,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#cp")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#cp")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -2319,7 +2288,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#slow")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#slow")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -2344,7 +2313,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#mid")], COOKIES, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#mid")], PROFILE, factory, 8, instantSleep);
     } catch (error) {
       caught = error;
     }
@@ -2365,7 +2334,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#a"), surface("#b"), surface("#c")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -2394,7 +2363,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#dead"), surface("#ok")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -2420,7 +2389,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#bad"), surface("#good")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -2447,7 +2416,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#x"), surface("#y")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -2465,12 +2434,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
 
   it("never launches a browser for an empty surface list", async () => {
     const built = { value: 0 };
-    const sessionStates: unknown[] = [];
-    const factory = fakeContextFactory({ built, sessionStates, scripts: [] });
-    const posts = await fetchLinkedInPosts([], COOKIES, factory, 8, instantSleep);
+    const profileDirs: unknown[] = [];
+    const factory = fakeContextFactory({ built, profileDirs, scripts: [] });
+    const posts = await fetchLinkedInPosts([], PROFILE, factory, 8, instantSleep);
     assert.deepEqual(posts, []);
     assert.equal(built.value, 0);
-    assert.deepEqual(sessionStates, []);
+    assert.deepEqual(profileDirs, []);
   });
 
   it("halts outrank leg-dead at the join when both flags set in one walk", async () => {
@@ -2484,7 +2453,7 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     try {
       await fetchLinkedInPosts(
         [surface("#cp"), surface("#dead")],
-        COOKIES,
+        PROFILE,
         factory,
         8,
         instantSleep,
@@ -2511,7 +2480,7 @@ describe("fetchLinkedInPosts surface shuffle (FR-5)", () => {
     });
     const posts = await fetchLinkedInPosts(
       [surface("#a"), surface("#b"), surface("#c")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       instantSleep,
@@ -2540,7 +2509,7 @@ describe("pacing rides navigations", () => {
     });
     await fetchLinkedInPosts(
       [surface("#a"), surface("#b")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       (ms) => {
@@ -2567,7 +2536,7 @@ describe("pacing rides navigations", () => {
     });
     await fetchLinkedInPosts(
       five,
-      COOKIES,
+      PROFILE,
       factory,
       8,
       (ms) => {
@@ -2611,7 +2580,7 @@ describe("pacing rides navigations", () => {
     });
     const walk = fetchLinkedInPosts(
       [surface("#a"), surface("#b")],
-      COOKIES,
+      PROFILE,
       factory,
       8,
       sleepFn,
@@ -2654,7 +2623,7 @@ describe("walk guards and post shape", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23x", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    const posts = await fetchLinkedInPosts([surface("#x")], COOKIES, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#x")], PROFILE, factory, 8, instantSleep);
     const first = posts[0] as Post;
     assert.equal(first.platform, "linkedin");
     assert.equal(first.author, "linkedin-member");
@@ -2746,6 +2715,7 @@ import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/emai
 import { envWithDotEnv } from "../src/env-file.js";
 import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
 import {
+  LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
   type LinkedinSurface,
   fetchLinkedInPosts,
@@ -2792,7 +2762,11 @@ export interface FetchTickResult {
 export interface FetchTickDeps {
   /** Pre-resolved config. Default: loadWatcherConfig() — fail-visible. */
   config?: WatcherConfig;
-  /** Pre-resolved cookies. Default: resolveLinkedInCookies(env). */
+  /**
+   * Pre-resolved cookies. Default: resolveLinkedInCookies(env).
+   * PREFLIGHT ONLY (REVISED 2026-11-11T18:40+0700): the harvestedAt gate
+   * reads this; the browser rides the persistent profile instead.
+   */
   cookies?: LinkedInCookies;
   /**
    * Browser-context factory for the walk (the LinkedInContextFactory seam).
@@ -3068,14 +3042,19 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
   }
   let posts: Post[];
   try {
-    // The walk owns the browser: it opens one context from the synthesized
-    // session document and closes it on every path, so the tick has no
-    // dispose arm of its own. scrollRounds (the config knob shared with
-    // the Threads walk) bounds the Load-more clicks per surface; the
-    // factory defaults to the walk module's production headless factory.
+    // The walk owns the browser: it opens one context on the persistent
+    // PROFILE and closes it on every path, so the tick has no dispose arm
+    // of its own. scrollRounds (the config knob shared with the Threads
+    // walk) bounds the Load-more clicks per surface; the factory defaults
+    // to the walk module's production profile factory (headed).
+    //
+    // REVISED 2026-11-11T18:40+0700: the resolved cookies above are a
+    // PREFLIGHT only (the harvestedAt gate). The browser rides the profile,
+    // not the cookie document — a fresh browser with the document gets a
+    // page with no Load-more button.
     posts = await fetchLinkedInPosts(
       surfaces,
-      cookies,
+      LINKEDIN_PROFILE_DIR,
       deps.contextFactory,
       config.scrollRounds,
       undefined,
@@ -3440,7 +3419,11 @@ import type { WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
-import { type LinkedInContextFactory, isLegDead } from "../src/linkedin-fetch.js";
+import {
+  LINKEDIN_PROFILE_DIR,
+  type LinkedInContextFactory,
+  isLegDead,
+} from "../src/linkedin-fetch.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
@@ -4522,6 +4505,7 @@ Browser-walk gate rewrite: the voyager transport probe replaced by one productio
 import { loadWatcherConfig } from "../src/config-file.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import {
+  LINKEDIN_PROFILE_DIR,
   type LinkedinSurface,
   fetchLinkedInPosts,
   isAllSurfacesFaulted,
@@ -4552,21 +4536,25 @@ try {
   // The merged env, resolved once: .env fills ONLY unset keys, the real
   // shell wins — an .env-only setup reaches the browser leg unaided.
   const env = envWithDotEnv();
-  const cookies = resolveLinkedInCookies(env);
+  // Preflight only (REVISED 2026-11-11T18:40+0700): the cookie file must
+  // exist and parse, but the browser rides the persistent PROFILE, not this
+  // document. resolveLinkedInCookies throws fail-visibly on a missing or
+  // malformed file, which is the check worth keeping.
+  resolveLinkedInCookies(env);
   console.log(
-    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${CONFIG.scrollRounds}, minClicks ${PROBE_MIN_CLICKS}, headless)`,
+    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${CONFIG.scrollRounds}, minClicks ${PROBE_MIN_CLICKS}, headed)`,
   );
   const started = Date.now();
   // The undefined contextFactory selects the walk module's own production
-  // factory (headless Chromium, the session document in, the Playwright
-  // import lazy inside it) — the same lazy-default the tick suite pins.
+  // factory (the persistent profile, headed, the Playwright import lazy
+  // inside it) — the same lazy-default the tick suite pins.
   // minClicks 5: the probe must sample several pagination bodies, not
   // stop at the first dry exit — each body carries ~3 posts (live
   // rehearsal 2026-11-11), so 5 clicks is the floor that proves the
   // pagination leg works. scrollRounds stays the ceiling.
   const posts = await fetchLinkedInPosts(
     [surface],
-    cookies,
+    LINKEDIN_PROFILE_DIR,
     undefined,
     CONFIG.scrollRounds,
     undefined,
