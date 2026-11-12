@@ -1,7 +1,5 @@
 {
   "version": 1,
-  "marks": {
-    "https://ai.nube-api.com/v1": 1
-  },
+  "marks": {},
   "outageOpen": false
 }
