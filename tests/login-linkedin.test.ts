@@ -195,6 +195,34 @@ describe("runLoginHelper keep-open", () => {
     assert.deepEqual(result, { cookiePath, dotEnvUpdated: true });
     assert.equal(closed, true);
   });
+
+  it("names the piped-stdin failure and the cookie path when the Enter wait rejects (harvest already landed)", async () => {
+    const cookiePath = await workPath("piped-stdin-cookies.json");
+    const dotEnvPath = await workPath("piped-stdin.env");
+    let closed = false;
+    const context: LoginContext = {
+      cookies: async () => JAR,
+      close: async () => {
+        closed = true;
+      },
+    };
+    await assert.rejects(
+      () =>
+        runLoginHelper({
+          openContext: async () => context,
+          cookiePath,
+          dotEnvPath,
+          env: {},
+          keepOpen: true,
+          enterWait: async () => {
+            throw new Error("readline was closed");
+          },
+          now: () => Date.UTC(2026, 10, 10, 0, 0, 0),
+        }),
+      /no TTY on stdin — the harvest landed at .*piped-stdin-cookies\.json; re-run from a real terminal/,
+    );
+    assert.equal(closed, true); // the finally-close still ran after the rethrow
+  });
 });
 
 describe("runLoginHelper mandatory feed warm-up", () => {

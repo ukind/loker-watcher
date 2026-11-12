@@ -255,7 +255,19 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
       );
       console.log("login-linkedin: press Enter in this terminal to close the browser");
       const enterWait = deps.enterWait ?? waitForEnter;
-      await enterWait();
+      try {
+        await enterWait();
+      } catch (error) {
+        // A piped or agent-mediated stdin has no Enter to deliver: the
+        // readline rejects AFTER the cookie file is written, so the raw
+        // rejection reads like a failed harvest. Rethrow with the remedy —
+        // fail-loud stays (the no-TTY-check decision stands: this is error
+        // handling at the failure site, not a check before it).
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `login-linkedin: no TTY on stdin — the harvest landed at ${cookiePath}; re-run from a real terminal to close the browser (readline said: ${detail})`,
+        );
+      }
     }
     return { cookiePath, dotEnvUpdated };
   } finally {
