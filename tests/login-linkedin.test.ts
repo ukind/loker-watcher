@@ -18,6 +18,7 @@ import { after, describe, it } from "node:test";
 import {
   type LoginContext,
   findSessionCookies,
+  keepOpenForArgv,
   runLoginHelper,
   writeCookieFile,
 } from "../scripts/login-linkedin.js";
@@ -166,5 +167,102 @@ describe("entry guard", () => {
     // test without a headed Chromium launch IS the pin (the guard kept
     // main off). runLoginHelper is the exported seam the tests drive.
     assert.equal(typeof runLoginHelper, "function");
+  });
+});
+
+describe("runLoginHelper keep-open", () => {
+  it("holds the browser open until Enter fires, then closes (Enter BEFORE close)", async () => {
+    const cookiePath = await workPath("keepopen-cookies.json");
+    const dotEnvPath = await workPath("keepopen.env");
+    let closed = false;
+    const context: LoginContext = {
+      cookies: async () => JAR,
+      close: async () => {
+        closed = true;
+      },
+    };
+    const result = await runLoginHelper({
+      openContext: async () => context,
+      cookiePath,
+      dotEnvPath,
+      env: {},
+      keepOpen: true,
+      enterWait: async () => {
+        assert.equal(closed, false, "the browser must still be open while Enter is awaited");
+      },
+      now: () => Date.UTC(2026, 10, 10, 0, 0, 0),
+    });
+    assert.deepEqual(result, { cookiePath, dotEnvUpdated: true });
+    assert.equal(closed, true);
+  });
+});
+
+describe("runLoginHelper mandatory feed warm-up", () => {
+  it("visits the feed via the context seam BEFORE close, harvest kept on write", async () => {
+    const cookiePath = await workPath("feedwarm-cookies.json");
+    const dotEnvPath = await workPath("feedwarm.env");
+    const order: string[] = [];
+    const context: LoginContext = {
+      cookies: async () => JAR,
+      gotoFeed: async () => {
+        order.push("feed");
+      },
+      close: async () => {
+        order.push("close");
+      },
+    };
+    await runLoginHelper({
+      openContext: async () => context,
+      cookiePath,
+      dotEnvPath,
+      env: {},
+      now: () => Date.UTC(2026, 10, 10, 0, 0, 0),
+    });
+    assert.deepEqual(order, ["feed", "close"]);
+    assert.deepEqual(JSON.parse(await readFile(cookiePath, "utf8")), {
+      liAt: "AQE-live-li-at",
+      jsessionid: '"ajax:0123456789012345678"',
+      harvestedAt: "2026-11-10T00:00:00.000Z",
+    });
+  });
+
+  it("keeps the harvest when the feed warm-up fails (warn, never discard)", async () => {
+    const cookiePath = await workPath("feedwarm-fail-cookies.json");
+    const dotEnvPath = await workPath("feedwarm-fail.env");
+    let closed = false;
+    const context: LoginContext = {
+      cookies: async () => JAR,
+      gotoFeed: async () => {
+        throw new Error("feed did not load");
+      },
+      close: async () => {
+        closed = true;
+      },
+    };
+    const result = await runLoginHelper({
+      openContext: async () => context,
+      cookiePath,
+      dotEnvPath,
+      env: {},
+      now: () => Date.UTC(2026, 10, 10, 0, 0, 0),
+    });
+    assert.deepEqual(result, { cookiePath, dotEnvUpdated: true });
+    assert.equal(closed, true);
+    assert.ok(
+      await readFile(cookiePath, "utf8").then(
+        () => true,
+        () => false,
+      ),
+    );
+  });
+});
+
+describe("keepOpenForArgv (the --auto-close seam, Phase 5)", () => {
+  it("defaults to keep-open when the flag is absent", () => {
+    assert.equal(keepOpenForArgv(["node", "scripts/login-linkedin.ts"]), true);
+  });
+
+  it("--auto-close restores fire-and-close", () => {
+    assert.equal(keepOpenForArgv(["node", "scripts/login-linkedin.ts", "--auto-close"]), false);
   });
 });

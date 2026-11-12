@@ -298,10 +298,18 @@ code. One-time: set the clone's identity (`git config user.name` /
 `git config user.email`) — the push discipline commits as you, and an
 unconfigured identity fails the tick loudly instead of pushing nothing.
 
+One command runs the whole protocol — login hold, probe walk, exactly one
+fetch tick, in that order: `npm run linkedin-chain` (needs a real terminal;
+the login hold waits for Enter). The login and probe steps it sequences, for
+running them individually:
+
 1. `npm run login-linkedin` — opens a real Chrome window; log in by hand
    (2FA included). The helper waits for the session, writes the cookie
    file, and adds the LINKEDIN_COOKIES_FILE line to .env automatically.
-   Re-run it when the session dies — the browser profile persists, so a
+   The browser then STAYS OPEN: the mandatory feed warm-down rests the
+   session before close — press Enter in the terminal to close it
+   (`--auto-close` restores fire-and-close, but the feed-first rest is
+   what keeps the session alive). Re-run it when the session dies — the browser profile persists, so a
    still-signed-in jar is harvested without a new login; the loop's next
    tick heals, no restart. Manual fallback (devtools export into
    `{ "liAt": "...", "jsessionid": "ajax:..." }`) still works: point
@@ -311,7 +319,7 @@ unconfigured identity fails the tick loudly instead of pushing nothing.
 2. `npm run probe-linkedin` — twice, ≥6h apart, stored cookies only; walks
    the first configured surface read-only and exits 1 on a checkpoint
    wall (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted
-   walk (`probe: FAILED`), or fewer than 2 posts. Re-run after every
+   walk (`probe: FAILED`), or fewer than 10 posts. Re-run after every
    `npm run login-linkedin` re-harvest.
 3. `npm run watch-linkedin` — tick, then a 28-33-minute sleep, forever;
    leave the console open.
@@ -348,10 +356,11 @@ export GMAIL_USER=... GMAIL_APP_PASSWORD=...
 npm start
 ```
 
-The four LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
+The five LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
 them, and the cookie file must exist):
 
 ```bash
+npm run linkedin-chain   # login hold -> probe -> exactly one tick, in order (real terminal)
 npm run login-linkedin   # headed login: writes the cookie file + the .env line
 npm run probe-linkedin   # browser-walk gate: exit 1 on a wall/dead/short walk
 npm run fetch-linkedin   # one tick: walk → payload → push

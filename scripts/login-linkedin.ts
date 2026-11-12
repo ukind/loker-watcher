@@ -22,6 +22,7 @@
  */
 import { mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { ENV_NAMES } from "../src/config.js";
 import { envWithDotEnv, upsertDotEnvLine } from "../src/env-file.js";
@@ -32,6 +33,16 @@ export const DEFAULT_COOKIE_PATH = "C:/loker-secrets/linkedin-cookies.json";
 
 /** Persistent browser profile (outside the repo): a signed-in jar skips the login on refresh runs. */
 export const DEFAULT_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
+
+/**
+ * The feed URL the helper lands on at open and RE-VISITS before any close —
+ * the mandatory warm-up (verified protocol 2026-11-12: close-without-feed
+ * tripped the checkpoint twice; feed-first passed twice).
+ */
+export const LINKEDIN_FEED_URL = "https://www.linkedin.com/feed/";
+
+/** Feed warm-up settle: the session rests on the loaded feed before the browser may close. */
+export const FEED_SETTLE_MS = 5_000;
 
 /** Poll cadence for the cookie jar. */
 export const POLL_INTERVAL_MS = 2_000;
@@ -48,6 +59,12 @@ export interface LinkedInCookiePair {
 /** The browser-context seam the offline suite injects (no headed Chromium in tests). */
 export interface LoginContext {
   cookies: (url: string) => Promise<Array<{ name: string; value: string }>>;
+  /**
+   * The mandatory pre-close feed warm-up (verified 2026-11-12): navigate to
+   * LINKEDIN_FEED_URL and let it settle. Optional so existing offline doubles
+   * stay assignable — the production default always supplies it.
+   */
+  gotoFeed?: () => Promise<void>;
   close: () => Promise<void>;
 }
 
@@ -115,6 +132,10 @@ export interface LoginHelperDeps {
   timeoutMs?: number;
   sleepFn?: (ms: number) => Promise<void>;
   now?: () => number;
+  /** Keep the browser open after a successful harvest: the operator drives it by hand; Enter closes it. */
+  keepOpen?: boolean;
+  /** The Enter wait for keep-open. Default: a stdin readline (production only — tests inject). */
+  enterWait?: () => Promise<void>;
 }
 
 export interface LoginHelperResult {
@@ -125,17 +146,39 @@ export interface LoginHelperResult {
 async function openDefaultContext(profileDir: string): Promise<LoginContext> {
   const { chromium } = await import("playwright");
   const context = await chromium.launchPersistentContext(profileDir, {
+    channel: "msedge",
     headless: false,
     viewport: null,
   });
   const page = await context.newPage();
-  await page.goto("https://www.linkedin.com/feed/", { waitUntil: "domcontentloaded" });
+  await page.goto(LINKEDIN_FEED_URL, { waitUntil: "domcontentloaded" });
   return {
     cookies: (url) => context.cookies(url),
+    gotoFeed: async () => {
+      await page.goto(LINKEDIN_FEED_URL, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(FEED_SETTLE_MS);
+    },
     close: async () => {
       await context.close();
     },
   };
+}
+
+/**
+ * The CLI keep-open decision (the --auto-close seam, Phase 5): the
+ * standalone entry holds the browser open until Enter by DEFAULT - the
+ * operator drives the session by hand before close (the verified
+ * protocol). --auto-close restores the pre-Phase-5 fire-and-close
+ * behavior for scripted runs. Exported so the offline suite pins both
+ * arms (the repo rule: export the logic, not a side effect).
+ */
+export function keepOpenForArgv(argv: readonly string[]): boolean {
+  return !argv.includes("--auto-close");
+}
+async function waitForEnter(): Promise<void> {
+  const rl = createInterface({ input: process.stdin });
+  await rl.question("");
+  rl.close();
 }
 
 /**
@@ -159,6 +202,7 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
         setTimeout(resolve, ms);
       }));
   const now = deps.now ?? Date.now;
+  const keepOpen = deps.keepOpen === true;
   const openContext = deps.openContext ?? (() => openDefaultContext(DEFAULT_PROFILE_DIR));
 
   const context = await openContext();
@@ -189,6 +233,30 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
         ? `login-linkedin: ${dotEnvPath} updated with ${ENV_NAMES.linkedinCookiesFile}`
         : `login-linkedin: ${dotEnvPath} already carries the ${ENV_NAMES.linkedinCookiesFile} line`,
     );
+    // MANDATORY feed warm-up (verified protocol 2026-11-12): the session
+    // rests on the loaded feed before the browser may close — the kicking
+    // sequence (close without the feed visit) tripped the checkpoint twice,
+    // the feed-first sequence passed twice. A failed visit warns loudly and
+    // never discards a good harvest (the cookie file is already written).
+    const gotoFeed = context.gotoFeed;
+    if (gotoFeed !== undefined) {
+      console.log("login-linkedin: mandatory feed warm-up — loading the feed before close");
+      try {
+        await gotoFeed();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`login-linkedin: feed warm-up FAILED — ${message} (harvest kept)`);
+      }
+    }
+    if (keepOpen) {
+      console.log("login-linkedin: browser stays OPEN — search and scroll LinkedIn by hand now");
+      console.log(
+        "login-linkedin: while this window is open the profile is LOCKED — do NOT run probe/fetch/watch",
+      );
+      console.log("login-linkedin: press Enter in this terminal to close the browser");
+      const enterWait = deps.enterWait ?? waitForEnter;
+      await enterWait();
+    }
     return { cookiePath, dotEnvUpdated };
   } finally {
     await context.close();
@@ -196,7 +264,7 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runLoginHelper().catch((error: unknown) => {
+  runLoginHelper({ keepOpen: keepOpenForArgv(process.argv) }).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`login-linkedin: FAILED — ${message}`);
     process.exit(1);

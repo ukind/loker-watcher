@@ -27,7 +27,7 @@ failure path).
 - `npm test` - unit tests (node:test runner via tsx, offline and deterministic)
 - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
 - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, ramp concurrent calls to find each account's ceiling, and write `state/judge-ceilings.json` (the probe job commits it; needs `LLM_*` env vars)
-- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, `scripts/fetch-linkedin.ts`, `scripts/watch-linkedin.ts`, `scripts/probe-linkedin.ts`, `scripts/login-linkedin.ts`, and `scripts/hooks`
+- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, `scripts/fetch-linkedin.ts`, `scripts/watch-linkedin.ts`, `scripts/probe-linkedin.ts`, `scripts/login-linkedin.ts`, `scripts/reset-linkedin.ts`, `scripts/linkedin-chain.ts`, and `scripts/hooks`
 - `npm run format` - Biome format in place
 - `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars;
   an absent or stale `state/linkedin-posts.json` degrades to a
@@ -35,7 +35,7 @@ failure path).
 - `npm run probe-linkedin` - gate the LinkedIn browser walk: a read-only
   walk of the first configured surface; exit 1 on a checkpoint wall
   (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted walk
-  (`probe: FAILED`), or fewer than 2 posts; run twice >=6h apart with
+  (`probe: FAILED`), or fewer than 10 posts; run twice >=6h apart with
   stored cookies before trusting the loop (needs `LINKEDIN_COOKIES_FILE`)
 - `npm run fetch-linkedin` - one LinkedIn fetch tick from a dedicated clone
   of main: exits 1 BEFORE any fetch on a mis-homed checkout (branch ≠ main
@@ -48,7 +48,16 @@ failure path).
   logs in by hand in the opened window (2FA included); the helper writes
   the cookie file and the `LINKEDIN_COOKIES_FILE` line in `.env` (exit 1
   on timeout/no session; re-run on a still-signed-in profile harvests
-  without a new login)
+  without a new login). Afterward the browser STAYS OPEN — press Enter in
+  the terminal to close it, or pass `--auto-close` for fire-and-close
+  (the feed-first rest keeps the session alive)
+- `npm run linkedin-chain` - the one-command operator chain from a
+  dedicated clone of main: login hold -> probe gate -> exactly one fetch
+  tick, in that order; the login's harvested cookie file carries the
+  later stages when `.env` has no cookie line yet; a quiet-zero tick
+  (working-hours window, halt latch, halt trip, all-faulted walk, zero
+  surfaces) is a reported no-op with exit 0; any stage failure exits 1
+  naming the gate (needs a real TTY for the login hold)
 - `npx playwright install chromium` - one-time browser install for local runs
 
 ## Architecture
@@ -69,12 +78,15 @@ against the configured keywords, email digest, commit state.
   paired prefix)
 - `src/linkedin-session.ts` - the `LINKEDIN_COOKIES_FILE` resolver
   (fail-visible; the cookie file lives OUTSIDE the repo), the Cookie
-  header (JSESSIONID quoted, last), the csrf token, and the storageState
-  synthesis the walk's context factory consumes
+  header (JSESSIONID quoted, last), and the csrf token; the walk's
+  session rides the persistent profile — the cookie pair gates the run,
+  it never synthesizes a browser document anymore
 - `src/linkedin-fetch.ts` - the browser-walk fetch leg: a LinkedIn-local
-  `LinkedInContextFactory` (headless Chromium from its own dynamic-import
-  quarantine, the harvested cookie DOCUMENT completed per cookie, locale
-  en-US) walks each surface — one paced navigation (shared 5-15s gate)
+  `LinkedInContextFactory` (headed Chromium on the persistent profile via
+  `launchPersistentContext` — msedge channel, viewport null — from its
+  own dynamic-import quarantine; the session rides the PROFILE and locale
+  en-US pins the Load-more text selector) walks each surface — one paced
+  navigation (shared 5-15s gate)
   plus up to `scrollRounds` "Load more" clicks — parses every intercepted
   flagship-web response through `src/linkedin-parser.ts`, and keeps the
   walk skeleton: the FR-5 shuffle, the runPool surface walk, the drain
@@ -99,6 +111,12 @@ against the configured keywords, email digest, commit state.
   in by hand; the script polls the jar, writes the cookie file atomically,
   and upserts the `.env` line (exit 1 on timeout/no session; entry-guarded,
   importing stays side-effect free)
+- `scripts/linkedin-chain.ts` - the one-command operator chain:
+  `runLinkedInChain(deps)` sequences login hold -> probe -> exactly one
+  tick; the merged env resolves once and threads to all three legs, and
+  the login's harvested cookie path joins it for stages 2-3 when the env
+  lacks `LINKEDIN_COOKIES_FILE`; quiet-zero ticks are reported no-ops
+  (exit 0); entry-guarded, importing stays side-effect free
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)

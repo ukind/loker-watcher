@@ -1,12 +1,13 @@
 # scripts/ — production commit-back script, endpoint probe + agent hooks
 
 ## Responsibility
-Eight files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings, and watch.yml's Commit health), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate, plus a `probedAt` freshness stamp) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` are the PC-local LinkedIn leg (tick, loop, gate); `login-linkedin.ts` is the headed cookie harvest; `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
+Nine files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings, and watch.yml's Commit health), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate, plus a `probedAt` freshness stamp) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` + `linkedin-chain.ts` are the PC-local LinkedIn leg (tick, loop, gate, chain); `login-linkedin.ts` is the headed cookie harvest; `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
 
 ## Invokers
 - **commit-state-rebase.sh**: THREE invokers, one call each — watch.yml's Commit state step, the probe job's Commit ceilings step, and watch.yml's Commit health step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
 - **probe-judge.ts**: the dispatch-only `probe` GATE job in watch.yml, or locally `npx tsx scripts/probe-judge.ts` (needs `LLM_ACCOUNTS`; loads `watcher.config.json` at startup, so run from the repo root)
-- **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm (an all-faulted walk is a tagged no-op exit 0, payload untouched), loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session
+- **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm (an all-faulted walk is a tagged no-op exit 0, payload untouched), loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session; keep-open is the DEFAULT at the CLI — the helper holds for Enter and closes the browser (--auto-close restores fire-and-close)
+- **linkedin-chain.ts**: run via `npm run linkedin-chain` from a DEDICATED clone of main (stage 3's guardCheckout enforces branch main + a clean tree BEFORE any fetch — the chain code itself must be committed first); exit contract: 0 when all three stages ran — a quiet-zero tick (working-hours window, halt latch, halt trip, all-faulted walk, zero surfaces) is a REPORTED NO-OP, still exit 0 (the defb8af rule) — and 1 when any stage throws (the wrapper prints `linkedin-chain: FAILED — <gate and remedy>`); INTERACTIVE: the login hold reads Enter, so a real TTY is required
 - **hooks/**: `.claude/settings.json` only — PreToolUse matcher `Bash` → gate, PostToolUse matcher `Edit|Write` → formatter. NOT husky: husky runs only `lint-staged`
 
 ## Structure
@@ -36,16 +37,31 @@ fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect
 watch-linkedin.ts            # .ts, always-on loop: one tick + a jittered 28-33-minute sleep; leg-dead →
                              #   ONE alarm per episode
                              #   (repo-local marker beside the payload) + continue; INSIDE typecheck + lint
-probe-linkedin.ts            # .ts, top-level await gate: the production walk READ-ONLY — one headless
-                             #   context from the harvested cookie DOCUMENT, the FIRST configured surface,
-                             #   config.scrollRounds as the click bound; no payload write, no push, no latch,
-                             #   no episode-marker write;
+probe-linkedin.ts            # .ts, entry-guarded (importing stays side-effect free — the import IS the pin);
+                             #   exports runProbe / ProbeDeps / ProbeResult + the two TAGGED local gates
+                             #   (probeFloor / probeNoSurfaces + isProbe* guards): resolve config, pick the
+                             #   FIRST configured surface, preflight the cookie file (resolveLinkedInCookies
+                             #   — presence/parse only; the browser rides the PROFILE), then the HEADED
+                             #   persistent-profile production walk READ-ONLY — config.scrollRounds as the
+                             #   click bound, PROBE_MIN_CLICKS=5 as the click floor, PROBE_MIN_POSTS=10 as
+                             #   the gate; gate failures THROW (halt / leg-dead / all-faulted keep their
+                             #   tags, the local gates carry theirs — the caller owns the exit); no payload
+                             #   write, no push, no latch, no episode-marker write;
                              #   INSIDE typecheck + lint + lint-staged
 login-linkedin.ts            # .ts, entry-guarded (imports runLoginHelper side-effect free); exports runLoginHelper /
-                             #   findSessionCookies / writeCookieFile; HEADED persistent-profile
+                             #   findSessionCookies / writeCookieFile / keepOpenForArgv; HEADED persistent-profile
                              #   login assist (INTERACTIVE — the operator logs in by hand; no headless re-login);
                              #   writes the cookie file atomically + the .env line (upsertDotEnvLine imported
-                             #   from src/env-file.ts since the Phase 9 hoist); INSIDE typecheck + lint + lint-staged
+                             #   from src/env-file.ts since the Phase 9 hoist); the CLI then HOLDS
+                             #   (keep-open default): Enter closes the browser, --auto-close restores
+                             #   fire-and-close; INSIDE typecheck + lint + lint-staged
+linkedin-chain.ts            # .ts, entry-guarded (imports the three legs side-effect free); exports
+                             #   runLinkedInChain / ChainDeps / ChainResult; ONE command: login hold ->
+                             #   runProbe -> exactly one fetchTick; the merged env resolves ONCE (D2) and
+                             #   the login's harvested cookiePath joins it for stages 2-3 when the env
+                             #   lacks LINKEDIN_COOKIES_FILE; a quiet-zero tick is a reported no-op, exit 0
+                             #   (defb8af); INTERACTIVE (the login hold reads Enter);
+                             #   INSIDE typecheck + lint + lint-staged
 hooks/gate-destructive.js    # plain .js for bare node (instant start, no tsx); INSIDE lint ONLY — lint-staged's
 hooks/format-on-edit.js      #   *.ts glob never matches .js; hooks are covered by npm run lint + their own tests
 ```
@@ -87,8 +103,12 @@ fetch-linkedin.ts           exit 1 on a mis-homed checkout (branch ≠ main or d
                             an all-faulted walk is a tagged no-op exit 0 (payload untouched, alarm-free)
 watch entries               watch-linkedin.ts never exits on leg-dead; probe-linkedin.ts exits 1 on a checkpoint
                             wall (probe: HALT), a dead session (probe: LEG DEAD), a faulted walk (probe: FAILED),
-                            or fewer than 2 posts (gate)
-login-linkedin.ts           exit 1 on timeout (no session within the budget) or a failed poll/context — one alarm-free operator gate
+                            or fewer than 10 posts (gate)
+linkedin-chain.ts           exit 0 when all three stages ran — a quiet-zero tick (working-hours window, halt
+                            latch, halt trip, all-faulted walk, zero surfaces) is a REPORTED NO-OP, still
+                            exit 0 (defb8af); exit 1 when any stage throws — the wrapper prints
+                            `linkedin-chain: FAILED — <gate>`; INTERACTIVE (real TTY for the login hold)
+login-linkedin.ts           exit 1 on timeout (no session within the budget) or a failed poll/context — one alarm-free operator gate; keep-open DEFAULT at the CLI — Enter closes the browser (--auto-close = fire-and-close)
 gate-destructive.js         exit 2 = DENY the tool call (reason on stderr); unreadable stdin → exit 0 (fail-open, never block)
 format-on-edit.js           ALWAYS exit 0 — post-edit feedback only, can never veto an edit
 ```

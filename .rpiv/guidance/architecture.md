@@ -12,7 +12,7 @@ A fourth committed file, `state/linkedin-posts.json`, is written and pushed by t
 .github/workflows/  # ci.yml gate + watch.yml: cron */10 → npx tsx src/index.ts → state commit-back via scripts/commit-state-rebase.sh (+ dispatch-only probe job behind an 8h freshness gate)
 src/                # the pipeline: fetch (threads Playwright walks + the PC-linked linkedin payload read) → extract → dedupe → recency → seen → judge → notify → persist
 tests/              # offline unit suite (node:test via tsx), ~1:1 with src module names + script/hook subprocess tests
-scripts/            # commit-state-rebase.sh (commit-back body for ALL THREE state files: rebase + skip + push + one internal retry), probe-judge.ts (LLM endpoint gate → state/judge-ceilings.json), the PC-local LinkedIn leg (fetch/watch/probe/login), + Claude Code hooks
+scripts/            # commit-state-rebase.sh (commit-back body for ALL THREE state files: rebase + skip + push + one internal retry), probe-judge.ts (LLM endpoint gate → state/judge-ceilings.json), the PC-local LinkedIn leg (fetch/watch/probe/login/chain), + Claude Code hooks
 .claude/, .cursor/, # agent meta: hook registration + agents/commands/skills | editor rules | husky pre-commit
 .husky/             #   (lint-staged)
 state/              # runtime state only: seen-posts.json (watch job) + judge-ceilings.json (probe job) + judge-health.json (watch job) + linkedin-posts.json (PC loop, its own clone of main — the hosted run only reads it)
@@ -38,8 +38,9 @@ Detailed guidance:
 | `npm start` | run the watcher locally (needs LLM_* and GMAIL_* env vars; an absent or stale `state/linkedin-posts.json` degrades to a threads-only run with one log line) |
 | `npx tsx scripts/probe-judge.ts` | gate every LLM_ACCOUNTS entry: latency, bulk shape, per-account `ceiling=N`; exit 1 on a dead account (needs LLM_ACCOUNTS) |
 | `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + 28-33-min sleep) from a dedicated clone of main |
-| `npm run probe-linkedin` | gate the LinkedIn browser walk: a read-only walk of the first configured surface; exit 1 on a checkpoint wall, a dead session, a faulted walk, or fewer than 2 posts |
+| `npm run probe-linkedin` | gate the LinkedIn browser walk: a read-only walk of the first configured surface; exit 1 on a checkpoint wall, a dead session, a faulted walk, or fewer than 10 posts |
 | `npm run login-linkedin` | headed cookie harvest: the operator logs in by hand; writes the cookie file + the `.env` line |
+| `npm run linkedin-chain` | one-command operator chain: login hold -> probe -> exactly one fetch tick, in order, from a dedicated clone of main; a quiet-zero tick is a reported no-op (exit 0); any stage failure exits 1 naming the gate (real TTY for the login hold) |
 | `npx playwright install chromium` | one-time browser install for local runs |
 
 ## Business Context

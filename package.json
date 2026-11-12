@@ -10,13 +10,14 @@
     "start": "tsx src/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/hooks",
-    "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts",
+    "lint": "biome check src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/hooks",
+    "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts",
     "fetch-linkedin": "tsx scripts/fetch-linkedin.ts",
     "watch-linkedin": "tsx scripts/watch-linkedin.ts",
     "probe-linkedin": "tsx scripts/probe-linkedin.ts",
     "login-linkedin": "tsx scripts/login-linkedin.ts",
     "reset-linkedin": "tsx scripts/reset-linkedin.ts",
+    "linkedin-chain": "tsx scripts/linkedin-chain.ts",
     "prepare": "husky"
   },
   "lint-staged": {
