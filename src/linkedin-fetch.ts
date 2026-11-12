@@ -141,19 +141,40 @@ const DOM_PROBE_JS = `(() => {
 })()`;
 
 /**
- * Scroll the lazy column (its own scroll container — window.scrollTo moves
- * nothing, measured 18:05), then bring the button into view if it rendered.
- * The return value names which case we are in.
+ * Scroll the ACTUAL scroll container (REVISED 2026-11-12, live run): the
+ * variant the persistent profile serves scrolls `<main>` — the lazy column
+ * and the window measure zero travel there, so scrolling them paginated
+ * nothing (the "3 posts, dry exit" root cause). Measure every candidate
+ * (window scrollingElement, main, lazy column, finite-scroll scaffold),
+ * scroll the one with the most travel to its end, keep the window nudge
+ * for document-scrolled variants, and bring a Load-more button into view
+ * when one renders (the click arm still owns button variants). The return
+ * value names the container that moved, as JSON.
  */
-const SCROLL_JS = `(() => {
-  const col = document.querySelector('[data-testid="lazy-column"]');
-  if (col) col.scrollTo(0, col.scrollHeight);
+export const SCROLL_JS = `(() => {
+  const cands = [];
+  const doc = document.scrollingElement;
+  if (doc && doc.scrollHeight > doc.clientHeight + 50) {
+    cands.push({ sel: "window", dist: doc.scrollHeight - doc.clientHeight, el: doc });
+  }
+  document.querySelectorAll("main, [data-testid='lazy-column'], .scaffold-finite-scroll").forEach((el) => {
+    if (el.scrollHeight > el.clientHeight + 50) {
+      cands.push({ sel: el.tagName.toLowerCase(), dist: el.scrollHeight - el.clientHeight, el });
+    }
+  });
+  cands.sort((a, b) => b.dist - a.dist);
+  const pick = cands[0];
+  if (pick) pick.el.scrollTop = pick.el.scrollHeight;
   window.scrollTo(0, document.body.scrollHeight);
   const btn = [...document.querySelectorAll("button")].find((b) =>
     /load more/i.test(b.textContent || ""),
   );
   if (btn) btn.scrollIntoView({ block: "center" });
-  return btn ? "button-scrolled" : "no-button-in-dom";
+  return JSON.stringify(
+    pick
+      ? { sel: pick.sel, top: Math.round(pick.el.scrollTop), sh: pick.el.scrollHeight, ch: pick.el.clientHeight }
+      : { sel: "none", top: 0, sh: 0, ch: 0 },
+  );
 })()`;
 
 /**
@@ -307,6 +328,7 @@ export function makeLinkedInContextFactory(profileDir: string): LinkedInContextF
     // session. viewport null lets the operator's window size ride (the
     // login helper's shape, scripts/login-linkedin.ts:127-130).
     const context = await chromium.launchPersistentContext(profileDir, {
+      channel: "msedge",
       headless: false,
       viewport: null,
       userAgent: LINKEDIN_USER_AGENT,

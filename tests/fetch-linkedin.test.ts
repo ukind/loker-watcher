@@ -30,7 +30,7 @@ import type { WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
-import { type LinkedInContextFactory, isLegDead } from "../src/linkedin-fetch.js";
+import { type LinkedInContextFactory, SCROLL_JS, isLegDead } from "../src/linkedin-fetch.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
@@ -852,5 +852,27 @@ describe("FR-0 stamp gate (slice 5)", () => {
     assert.deepEqual(gitCalls, ["rev-parse --abbrev-ref HEAD", "status --porcelain"]);
     assert.equal(built.value, 0);
     assert.equal(await exists(payloadPath), false);
+  });
+});
+
+describe("SCROLL_JS content (Phase 5: the live-only revision, pinned as a string)", () => {
+  it("carries all four scroll-container candidates", () => {
+    assert.ok(SCROLL_JS.includes("document.scrollingElement"));
+    assert.ok(
+      SCROLL_JS.includes(
+        "querySelectorAll(\"main, [data-testid='lazy-column'], .scaffold-finite-scroll\")",
+      ),
+    );
+    assert.ok(SCROLL_JS.includes('sel: "window"'));
+    assert.ok(SCROLL_JS.includes("el.tagName.toLowerCase()"));
+  });
+
+  it("reports the JSON contract (sel/top/sh/ch, sel none when nothing qualifies)", () => {
+    assert.ok(SCROLL_JS.includes("JSON.stringify"));
+    assert.ok(SCROLL_JS.includes("sel: pick.sel"));
+    assert.ok(SCROLL_JS.includes("top: Math.round(pick.el.scrollTop)"));
+    assert.ok(SCROLL_JS.includes("sh: pick.el.scrollHeight"));
+    assert.ok(SCROLL_JS.includes("ch: pick.el.clientHeight"));
+    assert.ok(SCROLL_JS.includes('sel: "none"'));
   });
 });

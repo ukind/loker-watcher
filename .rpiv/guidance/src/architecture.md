@@ -4,7 +4,7 @@
 The entire application: a single-shot CLI pipeline that fetches job posts from Threads and LinkedIn surfaces, filters them, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM, emails matches, and persists judged post ids. One exported unit seam — `runWatcher(deps)` — no server, no daemon.
 
 ## Dependencies and consumers
-- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, the LinkedIn-local headless-Chromium context factory in linkedin-fetch.ts (own `await import("playwright")`), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep
+- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, the LinkedIn-local headed persistent-profile context factory in linkedin-fetch.ts (own `await import("playwright")`), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep
 - **nodemailer**: single creation site in email.ts (heartbeat + exhaustion + leg-dead/halt alarms ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
 - **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports buildBulkMessages, resolveJudgeConfig, loadWatcherConfig
 
@@ -120,9 +120,11 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // csrf stripped §3; storageState re-quotes).
 // linkedin-fetch.ts: the browser walk — a LinkedIn-local LinkedInContextFactory (~120 lines duplicated
 // from the shared factory: widening breaks the 3 doubles under strictFunctionTypes, re-exporting the
-// private factory re-introduces knip N012; headless Chromium, own dynamic-import quarantine, the
-// harvested cookie DOCUMENT remapped per cookie — expires -1, httpOnly false, sameSite Lax — locale
-// en-US) walks each surface: one paced navigation (shared per-walk 5-15s gate, makePacingGate RESERVES
+// private factory re-introduces knip N012; HEADED persistent-profile Chromium (launchPersistentContext,
+// msedge channel, viewport null — the session rides the PROFILE; the harvested cookie pair is only the
+// resolver's fail-visible gate, never a synthesized document), own dynamic-import quarantine, locale
+// en-US pins the Load-more text selector) walks each surface: one paced navigation (shared per-walk
+// 5-15s gate, makePacingGate RESERVES
 // the slot BEFORE the await so width-2 workers never compute the same wake time; per-walk closure,
 // ticks never inherit stamps) plus up to scrollRounds Load-more clicks (LOAD_MORE_SELECTOR =
 // button:has-text("Load more") — no aria-label, no id, deploy-hashed classes; ~2.5s settle window;
@@ -143,7 +145,7 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // (heartbeat line ALWAYS; digest line when not ok).
 // index.ts arm: linkedinFetch re-keyed to (payloadPath, now) => PayloadRead; no token gate — absence
 // is the PC-off normal; the D12 belt catch remains for unanticipated faults only.
-// The PC scripts themselves live in scripts/ (tick, loop, gate, login) — see
+// The PC scripts themselves live in scripts/ (tick, loop, gate, login, chain) — see
 // .rpiv/guidance/scripts/architecture.md; env-file.ts merges <cwd>/.env UNDER the real env for every
 // PC script (missing .env = quiet normal).
 ```

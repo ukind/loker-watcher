@@ -45,8 +45,14 @@ watch-linkedin.ts  → watch-linkedin.test.ts   # seeded cadence transcript (28-
 #                                              #   tick-before-sleep order, cap 0, both fault arms, the
 #                                              #   entry-guard pin (importing starts no loop) — the suite
 #                                              #   deliberately supersedes the old NO-TESTS-BY-DESIGN line
-scripts/probe-judge.ts, probe-linkedin.ts — NO TESTS BY DESIGN: probe-judge drives a LIVE LLM endpoint (the
-#                                              #   dispatch gate is its check); probe-linkedin's run IS the gate
+scripts/probe-judge.ts — NO TESTS BY DESIGN: it drives a LIVE LLM endpoint (the dispatch gate is its check)
+probe-linkedin.ts  → probe-linkedin.test.ts   # the runProbe rewrite: entry-guard import pin, pass path under
+#                                             #   a pinned clock, the 10-post floor, the TAGGED local gates
+#                                             #   (floor, no-surfaces) disjoint from the walk's halt/leg-dead/
+#                                             #   all-faulted propagation, cookie preflight BEFORE any browser
+linkedin-chain.ts  → linkedin-chain.test.ts   # the recording-legs transcript: login -> probe -> EXACTLY one
+#                                             #   tick, abort arms by IDENTITY, the D2 cookiePath forwarding
+#                                             #   (env never mutated), the D3 quiet-zero noop vs written outcome
 scripts/hooks/*    → gate-destructive.test.ts, format-on-edit.test.ts   # black-box spawnSync; import no src code
 scripts/commit-state-rebase.sh → commit-state-rebase.test.ts   # black-box scratch-repo git scenarios; bash gate + explicit skip
 ```
