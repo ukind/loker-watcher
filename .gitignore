@@ -5,6 +5,7 @@ node_modules/
 .rpiv/tmp/
 .codebase-memory/graph.db.zst
 slice*-recon/
+captures/
 linkedin-cookies*.json
 state/linkedin-leg-dead.flag
 run.log

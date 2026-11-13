@@ -37,6 +37,7 @@ import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/email.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
+import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
   LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
@@ -94,6 +95,16 @@ export interface FetchTickDeps {
    * every path — the tick owns no browser lifecycle of its own.
    */
   contextFactory?: LinkedInContextFactory;
+  /**
+   * Capture sink for the walk (capture-first, design 2026-11-13). Default:
+   * the production fs sink — one atomic JSON file per intercepted body
+   * under captures/<UTC session stamp>/ (LINKEDIN_CAPTURES_ROOT; gitignored
+   * scratch, never committed state). Passing nothing means CAPTURE TO
+   * DISK, not capture disabled: the offline suite injects a recording
+   * sink in every walk-driving case, because npm test must never write
+   * captures/ into the repo.
+   */
+  captureSink?: CaptureSink;
   /** Payload location. Default: LINKEDIN_PAYLOAD_PATH (the pushed path). */
   payloadPath?: string;
   /** Git runner. Default: the real git on PATH. */
@@ -379,6 +390,8 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
       undefined,
       now,
       rng,
+      undefined, // default minClicks (0) — the tick has no probe-style click floor
+      deps.captureSink ?? makeFsCaptureSink(),
     );
   } catch (error) {
     // The halt arm (FR-7): a security checkpoint or login wall trips the

@@ -46,6 +46,12 @@ import type { Surface } from "./config-file.js";
 import type { ContextLike, LocatorLike, PageLike } from "./fetch-threads.js";
 import { HALT_CHECKPOINT_REASON, type RandomFn } from "./linkedin-behavior.js";
 import {
+  CAPTURE_SCHEMA_VERSION,
+  type CaptureSink,
+  type CaptureWarnState,
+  captureOnce,
+} from "./linkedin-capture.js";
+import {
   LINKEDIN_RESPONSE_RE,
   buildContentSearchUrl,
   collectLinkedInPosts,
@@ -457,6 +463,16 @@ const defaultSleep: SleepFn = (ms) =>
  * through the pure parser; minted posts dedupe first-wins by urn, and
  * the OK line counts bodies that CARRIED posts (N008: parsed, not
  * received).
+ *
+ * Capture (design 2026-11-13, capture-first): when a sink rides the walk,
+ * BOTH listener arms record the raw body as one CaptureRecord — the
+ * matched arm adds minted/fresh, the unmatched diagnostic arm omits them.
+ * captureOrdinal is the SHARED per-tick counter minted by
+ * fetchLinkedInPosts (D7), incremented synchronously after each body read
+ * so filenames stay unique and arrival-ordered across surfaces within the
+ * session stamp. captureOnce is fire-and-forget: a sink rejection never
+ * rejects the walk and warns once per surface walk (D4). A sink-less walk
+ * captures nothing.
  */
 async function walkLinkedInSurface(
   context: ContextLike,
@@ -464,11 +480,15 @@ async function walkLinkedInSurface(
   label: string,
   scrollRounds: number,
   minClicks: number,
+  captureSink: CaptureSink | undefined,
+  captureOrdinal: { value: number },
+  nowFn: () => number,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
   let received = 0; // matched flagship-web bodies fully read — the liveness signal
   let parsed = 0; // bodies that carried at least one post — the OK-line counter (N008)
+  const captureWarn: CaptureWarnState = { warned: false };
   const assertNoCheckpoint = (): void => {
     // url() is the optional Slice 3 seam; absence (a pre-Slice-3 double)
     // reads as no checkpoint. The production adapters always supply it.
@@ -490,6 +510,27 @@ async function walkLinkedInSurface(
       void (async () => {
         try {
           const body = await response.text();
+          // Capture-first (design 2026-11-13): the diagnostic arm records
+          // the body too — the SSR firehose (ids=0, markers=0) is a REAL
+          // response, and the replay needs it (commit 9fa2a7e).
+          if (captureSink !== undefined) {
+            captureOrdinal.value += 1;
+            captureOnce(
+              captureSink,
+              {
+                schemaVersion: CAPTURE_SCHEMA_VERSION,
+                capturedAt: new Date(nowFn()).toISOString(),
+                label,
+                ordinal: captureOrdinal.value,
+                received,
+                url,
+                status: response.status(),
+                matched: false,
+                body,
+              },
+              captureWarn,
+            );
+          }
           const ids = new Set([...body.matchAll(/urn:li:activity:(\d{10,})/g)].map((m) => m[1]))
             .size;
           const markers = (body.match(/legacyControlName":"commentary_text/g) || []).length;
@@ -521,6 +562,29 @@ async function walkLinkedInSurface(
         console.log(
           `fetch: ${label} body ${received}: ${body.length}B — ${minted.length} minted, ${fresh} new, ${minted.length - fresh} dup (total ${posts.size})`,
         );
+        // Capture-first (design 2026-11-13): the matched arm adds minted/
+        // fresh to the envelope — the replay names the mint decision per
+        // row against these facts.
+        if (captureSink !== undefined) {
+          captureOrdinal.value += 1;
+          captureOnce(
+            captureSink,
+            {
+              schemaVersion: CAPTURE_SCHEMA_VERSION,
+              capturedAt: new Date(nowFn()).toISOString(),
+              label,
+              ordinal: captureOrdinal.value,
+              received,
+              url,
+              status: response.status(),
+              matched: true,
+              body,
+              minted: minted.length,
+              fresh,
+            },
+            captureWarn,
+          );
+        }
       } catch {
         // the body read can race the page close; skip it
       }
@@ -674,6 +738,12 @@ async function walkLinkedInSurface(
  *
  * contextFactory defaults to the in-module production factory (the persistent
  * profile, headed); the PC scripts and the offline suite inject explicitly.
+ *
+ * captureSink (capture-first, design 2026-11-13): the 9th defaulted
+ * trailing param, undefined = capture disabled — the offline suite passes
+ * nothing and nothing writes; the PC scripts pass the production fs sink.
+ * The per-tick ordinal counter is minted here and shared across every
+ * surface walk (D7).
  */
 export async function fetchLinkedInPosts(
   surfaces: readonly LinkedinSurface[],
@@ -684,6 +754,7 @@ export async function fetchLinkedInPosts(
   now: () => number = Date.now,
   rng: RandomFn = Math.random,
   minClicks = 0,
+  captureSink?: CaptureSink,
 ): Promise<Post[]> {
   // An empty surface list must never launch a browser: the callers guard
   // surfaces.length > 0, and this early return keeps the invariant local
@@ -695,6 +766,10 @@ export async function fetchLinkedInPosts(
   // on a missing/malformed file before the walk is reached).
   const context = await contextFactory(profileDir);
   const gate = makePacingGate(now, sleepFn, rng);
+  // Shared per-tick capture ordinal (D7): one counter across every surface
+  // walk, incremented synchronously in the response listener — filenames
+  // stay unique and arrival-ordered within the session stamp.
+  const captureOrdinal = { value: 0 };
   const order = surfaces.map((surface, index) => ({ surface, index }));
   for (let i = order.length - 1; i > 0; i -= 1) {
     const j = Math.floor(rng() * (i + 1));
@@ -719,7 +794,16 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds, minClicks);
+        const posts = await walkLinkedInSurface(
+          context,
+          surface,
+          label,
+          scrollRounds,
+          minClicks,
+          captureSink,
+          captureOrdinal,
+          now,
+        );
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.

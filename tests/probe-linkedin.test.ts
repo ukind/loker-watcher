@@ -15,15 +15,17 @@
  * operator's live path.
  */
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import { isProbeFloor, isProbeNoSurfaces, runProbe } from "../scripts/probe-linkedin.js";
 import type { WatcherConfig } from "../src/config-file.js";
 import { ENV_NAMES } from "../src/config.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
+import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
   LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
@@ -46,8 +48,24 @@ const CONFIG: WatcherConfig = {
 };
 
 let dir: string | undefined;
+
+// The capture doctrine's absence-oracle snapshot (design 2026-11-13):
+// taken at module load, before any test runs.
+const repoCaptures = join(dirname(fileURLToPath(import.meta.url)), "..", "captures");
+const repoCapturesBefore = await access(repoCaptures).then(
+  () => true,
+  () => false,
+);
+
 after(async () => {
   if (dir !== undefined) await rm(dir, { recursive: true, force: true });
+  // The capture doctrine's absence oracle (design 2026-11-13): a FRESH
+  // captures/ directory at the repo root means a body-firing case above
+  // skipped its sink injection. A directory that already existed (a live
+  // operator run) is not this suite's problem.
+  if (!repoCapturesBefore) {
+    await assert.rejects(() => access(repoCaptures), /ENOENT/);
+  }
 });
 
 /**
@@ -211,6 +229,20 @@ function contextFactoryFor(options: {
   return factory;
 }
 
+/**
+ * Recording capture sink (capture-first, design 2026-11-13): the probe's
+ * production default WRITES captures/ into the current directory, so the
+ * walk-driving cases inject this in-memory double — npm test touches OS
+ * temp only, and the pass-path pins the probe → walk pass-through.
+ */
+function recordingSink(): CaptureSink & { records: CaptureRecord[] } {
+  const records: CaptureRecord[] = [];
+  const sink: CaptureSink = async (record) => {
+    records.push(record);
+  };
+  return Object.assign(sink, { records });
+}
+
 describe("entry guard", () => {
   it("importing the module stays side-effect free (no config load, no browser walk)", async () => {
     // The import above already ran the module top level: reaching this
@@ -230,10 +262,12 @@ describe("runProbe pass path", () => {
       profileDirs,
       script: { initialBody: bodyMinting(10) },
     });
+    const capture = recordingSink();
     const result = await runProbe({
       config: CONFIG,
       env: await cookieEnv(),
       contextFactory,
+      captureSink: capture,
       now: () => T0,
     });
     assert.deepEqual(result, { postCount: 10, elapsedMs: 0 }); // the pinned clock reports the elapsed delta
@@ -249,18 +283,24 @@ describe("runProbe pass path", () => {
     ); // scrollRounds rides config; minClicks defaults to PROBE_MIN_CLICKS
     assert.ok(lines.some((line) => /probe: 0ms — 10 post\(s\)/.test(line)));
     assert.ok(lines.some((line) => line === "probe: all checks passed"));
+    // Capture-first (design 2026-11-13): the probe records the body it
+    // walked — gitignored scratch, the replay's input.
+    assert.equal(capture.records.length, 1);
+    assert.equal(capture.records[0]?.matched, true);
   });
 });
 
 describe("runProbe gate arms", () => {
   it("throws the tagged floor gate on a short walk", async () => {
     const contextFactory = contextFactoryFor({ script: { initialBody: bodyMinting(4) } });
+    const capture = recordingSink();
     await assert.rejects(
       async () =>
         runProbe({
           config: CONFIG,
           env: await cookieEnv(),
           contextFactory,
+          captureSink: capture,
           now: () => T0,
         }),
       (error: unknown) => {

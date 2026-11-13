@@ -14,10 +14,11 @@
  * its block). The budget suites died with the budget machine (slice 5).
  */
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   type GitRunner,
   fetchTick,
@@ -30,6 +31,7 @@ import type { WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
+import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import { type LinkedInContextFactory, SCROLL_JS, isLegDead } from "../src/linkedin-fetch.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
@@ -54,8 +56,24 @@ const CONFIG: WatcherConfig = {
 };
 
 let dir: string | undefined;
+
+// The capture doctrine's absence-oracle snapshot (design 2026-11-13):
+// taken at module load, before any test runs.
+const repoCaptures = join(dirname(fileURLToPath(import.meta.url)), "..", "captures");
+const repoCapturesBefore = await access(repoCaptures).then(
+  () => true,
+  () => false,
+);
+
 after(async () => {
   if (dir !== undefined) await rm(dir, { recursive: true, force: true });
+  // The capture doctrine's absence oracle (design 2026-11-13): a FRESH
+  // captures/ directory at the repo root means a body-firing case above
+  // skipped its sink injection. A directory that already existed (a live
+  // operator run) is not this suite's problem.
+  if (!repoCapturesBefore) {
+    await assert.rejects(() => access(repoCaptures), /ENOENT/);
+  }
 });
 
 async function workPath(name: string): Promise<string> {
@@ -237,6 +255,21 @@ function contextFactoryFor(options: {
   return Object.assign(factory, { clicks: (): number[] => clicks });
 }
 
+/**
+ * Recording capture sink (capture-first, design 2026-11-13): the tick's
+ * production default WRITES captures/ into the current directory, so every
+ * walk-driving case injects this in-memory double — npm test touches OS
+ * temp only, and the end-to-end cases pin the tick → walk pass-through on
+ * the records.
+ */
+function recordingSink(): CaptureSink & { records: CaptureRecord[] } {
+  const records: CaptureRecord[] = [];
+  const sink: CaptureSink = async (record) => {
+    records.push(record);
+  };
+  return Object.assign(sink, { records });
+}
+
 describe("realGit (git's merged output, resolved and rejected paths)", () => {
   it("captures git's stdout on success and its stderr + exit code on failure", async (t) => {
     const probe = await realGit(["--version"]); // read-only: no repo state touched
@@ -368,6 +401,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const marker = await workPath("tick-ok.flag");
     await writeFile(marker, "dead session\n", "utf8"); // a stale episode: a clean tick clears it
     const closed = { value: false };
+    const capture = recordingSink();
     const contextFactory = contextFactoryFor({
       closed,
       script: { initialBody: cardBody(idAt(1), "hiring post — Jakarta") },
@@ -379,6 +413,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
+      captureSink: capture,
       payloadPath: payload,
       git,
       env: {},
@@ -408,6 +443,11 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     assert.equal(git.calls[2]?.[1], payload); // ONLY the injected payload path
     assert.ok(git.calls.some((args) => args[0] === "commit"));
     assert.ok(git.calls.some((args) => args[0] === "push"));
+    // Capture-first (design 2026-11-13): the tick threads the sink into
+    // the walk — one matched body fired, one record, arrival ordinal 1.
+    assert.equal(capture.records.length, 1);
+    assert.equal(capture.records[0]?.matched, true);
+    assert.equal(capture.records[0]?.ordinal, 1);
   });
 
   it("propagates leg-dead without writing the payload, pushing, or leaving a context open", async () => {
@@ -483,6 +523,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const payload = await workPath("tick-fine-empty.json");
     const marker = await workPath("tick-fine-empty.flag");
     const contextFactory = contextFactoryFor({ script: { initialBody: EMPTY_BODY } });
+    const capture = recordingSink();
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-4.flag"),
@@ -490,6 +531,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
+      captureSink: capture,
       payloadPath: payload,
       git,
       env: {},
@@ -501,6 +543,8 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     assert.equal(envelope.version, PAYLOAD_VERSION);
     assert.deepEqual(envelope.posts, []); // the guard keys on FAULTS, not post count
     assert.ok(git.calls.some((args) => args[0] === "push"));
+    // Even a 0-post body is evidence: the matched arm captured it.
+    assert.equal(capture.records.length, 1);
   });
 
   it("returns early when no linkedin surfaces are configured (resolvers AND the checkout preflight never run)", async () => {
@@ -749,11 +793,13 @@ describe("the scrollRounds click bound rides the config into the walk", () => {
         loadMoreVisible: () => true, // every round's button resolves; the gains stay dry
       },
     });
+    const capture = recordingSink();
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       config: { ...CONFIG, scrollRounds: 3 },
       cookies: COOKIES,
       contextFactory,
+      captureSink: capture,
       git,
       payloadPath: await workPath("payload-rounds.json"),
       latchPath: await workPath("latch-rounds.flag"),

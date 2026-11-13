@@ -59,6 +59,20 @@ export const STATE_PATH = "state/seen-posts.json";
 export const LINKEDIN_PAYLOAD_PATH = "state/linkedin-posts.json";
 
 /**
+ * Diagnostic capture root for the LinkedIn raw-body capture harness
+ * (capture-first precondition, design 2026-11-13): every intercepted
+ * flagship-web response body lands under captures/<UTC session stamp>/ as
+ * one atomic JSON file, read back offline by scripts/replay-linkedin.ts.
+ * Untracked scratch, NOT committed state: the one-writer-per-file doctrine
+ * does not apply (the PC walk is the only writer by construction and the
+ * hosted run never captures — src/index.ts imports only a type from
+ * linkedin-fetch). Gitignored in the same change as the sink, because
+ * guardCheckout throws on any untracked path before every tick
+ * (scripts/fetch-linkedin.ts:254-261).
+ */
+export const LINKEDIN_CAPTURES_ROOT = "captures";
+
+/**
  * Probe-measured per-account judge ceilings (single-writer doctrine, the
  * LINKEDIN_PAYLOAD_PATH shape): the probe job is the ONLY writer — it
  * commits live-only readings before its dead-account gate — and the watch

@@ -9,8 +9,11 @@
  * Exit 1 on a checkpoint or login wall (the walk's tagged halt), a dead
  * session (no flagship-web response within the liveness window — the
  * tagged leg-dead), every surface faulted, or fewer than 10 posts. The
- * probe writes nothing: no payload, no push, no latch, no episode
- * marker — it is a read-only diagnostic the fetch tick never consults.
+ * probe writes no tracked state — no payload, no push, no latch, no
+ * episode marker: it is a read-only diagnostic the fetch tick never
+ * consults. Its ONE write is the capture harness's gitignored scratch
+ * (captures/<UTC session stamp>/, design 2026-11-13): diagnostic evidence
+ * replayed offline by scripts/replay-linkedin.ts, never committed.
  *
  * Entry-guarded main (the login-linkedin.ts idiom): importing the module
  * stays side-effect free — no config load, no cookie read, no browser.
@@ -30,6 +33,7 @@
 import { pathToFileURL } from "node:url";
 import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { envWithDotEnv } from "../src/env-file.js";
+import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
   LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
@@ -108,6 +112,14 @@ export interface ProbeDeps {
   env?: Record<string, string | undefined>;
   /** Browser-context factory. Default: the walk module's own production factory. */
   contextFactory?: LinkedInContextFactory;
+  /**
+   * Capture sink for the walk (capture-first, design 2026-11-13). Default:
+   * the production fs sink under captures/<UTC session stamp>/ — gitignored
+   * scratch (D5: the probe stays read-only for TRACKED state; the captures
+   * are diagnostic evidence). Passing nothing means CAPTURE TO DISK: the
+   * offline suite injects a recording sink in its walk-driving cases.
+   */
+  captureSink?: CaptureSink;
   /** The walk's Load-more click floor. Default: PROBE_MIN_CLICKS. */
   minClicks?: number;
   /** Clock for the elapsed report. Default: Date.now. */
@@ -169,6 +181,7 @@ export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
     deps.now, // Date.now when unset — the exact production call shape
     undefined, // Math.random
     minClicks,
+    deps.captureSink ?? makeFsCaptureSink(),
   );
   const elapsedMs = now() - started;
   console.log(`probe: ${elapsedMs}ms — ${posts.length} post(s)`);
