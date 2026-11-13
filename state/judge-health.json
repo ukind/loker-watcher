@@ -1,7 +1,8 @@
 {
   "version": 1,
   "marks": {
-    "https://openrouter.ai/api/v1": 1
+    "https://openrouter.ai/api/v1": 1,
+    "https://api.opencheap.si/v1": 1
   },
   "outageOpen": false
 }
