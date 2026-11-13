@@ -1073,6 +1073,7 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
       () => NOW_MS,
       () => 0,
       0,
+      undefined,
       sink,
     );
     assert.equal(posts.length, 2);
@@ -1121,6 +1122,7 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
       () => 0,
       () => 0,
       0,
+      undefined,
       sink,
     );
     assert.deepEqual(
@@ -1144,6 +1146,7 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
       () => 0,
       () => 0,
       0,
+      undefined,
       sink,
     );
     assert.equal(records.length, 1);
@@ -1175,6 +1178,7 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
       () => 0,
       () => 0,
       0,
+      undefined,
       sink,
     );
     await flush(); // drain the void'd sink rejections
@@ -1205,4 +1209,180 @@ after(async () => {
   if (!repoCapturesBefore) {
     await assert.rejects(() => access(repoCaptures), /ENOENT/);
   }
+});
+
+describe("seen-stop (design 2026-11-13)", () => {
+  it("stops before round 1 when the initial body is fully seen — the pre-stop mints ride", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seen = new Set([1, 2, 3].map((n) => `urn:li:activity:${idAt(n)}`));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23seenfull",
+          script: {
+            initialBody: cardBodyMany([
+              [idAt(1), postText(1)],
+              [idAt(2), postText(2)],
+              [idAt(3), postText(3)],
+            ]),
+            clickBodies: [cardBody(idAt(4), postText(4))], // must never be reached
+          },
+        },
+      ],
+    });
+    // The full 9-arg call — slot 9 carries the tick's seen set, so this
+    // test doubles as the :722 threading pin (a dropped pass-through
+    // leaves the walk the empty default, no stop fires, the rounds run).
+    const posts = await fetchLinkedInPosts(
+      [surface("#seenfull")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      seen,
+    );
+    const page = pageFor(factory, "%23seenfull");
+    assert.deepEqual(page.clicks, []); // zero clicks — no round ever ran
+    assert.equal(
+      page.evaluates.some((script) => script.includes("loadMore")),
+      false,
+    ); // not even the round-1 DOM probe ran
+    assert.equal(posts.length, 3); // the pre-stop mints ride the payload
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(3)}`)));
+    assert.ok(
+      lines.some((line) => /OK — 3 post\(s\) from 1 response\(s\).*0 click\(s\) fired/.test(line)),
+    );
+  });
+
+  it("a fresh unseen insert resets the streak — only consecutive seen ids stop the walk", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seen = new Set([1, 2, 4, 5, 6].map((n) => `urn:li:activity:${idAt(n)}`));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23reset",
+          script: {
+            // Mints emerge in TIMESTAMP order (the parser's zip), so the
+            // fresh id sits BETWEEN the seen ids: s1, s2, FRESH(3), s4 —
+            // a naive seen-count reads 3 and stops before round 1; the
+            // reset makes the true streak 1.
+            initialBody: cardBodyMany([
+              [idAt(1), postText(1)],
+              [idAt(2), postText(2)],
+              [idAt(3), postText(3)],
+              [idAt(4), postText(4)],
+            ]),
+            clickBodies: [cardBody(idAt(5), postText(5)), cardBody(idAt(6), postText(6))],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#reset")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      seen,
+    );
+    const page = pageFor(factory, "%23reset");
+    assert.deepEqual(page.clicks, [1, 2]); // round 1 ran; the stop fires after round 2
+    assert.equal(posts.length, 6); // 4 initial + 1 + 1
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(6)}`)));
+  });
+
+  it("a re-served id never re-counts — the walk-local skip cannot tip the streak", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seen = new Set([1, 2, 3].map((n) => `urn:li:activity:${idAt(n)}`));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23reserve",
+          script: {
+            initialBody: cardBodyMany([
+              [idAt(1), postText(1)], // seen — streak 1
+              [idAt(2), postText(2)], // seen — streak 2
+            ]),
+            clickBodies: [
+              // Re-serves the walk-local idAt(1): the first-wins skip must
+              // NOT accrue (a re-count would tip 2 → 3 and stop at this
+              // round), and the fresh unseen id resets the streak to 0.
+              cardBodyMany([
+                [idAt(1), "second mint"],
+                [idAt(33), postText(33)],
+              ]),
+              cardBody(idAt(31), postText(31)), // fresh unseen — stays reset
+            ],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#reserve")],
+      PROFILE,
+      factory,
+      3,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      seen,
+    );
+    const page = pageFor(factory, "%23reserve");
+    assert.deepEqual(page.clicks, [1, 2, 3]); // all three rounds ran
+    assert.equal(posts.length, 4); // 2 initial + 1 + 1 (the re-served id minted once)
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.equal(
+      lines.some((line) => line.includes("seen-stop:")),
+      false,
+    ); // the re-served id never re-counted; the fresh resets kept the streak low
+  });
+
+  it("tie round: the dry line prints with its increment, then the seen-stop line breaks", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seen = new Set([1, 2, 3, 4].map((n) => `urn:li:activity:${idAt(n)}`));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23tie",
+          script: {
+            initialBody: cardBodyMany([
+              [idAt(9), postText(9)], // fresh — streak stays 0
+              [idAt(8), postText(8)],
+            ]),
+            clickBodies: [
+              cardBody(idAt(1), postText(1)), // seen — streak 1, +1 new → dry 1/3
+              cardBody(idAt(2), postText(2)), // seen — streak 2, +1 new → dry 2/3
+              cardBody(idAt(3), postText(3)), // seen — streak 3 AND dry 3/3: the tie
+            ],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#tie")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      seen,
+    );
+    const page = pageFor(factory, "%23tie");
+    assert.deepEqual(page.clicks, [1, 2, 3]); // the tie breaks after round 3; round 4 never runs
+    assert.equal(posts.length, 5); // 2 fresh + 3 seen, all minted pre-stop
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /\(dry 3\/3, total 5\)/.test(line)));
+    assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(3)}`)));
+  });
 });

@@ -33,7 +33,7 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
-import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
+import { LINKEDIN_PAYLOAD_PATH, STATE_PATH } from "../src/config.js";
 import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/email.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
@@ -49,6 +49,7 @@ import {
 } from "../src/linkedin-fetch.js";
 import { writePayloadAtomic } from "../src/linkedin-payload.js";
 import { type LinkedInCookies, resolveLinkedInCookies } from "../src/linkedin-session.js";
+import { readSeenIdSet } from "../src/state.js";
 import type { Post } from "../src/types.js";
 
 /** Injectable git runner: args → exit code + git's own merged output (never rejects). */
@@ -115,6 +116,12 @@ export interface FetchTickDeps {
   alarm?: (reason: string) => Promise<void>;
   /** Episode marker file. Default: repo-local beside the payload (survives restarts). */
   markerPath?: string;
+  /**
+   * Seen-posts state file for the walk's seen-stop (design 2026-11-13).
+   * Default: STATE_PATH — the committed seen file the hosted bot writes
+   * back. The offline suite injects a temp path to stay hermetic.
+   */
+  seenPath?: string;
   /** Clock for the payload stamp. Default: Date.now. */
   now?: () => number;
   /** Halt-latch flag file. Default: repo-local beside the payload (survives restarts). */
@@ -370,6 +377,12 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
       'fetch-linkedin: the cookie file carries no machine-written "harvestedAt" stamp — run "npm run login-linkedin" to re-harvest the session (README: PC operations)',
     );
   }
+  // The seen-stop set (design 2026-11-13): the full-history seen ids feed
+  // the walk's consecutive-seen stop. Outside the fault try BY CONTRACT:
+  // readSeenIdSet degrades to an empty set on every fault, so the walk's
+  // fault vocabulary stays browser-shaped (halt / leg-dead / all-faulted
+  // only) — a broken seen file costs the stop, never the tick.
+  const seenIds = await readSeenIdSet(deps.seenPath ?? STATE_PATH);
   let posts: Post[];
   try {
     // The walk owns the browser: it opens one context on the persistent
@@ -390,7 +403,8 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
       undefined,
       now,
       rng,
-      undefined, // default minClicks (0) — the tick has no probe-style click floor
+      0, // minClicks — the tick carries no click floor (the probe owns PROBE_MIN_CLICKS)
+      seenIds,
       deps.captureSink ?? makeFsCaptureSink(),
     );
   } catch (error) {

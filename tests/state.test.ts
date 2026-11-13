@@ -11,6 +11,7 @@ import {
   loadState,
   migrateState,
   pruneState,
+  readSeenIdSet,
   saveState,
   stateTempPath,
   writeStateAtomic,
@@ -212,6 +213,51 @@ describe("loadState", () => {
     });
     const state = await loadState(path, 72, NOW);
     assert.deepEqual(state.seenPostIds, { keep: iso(NOW - HOUR) });
+  });
+});
+
+describe("readSeenIdSet", () => {
+  it("warns exactly once and returns an empty set when the file is absent", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await tempStateFile("seen-absent.json"); // unseeded: no file exists yet
+    assert.deepEqual(await readSeenIdSet(path), new Set());
+    assert.equal(warns.mock.callCount(), 1);
+  });
+
+  it("warns exactly once and returns an empty set when the JSON is malformed", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await tempStateFile("seen-broken.json");
+    await writeFile(path, "{ not json", "utf8");
+    assert.deepEqual(await readSeenIdSet(path), new Set());
+    assert.equal(warns.mock.callCount(), 1);
+  });
+
+  it("warns exactly once and returns an empty set when the envelope is the wrong shape", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const path = await tempStateFile("seen-shape.json", { version: 99, seenPostIds: {} });
+    assert.deepEqual(await readSeenIdSet(path), new Set());
+    assert.equal(warns.mock.callCount(), 1);
+  });
+
+  it("returns every key unpruned — an entry older than any window survives (full history)", async () => {
+    const path = await tempStateFile("seen-full.json", {
+      version: CURRENT_STATE_VERSION,
+      seenPostIds: {
+        fresh: iso(NOW),
+        ancient: iso(NOW - 1000 * HOUR), // would die under any recency prune
+      },
+    });
+    const ids = await readSeenIdSet(path);
+    assert.equal(ids.size, 2);
+    assert.ok(ids.has("fresh"));
+    assert.ok(ids.has("ancient"));
+  });
+
+  it("round-trips with saveState: every saved id lands in the set", async () => {
+    const path = await tempStateFile("seen-round.json");
+    await saveState({ version: CURRENT_STATE_VERSION, seenPostIds: {} }, ["a", "b"], path, NOW);
+    const ids = await readSeenIdSet(path);
+    assert.deepEqual([...ids].sort(), ["a", "b"]);
   });
 });
 

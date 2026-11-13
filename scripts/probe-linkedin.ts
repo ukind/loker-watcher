@@ -181,6 +181,7 @@ export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
     deps.now, // Date.now when unset — the exact production call shape
     undefined, // Math.random
     minClicks,
+    undefined, // seenIds — the probe never stops on seen ids, it needs the full walk
     deps.captureSink ?? makeFsCaptureSink(),
   );
   const elapsedMs = now() - started;

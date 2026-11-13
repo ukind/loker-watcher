@@ -10,7 +10,7 @@
  * write is strictly skipped when there is nothing unseen to add, keeping the
  * state file byte-identical on those runs (FRD #9, D8).
  */
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { STATE_PATH } from "./config.js";
 import type { Post } from "./types.js";
@@ -156,6 +156,47 @@ export async function loadState(
     }
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`state: failed to load state from ${filePath}: ${message}`);
+  }
+}
+
+/**
+ * Read the full-history seen-id set for the PC walk's seen-stop (design
+ * 2026-11-13): every key of seenPostIds, unpruned — a pruned id is
+ * recency-ineligible hosted-side anyway, so the stop fires earliest with
+ * no clock dependency. Degrade-everything (the loadAccountCeilings
+ * posture, src/judge-ceilings.ts:93-121): an absent, unreadable, or
+ * malformed file warns exactly once and yields an empty set — a broken
+ * seen file must never fail a fetch tick, it only costs the stop.
+ *
+ * The stat pre-probe exists because loadState swallows ENOENT internally
+ * (its empty-state return): the absent file is worth its own warn line in
+ * the PC clone, where seen-posts.json is committed data and its absence
+ * means the clone predates the bot's first commit-back.
+ */
+export async function readSeenIdSet(filePath: string = STATE_PATH): Promise<ReadonlySet<string>> {
+  try {
+    await stat(filePath);
+  } catch (error) {
+    const isEnoent =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code: unknown }).code === "ENOENT";
+    const message = error instanceof Error ? error.message : String(error);
+    if (isEnoent) {
+      console.warn(`state: ${filePath} absent — seen-stop set is empty (every mint counts fresh)`);
+    } else {
+      console.warn(`state: ${filePath} unreadable (${message}) — seen-stop set is empty`);
+    }
+    return new Set();
+  }
+  try {
+    const state = await loadState(filePath);
+    return new Set(Object.keys(state.seenPostIds));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`state: ${filePath} malformed — seen-stop set is empty (${message})`);
+    return new Set();
   }
 }
 
