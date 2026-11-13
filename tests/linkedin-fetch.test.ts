@@ -23,8 +23,12 @@
  * observation. Importing the module never loads Playwright.
  */
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { access } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { after, describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
+import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
   type LinkedinSurface,
   PACE_MAX_MS,
@@ -96,6 +100,14 @@ const cardBodyMany = (pairs: ReadonlyArray<readonly [string, string]>): string =
 
 /** A parseable flight body that mints ZERO posts (an empty-results page). */
 const emptyBody = (): string => row("e1", { tracking: { activityUrn: { activityId: idAt(999) } } });
+
+// Flagship-web class (passes the unmatched arm's /flagship-web/i gate), >80 chars, and missing
+// LINKEDIN_RESPONSE_RE by URL (the mint regex accepts only search/results/content and
+// rsc-action/actions/pagination) — the same miss class as the SSR firehose noise below, so the
+// 500-status body routes to the UNMATCHED arm. The 80-char cut is the unmatched LOG LINE's,
+// never the record's: fence 4 pins the FULL url against this constant.
+const LONG_FLAGSHIP_URL =
+  "https://www.linkedin.com/flagship-web/rsc-action/actions/component?keywords=%23hiring%20indonesia&origin=SWITCH_SEARCH_VERTICAL&searchId=flagship-noise-capture";
 
 const SEARCH_RESULT_URL = "https://www.linkedin.com/search/results/content/";
 const FLAGSHIP_SEARCH_URL = "https://www.linkedin.com/flagship-web/search/results/content/";
@@ -276,6 +288,25 @@ const pageFor = (factory: { pages: FakePage[] }, fragment: string): FakePage => 
 /** The keywords-token transcript across every created page, in navigation order. */
 const dispatchTranscript = (factory: { pages: FakePage[] }): string[] =>
   factory.pages.flatMap((page) => page.gotos).map((url) => /keywords=([^&]+)/.exec(url)?.[1] ?? "");
+
+/**
+ * Recording capture sink (the capture-arm oracle): stores every record in
+ * arrival order; `failAfter` makes every call from that point REJECT —
+ * the trigger for the warn-once policy pin.
+ */
+function recordingSink(options: { failAfter?: number } = {}): {
+  sink: CaptureSink;
+  records: CaptureRecord[];
+} {
+  const records: CaptureRecord[] = [];
+  const sink: CaptureSink = async (record) => {
+    if (options.failAfter !== undefined && records.length >= options.failAfter) {
+      throw new Error("disk full");
+    }
+    records.push(record);
+  };
+  return { sink, records };
+}
 
 describe("fetchLinkedInPosts (browser walk)", () => {
   it("navigates the byte-exact content-search URL and returns parsed posts in input order", async () => {
@@ -1002,6 +1033,182 @@ describe("walk guards and post shape", () => {
     assert.equal(first.timestamp, new Date(BASE_MS + 60_000).toISOString());
     assert.deepEqual(first.surfaces, [{ type: "linkedin", value: "#x" }]);
   });
+});
+
+describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)", () => {
+  it("captures BOTH arms when a sink rides — matched carries minted/fresh, unmatched omits them", async () => {
+    const { sink, records } = recordingSink();
+    const NOW_MS = Date.UTC(2026, 10, 13, 4, 24, 35);
+    const ssrNoiseBody = row("n1", { tracking: { activityUrn: { activityId: idAt(51) } } });
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23cap",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            clickBodies: [cardBody(idAt(2), postText(2))],
+            noiseOnFirstSettle: [
+              {
+                url: () => LONG_FLAGSHIP_URL,
+                status: () => 500,
+                text: async () => cardBody(idAt(50), "noise 500 body"),
+              },
+              {
+                // Misses LINKEDIN_RESPONSE_RE by URL — the SSR firehose class.
+                url: () => "https://www.linkedin.com/flagship-web/rsc-action/actions/component",
+                status: () => 200,
+                text: async () => ssrNoiseBody,
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#cap")],
+      PROFILE,
+      factory,
+      1,
+      instantSleep,
+      () => NOW_MS,
+      () => 0,
+      0,
+      undefined,
+      sink,
+    );
+    assert.equal(posts.length, 2);
+    assert.equal(records.length, 4); // initial + click + two diagnostic bodies
+    assert.deepEqual(
+      records.map((rec) => rec.ordinal),
+      [1, 2, 3, 4],
+    ); // arrival order
+    const [initial, click, noise500, ssr] = records;
+    // Matched arm: minted/fresh present; received counts the body itself;
+    // capturedAt rides the injected walk clock.
+    assert.equal(initial?.matched, true);
+    assert.equal(initial?.minted, 1);
+    assert.equal(initial?.fresh, 1);
+    assert.equal(initial?.received, 1);
+    assert.equal(initial?.capturedAt, new Date(NOW_MS).toISOString());
+    assert.equal(click?.matched, true);
+    assert.equal(click?.minted, 1);
+    assert.equal(click?.fresh, 1);
+    assert.equal(click?.received, 2);
+    // Unmatched arm: FULL url (the 80-char cut is the log line's, never the
+    // record's), verbatim status, and NO minted/fresh keys at all.
+    assert.equal(noise500?.matched, false);
+    assert.equal(noise500?.status, 500);
+    assert.equal(noise500?.url, LONG_FLAGSHIP_URL); // FULL — past any 80-char cut
+    assert.equal("minted" in (noise500 ?? {}), false);
+    assert.equal("fresh" in (noise500 ?? {}), false);
+    assert.equal(ssr?.matched, false);
+    assert.equal("minted" in (ssr ?? {}), false);
+  });
+
+  it("shares one ordinal counter across surfaces — ordinals stay unique within the walk", async () => {
+    const { sink, records } = recordingSink();
+    const factory = fakeContextFactory({
+      scripts: [
+        { fragment: "%23a", script: { initialBody: cardBody(idAt(1), postText(1)) } },
+        { fragment: "%23b", script: { initialBody: cardBody(idAt(2), postText(2)) } },
+      ],
+    });
+    await fetchLinkedInPosts(
+      [surface("#a"), surface("#b")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      undefined,
+      sink,
+    );
+    assert.deepEqual(
+      records.map((rec) => rec.ordinal).sort((a, b) => a - b),
+      [1, 2],
+    );
+    assert.deepEqual(records.map((rec) => rec.label).sort(), ["linkedin/#a", "linkedin/#b"]);
+  });
+
+  it("captures an SSR-shaped matched body with minted 0 / fresh 0", async () => {
+    const { sink, records } = recordingSink();
+    const factory = fakeContextFactory({
+      scripts: [{ fragment: "%23ssr", script: { initialBody: emptyBody() } }],
+    });
+    await fetchLinkedInPosts(
+      [surface("#ssr")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      undefined,
+      sink,
+    );
+    assert.equal(records.length, 1);
+    assert.equal(records[0]?.matched, true);
+    assert.equal(records[0]?.minted, 0);
+    assert.equal(records[0]?.fresh, 0);
+  });
+
+  it("never rejects on a failing sink and warns exactly once across repeated failures", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const { sink, records } = recordingSink({ failAfter: 0 });
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23failing",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            clickBodies: [cardBody(idAt(2), postText(2))],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#failing")],
+      PROFILE,
+      factory,
+      1,
+      instantSleep,
+      () => 0,
+      () => 0,
+      0,
+      undefined,
+      sink,
+    );
+    await flush(); // drain the void'd sink rejections
+    assert.deepEqual(records, []); // every write failed
+    assert.deepEqual(
+      posts.map((post) => post.id),
+      [`urn:li:activity:${idAt(1)}`, `urn:li:activity:${idAt(2)}`],
+    ); // the walk never noticed
+    assert.equal(warns.mock.callCount(), 1); // one warn per walk, not per failure
+    assert.match(String(warns.mock.calls[0]?.arguments[0] ?? ""), /linkedin-capture: sink failed/);
+    assert.match(String(warns.mock.calls[0]?.arguments[0] ?? ""), /disk full/);
+  });
+});
+
+// --- the offline-capture doctrine oracle (follow-up 2026-11-13): this
+// suite drives fetchLinkedInPosts DIRECTLY, so a future case handing the
+// walk a production-default sink fails HERE instead of writing captures/
+// into the repo. The imports gain access (node:fs/promises), dirname/join
+// (node:path), fileURLToPath (node:url), and after joins the node:test
+// import; the block sits before PROFILE at module top level.
+const repoCaptures = join(dirname(fileURLToPath(import.meta.url)), "..", "captures");
+const repoCapturesBefore = await access(repoCaptures).then(
+  () => true,
+  () => false,
+);
+
+after(async () => {
+  if (!repoCapturesBefore) {
+    await assert.rejects(() => access(repoCaptures), /ENOENT/);
+  }
 });
 
 describe("seen-stop (design 2026-11-13)", () => {
