@@ -34,10 +34,14 @@ export const CAPTURE_SCHEMA_VERSION = 1;
 
 /**
  * Retention for the captures root (follow-up 2026-11-13): after each write
- * the sink prunes session-stamp directories beyond the newest N — at the
- * working-hours tick cadence (~24-28 walks per weekday, 2-6 MB per walk)
- * capture scratch would otherwise grow by roughly 1-3 GB/month on the PC
- * with no alarm when the disk fills (D4's own silent-void rationale).
+ * the sink prunes session-stamp directories beyond the newest N. MEASURED
+ * session (2026-11-13: one surface, 54 bodies): ~85 MB per walk — the
+ * unmatched diagnostic arm records the SSR firehose bodies that dominate
+ * the bytes, which the first estimate's 2-6 MB per walk never counted.
+ * At the working-hours cadence (~24-28 walks per weekday) that is ~2-2.4 GB
+ * of write churn per day; the DISK bound is not monthly growth but
+ * keep-N × ~85 MB (~1.7 GB steady-state at 20), with no alarm when the
+ * disk fills (D4's own silent-void rationale).
  */
 export const CAPTURE_KEEP_SESSIONS = 20;
 
