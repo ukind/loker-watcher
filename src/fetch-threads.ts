@@ -54,7 +54,10 @@ const XHR_DRAIN_MS = 1500;
  * SCROLL_MIN_GAIN, MAX_POSTS_PER_SURFACE, RECENT_SETTLE_MS, SCROLL_SETTLE_MS,
  * XHR_DRAIN_MS). RECENT_TAB_TIMEOUT_MS and MAX_DRY_SCROLL_ROUNDS are new.
  */
-const RECENT_TAB_TIMEOUT_MS = 15_000;
+/** The tab renders post-hydration — <8s locally, but under 4-way runner
+ * contention it missed a 15s window on EVERY surface (run 131805799675,
+ * 2026-11-13); the window is sized for the slowest renderer. */
+const RECENT_TAB_TIMEOUT_MS = 45_000;
 const MAX_DRY_SCROLL_ROUNDS = 3;
 
 const USER_AGENT =
@@ -186,16 +189,6 @@ function makeChromiumContextFactory(headless: boolean): ContextFactory {
 /** The production factory: headless, hardened, storage-state aware. */
 const chromiumContextFactory: ContextFactory = makeChromiumContextFactory(true);
 
-/**
- * A `tag` surface logs as `tag/<value>`; a `url` surface logs as its full
- * URL. resolveSurfaces (src/config-file.ts) builds the labels, so the prefix
- * is the only discriminator available here — and it is unambiguous, because
- * a `url` surface is always an absolute https://www.threads.com/... URL.
- */
-function isTagSurface(surface: ResolvedSurface): boolean {
-  return surface.label.startsWith("tag/");
-}
-
 /** Rendered HTML for one surface, ready for extractPosts(). */
 export interface SurfaceFetch {
   label: string;
@@ -303,9 +296,12 @@ export interface AuthenticatedFetchOptions {
  * ever fires (measured 2026-11-13, run 43399922260), so after the drain the
  * document's blobs merge into the same first-wins Map.
  *
- * The Recent-tab click is best-effort for every surface: profile pages and
- * search URLs have no such tab, and a `filter=recent` search URL is recent
- * by construction.
+ * The Recent-tab click is best-effort for every surface: search and tag
+ * pages render the tab post-hydration (a 45s window — under runner
+ * contention it once missed 15s everywhere, run 131805799675), profiles
+ * and the homepage carry none. A filter=recent search URL already sits on
+ * the Recent view; a missed tab is tolerated because the SSR blobs carry
+ * the default view's posts either way.
  *
  * Surfaces drain through the same bounded slot-array pool as the logged-out
  * walk (D4): results reassemble in input order, peak <= FETCH_CONCURRENCY.
@@ -425,14 +421,20 @@ async function fetchOneAuthenticated(
       recentVisible = false;
     }
     if (recentVisible) {
+      // Every surface may carry the tab: search pages render the same
+      // <a aria-label="Recent"> control (probe 2026-11-13), profiles and
+      // the homepage render none. Clicking an already-active tab (the
+      // filter=recent URL arrives with aria-current="page") is a no-op; a
+      // Top/tags view switches to Recent and starts the graphql stream.
       await recentTab.click();
       await page.waitForTimeout(RECENT_SETTLE_MS);
-    } else if (isTagSurface(surface)) {
-      // A tag page should carry a Recent tab; its absence is unexpected.
-      console.warn(`fetch: ${surface.label} has no Recent tab — using the default view`);
     } else {
-      // A profile or search URL selects its own view; no tab is expected.
-      console.log(`fetch: ${surface.label} has no Recent tab — the URL selects its own view`);
+      // The tab renders post-hydration; under 4-way runner contention it
+      // can miss even this window (run 131805799675: every surface missed
+      // 15s). Tolerated: the SSR blobs carry the default view's posts.
+      console.log(
+        `fetch: ${surface.label} — the Recent tab did not render within ${RECENT_TAB_TIMEOUT_MS / 1000}s, keeping the URL's default view`,
+      );
     }
 
     // `posts` is filled by ASYNC response handlers, so a single settle window

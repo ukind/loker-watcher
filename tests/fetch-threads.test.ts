@@ -514,8 +514,8 @@ describe("fetchSurfacesAuthenticated", () => {
     assert.ok(lines.some((line) => /tag\/empty: 0 post\(s\) \(authenticated\)/.test(line)));
   });
 
-  it("warns when a tag surface has no Recent tab", async (t) => {
-    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+  it("logs the tab-timeout line when the Recent tab never renders", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
 
     const result = await fetchSurfacesAuthenticated(
       [surface("tag/noTab")],
@@ -530,13 +530,17 @@ describe("fetchSurfacesAuthenticated", () => {
       result.map((post) => post.id),
       [id19(1)],
     ); // the default view still captures
-    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
-      lines.some((line) => /tag\/noTab has no Recent tab — using the default view/.test(line)),
+      lines.some((line) =>
+        /tag\/noTab — the Recent tab did not render within 45s, keeping the URL's default view/.test(
+          line,
+        ),
+      ),
     );
   });
 
-  it("logs the URL-selected view for a profile surface and never warns about the tab", async (t) => {
+  it("logs the tab-timeout line for a profile surface too and never warns", async (t) => {
     const logs = t.mock.method(console, "log", console.log.bind(console));
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
 
@@ -555,12 +559,10 @@ describe("fetchSurfacesAuthenticated", () => {
     );
     const logLines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
-      logLines.some((line) =>
-        /profile\/dev has no Recent tab — the URL selects its own view/.test(line),
-      ),
+      logLines.some((line) => /profile\/dev — the Recent tab did not render within 45s/.test(line)),
     );
     const warnLines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(warnLines.every((line) => !line.includes("no Recent tab")));
+    assert.ok(warnLines.every((line) => !line.includes("Recent tab")));
   });
 
   it("clicks the Recent tab once and waits the settle window when it is visible", async () => {
@@ -587,6 +589,22 @@ describe("fetchSurfacesAuthenticated", () => {
     );
     assert.equal(recentTabClicks.length, 1); // one click, not one per scroll round
     assert.equal(settleWaits[0], 5000); // the Recent settle rides before the scroll settles
+  });
+  it("clicks the Recent tab on a url surface too (search pages carry the tab)", async () => {
+    const recentTabClicks: number[] = [];
+
+    await fetchSurfacesAuthenticated(
+      [surface("url/search")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["url/search", graphqlBody(id19(1))]]),
+        recentTabVisible: true,
+        recentTabClicks,
+      }),
+    );
+
+    assert.equal(recentTabClicks.length, 1);
   });
 
   it("builds its one context from the storage-state path and tears it down", async () => {
