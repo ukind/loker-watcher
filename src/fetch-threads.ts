@@ -298,7 +298,10 @@ export interface AuthenticatedFetchOptions {
  * data-sjs blobs (measured 2026-10-25: 1 post in the blobs vs 92 via XHR).
  * This walk clicks the Recent tab, captures graphql response bodies, walks
  * them for thread_items arrays with the same helpers extractPosts uses, and
- * scrolls until the feed stops yielding new posts.
+ * scrolls until the feed stops yielding new posts. Search pages hydrate the
+ * other way round: the SSR blobs carry the results and no thread_items XHR
+ * ever fires (measured 2026-11-13, run 43399922260), so after the drain the
+ * document's blobs merge into the same first-wins Map.
  *
  * The Recent-tab click is best-effort for every surface: profile pages and
  * search URLs have no such tab, and a `filter=recent` search URL is recent
@@ -351,7 +354,7 @@ export async function fetchSurfacesAuthenticated(
       const empties = emptyLabels.filter((label): label is string => label !== undefined);
       if (empties.length > 0) {
         detail.push(
-          `${empties.join(", ")}: 0 post(s) extracted — the Recent tab or the graphql XHR capture yielded nothing`,
+          `${empties.join(", ")}: 0 post(s) extracted — the Recent tab, the graphql XHR capture, and the data-sjs blobs yielded nothing`,
         );
       }
       throw new Error(
@@ -457,13 +460,19 @@ async function fetchOneAuthenticated(
 
     // Let in-flight response handlers settle before the page goes away.
     await page.waitForTimeout(XHR_DRAIN_MS);
-    const diagHtml = await page.content();
-    const diagBlob = extractPosts(diagHtml);
+
+    // The SSR document carries the surface's initial posts (run 43399922260
+    // DIAG, 2026-11-13: every search URL fired 0 thread_items graphql XHRs
+    // while its blobs held 17-24 posts; tag/infokerja and the homepage were
+    // blob-only too; @hiresflow's blob posts duplicated its XHR posts).
+    // Merge the blobs into the same first-wins Map, capped like the listener.
+    const blobPosts = extractPosts(await page.content());
+    for (const post of blobPosts) {
+      if (posts.size >= MAX_POSTS_PER_SURFACE) break;
+      if (!posts.has(post.id)) posts.set(post.id, post);
+    }
     console.log(
-      `fetch: ${surface.label} DIAG — html ${diagHtml.length}B, blob ${diagBlob.length} post(s), xhr ${posts.size} post(s) from ${xhrBodies} body(s)`,
-    );
-    console.log(
-      `fetch: ${surface.label} OK — ${posts.size} post(s) from ${xhrBodies} XHR response(s)`,
+      `fetch: ${surface.label} OK — ${posts.size} post(s) from ${xhrBodies} XHR + ${blobPosts.length} blob post(s)`,
     );
     return [...posts.values()];
   } finally {

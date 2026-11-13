@@ -71,6 +71,22 @@ const graphqlResponse = (body: string): ResponseLike => ({
   text: async () => body,
 });
 
+/** One data-sjs blob page: thread_items SSR'd into the document (the
+ * search-surface shape — run 43399922260 measured 0 graphql XHRs there). */
+const blobPage = (ids: readonly string[]): string =>
+  `<html><head><script type="application/json" data-sjs>${JSON.stringify({
+    data: {
+      thread_items: ids.map((id) => ({
+        post: {
+          pk: id,
+          caption: { text: `Hiring frontend developer ${id}` },
+          user: { username: `author-${id.slice(-2)}` },
+          taken_at: 1_792_755_976,
+        },
+      })),
+    },
+  })}</script></head><body></body></html>`;
+
 /**
  * Context factory double. Pages decide success/failure at goto time by URL
  * substring (pool workers claim surface indexes at microtask boundaries, so
@@ -102,6 +118,8 @@ function fakeContextFactory(options: {
   recentTabClicks?: number[];
   /** waitForTimeout durations in call order (the settle-window oracle). */
   settleWaits?: number[];
+  /** The HTML page.content() serves; default keeps the blob-free body. */
+  pageContent?: string;
 }): ContextFactory {
   const failUrls = options.failUrls ?? new Set<string>();
   const xhrBySubstring = options.xhrBySubstring ?? new Map<string, string>();
@@ -129,7 +147,7 @@ function fakeContextFactory(options: {
             return undefined;
           },
           waitForFunction: async () => undefined,
-          content: async () => "<html><body>hydrated</body></html>",
+          content: async () => options.pageContent ?? "<html><body>hydrated</body></html>",
           on: (_event, listener) => {
             listeners.push(listener);
             return undefined;
@@ -307,6 +325,43 @@ describe("fetchSurfacesAuthenticated", () => {
     );
   });
 
+  it("extracts the data-sjs blob posts when the graphql capture stays empty (search-surface shape)", async () => {
+    const surfaces = [surface("tag/a1")];
+
+    const result = await fetchSurfacesAuthenticated(
+      surfaces,
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        pageContent: blobPage([id19(1), id19(2)]),
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1), id19(2)],
+    );
+  });
+
+  it("merges blob posts after the graphql capture, first-wins by id (no duplicates)", async () => {
+    const surfaces = [surface("tag/a1")];
+
+    const result = await fetchSurfacesAuthenticated(
+      surfaces,
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/a1", graphqlBody(id19(1))]]),
+        pageContent: blobPage([id19(1), id19(2)]),
+      }),
+    );
+
+    assert.deepEqual(
+      result.map((post) => post.id),
+      [id19(1), id19(2)],
+    );
+  });
+
   it("throws listing each failure when every authenticated surface fails", async () => {
     const surfaces = [1, 2].map((i) => surface(`tag/a${i}`));
     const failUrls = new Set(["tag/a1", "tag/a2"]);
@@ -344,7 +399,7 @@ describe("fetchSurfacesAuthenticated", () => {
         assert.match(error.message, /^fetch: all 2 authenticated surface\(s\) failed:\n/);
         assert.match(
           error.message,
-          /tag\/a1, tag\/a2: 0 post\(s\) extracted — the Recent tab or the graphql XHR capture yielded nothing/,
+          /tag\/a1, tag\/a2: 0 post\(s\) extracted — the Recent tab, the graphql XHR capture, and the data-sjs blobs yielded nothing/,
         );
         assert.doesNotMatch(error.message, /navigation failed/);
         return true;
