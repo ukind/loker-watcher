@@ -116,10 +116,11 @@
          "value":"react indonesia"
       }
    ],
+   "scrollRounds":50,
    "platforms":{
       "linkedin":true,
       "threads":true
    },
-   "reasoningEffort": "high",
+   "reasoningEffort":"high",
    "recencyHours":72
 }
