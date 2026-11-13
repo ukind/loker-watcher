@@ -27,7 +27,7 @@
  * and offline suites inject structural doubles.
  */
 import type { ResolvedSurface } from "./config-file.js";
-import { collectThreadItems, normalizeThreadItem } from "./extract.js";
+import { collectThreadItems, extractPosts, normalizeThreadItem } from "./extract.js";
 import { sleep } from "./judge.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
@@ -457,6 +457,11 @@ async function fetchOneAuthenticated(
 
     // Let in-flight response handlers settle before the page goes away.
     await page.waitForTimeout(XHR_DRAIN_MS);
+    const diagHtml = await page.content();
+    const diagBlob = extractPosts(diagHtml);
+    console.log(
+      `fetch: ${surface.label} DIAG — html ${diagHtml.length}B, blob ${diagBlob.length} post(s), xhr ${posts.size} post(s) from ${xhrBodies} body(s)`,
+    );
     console.log(
       `fetch: ${surface.label} OK — ${posts.size} post(s) from ${xhrBodies} XHR response(s)`,
     );
