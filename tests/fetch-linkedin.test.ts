@@ -33,6 +33,7 @@ import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
 import { type LinkedInContextFactory, SCROLL_JS, isLegDead } from "../src/linkedin-fetch.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
+import { CURRENT_STATE_VERSION, saveState } from "../src/state.js";
 import type { Post } from "../src/types.js";
 
 const T0 = Date.UTC(2026, 9, 26, 9, 14, 0);
@@ -382,6 +383,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       payloadPath: payload,
       git,
       env: {},
+      seenPath: await workPath("seen-tick.json"),
       markerPath: marker,
       now: () => T0,
     });
@@ -428,6 +430,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
           payloadPath: payload,
           git,
           env: {},
+          seenPath: await workPath("seen-tick.json"),
           markerPath: marker,
           alarm: async (reason) => {
             alarms.push(reason);
@@ -461,6 +464,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       payloadPath: payload,
       git,
       env: {},
+      seenPath: await workPath("seen-tick.json"),
       markerPath: marker,
       now: () => T0,
     });
@@ -493,6 +497,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       payloadPath: payload,
       git,
       env: {},
+      seenPath: await workPath("seen-tick.json"),
       markerPath: marker,
       now: () => T0,
     });
@@ -759,6 +764,7 @@ describe("the scrollRounds click bound rides the config into the walk", () => {
       latchPath: await workPath("latch-rounds.flag"),
       bypassWindow: true,
       env: {},
+      seenPath: await workPath("seen-tick.json"),
       now: () => T0,
     });
     assert.deepEqual(result, { wrote: true, pushed: true, postCount: 1 });
@@ -787,6 +793,7 @@ describe("the halt-latch trip (FR-7)", () => {
         alarms.push(reason);
       },
       env: {},
+      seenPath: await workPath("seen-tick.json"),
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
     const flag = await readFile(latchPath, "utf8");
@@ -812,6 +819,7 @@ describe("the halt-latch trip (FR-7)", () => {
       bypassWindow: true,
       haltAlarm: async () => undefined,
       env: {},
+      seenPath: await workPath("seen-tick.json"),
     });
     assert.equal(await exists(latchPath), true);
     assert.equal(await exists(markerPath), false);
@@ -874,5 +882,51 @@ describe("SCROLL_JS content (Phase 5: the live-only revision, pinned as a string
     assert.ok(SCROLL_JS.includes("sh: pick.el.scrollHeight"));
     assert.ok(SCROLL_JS.includes("ch: pick.el.clientHeight"));
     assert.ok(SCROLL_JS.includes('sel: "none"'));
+  });
+});
+
+describe("the seen-stop set rides the tick into the walk (design 2026-11-13)", () => {
+  it("stops the walk before round 1 on a seeded seen file — zero clicks, pre-stop mints still push", async (t) => {
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seenPath = await workPath("seen-tick-stop-seed.json");
+    // The REAL contract seeds the file: saveState's v2 envelope carrying
+    // the three urns the initial body is about to mint.
+    await saveState(
+      { version: CURRENT_STATE_VERSION, seenPostIds: {} },
+      [1, 2, 3].map((n) => `urn:li:activity:${idAt(n)}`),
+      seenPath,
+      T0,
+    );
+    const payload = await workPath("payload-seen-stop.json");
+    const contextFactory = contextFactoryFor({
+      script: {
+        initialBody: [
+          cardBody(idAt(1), "hiring post — Jakarta"),
+          cardBody(idAt(2), "hiring post — Bandung"),
+          cardBody(idAt(3), "hiring post — Surabaya"),
+        ].join("\n"),
+      },
+    });
+    const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
+    const result = await fetchTick({
+      latchPath: await workPath("latch-seen-stop.flag"),
+      bypassWindow: true,
+      config: CONFIG,
+      cookies: COOKIES,
+      contextFactory,
+      payloadPath: payload,
+      git,
+      env: {},
+      seenPath,
+      markerPath: await workPath("marker-seen-stop.flag"),
+      now: () => T0,
+    });
+    assert.deepEqual(result, { wrote: true, pushed: true, postCount: 3 });
+    const envelope = JSON.parse(await readFile(payload, "utf8")) as PayloadEnvelope;
+    assert.equal(envelope.posts.length, 3); // the pre-stop mints ride the payload
+    assert.deepEqual(contextFactory.clicks(), []); // the stop fired BEFORE any round work
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(3)}`)));
+    assert.ok(git.calls.some((args) => args[0] === "push"));
   });
 });

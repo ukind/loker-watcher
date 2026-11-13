@@ -103,6 +103,16 @@ const LINKEDIN_DEFAULT_SCROLL_ROUNDS = 8;
 /** Per-surface post cap (rides from the deleted walk; the perf budget assumes it). */
 const LINKEDIN_MAX_POSTS = 150;
 
+/**
+ * Consecutive FIRST-WINS inserts of already-seen ids that stop a surface's
+ * walk early (design 2026-11-13): a fully-seen keyword stops before it
+ * burns scroll rounds re-minting what the hosted run already recorded.
+ * Accrued handler-side inside the fresh-insert block: a fresh unseen
+ * insert resets the count, and a re-served id never reaches the block, so
+ * it never re-counts. Tuning constant, never config or env (repo doctrine).
+ */
+const SEEN_STOP_CONSECUTIVE = 3;
+
 /** Final drain: let in-flight response bodies land before the page closes. */
 const LINKEDIN_XHR_DRAIN_MS = 1_500;
 
@@ -464,11 +474,14 @@ async function walkLinkedInSurface(
   label: string,
   scrollRounds: number,
   minClicks: number,
+  seenIds: ReadonlySet<string>,
 ): Promise<Post[]> {
   const page = await context.newPage();
   const posts = new Map<string, Post>();
   let received = 0; // matched flagship-web bodies fully read — the liveness signal
   let parsed = 0; // bodies that carried at least one post — the OK-line counter (N008)
+  let seenStreak = 0; // consecutive first-wins inserts of seen ids — the seen-stop signal
+  let lastSeenId = ""; // the id that tipped the streak — named by the seen-stop line
   const assertNoCheckpoint = (): void => {
     // url() is the optional Slice 3 seam; absence (a pre-Slice-3 double)
     // reads as no checkpoint. The production adapters always supply it.
@@ -512,6 +525,12 @@ async function walkLinkedInSurface(
         for (const post of minted) {
           if (posts.has(post.id)) continue; // first-wins by urn
           posts.set(post.id, post);
+          if (seenIds.has(post.id)) {
+            seenStreak += 1;
+            lastSeenId = post.id;
+          } else {
+            seenStreak = 0;
+          }
           fresh += 1;
         }
         if (minted.length > 0) parsed += 1;
@@ -574,6 +593,13 @@ async function walkLinkedInSurface(
     let dryRounds = 0;
     let clicks = 0;
     for (let round = 1; round <= scrollRounds && posts.size < LINKEDIN_MAX_POSTS; round += 1) {
+      // Seen-stop, pre-round (design 2026-11-13): a streak accrued by the
+      // initial body stops before ANY round work — no DOM probe, no click.
+      // The pre-stop mints ride the payload; the hosted chain dedupes them.
+      if (seenStreak >= SEEN_STOP_CONSECUTIVE) {
+        console.log(`fetch: ${label} seen-stop: ${lastSeenId}`);
+        break;
+      }
       const before = posts.size;
       let clicked = false;
       let clickError = "";
@@ -631,18 +657,33 @@ async function walkLinkedInSurface(
         console.log(
           `fetch: ${label} click ${round}: ${outcome} +${gained} new (dry ${dryRounds}/${LINKEDIN_MAX_DRY_ROUNDS}, total ${posts.size})`,
         );
-        // The probe's floor: the dry exit may not fire before minClicks
-        // clicks have landed, so one probe run samples several bodies
-        // (live rehearsal 2026-11-11: 3 posts per body). The floor is
-        // skipped when NO click has ever fired — an absent button would
-        // otherwise burn every remaining round on a 5s waitFor timeout
-        // (measured: 8 rounds x 5s = 40s of pure timeout).
-        if (dryRounds >= LINKEDIN_MAX_DRY_ROUNDS && (clicks === 0 || clicks >= minClicks)) break;
       } else {
         dryRounds = 0;
         console.log(
           `fetch: ${label} click ${round}: ${outcome} +${gained} new (total ${posts.size})`,
         );
+      }
+      // Seen-stop, post-log (design 2026-11-13, "print both lines"): on a
+      // tie round the dry line above prints with its increment, THEN this
+      // line breaks — ahead of the relocated dry exit below.
+      if (seenStreak >= SEEN_STOP_CONSECUTIVE) {
+        console.log(`fetch: ${label} seen-stop: ${lastSeenId}`);
+        break;
+      }
+      // The probe's floor: the dry exit may not fire before minClicks
+      // clicks have landed, so one probe run samples several bodies
+      // (live rehearsal 2026-11-11: 3 posts per body). The floor is
+      // skipped when NO click has ever fired — an absent button would
+      // otherwise burn every remaining round on a 5s waitFor timeout
+      // (measured: 8 rounds x 5s = 40s of pure timeout). Moved out of the
+      // dry arm UNCHANGED (same condition): with the streak at 0, the loop
+      // is byte-equivalent to the pre-seen-stop walk.
+      if (
+        gained < LINKEDIN_MIN_GAIN &&
+        dryRounds >= LINKEDIN_MAX_DRY_ROUNDS &&
+        (clicks === 0 || clicks >= minClicks)
+      ) {
+        break;
       }
     }
     // Let in-flight response bodies settle before the page goes away.
@@ -684,6 +725,7 @@ export async function fetchLinkedInPosts(
   now: () => number = Date.now,
   rng: RandomFn = Math.random,
   minClicks = 0,
+  seenIds: ReadonlySet<string> = new Set(),
 ): Promise<Post[]> {
   // An empty surface list must never launch a browser: the callers guard
   // surfaces.length > 0, and this early return keeps the invariant local
@@ -719,7 +761,14 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        const posts = await walkLinkedInSurface(context, surface, label, scrollRounds, minClicks);
+        const posts = await walkLinkedInSurface(
+          context,
+          surface,
+          label,
+          scrollRounds,
+          minClicks,
+          seenIds,
+        );
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.
