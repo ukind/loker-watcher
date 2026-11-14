@@ -65,7 +65,7 @@ export {
   isLegDead,
   legDead,
 };
-export { SCROLL_JS } from "./linkedin-walk.js";
+export { SCROLL_JS } from "./linkedin-walk-static.js";
 /** One configured linkedin surface (raw keyword string, never a URL). */
 export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
 

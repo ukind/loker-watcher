@@ -14,17 +14,12 @@
  */
 import type { ReasoningEffort } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
-import {
-  type BatchOutcome,
-  type SleepFn,
-  exhaustionRecord,
-  judgeBatch,
-  judgePost,
-  sleep,
-} from "./judge-dispatch.js";
+import { judgeBatch, judgePost } from "./judge-dispatch.js";
 import { HARD_FAIL_TICKS_TO_CAP, type TickOutcomes, readTickOutcomes } from "./judge-health.js";
 import { type RotationState, isRotationExhausted, rotationExhausted } from "./judge-rotation.js";
+import { type BatchOutcome, exhaustionRecord } from "./judge-shared.js";
 import { runPool } from "./pool.js";
+import { type SleepFn, sleep } from "./sleep.js";
 import type { JudgeVerdict, Post } from "./types.js";
 
 // The re-export facade (N042a). Two symbols keep their old import path so

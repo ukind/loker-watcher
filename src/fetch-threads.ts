@@ -29,8 +29,8 @@
 import { BROWSER_USER_AGENT, WEBDRIVER_PATCH } from "./browser-constants.js";
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
-import { sleep } from "./judge-dispatch.js";
 import { runPool } from "./pool.js";
+import { sleep } from "./sleep.js";
 import type { Post } from "./types.js";
 
 const NAV_TIMEOUT_MS = 30_000;

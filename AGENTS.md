@@ -94,7 +94,12 @@ against the configured keywords, email digest, commit state.
   window throws the tagged `LegDeadError`
 - `src/linkedin-walk.ts` - the LinkedIn surface walk: one paced navigation
   plus up to `scrollRounds` "Load more" clicks, the response join, the
-  stream-order seen-stop fold, the 150-post cap, and the 14 tuning constants
+  stream-order seen-stop fold, and the 150-post cap; the tuning constants,
+  JS snippets, and page regexes live in `linkedin-walk-static.ts` (N060)
+- `src/linkedin-walk-static.ts` - the walk's statics moved verbatim out of
+  the walk: the 11 tuning constants, `DOM_PROBE_JS` + `SCROLL_JS` (the
+  pinned content test reads them through `linkedin-fetch`), and the
+  checkpoint/Activity regexes plus the page-close vocabulary
 - `src/linkedin-behavior.ts` - the PC leg's pure policy machines: the
   working-hours window, the jittered 28-33-minute wake cadence, and the
   halt-latch reason vocabulary
@@ -140,14 +145,22 @@ against the configured keywords, email digest, commit state.
 - `src/judge-prompts.ts` - the judge's system message and the two message
   builders (single-post and bulk), so the two prompts cannot drift
 - `src/judge-dispatch.ts` - the judge's dispatch core: the shared HTTP retry
-  loop, both wrappers, the exhaustion record, the two wire helpers, and the
-  sleep seam (an HTTP 429 cools that account for 60s and dispatches re-scan
+  loop and both wrappers (an HTTP 429 cools that account for 60s and dispatches re-scan
   past cooling accounts; when all are cooling, calls park up to a shared
   180s wait budget before the pool converts to exhaustion; 5xx retries the
   same account with backoff; each dispatch starts at the next account and
   every account is capped at its probe-measured ceiling from
   `state/judge-ceilings.json`; bulk misses fall back to single-post calls,
   and a batch the endpoint does not answer is deferred whole)
+- `src/judge-shared.ts` - the dispatch wire vocabulary (N060): the
+  URL/reason helpers `judge-availability` shares, the six dispatch types,
+  the availability predicate, and the exhaustion record
+- `src/judge-exhaustion.ts` - the blocked-pick policy: `resolveBlockedPick`
+  (the D4 flavor split + the D11 dead-pool guard) composed from rotation
+  primitives, so `judge-rotation.ts` keeps its zero-runtime-import identity
+- `src/sleep.ts` - the injectable wait seam (`sleep` + `SleepFn`),
+  cross-domain: `fetch-threads` and the entry point import it alongside the
+  judge group
 - `src/judge-availability.ts` - the pre-dispatch availability check: one
   tiny parallel call per account, never throws; a refused account rides the
   judge's blocked mask with the judge's own reason vocabulary

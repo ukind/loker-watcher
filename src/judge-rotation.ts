@@ -1,4 +1,3 @@
-import type { SleepFn } from "./judge-dispatch.js";
 /**
  * Account-pool rotation primitives for the LLM judge (F010): the cooldown
  * map state, the tagged exhaustion error, and the park helper — moved
@@ -41,6 +40,7 @@ import type { SleepFn } from "./judge-dispatch.js";
 // default `sleepFn: SleepFn = sleep` lives there now.
 import type { TickOutcomes } from "./judge-health.js";
 import type { LlmAccount } from "./judge.js";
+import type { SleepFn } from "./sleep.js";
 import type { AccountFailure } from "./types.js";
 
 /**

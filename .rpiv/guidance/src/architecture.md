@@ -11,7 +11,8 @@ The entire application: a single-shot CLI pipeline that fetches job posts from T
 ## Module Structure (role groups; imports point downward only)
 ```
 index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
-types.ts, config.ts, config-file.ts,     # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json
+types.ts, config.ts, config-file.ts,     # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json |
+sleep.ts                                 #   the sleep seam (N060)
 judge-ceilings.ts, judge-health.ts       #   validation (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds,
                                          #   reasoningEffort) | the committed judge ceilings + provider health reader/writer
 env-file.ts                              # PC-script support: <cwd>/.env auto-load (fills ONLY unset keys, real env wins)
@@ -22,7 +23,8 @@ linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedi
                                          #   walk/behavior/capture/payload) | data-sjs walk
 recency.ts, judge.ts, judge-prompts.ts,  # FUNNEL: window filter | judge orchestration + prompts + dispatch core |
 judge-dispatch.ts, judge-availability.ts,#   the pre-dispatch availability check | rotation | parsers |
-judge-rotation.ts, judge-parse.ts,       #   bounded shared runPool (zero imports)
+judge-rotation.ts, judge-parse.ts,       #   bounded shared runPool (zero imports) |
+judge-shared.ts, judge-exhaustion.ts     #   the shared wire vocabulary + the blocked-pick policy (N060)
 pool.ts
 email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 atomic save
 ```
@@ -128,7 +130,7 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // msedge channel, viewport null — the session rides the PROFILE; the harvested cookie pair is only the
 // resolver's fail-visible gate, never a synthesized document), own dynamic-import quarantine, locale
 // en-US pins the Load-more text selector.
-// linkedin-walk.ts: walkLinkedInSurface + its 14 tuning constants + the two JS snippets. The pacing
+// linkedin-walk.ts: walkLinkedInSurface (its statics live in linkedin-walk-static.ts, N060). The pacing
 // gate does NOT live here — fetchLinkedInPosts awaits gate.wait() and only then calls the walk.
 // linkedin-fetch.ts: the orchestration — shuffle, runPool, pacing gate, drain arms, join priority,
 // stamp-at-slot-write — plus the eight-symbol re-export facade (removal note: run #7). Each surface:
