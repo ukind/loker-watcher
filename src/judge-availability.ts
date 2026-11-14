@@ -18,19 +18,20 @@
  * the signal and becomes that account's failure reason, never a
  * degrade.
  *
- * Import surface: the two wire helpers are runtime imports — judge.ts
+ * Import surface: the two wire helpers are runtime imports — judge-dispatch.ts
  * exports them for exactly this caller (the F006 buildBulkMessages
- * drift-proofing precedent), no cycle exists (judge.ts never imports
- * this module), and both are pure functions. Everything else is
- * type-only.
+ * drift-proofing precedent), no cycle exists (judge-dispatch.ts imports
+ * this module's runtime symbols, never the reverse), and both are pure
+ * functions. Everything else is type-only.
  */
-import { type LlmAccount, normalizeEndpoint, terminalFailureReason } from "./judge.js";
+import { normalizeEndpoint, terminalFailureReason } from "./judge-dispatch.js";
+import type { LlmAccount } from "./judge.js";
 import type { AccountFailure } from "./types.js";
 
 /**
  * Hard per-account abort for the tiny probe — the module's own
- * constant. The judge's 60s REQUEST_TIMEOUT_MS is a measured
- * batch-latency contract (src/judge.ts:73-78) the pre-check must not
+ * The judge's 60s REQUEST_TIMEOUT_MS is a measured
+ * batch-latency contract (src/judge-dispatch.ts) the pre-check must not
  * couple to; ~10s bounds the whole stage's wall clock, because every
  * account is probed in parallel.
  */

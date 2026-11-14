@@ -1,3 +1,4 @@
+import type { SleepFn } from "./judge-dispatch.js";
 /**
  * Account-pool rotation primitives for the LLM judge (F010): the cooldown
  * map state, the tagged exhaustion error, and the park helper — moved
@@ -34,10 +35,12 @@
  * HARD_FAIL_TICKS_TO_CAP via the local HEALTH_CAP_STREAK constant (the
  * two MUST stay equal).
  */
-// Type-only import (D5): verbatimModuleSyntax erases it, so judge.ts can
-// import this module's runtime symbols with no runtime cycle.
+// Type-only imports (D5): verbatimModuleSyntax erases them, so judge.ts and
+// judge-dispatch.ts can import this module's runtime symbols with no runtime
+// cycle. SleepFn moved to judge-dispatch.ts with judgePost (N042a) — the
+// default `sleepFn: SleepFn = sleep` lives there now.
 import type { TickOutcomes } from "./judge-health.js";
-import type { LlmAccount, SleepFn } from "./judge.js";
+import type { LlmAccount } from "./judge.js";
 import type { AccountFailure } from "./types.js";
 
 /**
