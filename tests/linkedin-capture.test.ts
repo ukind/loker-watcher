@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import {
   CAPTURE_KEEP_SESSIONS,
+  CAPTURE_MAX_BODY_BYTES,
   CAPTURE_SCHEMA_VERSION,
   type CaptureRecord,
   captureOnce,
@@ -114,6 +115,69 @@ describe("makeFsCaptureSink", () => {
       ),
     );
     assert.deepEqual(entries, ["001-hiring-indonesia.json"]);
+  });
+
+  it("skips a body over the bound, warns once, and creates no directory (N051)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const root = await tempRoot();
+    const sink = makeFsCaptureSink(root, () => NOW);
+    // 8 MB of ASCII is 8,388,608 bytes — one byte over the bound. Built by
+    // repeat, not by a literal, so the test carries no 8 MB string in source.
+    const over = "x".repeat(CAPTURE_MAX_BODY_BYTES + 1);
+    await sink(record({ body: over, ordinal: 1 }));
+    await sink(record({ body: over, ordinal: 2 }));
+    // No directory: the guard ran before the lazy stamp and before mkdir.
+    await assert.rejects(
+      () =>
+        readdir(
+          join(
+            root,
+            sessionStamp(() => NOW),
+          ),
+        ),
+      /ENOENT/,
+    );
+    assert.equal(warns.mock.callCount(), 1); // one warn per sink, not per body
+    const line = String(warns.mock.calls[0]?.arguments[0] ?? "");
+    assert.match(line, /linkedin-capture: skipped/);
+    assert.match(line, /8388609 bytes exceeds the 8388608-byte bound/);
+  });
+
+  it("measures UTF-8 bytes, not UTF-16 code units (N051)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const root = await tempRoot();
+    const sink = makeFsCaptureSink(root, () => NOW);
+    // 4,194,305 two-byte characters: 4,194,305 UTF-16 code units (well
+    // under the bound) but 8,388,610 UTF-8 bytes (over it). A
+    // String.length guard would write this body; the byte guard skips it.
+    const multi = record({ body: "\u00e9".repeat(4_194_305) });
+    await sink(multi);
+    await assert.rejects(
+      () =>
+        readdir(
+          join(
+            root,
+            sessionStamp(() => NOW),
+          ),
+        ),
+      /ENOENT/,
+    );
+    assert.equal(warns.mock.callCount(), 1);
+    assert.match(String(warns.mock.calls[0]?.arguments[0] ?? ""), /8388610 bytes/);
+  });
+
+  it("a skipped body does not disturb the session stamp of a later write (N051)", async () => {
+    const root = await tempRoot();
+    const sink = makeFsCaptureSink(root, () => NOW);
+    await sink(record({ body: "x".repeat(CAPTURE_MAX_BODY_BYTES + 1) }));
+    await sink(record({ ordinal: 2, body: "small" }));
+    const entries = await readdir(
+      join(
+        root,
+        sessionStamp(() => NOW),
+      ),
+    );
+    assert.deepEqual(entries, ["002-hiring-indonesia.json"]);
   });
 
   it("keeps two records in one session dir named <padded ordinal>-<slug>.json", async () => {

@@ -45,6 +45,25 @@ export const CAPTURE_SCHEMA_VERSION = 1;
  */
 export const CAPTURE_KEEP_SESSIONS = 20;
 
+/**
+ * Outlier bound for one captured body (N051). The measured session
+ * (2026-11-13: one surface, 54 bodies) ran ~85 MB total, about 1.57 MB per
+ * body, so a bound below ~1.5 MB would skip the majority of bodies and gut
+ * the capture premise. 8 MB skips only the rare outlier — a body that would
+ * dominate the session's bytes on its own.
+ *
+ * Measured in UTF-8 BYTES, not `String.length`: `length` counts UTF-16 code
+ * units, so a body of multi-byte characters under-reports by up to 4x.
+ * `Buffer.byteLength` is a pure in-memory computation, which keeps the
+ * guard free of I/O.
+ *
+ * The guard SKIPS the write; it never truncates. The round-trip pin
+ * deep-equals the parsed record and pins the trailing newline, so a
+ * truncated body would fail it, and the replay's shape validator
+ * (scripts/replay-linkedin.ts) would read a partial body.
+ */
+export const CAPTURE_MAX_BODY_BYTES = 8 * 1024 * 1024;
+
 /** Session-stamp directory shape (sessionStamp's output). */
 const SESSION_DIR_RE = /^\d{8}T\d{6}Z$/;
 
@@ -144,7 +163,22 @@ export function makeFsCaptureSink(
   readdirFn: (path: string) => Promise<string[]> = readdir,
 ): CaptureSink {
   let session: string | undefined;
+  let skippedWarned = false;
   return async (record: CaptureRecord): Promise<void> => {
+    // The bound runs BEFORE the lazy session stamp and before mkdir: a
+    // fully-skipped walk creates no directory at all, and an over-bound
+    // body costs one byteLength call. One warn per sink (the captureOnce
+    // policy): a walk whose every body is an outlier must not spam the log.
+    const bodyBytes = Buffer.byteLength(record.body, "utf8");
+    if (bodyBytes > CAPTURE_MAX_BODY_BYTES) {
+      if (!skippedWarned) {
+        skippedWarned = true;
+        console.warn(
+          `linkedin-capture: skipped ${record.label} body ${record.ordinal} — ${bodyBytes} bytes exceeds the ${CAPTURE_MAX_BODY_BYTES}-byte bound (further skips stay quiet)`,
+        );
+      }
+      return;
+    }
     session ??= sessionStamp(now);
     const dir = join(root, session);
     const target = join(
