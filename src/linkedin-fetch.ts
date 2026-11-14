@@ -43,6 +43,7 @@
  * suite injects structural ContextLike doubles.
  */
 import type { Surface } from "./config-file.js";
+import { ENV_NAMES } from "./config.js";
 import type { ContextLike, LocatorLike, PageLike } from "./fetch-threads.js";
 import { HALT_CHECKPOINT_REASON, type RandomFn } from "./linkedin-behavior.js";
 import {
@@ -421,12 +422,70 @@ export function makeLinkedInContextFactory(profileDir: string): LinkedInContextF
 export const LINKEDIN_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
 
 /**
- * The production factory: the persistent profile, headed. Module-PRIVATE on
- * purpose — the browser walk defaults to it in-module, and an exported
- * factory nobody imports is the knip dead-export finding class, not a seam.
+ * Resolve the persistent profile the walk opens (N053). The env override is
+ * the operator's escape hatch when the profile lives on another drive; the
+ * literal stays the default, so an unset env behaves exactly as today.
+ *
+ * Every PC consumer resolves through this one function — the tick, the
+ * probe, the login helper, the reset helper — so an override can never
+ * split the profile between the browser that logs in and the browser that
+ * walks.
  */
-const linkedinChromiumContextFactory: LinkedInContextFactory =
-  makeLinkedInContextFactory(LINKEDIN_PROFILE_DIR);
+export function resolveLinkedInProfileDir(
+  env: Record<string, string | undefined> = process.env,
+): string {
+  const fromEnv = env[ENV_NAMES.linkedinProfileDir]?.trim();
+  return fromEnv !== undefined && fromEnv !== "" ? fromEnv : LINKEDIN_PROFILE_DIR;
+}
+
+/**
+ * The walk's options (N054): the ten positional parameters collapsed into
+ * one object, the `FetchTickDeps` idiom (scripts/fetch-linkedin.ts:87-140)
+ * — optional fields with "Default: ..." JSDoc, defaults resolved at the top
+ * of the function. `surfaces` stays the first positional parameter: the
+ * empty-surface guard reads first, and the 36 test call sites change only
+ * their tail.
+ *
+ * `contextFactory` is the one field declared `| undefined`: both PC scripts
+ * forward their own optional `deps.contextFactory` straight through, and
+ * `exactOptionalPropertyTypes` forbids assigning `undefined` to a plain
+ * optional field.
+ */
+export interface FetchLinkedInDeps {
+  /** Persistent profile the browser opens. Default: LINKEDIN_PROFILE_DIR. */
+  profileDir?: string;
+  /**
+   * Browser-context factory. Default: `makeLinkedInContextFactory(profileDir)`
+   * — built from the RESOLVED profile dir, so the override reaches the
+   * browser (N053). The old module-level production factory captured the
+   * literal at import time and ignored this argument.
+   */
+  contextFactory?: LinkedInContextFactory | undefined;
+  /** Load-more click ceiling. Default: LINKEDIN_DEFAULT_SCROLL_ROUNDS. */
+  scrollRounds?: number;
+  /** Injectable sleep for the pacing gate. Default: defaultSleep. */
+  sleepFn?: SleepFn;
+  /** Clock for the pacing gate and the capture stamps. Default: Date.now. */
+  now?: () => number;
+  /** Jitter draw for the pacing gate and the FR-5 shuffle. Default: Math.random. */
+  rng?: RandomFn;
+  /**
+   * The probe's Load-more click floor: the dry exit may not fire before this
+   * many clicks have landed. Default: 0 (no floor — the tick's shape).
+   */
+  minClicks?: number;
+  /**
+   * Seen ids feeding the consecutive-seen stop. Default: a FRESH empty set
+   * per call — the old default expression's per-call evaluation, preserved.
+   */
+  seenIds?: ReadonlySet<string>;
+  /**
+   * Capture sink. Default: undefined — capture DISABLED. The PC scripts pass
+   * `makeFsCaptureSink()` explicitly, so `npm test` never writes
+   * `captures/` into the repo.
+   */
+  captureSink?: CaptureSink;
+}
 // --- the surface walk ---
 
 interface PacingGate {
@@ -848,34 +907,39 @@ async function walkLinkedInSurface(
  * tick while perSurface keeps ORIGINAL indexes, so the flat() reassembly
  * order stays input-order structural no matter how the shuffle lands.
  *
- * contextFactory defaults to the in-module production factory (the persistent
- * profile, headed); the PC scripts and the offline suite inject explicitly.
+ * deps.contextFactory defaults to a factory built from the RESOLVED profile
+ * dir (the persistent profile, headed); the PC scripts and the offline
+ * suite inject explicitly.
  *
- * seenIds (seen-stop, design 2026-11-13): the 9th defaulted trailing
- * param — the tick's seen set feeding the consecutive-seen stop; the
- * empty default never stops, the pre-seen-stop behavior.
- * captureSink (capture-first, design 2026-11-13): the 10th trailing
- * param, undefined = capture disabled — the offline suite passes
- * nothing and nothing writes; the PC scripts pass the production fs sink.
- * The per-tick ordinal counter is minted here and shared across every
- * surface walk (D7).
+ * deps.seenIds (seen-stop, design 2026-11-13): the tick's seen set feeding
+ * the consecutive-seen stop; the empty default never stops, the
+ * pre-seen-stop behavior.
+ * deps.captureSink (capture-first, design 2026-11-13): undefined = capture
+ * disabled — the offline suite passes nothing and nothing writes; the PC
+ * scripts pass the production fs sink. The per-tick ordinal counter is
+ * minted here and shared across every surface walk (D7).
  */
 export async function fetchLinkedInPosts(
   surfaces: readonly LinkedinSurface[],
-  profileDir: string = LINKEDIN_PROFILE_DIR,
-  contextFactory: LinkedInContextFactory = linkedinChromiumContextFactory,
-  scrollRounds: number = LINKEDIN_DEFAULT_SCROLL_ROUNDS,
-  sleepFn: SleepFn = defaultSleep,
-  now: () => number = Date.now,
-  rng: RandomFn = Math.random,
-  minClicks = 0,
-  seenIds: ReadonlySet<string> = new Set(),
-  captureSink?: CaptureSink,
+  deps: FetchLinkedInDeps = {},
 ): Promise<Post[]> {
   // An empty surface list must never launch a browser: the callers guard
   // surfaces.length > 0, and this early return keeps the invariant local
   // (a zero-surface walk opens no context and closes nothing).
   if (surfaces.length === 0) return [];
+  // Defaults resolved once, at the top (the FetchTickDeps idiom). The
+  // profile dir resolves BEFORE the factory default so the override reaches
+  // the browser (N053). The walk itself never reads the environment: the
+  // callers resolve it and pass it in.
+  const profileDir = deps.profileDir ?? LINKEDIN_PROFILE_DIR;
+  const contextFactory = deps.contextFactory ?? makeLinkedInContextFactory(profileDir);
+  const scrollRounds = deps.scrollRounds ?? LINKEDIN_DEFAULT_SCROLL_ROUNDS;
+  const sleepFn = deps.sleepFn ?? defaultSleep;
+  const now = deps.now ?? Date.now;
+  const rng = deps.rng ?? Math.random;
+  const minClicks = deps.minClicks ?? 0;
+  const seenIds = deps.seenIds ?? new Set<string>();
+  const captureSink = deps.captureSink;
   // REVISED 2026-11-11T18:40+0700: the browser opens on the persistent
   // profile, not a synthesized cookie document. The cookie file is a
   // preflight validity check in the CALLERS (resolveLinkedInCookies throws

@@ -523,7 +523,10 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     );
   });
 
-  it("still writes and pushes a fine-empty walk's payload (defb8af: 0 faults + 0 posts is an outcome)", async () => {
+  it("does NOT write a fine-empty walk's payload — the last good one survives (N050)", async () => {
+    // Reverses the defb8af pin. A zero-post walk is no longer an outcome: an
+    // empty payload stamps a fresh writtenAt, so the hosted reader scores
+    // leg "ok" with 0 posts and the last good payload is gone.
     const payload = await workPath("tick-fine-empty.json");
     const marker = await workPath("tick-fine-empty.flag");
     const contextFactory = contextFactoryFor({ script: { initialBody: EMPTY_BODY } });
@@ -543,15 +546,63 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       markerPath: marker,
       now: () => T0,
     });
-    assert.deepEqual(result, { wrote: true, pushed: true, postCount: 0 });
-    const envelope = JSON.parse(await readFile(payload, "utf8")) as PayloadEnvelope;
-    assert.equal(envelope.version, PAYLOAD_VERSION);
-    assert.deepEqual(envelope.posts, []); // the guard keys on FAULTS, not post count
-    assert.ok(git.calls.some((args) => args[0] === "push"));
+    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
+    assert.equal(await exists(payload), false); // the guard keys on POST COUNT, not faults
+    assert.deepEqual(git.calls, [
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      ["status", "--porcelain"],
+    ]); // no add, no commit, no push
     // Even a 0-post body is evidence: the matched arm captured it.
     assert.equal(capture.records.length, 1);
   });
 
+  it("clears a stale episode marker on a zero-post walk (N050)", async () => {
+    // The dead→healthy edge still fires: a healthy walk that found nothing is
+    // not a dead leg, and a stale marker would suppress the next real alarm.
+    const marker = await workPath("tick-zero-clear.flag");
+    await writeFile(marker, "stale episode\n", "utf8");
+    const contextFactory = contextFactoryFor({ script: { initialBody: EMPTY_BODY } });
+    const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
+    await fetchTick({
+      latchPath: await workPath("latch-6.flag"),
+      bypassWindow: true,
+      config: CONFIG,
+      cookies: COOKIES,
+      contextFactory,
+      captureSink: recordingSink(),
+      payloadPath: await workPath("tick-zero-clear.json"),
+      git,
+      env: {},
+      seenPath: await workPath("seen-tick.json"),
+      markerPath: marker,
+      now: () => T0,
+    });
+    await assert.rejects(() => access(marker), /ENOENT/); // cleared
+  });
+
+  it("threads the LINKEDIN_PROFILE_DIR override to the walk (N053)", async () => {
+    const profileDirs: unknown[] = [];
+    const contextFactory = contextFactoryFor({
+      profileDirs,
+      script: { initialBody: cardBody(idAt(1), "hiring post 1 — Jakarta") },
+    });
+    const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
+    await fetchTick({
+      latchPath: await workPath("latch-7.flag"),
+      bypassWindow: true,
+      config: CONFIG,
+      cookies: COOKIES,
+      contextFactory,
+      captureSink: recordingSink(),
+      payloadPath: await workPath("tick-envdir.json"),
+      git,
+      env: { LINKEDIN_PROFILE_DIR: "D:/other/profile" },
+      seenPath: await workPath("seen-tick.json"),
+      markerPath: await workPath("tick-envdir.flag"),
+      now: () => T0,
+    });
+    assert.deepEqual(profileDirs, ["D:/other/profile"]);
+  });
   it("returns early when no linkedin surfaces are configured (resolvers AND the checkout preflight never run)", async () => {
     const git = scriptGit({});
     const result = await fetchTick({

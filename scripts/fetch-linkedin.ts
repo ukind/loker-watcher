@@ -39,13 +39,13 @@ import { envWithDotEnv } from "../src/env-file.js";
 import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
-  LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
   type LinkedinSurface,
   fetchLinkedInPosts,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
+  resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import { writePayloadAtomic } from "../src/linkedin-payload.js";
 import { type LinkedInCookies, resolveLinkedInCookies } from "../src/linkedin-session.js";
@@ -395,18 +395,16 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
     // PREFLIGHT only (the harvestedAt gate). The browser rides the profile,
     // not the cookie document — a fresh browser with the document gets a
     // page with no Load-more button.
-    posts = await fetchLinkedInPosts(
-      surfaces,
-      LINKEDIN_PROFILE_DIR,
-      deps.contextFactory,
-      config.scrollRounds,
-      undefined,
+    posts = await fetchLinkedInPosts(surfaces, {
+      profileDir: resolveLinkedInProfileDir(env),
+      contextFactory: deps.contextFactory,
+      scrollRounds: config.scrollRounds,
       now,
       rng,
-      0, // minClicks — the tick carries no click floor (the probe owns PROBE_MIN_CLICKS)
+      minClicks: 0, // the tick carries no click floor (the probe owns PROBE_MIN_CLICKS)
       seenIds,
-      deps.captureSink ?? makeFsCaptureSink(),
-    );
+      captureSink: deps.captureSink ?? makeFsCaptureSink(),
+    });
   } catch (error) {
     // The halt arm (FR-7): a security checkpoint or login wall trips the
     // operator-cleared latch, alarms once (best-effort), and lands as a
@@ -429,6 +427,20 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
       return { wrote: false, pushed: false, postCount: 0 };
     }
     throw error;
+  }
+  // N050: a zero-post walk is NOT an outcome. Writing an empty payload stamps
+  // a fresh writtenAt (src/linkedin-payload.ts:118), so the hosted reader
+  // scores leg "ok" with 0 posts — indistinguishable from a quiet day, and
+  // the last good payload is gone. The all-faulted arm already preserves it;
+  // this arm now does too. The guard sits AFTER the walk's try/catch, so
+  // halt, leg-dead, and all-faulted keep their precedence.
+  if (posts.length === 0) {
+    console.log("fetch-linkedin: 0 posts — payload not touched, last good payload preserved");
+    // A zero-post walk is still a HEALTHY walk: clear the episode marker so a
+    // later leg-dead alarms again. Skipping this would let a stale marker
+    // suppress the next real alarm.
+    await clearEpisodeMarker(deps);
+    return { wrote: false, pushed: false, postCount: 0 };
   }
   const payloadPath = deps.payloadPath ?? LINKEDIN_PAYLOAD_PATH;
   await writePayloadAtomic(posts, payloadPath, now);

@@ -35,13 +35,13 @@ import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
-  LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
   type LinkedinSurface,
   fetchLinkedInPosts,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
+  resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import { resolveLinkedInCookies } from "../src/linkedin-session.js";
 
@@ -172,18 +172,16 @@ export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
   // at the first dry exit — each body carries ~3 posts (live rehearsal
   // 2026-11-11), so the floor proves the pagination leg works.
   // scrollRounds stays the ceiling.
-  const posts = await fetchLinkedInPosts(
-    [surface],
-    LINKEDIN_PROFILE_DIR,
-    deps.contextFactory,
-    config.scrollRounds,
-    undefined, // default sleep
-    deps.now, // Date.now when unset — the exact production call shape
-    undefined, // Math.random
+  const posts = await fetchLinkedInPosts([surface], {
+    profileDir: resolveLinkedInProfileDir(env),
+    contextFactory: deps.contextFactory,
+    scrollRounds: config.scrollRounds,
+    now,
     minClicks,
-    undefined, // seenIds — the probe never stops on seen ids, it needs the full walk
-    deps.captureSink ?? makeFsCaptureSink(),
-  );
+    // seenIds stays unset: the probe never stops on seen ids, it needs the
+    // full walk. sleepFn and rng stay unset: the production defaults.
+    captureSink: deps.captureSink ?? makeFsCaptureSink(),
+  });
   const elapsedMs = now() - started;
   console.log(`probe: ${elapsedMs}ms — ${posts.length} post(s)`);
   if (posts.length < PROBE_MIN_POSTS) {

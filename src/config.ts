@@ -14,6 +14,14 @@
 export const ENV_NAMES = {
   threadsSession: "THREADS_SESSION_STATE",
   linkedinCookiesFile: "LINKEDIN_COOKIES_FILE",
+  /**
+   * PC-only profile override (N053). Never mapped in watch.yml — the hosted
+   * run imports only a type from the walk module, so the name is inert
+   * there. Every PC consumer resolves through resolveLinkedInProfileDir
+   * (src/linkedin-fetch.ts), so an override can never split the profile
+   * between the browser that logs in and the browser that walks.
+   */
+  linkedinProfileDir: "LINKEDIN_PROFILE_DIR",
   heartbeat: "HEARTBEAT_ENABLED",
   llmAccounts: "LLM_ACCOUNTS",
   gmailUser: "GMAIL_USER",
