@@ -26,6 +26,7 @@
  * chromiumContextFactory, so importing this module never loads Playwright
  * and offline suites inject structural doubles.
  */
+import { BROWSER_USER_AGENT, WEBDRIVER_PATCH } from "./browser-constants.js";
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
 import { sleep } from "./judge-dispatch.js";
@@ -57,9 +58,6 @@ const XHR_DRAIN_MS = 1500;
 const RECENT_TAB_TIMEOUT_MS = 15_000;
 const MAX_DRY_SCROLL_ROUNDS = 3;
 
-const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-
 /**
  * Browser-side hydration probe for waitForFunction, kept as a string so the
  * Node build needs no DOM lib (locked tsconfig: lib ES2023, types node).
@@ -69,8 +67,6 @@ const HAS_THREAD_ITEMS = `() =>
   Array.from(
     document.querySelectorAll('script[type="application/json"][data-sjs]'),
   ).some((el) => (el.textContent || '').includes('thread_items'))`;
-
-const WEBDRIVER_PATCH = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });";
 
 /** One graphql/HTTP response the authenticated walk may read. */
 export interface ResponseLike {
@@ -138,7 +134,7 @@ function makeChromiumContextFactory(headless: boolean): ContextFactory {
     const browser = await chromium.launch({ headless });
     const context = await browser.newContext({
       ...(storageStatePath === undefined ? {} : { storageState: storageStatePath }),
-      userAgent: USER_AGENT,
+      userAgent: BROWSER_USER_AGENT,
       viewport: { width: 1366, height: 768 },
       locale: "en-US",
     });
@@ -197,7 +193,7 @@ function isTagSurface(surface: ResolvedSurface): boolean {
 }
 
 /** Rendered HTML for one surface, ready for extractPosts(). */
-export interface SurfaceFetch {
+interface SurfaceFetch {
   label: string;
   html: string;
   /** The raw surface pair (email-per-surface stamp, design D2): the page
@@ -284,7 +280,7 @@ async function fetchOne(context: ContextLike, surface: ResolvedSurface): Promise
  * optional: the absent scrollRounds key behaves byte-identically to the
  * pre-config walker.
  */
-export interface AuthenticatedFetchOptions {
+interface AuthenticatedFetchOptions {
   /** Loop bound for the walk; absent means the Threads-measured default (D4). */
   readonly scrollRounds?: number;
 }
