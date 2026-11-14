@@ -11,6 +11,7 @@
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts scripts/hooks",
+    "knip": "knip",
     "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts",
     "fetch-linkedin": "tsx scripts/fetch-linkedin.ts",
     "watch-linkedin": "tsx scripts/watch-linkedin.ts",
@@ -34,6 +35,7 @@
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.1",
     "husky": "^9.1.7",
+    "knip": "^5.88.1",
     "lint-staged": "^15.3.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"

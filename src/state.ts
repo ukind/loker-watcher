@@ -26,7 +26,7 @@ export interface AppState {
 }
 
 /** Result of a saveState operation indicating if disk was modified. */
-export interface SaveStateResult {
+interface SaveStateResult {
   saved: boolean;
   state: AppState;
   addedCount: number;

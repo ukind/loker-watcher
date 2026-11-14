@@ -11,5 +11,4 @@ state/linkedin-leg-dead.flag
 run.log
 state/linkedin-get-budget.json
 state/linkedin-halt.flag
-outputs/.drafts/
-outputs/.plans/
+state/*.tmp

@@ -37,7 +37,7 @@ export interface ResolvedSurface {
 export type ReasoningEffort = "low" | "medium" | "high";
 
 /** Per-platform switches for the two acquisition legs. */
-export interface PlatformFlags {
+interface PlatformFlags {
   /** Fetch + judge the PC leg pushed LinkedIn payload. */
   linkedin: boolean;
   /** Walk the Threads surfaces. */

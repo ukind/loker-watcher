@@ -17,7 +17,7 @@ export interface EmailConfig {
   to?: string;
 }
 
-export interface SendDigestResult {
+interface SendDigestResult {
   sent: boolean;
   messageId?: string;
   recipient?: string;
@@ -71,7 +71,7 @@ export function buildSurfaceSubject(surface: Surface, postCount: number): string
 }
 
 /** One surface share of the matches (email-per-surface, D6). */
-export interface SurfaceGroup {
+interface SurfaceGroup {
   surface: Surface;
   posts: Post[];
 }
@@ -306,7 +306,7 @@ export async function sendExhaustionEmail(
  * the hosted run never sends it. The body names the remedy — the cookie
  * file refresh — so the operator can act without opening the docs.
  */
-export function buildLegDeadAlarmText(reason: string): string {
+function buildLegDeadAlarmText(reason: string): string {
   return [
     "The LinkedIn fetch leg is dead.",
     "",

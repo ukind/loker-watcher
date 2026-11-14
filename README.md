@@ -331,7 +331,24 @@ setup commands' lines work without any shell profile edit. Upgrading from
 a pre-walk checkout: the two old `.env` lines (the transport picker and
 the curl binary path) are inert — delete both; keep or delete the old
 local tools folder; the old daily-GET ledger file
-(`state/linkedin-get-budget.json`) is orphaned — delete it or ignore it.
+(`state/linkedin-get-budget.json`) is orphaned — delete it. Its ignore rule
+stays, because a clone that has not deleted it yet would otherwise fail the
+tick's clean-tree preflight.
+
+### Capture retention (N052)
+
+The PC walk records every intercepted LinkedIn response body under
+`captures/<UTC session stamp>/` so `npm run replay-linkedin` can re-analyze a
+walk offline. The bodies carry post text and member identifiers verbatim —
+treat the directory as personal data at rest.
+
+- Retention: the sink keeps the newest 20 session stamps and prunes the rest
+  after every write. At the measured ~85 MB per walk that is ~1.7 GB steady
+  state.
+- Per-body bound: a body over 8 MB is skipped whole with one warn, so a
+  single oversized response cannot dominate a session.
+- Purge by hand: `rm -rf captures/`. The directory is gitignored and never
+  committed; deleting it costs only the replay history.
 
 Troubleshooting: `git: rebase failed` / `git: payload push failed twice` —
 the tick ran from a non-dedicated or dirty checkout; the preflight (branch

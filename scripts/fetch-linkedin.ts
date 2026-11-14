@@ -28,7 +28,7 @@
  * side-effect free.
  */
 import { execFile } from "node:child_process";
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
@@ -49,7 +49,7 @@ import {
 } from "../src/linkedin-fetch.js";
 import { writePayloadAtomic } from "../src/linkedin-payload.js";
 import { type LinkedInCookies, resolveLinkedInCookies } from "../src/linkedin-session.js";
-import { readSeenIdSet } from "../src/state.js";
+import { readSeenIdSet, stateTempPath } from "../src/state.js";
 import type { Post } from "../src/types.js";
 
 /** Injectable git runner: args → exit code + git's own merged output (never rejects). */
@@ -166,6 +166,38 @@ async function markerExists(path: string): Promise<boolean> {
 }
 
 /**
+ * Write a flag file atomically (N049): sibling temp via stateTempPath, then
+ * rename — the writePayloadAtomic shape (src/linkedin-payload.ts:111-139).
+ * A crash mid-write leaves the OLD file (or none), never a truncated one.
+ *
+ * The first-write-wins CHECK stays outside this function (D14): rename(2) is
+ * atomic, but "check absent then rename" is two syscalls and Node exposes no
+ * RENAME_NOREPLACE. The check is a policy read, not a lock — the loop is
+ * strictly sequential (scripts/watch-linkedin.ts:79-96) and tripLatch has
+ * one caller.
+ *
+ * The temp lands in state/ beside the flag, so .gitignore carries
+ * `state/*.tmp` (N056): an untracked temp would wedge guardCheckout.
+ */
+async function writeFlagAtomic(path: string, content: string, now: () => number): Promise<void> {
+  const dir = dirname(path);
+  const tempPath = stateTempPath(dir, now());
+  try {
+    await mkdir(dir, { recursive: true });
+    await writeFile(tempPath, content, "utf8");
+    await rename(tempPath, path);
+  } catch (error) {
+    try {
+      await unlink(tempPath);
+    } catch {
+      // Best-effort temp cleanup (the writePayloadAtomic arm)
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`fetch-linkedin: atomic flag write failed for ${path}: ${message}`);
+  }
+}
+
+/**
  * Send the leg-dead alarm ONCE per episode: the marker file edges the
  * healthy→dead transition, so a 144-tick dead day emails once. Every dead
  * tick still warns in the run log.
@@ -180,11 +212,11 @@ export async function handleLegDeadEpisode(
     console.warn(`fetch-linkedin: leg still dead — ${reason} (alarm already sent this episode)`);
     return;
   }
-  await writeFile(
+  await writeFlagAtomic(
     marker,
     `${reason}
 `,
-    "utf8",
+    deps.now ?? Date.now,
   );
   console.error(`fetch-linkedin: LEG DEAD — ${reason}`);
   const alarm =
@@ -227,13 +259,13 @@ async function latchPresent(path: string): Promise<boolean> {
  * always explains itself. First-write-wins — a second trip never rewrites
  * an existing flag.
  */
-async function tripLatch(path: string, reason: string): Promise<void> {
+async function tripLatch(path: string, reason: string, now: () => number): Promise<void> {
   if (await latchPresent(path)) return;
-  await writeFile(
+  await writeFlagAtomic(
     path,
     `${reason}
 `,
-    "utf8",
+    now,
   );
 }
 
@@ -410,7 +442,7 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
     // operator-cleared latch, alarms once (best-effort), and lands as a
     // quiet-zeros no-op — the loop keeps running, fetching nothing.
     if (isHalt(error)) {
-      await tripLatch(latchPath, error.reason);
+      await tripLatch(latchPath, error.reason, now);
       console.error(`fetch-linkedin: HALT LATCH TRIPPED — ${error.reason}`);
       await (deps.haltAlarm ?? defaultHaltAlarm(env))(error.reason);
       return { wrote: false, pushed: false, postCount: 0 };

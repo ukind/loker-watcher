@@ -18,13 +18,13 @@ import { BROWSER_USER_AGENT, WEBDRIVER_PATCH } from "./browser-constants.js";
 import type { ContextLike, LocatorLike, PageLike } from "./fetch-threads.js";
 // --- LegDeadError: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
-export const LEG_DEAD = "LegDeadError";
+const LEG_DEAD = "LegDeadError";
 
 /**
  * Thrown once per tick when the session leg is dead (D7). Factory-assigned
  * fields stay mutable — the RotationExhausted idiom (judge-rotation.ts:61-70).
  */
-export interface LegDead extends Error {
+interface LegDead extends Error {
   name: string;
   reason: string;
 }
@@ -44,10 +44,10 @@ export function isLegDead(error: unknown): error is LegDead {
 
 // --- AllSurfacesFaulted: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
-export const ALL_SURFACES_FAULTED = "AllSurfacesFaulted";
+const ALL_SURFACES_FAULTED = "AllSurfacesFaulted";
 
 /** Thrown when EVERY configured surface faulted and none published posts (D13: the tick, not the walk, decides the write). */
-export interface AllSurfacesFaulted extends Error {
+interface AllSurfacesFaulted extends Error {
   name: string;
   faulted: number;
 }
@@ -75,10 +75,10 @@ export function isAllSurfacesFaulted(error: unknown): error is AllSurfacesFaulte
 // latch. It deliberately does NOT ride LegDeadError: a dead session
 // self-heals on a cookie refresh, a halt must not.
 
-export const HALT = "HaltError";
+const HALT = "HaltError";
 
 /** Thrown once per walk when the account hit the account-safety terminal. */
-export interface Halt extends Error {
+interface Halt extends Error {
   name: string;
   reason: string;
 }

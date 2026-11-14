@@ -18,7 +18,11 @@ linkedin-parser.ts → linkedin-parser.test.ts     # response-filter matrix, $-r
 #                                              #   per row), guarded id clock, URL builder pin,
 #                                              #   timestamp-zip pairing 3/3, mismatch warn + prefix
 linkedin-session.ts → linkedin-session.test.ts   # resolver reject matrix (all name LINKEDIN_COOKIES_FILE), quote asymmetry, storageState
-linkedin-fetch.ts → linkedin-fetch.test.ts        # checkpoint→halt pin, no-first-response→leg-dead, click
+linkedin-fetch.ts → linkedin-fetch.test.ts        # orchestration: shuffle, pacing, drain arms, join priority
+linkedin-context.ts → linkedin-fetch.test.ts # the tagged-error guards + the factory seam, through the
+#                                              #   walk suite's imports
+linkedin-walk.ts   → linkedin-fetch.test.ts  # the walk, through fetchLinkedInPosts
+browser-constants.ts — no test (two string constants, exercised transitively by both factory suites)
 #                                              #   transcript, dry-round exit, first-wins urn dedupe,
 #                                              #   pacing spacing, teardown on every path
 linkedin-payload.ts → linkedin-payload.test.ts    # all four failure classes + atomic round trip
@@ -28,6 +32,10 @@ login-linkedin.ts (core) → login-linkedin.test.ts  # context seam injected, sl
 fetch-threads.ts   → fetch-threads.test.ts   # structural PageLike/ContextLike doubles
 index.ts           → index.test.ts           # full offline runWatcher runs via WatcherDeps doubles
 judge.ts           → judge.test.ts           # residual: env parsing, pools/pipeline, payload pins
+judge-prompts.ts   → judge.test.ts           # covered through judge.ts's facade (buildBulkMessages)
+judge-dispatch.ts  → judge.test.ts, judge-rotation.test.ts   # covered through judge.ts's facade
+#                                              #   (judgePost) and the rotation suite's integration cases
+judge-availability.ts → judge-availability.test.ts
 judge-parse.ts     → judge-parse.test.ts     # verdict parsers — pure string-in/string-out
 judge-rotation.ts  → judge-rotation.test.ts  # cooldown, park budget, exhaustion suites
 judge-ceilings.ts  → judge-ceilings.test.ts  # committed ceilings: resolver matrix, never-throw reader

@@ -128,7 +128,7 @@ export interface JudgedPost {
   post: Post;
   verdict: JudgeVerdict;
 }
-export interface JudgeBatchResult {
+interface JudgeBatchResult {
   judged: JudgedPost[];
   skippedPostIds: string[];
   /** Per-account dispatch outcomes of the run — index.ts flushes them into

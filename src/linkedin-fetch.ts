@@ -73,7 +73,7 @@ export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
 export type SleepFn = (ms: number) => Promise<void>;
 
 /** Walk width. The pacing gate, not this number, bounds the navigation rate. */
-export const LINKEDIN_FETCH_CONCURRENCY = 2;
+const LINKEDIN_FETCH_CONCURRENCY = 2;
 
 /** Pace floor: minimum spacing between page navigations, shared across surfaces (§13.3). */
 export const PACE_MIN_MS = 5_000;
@@ -125,7 +125,7 @@ export function resolveLinkedInProfileDir(
  * `exactOptionalPropertyTypes` forbids assigning `undefined` to a plain
  * optional field.
  */
-export interface FetchLinkedInDeps {
+interface FetchLinkedInDeps {
   /** Persistent profile the browser opens. Default: LINKEDIN_PROFILE_DIR. */
   profileDir?: string;
   /**

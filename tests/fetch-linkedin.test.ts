@@ -14,7 +14,7 @@
  * its block). The budget suites died with the budget machine (slice 5).
  */
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
@@ -773,6 +773,29 @@ describe("handleLegDeadEpisode (one alarm per episode)", () => {
     assert.equal(await readFile(marker, "utf8"), "dead\n"); // marker persists despite the send failure
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /alarm not sent/.test(line)));
+  });
+
+  it("writes the episode marker atomically — a failed rename leaves no flag (N049)", async () => {
+    // The marker path is a DIRECTORY, so the rename fails after the temp
+    // write. The old bare writeFile would have left a truncated flag; the
+    // atomic writer cleans the temp and rejects naming the target.
+    const marker = await workPath("tick-atomic-marker.flag");
+    await mkdir(marker, { recursive: true });
+    await assert.rejects(
+      () =>
+        handleLegDeadEpisode("session dead", {
+          markerPath: marker,
+          env: {},
+          alarm: async () => undefined,
+        }),
+      /atomic flag write failed for .*tick-atomic-marker\.flag/,
+    );
+    // No temp file survives beside the flag.
+    const entries = await readdir(dirname(marker));
+    assert.equal(
+      entries.some((name) => name.endsWith(".tmp")),
+      false,
+    );
   });
 });
 

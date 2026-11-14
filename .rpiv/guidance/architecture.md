@@ -10,7 +10,9 @@ A fourth committed file, `state/linkedin-posts.json`, is written and pushed by t
 
 ```
 .github/workflows/  # ci.yml gate + watch.yml: cron */10 → npx tsx src/index.ts → state commit-back via scripts/commit-state-rebase.sh (+ dispatch-only probe job behind an 8h freshness gate)
-src/                # the pipeline: fetch (threads Playwright walks + the PC-linked linkedin payload read) → extract → dedupe → recency → seen → judge → notify → persist
+src/                # the pipeline: fetch (threads Playwright walks + the PC-linked linkedin payload read) →
+                    #   extract → dedupe → recency → seen → judge (orchestration + prompts + dispatch) →
+                    #   notify → persist
 tests/              # offline unit suite (node:test via tsx), ~1:1 with src module names + script/hook subprocess tests
 scripts/            # commit-state-rebase.sh (commit-back body for ALL THREE state files: rebase + skip + push + one internal retry), probe-judge.ts (LLM endpoint gate → state/judge-ceilings.json), the PC-local LinkedIn leg (fetch/watch/probe/login/chain), + Claude Code hooks
 .claude/, .cursor/, # agent meta: hook registration + agents/commands/skills | editor rules | husky pre-commit
@@ -46,6 +48,16 @@ Detailed guidance:
 ## Business Context
 
 A scheduled GitHub Actions run is the only hosted runtime. Zero-match runs email a status digest (the heartbeat) instead — `HEARTBEAT_ENABLED` unset means enabled. A dark LinkedIn leg (absent or stale `state/linkedin-posts.json` — the PC loop is off) degrades to a threads-only run with one log line; the heartbeat still fires and renders the leg state. Operator configuration lives in `watcher.config.json`; a typo stops the run with an error that names the problem. Repo doctrine: probe-measured values are committed data, not env knobs (per-account judge ceilings in `state/judge-ceilings.json`, freshness stamped with `probedAt`); all other tuning values are hard-coded module constants.
+
+## State history policy (N043, decided 2026-11-13)
+
+`state/seen-posts.json` is rewritten and committed on every match run (1273 commits at the run-6 audit). `.git` measured 189 MB, of which 172 MB was loose objects (`size-pack` 12.4 MiB).
+
+The policy is **gc once, document, no schedule**:
+
+- One `git gc --aggressive` reclaims the loose objects. Run it from a full clone, never from a shallow one.
+- No scheduled gc. A cron job that rewrites `.git` on a public repo is a new failure mode for a cost that grows slowly.
+- Revisit trigger: clone size or CI checkout time becomes a visible cost. The options then are a periodic squash of `state/` commits via `git-filter-repo`, or moving seen-state out of git (cache/artifact — a redesign).
 
 <important if="you are adding a new pipeline stage end-to-end">
 1. Stage code and funnel wiring — see `.rpiv/guidance/src/architecture.md` ("Adding a New Pipeline Stage")

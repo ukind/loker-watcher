@@ -76,8 +76,18 @@ export const LINKEDIN_RESPONSE_RE =
 const FLIGHT_LINE_RE = /^([0-9a-f]+):([\s\S]*)$/;
 const WHOLE_REF_RE = /^\$L?([0-9a-f]+)$/;
 const PATH_REF_RE = /^\$L?([0-9a-f]+):(.+)$/;
-const URN_RE = /^urn:li:activity:(\d{10,})$/;
-const DIGITS_RE = /^\d{10,}$/;
+/**
+ * The activity-id digit floor (N055): LinkedIn ids are 19 digits, so 10 is a
+ * safety floor, not a real bound. ONE definition, three readers — the two
+ * mint regexes here, the payload reader's row validator
+ * (src/linkedin-payload.ts), and the walk's diagnostic id count
+ * (src/linkedin-walk.ts). The payload reader used to accept 9+, so a
+ * 9-digit row passed the reader and could never be minted.
+ */
+export const ACTIVITY_ID_PATTERN = "\\d{10,}";
+
+const URN_RE = new RegExp(`^urn:li:activity:(${ACTIVITY_ID_PATTERN})$`);
+const DIGITS_RE = new RegExp(`^${ACTIVITY_ID_PATTERN}$`);
 
 /**
  * Split a flight stream and JSON-parse every data row. Lines outside the

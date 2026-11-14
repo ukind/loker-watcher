@@ -26,6 +26,7 @@ import { halt, legDead } from "./linkedin-context.js";
 // surface type in a browser-context module for no gain.
 import type { LinkedinSurface } from "./linkedin-fetch.js";
 import {
+  ACTIVITY_ID_PATTERN,
   LINKEDIN_RESPONSE_RE,
   buildContentSearchUrl,
   collectLinkedInPosts,
@@ -152,6 +153,11 @@ export const SCROLL_JS = `(() => {
  * bare path segment.
  */
 const LINKEDIN_CHECKPOINT_URL_RE = /(^|\/)(checkpoint|authwall|login)(\/|$|\?)/i;
+
+// Hoisted (N055): the digit floor is shared with the parser and the payload
+// reader. String.prototype.matchAll clones the regex, so reuse across bodies
+// never leaks lastIndex.
+const ACTIVITY_ID_RE = new RegExp(`urn:li:activity:(${ACTIVITY_ID_PATTERN})`, "g");
 /**
  * The closed-target vocabulary Playwright raises when a body read loses the
  * page. Anything else reaching a listener catch is a real fault (N048): the
@@ -303,8 +309,7 @@ export async function walkLinkedInSurface(
               captureWarn,
             );
           }
-          const ids = new Set([...body.matchAll(/urn:li:activity:(\d{10,})/g)].map((m) => m[1]))
-            .size;
+          const ids = new Set([...body.matchAll(ACTIVITY_ID_RE)].map((m) => m[1])).size;
           const markers = (body.match(/legacyControlName":"commentary_text/g) || []).length;
           console.log(
             `fetch: ${label} flagship (unmatched): ${response.status()} ids=${ids} markers=${markers} ${url.slice(0, 80)}`,

@@ -18,9 +18,12 @@ env-file.ts                              # PC-script support: <cwd>/.env auto-lo
                                          #   + the shared .env line writer upsertDotEnvLine (hoisted here Phase 9;
                                          #   login-linkedin imports it)
 threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
-linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (parser/session/fetch/payload) | data-sjs walk
-recency.ts, judge.ts, judge-rotation.ts, # FUNNEL: window filter | dispatchLlmCall + wrappers | rotation | parsers |
-judge-parse.ts, pool.ts                  #   bounded shared runPool (zero imports)
+linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (parser/session/fetch/context/
+                                         #   walk/behavior/capture/payload) | data-sjs walk
+recency.ts, judge.ts, judge-prompts.ts,  # FUNNEL: window filter | judge orchestration + prompts + dispatch core |
+judge-dispatch.ts, judge-availability.ts,#   the pre-dispatch availability check | rotation | parsers |
+judge-rotation.ts, judge-parse.ts,       #   bounded shared runPool (zero imports)
+pool.ts
 email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartbeat via sendText | v2 atomic save
 ```
 
@@ -118,12 +121,18 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // linkedin-session.ts: LINKEDIN_COOKIES_FILE resolver (fail-visible D4 — the stricter contrast to
 // silent-null resolveSession); quote asymmetry canonicalized once (header quoted+last §10/§14.5;
 // csrf stripped §3; storageState re-quotes).
-// linkedin-fetch.ts: the browser walk — a LinkedIn-local LinkedInContextFactory (~120 lines duplicated
-// from the shared factory: widening breaks the 3 doubles under strictFunctionTypes, re-exporting the
-// private factory re-introduces knip N012; HEADED persistent-profile Chromium (launchPersistentContext,
+// linkedin-context.ts: the LinkedIn-local LinkedInContextFactory (~120 lines duplicated from the
+// shared factory: widening breaks the 3 doubles under strictFunctionTypes) + the three tagged-error
+// families (leg-dead, all-faulted, halt). browser-constants.ts carries the UA string and the webdriver
+// patch both factories share (N059). HEADED persistent-profile Chromium (launchPersistentContext,
 // msedge channel, viewport null — the session rides the PROFILE; the harvested cookie pair is only the
 // resolver's fail-visible gate, never a synthesized document), own dynamic-import quarantine, locale
-// en-US pins the Load-more text selector) walks each surface: one paced navigation (shared per-walk
+// en-US pins the Load-more text selector.
+// linkedin-walk.ts: walkLinkedInSurface + its 14 tuning constants + the two JS snippets. The pacing
+// gate does NOT live here — fetchLinkedInPosts awaits gate.wait() and only then calls the walk.
+// linkedin-fetch.ts: the orchestration — shuffle, runPool, pacing gate, drain arms, join priority,
+// stamp-at-slot-write — plus the eight-symbol re-export facade (removal note: run #7). Each surface:
+// one paced navigation (shared per-walk
 // 5-15s gate, makePacingGate RESERVES
 // the slot BEFORE the await so width-2 workers never compute the same wake time; per-walk closure,
 // ticks never inherit stamps) plus up to scrollRounds Load-more clicks (LOAD_MORE_SELECTOR =
@@ -164,7 +173,7 @@ function stateTempPath(dir: string, nowMs = Date.now()): string {
 
 ## Architectural Boundaries
 - **No silent fallbacks**: config/state/optional-env faults exit non-zero naming the problem; the only sanctioned best-effort calls are heartbeat, the exhaustion alarm, and temp cleanup
-- **Pipeline shape lives only in `index.ts`** (stages never import each other); **every `state/` write goes through ONE atomic idiom — `stateTempPath` + temp/rename from state.ts — via FOUR writers, one file each** (state.ts seen-posts, judge-ceilings.ts ceilings, judge-health.ts health, linkedin-payload.ts payload); the workflow is the git committer
+- **Pipeline shape lives only in `index.ts`** (stages never import each other); **every `state/` write goes through ONE atomic idiom — `stateTempPath` + temp/rename from state.ts — via SIX writers, one file each** (state.ts seen-posts, judge-ceilings.ts ceilings, judge-health.ts health, linkedin-payload.ts payload, and fetch-linkedin.ts's two flag writers: the episode marker and the halt latch); the workflow is the git committer
 - **Secrets are env-only** (names in `ENV_NAMES`); **no classes** — tagged errors = name constant + factory + type guard (`rotationExhausted` / `isRotationExhausted`)
 
 <important if="you are adding a new pipeline stage">
