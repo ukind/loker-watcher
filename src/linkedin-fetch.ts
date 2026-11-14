@@ -203,6 +203,26 @@ export const SCROLL_JS = `(() => {
  */
 const LINKEDIN_CHECKPOINT_URL_RE = /(^|\/)(checkpoint|authwall|login)(\/|$|\?)/i;
 
+/**
+ * The closed-target vocabulary Playwright raises when a body read loses the
+ * page. Anything else reaching a listener catch is a real fault (N048): the
+ * parser is documented never-throws, so a RangeError from it — or from the
+ * capture path's Date conversion — is a defect worth one warn.
+ */
+const PAGE_CLOSE_RACE_MESSAGES = [
+  "Response body is unavailable",
+  "Target page, context or browser has been closed",
+  "Execution context was destroyed",
+] as const;
+
+function isPageCloseRace(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  if ((error as { name?: unknown }).name === "TargetClosedError") return true;
+  const message = (error as { message?: unknown }).message;
+  if (typeof message !== "string") return false;
+  return PAGE_CLOSE_RACE_MESSAGES.some((fragment) => message.includes(fragment));
+}
+
 // --- LegDeadError: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
 export const LEG_DEAD = "LegDeadError";
@@ -502,6 +522,42 @@ async function walkLinkedInSurface(
   const captureWarn: CaptureWarnState = { warned: false };
   let seenStreak = 0; // consecutive first-wins inserts of seen ids — the seen-stop signal
   let lastSeenId = ""; // the id that tipped the streak — named by the seen-stop line
+  // Stream-order fold (N046): the listener arms are microtask continuations
+  // after `await response.text()`, so two bodies can complete out of fire
+  // order. The sequence number is minted SYNCHRONOUSLY when the arm starts —
+  // before the try, before the await — and every (id, seen) entry carries
+  // it. The fold recomputes the streak from scratch in seq order, so a body
+  // that fires early but completes late cannot reset a streak that stream
+  // order says should stand. Bounded by the post cap plus drain inserts.
+  let seenSeq = 0;
+  const seenEntries: Array<{ seq: number; id: string; seen: boolean }> = [];
+  const foldSeenStreak = (): void => {
+    let streak = 0;
+    let last = lastSeenId;
+    for (const entry of [...seenEntries].sort((a, b) => a.seq - b.seq)) {
+      if (entry.seen) {
+        streak += 1;
+        last = entry.id;
+      } else {
+        streak = 0;
+      }
+    }
+    seenStreak = streak;
+    lastSeenId = last;
+  };
+  // Body-fault warn-once (N048): the two listener arms swallow the known
+  // page-close race, but a parser RangeError or a capture-path RangeError
+  // must not look identical to it. First real fault per walk warns; later
+  // ones stay quiet (the captureOnce policy).
+  const bodyFaultWarn: CaptureWarnState = { warned: false };
+  const warnBodyFault = (arm: string, error: unknown): void => {
+    if (bodyFaultWarn.warned) return;
+    bodyFaultWarn.warned = true;
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `fetch: ${label} ${arm} body fault (first this walk; further faults stay quiet) — ${message}`,
+    );
+  };
   const assertNoCheckpoint = (): void => {
     // url() is the optional Slice 3 seam; absence (a pre-Slice-3 double)
     // reads as no checkpoint. The production adapters always supply it.
@@ -550,13 +606,19 @@ async function walkLinkedInSurface(
           console.log(
             `fetch: ${label} flagship (unmatched): ${response.status()} ids=${ids} markers=${markers} ${url.slice(0, 80)}`,
           );
-        } catch {
-          // the body read can race the page close; skip it
+        } catch (error) {
+          // The body read can race the page close — that class stays
+          // silent. Anything else is a real fault: warn once per walk.
+          if (!isPageCloseRace(error)) warnBodyFault("unmatched", error);
         }
       })();
       return;
     }
     if (!matched) return;
+    // Mint the stream-order sequence SYNCHRONOUSLY, before the try and
+    // before the await: this is the body's FIRE order, not its completion
+    // order (N046).
+    const seq = (seenSeq += 1);
     void (async () => {
       try {
         const body = await response.text();
@@ -566,14 +628,13 @@ async function walkLinkedInSurface(
         for (const post of minted) {
           if (posts.has(post.id)) continue; // first-wins by urn
           posts.set(post.id, post);
-          if (seenIds.has(post.id)) {
-            seenStreak += 1;
-            lastSeenId = post.id;
-          } else {
-            seenStreak = 0;
-          }
+          // The entry carries the PRE-AWAIT seq: id and seen only exist
+          // after the parse, but the order is the fire order.
+          seenEntries.push({ seq, id: post.id, seen: seenIds.has(post.id) });
           fresh += 1;
         }
+        // Fold in seq order, not completion order (N046).
+        if (fresh > 0) foldSeenStreak();
         if (minted.length > 0) parsed += 1;
         // Extensive logging (live rehearsal 2026-11-11): every body names
         // its size, its mint count, and how many were NEW. Without this,
@@ -604,8 +665,9 @@ async function walkLinkedInSurface(
             captureWarn,
           );
         }
-      } catch {
-        // the body read can race the page close; skip it
+      } catch (error) {
+        // The body read can race the page close — that class stays silent.
+        if (!isPageCloseRace(error)) warnBodyFault("matched", error);
       }
     })();
   });
@@ -755,7 +817,16 @@ async function walkLinkedInSurface(
     console.log(
       `fetch: ${label} OK — ${posts.size} post(s) from ${parsed} response(s), ${received} body(ies) received, ${clicks} click(s) fired`,
     );
-    return [...posts.values()];
+    // The cap is a real bound (N047): the listener keeps inserting during
+    // the drain, so the map can exceed LINKEDIN_MAX_POSTS. Map order is
+    // ARRIVAL order, not recency — each body mints ascending, but a later
+    // page carries older posts — so a plain slice would keep the wrong 150.
+    // Sort by derived timestamp and keep the newest.
+    const collected = [...posts.values()];
+    if (collected.length <= LINKEDIN_MAX_POSTS) return collected;
+    return collected
+      .sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0))
+      .slice(-LINKEDIN_MAX_POSTS);
   } finally {
     await page.close();
   }

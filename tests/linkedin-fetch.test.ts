@@ -145,6 +145,13 @@ interface PageScript {
   readonly onWait?: (call: number, setUrl: (url: string) => void) => void;
   /** Extra responses fired on the first settle (the noise fixtures). */
   readonly noiseOnFirstSettle?: readonly ResponseLike[];
+  /**
+   * Deferred body completion (the N046 race fixture): called with the
+   * 1-based body fire index when a response's `text()` is invoked. Return a
+   * promise to make the body resolve when the test releases it, or
+   * undefined to resolve immediately.
+   */
+  readonly bodyGate?: (fireIndex: number) => Promise<string> | undefined;
 }
 
 /** One created page, with the handles a test needs to steer and observe it. */
@@ -182,6 +189,12 @@ function fakeContextFactory(options: {
         const evaluates: string[] = [];
         let clickCount = 0;
         let waitCalls = 0;
+        let bodyFire = 0;
+        /** Fire-order body delivery: the N046 fixture parks a body here. */
+        const deliverBody = (body: string): Promise<string> => {
+          bodyFire += 1;
+          return matched?.bodyGate?.(bodyFire) ?? Promise.resolve(body);
+        };
         let settleArmed = false;
         let currentUrl = "";
         let matched: PageScript | undefined;
@@ -201,7 +214,7 @@ function fakeContextFactory(options: {
                 fire({
                   url: () => FLAGSHIP_SEARCH_URL,
                   status: () => matched?.initialStatus ?? 200,
-                  text: async () => initial,
+                  text: () => deliverBody(initial),
                 });
               };
               if (matched?.initialGate === undefined) deliver();
@@ -249,7 +262,7 @@ function fakeContextFactory(options: {
                 fire({
                   url: () => PAGINATION_URL,
                   status: () => 200,
-                  text: async () => body,
+                  text: () => deliverBody(body),
                 });
               }
               if (clickCount === 1) {
@@ -1384,5 +1397,171 @@ describe("seen-stop (design 2026-11-13)", () => {
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /\(dry 3\/3, total 5\)/.test(line)));
     assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(3)}`)));
+  });
+});
+
+describe("walk fixes (N046, N047, N048)", () => {
+  it("folds the seen streak in stream order, not body-completion order (N046)", async (t) => {
+    // Four bodies fire in order: 1 fresh, 2-4 seen. Stream order says the
+    // streak is 3 at body 4, so the stop names body 4's id. The bodies
+    // complete in REVERSE (4, 3, 2), so a completion-order fold would name
+    // body 2's id instead.
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seen = new Set([2, 3, 4].map((n) => `urn:li:activity:${idAt(n)}`));
+    const bodies = [
+      cardBody(idAt(1), postText(1)), // fresh — resets the streak
+      cardBody(idAt(2), postText(2)), // seen
+      cardBody(idAt(3), postText(3)), // seen
+      cardBody(idAt(4), postText(4)), // seen — the stream-order tip
+    ];
+    const gates: Array<{ promise: Promise<string>; resolve: (body: string) => void }> = [];
+    const park = (): Promise<string> => {
+      let resolve!: (body: string) => void;
+      const promise = new Promise<string>((r) => {
+        resolve = r;
+      });
+      gates.push({ promise, resolve });
+      return promise;
+    };
+    // Release schedule, keyed by the 1-based waitForTimeout call count.
+    // Call 1 is the liveness poll, 2 is round 1's after-scroll wait, and
+    // 3.. are the round settles. A body fires at the settle BEFORE the next
+    // call's onWait, so each release lands one call after its fire.
+    const releaseAt: Record<number, number> = { 2: 1, 6: 4, 7: 3, 8: 2 };
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23race",
+          script: {
+            initialBody: bodies[0]!,
+            clickBodies: [bodies[1]!, bodies[2]!, bodies[3]!],
+            bodyGate: () => park(),
+            onWait: (call) => {
+              const fire = releaseAt[call];
+              if (fire !== undefined) gates[fire - 1]?.resolve(bodies[fire - 1]!);
+            },
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#race")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+      () => 0,
+      () => 0,
+      8, // minClicks: suppress the dry exit so every round runs
+      seen,
+    );
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(4)}`)));
+    assert.equal(
+      lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(2)}`)),
+      false,
+    );
+    assert.equal(posts.length, 4);
+  });
+
+  it("slices the return to the cap when the drain overshoots it (N047)", async () => {
+    // 100 posts in the initial body, 100 more in one click body: the loop's
+    // cap check stops the rounds, but the listener keeps inserting during
+    // the drain, so the map reaches 200. The return must be exactly 150,
+    // and the 150 must be the NEWEST.
+    const first = Array.from({ length: 100 }, (_, i) => [idAt(i + 1), postText(i + 1)] as const);
+    const second = Array.from(
+      { length: 100 },
+      (_, i) => [idAt(i + 101), postText(i + 101)] as const,
+    );
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23overcap",
+          script: { initialBody: cardBodyMany(first), clickBodies: [cardBodyMany(second)] },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#overcap")],
+      PROFILE,
+      factory,
+      8,
+      instantSleep,
+    );
+    assert.equal(posts.length, 150);
+    assert.equal(posts[0]?.id, `urn:li:activity:${idAt(51)}`);
+    assert.equal(posts.at(-1)?.id, `urn:li:activity:${idAt(200)}`);
+  });
+
+  it("warns once when a listener arm throws a real fault (N048)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const { sink } = recordingSink();
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23fault",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            clickBodies: [cardBody(idAt(2), postText(2))],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#fault")],
+      PROFILE,
+      factory,
+      1,
+      instantSleep,
+      () => Number.NaN, // the capture stamp throws RangeError: Invalid time value
+      () => 0,
+      0,
+      undefined,
+      sink,
+    );
+    await flush();
+    assert.equal(posts.length, 2); // the insert ran before the stamp threw
+    const faults = warns.mock.calls
+      .map((call) => String(call.arguments[0] ?? ""))
+      .filter((line) => line.includes("body fault"));
+    assert.equal(faults.length, 1); // warn once per walk, not per body
+    assert.match(faults[0] ?? "", /Invalid time value/);
+  });
+
+  it("stays silent on the known page-close race (N048)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23raceclose",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            noiseOnFirstSettle: [
+              {
+                url: () => PAGINATION_URL,
+                status: () => 200,
+                text: async () => {
+                  throw new Error("Response body is unavailable");
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts(
+      [surface("#raceclose")],
+      PROFILE,
+      factory,
+      1,
+      instantSleep,
+    );
+    await flush();
+    assert.equal(posts.length, 1);
+    assert.equal(
+      warns.mock.calls.some((call) => String(call.arguments[0] ?? "").includes("body fault")),
+      false,
+    );
   });
 });
