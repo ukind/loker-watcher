@@ -2,27 +2,27 @@
 
 Threads + LinkedIn #hiring Indonesia job alerts. A GitHub Actions workflow
 loads the Threads surfaces listed in `watcher.config.json` every 10 minutes,
-has an LLM judge posts against the configured keywords (Indonesia or remote
+asks an LLM to judge posts against the configured keywords (Indonesia or remote
 roles), and emails new matches as a plain-text digest. LinkedIn posts ride a
 separate always-on loop on the developer's PC: a real browser walks the
 LinkedIn content-search page for each surface and pushes
 `state/linkedin-posts.json`, which the hosted run reads. No
-web UI; persistence is three committed state files — `state/seen-posts.json`
+web UI; persistence is three committed state files: `state/seen-posts.json`
 (seen ids), `state/judge-ceilings.json` (the judge's per-account ceilings),
 and `state/judge-health.json` (per-account provider health: hard-failure
 streaks and the outage-episode bit).
 
 ## Pipeline
 
-1. Playwright loads every Threads surface listed in `watcher.config.json` —
+1. Playwright loads every Threads surface listed in `watcher.config.json`:
    tag pages, profile pages and search URLs. With `THREADS_SESSION_STATE`
    set it signs in, clicks the **Recent** tab where one exists, and reads
    posts from the `graphql` XHR responses; otherwise it loads each surface
    logged out and reads posts from the embedded `data-sjs` JSON blobs.
 2. LinkedIn surfaces ride the PC fetch leg: an always-on loop on the
    developer's PC walks the LinkedIn content-search page for each linkedin
-   surface — signed in via the harvested cookie session, one paced page
-   load plus up to `scrollRounds` "Load more" clicks per surface — writes
+surface (signed in via the harvested cookie session, one paced page
+   load plus up to `scrollRounds` "Load more" clicks per surface), writes
    `state/linkedin-posts.json`, and pushes that single file to `main`. The
    hosted run reads the payload from its checkout; an absent or stale
    payload (PC off) degrades to a threads-only run with one log line.
@@ -32,7 +32,7 @@ streaks and the outage-episode bit).
 6. Every surviving post goes to the LLM judge in ~10-post bulk calls. The
    `keywords` list is sent as the relevance criterion; a post the bulk
    response misses falls back to a single-post call. A batch the endpoint
-   does not answer is deferred whole — those posts stay unseen and retry
+   does not answer is deferred whole. Those posts stay unseen and retry
    on the next run. Accounts come from the `LLM_ACCOUNTS` pool: an HTTP 429
    cools that account for 60 seconds and dispatches re-scan past cooling
    accounts; when every account is cooling, calls park up to a shared
@@ -44,10 +44,10 @@ streaks and the outage-episode bit).
    capped at 1 until the next probe run).
 
    An account that hard-fails (HTTP 5xx after backoff, 401/403, or a
-   network error — never a 429) on two consecutive runs is capped at one
+   network error, never a 429) on two consecutive runs is capped at one
    request per run: the next run's single dispatch is a half-open probe,
    and a success restores its full ceiling for the rest of that run. The
-   marks live in `state/judge-health.json` and self-heal — a stale mark
+   marks live in `state/judge-health.json` and self-heal: a stale mark
    costs at most the one-request probe until the first success clears it.
    While any account is capped, the digest and the zero-match status email
    each carry one `Degraded LLM account(s):` line, and an exhausted pool's
@@ -56,18 +56,18 @@ streaks and the outage-episode bit).
    outage: the episode bit rides the health file, so a second all-dead run
    stays quiet in the log and still fails the run.
 7. Each candidate gets a `{relevant, locationOk}` verdict. A judgment that
-   fails is skipped — the post stays unseen and retries on the next run.
+   fails is skipped. The post stays unseen and retries on the next run.
 8. New relevant + located posts are emailed as the job digest; LinkedIn
    item lines carry a `[linkedin]` marker and the subject appends
    `+ LinkedIn` when at least one LinkedIn post matched.
 9. On match runs the state file is committed back as `github-actions[bot]`.
-10. **Zero-match runs email a status digest instead** — the scan funnel plus
-    the closest candidate posts with their permalinks — so a quiet run is
+10. Zero-match runs email a status digest instead: the scan funnel plus
+    the closest candidate posts with their permalinks, so a quiet run is
     still legible. Set `HEARTBEAT_ENABLED=false` to turn it off.
 
 ## Requirements
 
-- **Public GitHub repository.** Scheduled workflows on public repos run free
+- A public GitHub repository. Scheduled workflows on public repos run free
   and unlimited; a private repo at this cadence would burn roughly 11,000
   paid minutes per month.
 - A Gmail account with an
@@ -88,11 +88,11 @@ streaks and the outage-episode bit).
    | `GMAIL_APP_PASSWORD` | your-app-password | Gmail SMTP credentials |
    | `THREADS_SESSION_STATE` | base64 storageState | Threads login session (see below) |
 
-   The LinkedIn leg needs no GitHub secret — its cookies live only on the
+   The LinkedIn leg needs no GitHub secret: its cookies live only on the
    PC (see **The LinkedIn leg on your PC**).
 
-   Optional variable (not a secret): `HEARTBEAT_ENABLED` — set to `false` to
-   stop the zero-match status email, default `true`. Surfaces, keywords,
+   Optional variable (not a secret): `HEARTBEAT_ENABLED`. Set it to `false` to stop the
+   zero-match status email; the default is `true`. Surfaces, keywords,
    candidate terms and the recency window are all configured in
    `watcher.config.json` (see below).
 
@@ -100,8 +100,8 @@ streaks and the outage-episode bit).
    once and the dispatch-only probe job measures every `LLM_ACCOUNTS`
    account (a per-account `ceiling=N` summary line; the ramp doubles
    concurrent calls 2→32 per account and stops when the endpoint refuses;
-   a dead account — failed leg, HTTP 401/403, or a broken ramp — fails the
-   probe job), writes `state/judge-ceilings.json`, and commits it. On a
+   a dead account fails the probe job (failed leg, HTTP 401/403, or a
+   broken ramp), writes `state/judge-ceilings.json`, and commits it. On a
    dispatch run the watch job waits for the green probe and starts on
    those fresh ceilings; scheduled 10-minute runs skip the probe and read
    the committed file. Nothing to paste: watch spreads dispatches under
@@ -109,7 +109,7 @@ streaks and the outage-episode bit).
    dispatch's watch, so the file keeps its last green reading. The probe
    runs at most once per 8 hours from its last success: a fresh window
    skips the probe and the dispatch proceeds on the committed ceilings. A
-   failed probe starts no window — the next manual dispatch re-probes. The
+   failed probe starts no window; the next manual dispatch re-probes. The
    dispatch form's force checkbox re-probes immediately (use it after
    rotating keys).
 
@@ -120,9 +120,9 @@ streaks and the outage-episode bit).
    creates it; a missing or malformed file reads as "everything healthy"
    and never fails a run.
    Rolling the code back past v2 requires reverting
-   `state/seen-posts.json` in the same commit — v1 code fails visibly with
+   `state/seen-posts.json` in the same commit: v1 code fails visibly with
    `unsupported schema version: 2`.
-3. Commit `package-lock.json` (generated by the first `npm install`) — the
+3. Commit `package-lock.json` (generated by the first `npm install`); the
    workflow's `npm ci` step requires it.
 4. Enable Actions on the repo. The native schedule (`*/10 * * * *`) then
    runs best-effort. For a clock you control, see External cron below.
@@ -130,17 +130,17 @@ streaks and the outage-episode bit).
 ## Configure what to watch
 
 Everything the watcher samples and how it filters lives in
-[`watcher.config.json`](./watcher.config.json). Edit that file, commit, push —
-no code change and no Actions variable is involved.
+[`watcher.config.json`](./watcher.config.json). Edit that file, commit, push.
+No code change and no Actions variable is involved.
 
 | Key | What it does |
 |---|---|
-| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries feed a keywords string to the PC leg's browser walk of the content-search page — they need no GitHub secret. |
-| `platforms` | Which platforms this run watches: `{ "linkedin": true, "threads": true }`. Required — an absent block, a missing member, or a non-boolean member fails the run naming the key. `false` skips that platform's fetch, judge, and digest rows; both `false` parks the run (exit 0, no email, no state read or write). The PC LinkedIn leg keeps fetching — this gates the hosted run only. |
+| `surfaces` | What to sample. Each entry is `{ "type": "tag", "value": "hiring" }`, `{ "type": "url", "value": "https://www.threads.com/@someone" }`, or `{ "type": "linkedin", "value": "#hiring ..." }`. Tags build `threads.com/tag/<value>`; URLs are used verbatim and must be `https://www.threads.com/...`; linkedin entries feed a keywords string to the PC leg's browser walk of the content-search page; they need no GitHub secret. |
+| `platforms` | Which platforms this run watches: `{ "linkedin": true, "threads": true }`. Required: an absent block, a missing member, or a non-boolean member fails the run naming the key. `false` skips that platform's fetch, judge, and digest rows; both `false` parks the run (exit 0, no email, no state read or write). The PC LinkedIn leg keeps fetching; this gates the hosted run only. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
-| `recencyHours` | How far back a post can be and still count. Required — a missing or non-positive value fails the run. |
-| `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"` (default), or `"high"`. Absent defaults to `"medium"`. |
+| `recencyHours` | How far back a post can be and still count. Required: a missing or non-positive value fails the run. |
+| `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"`, or `"high"`. Absent defaults to `"medium"`. |
 | `scrollRounds` | Upper bound on scroll rounds per Threads surface walk, and on "Load more" clicks per LinkedIn surface walk. Must be a whole number >= 1; absent defaults to `8`. |
 
 Adding a profile or a search URL is the same edit as adding a tag:
@@ -149,7 +149,7 @@ Adding a profile or a search URL is the same edit as adding a tag:
 { "type": "url", "value": "https://www.threads.com/search?q=frontend&serp_type=deeplink&filter=recent" }
 ```
 
-A LinkedIn search is the same kind of edit — a keywords string the PC fetch
+A LinkedIn search is the same kind of edit: a keywords string the PC fetch
 leg's browser walk runs on the content-search page, not a URL:
 
 ```json
@@ -157,7 +157,7 @@ leg's browser walk runs on the content-search page, not a URL:
 ```
 
 A missing file, a typo in a key, an unknown surface `type`, or a
-non-threads.com URL stops the run with an error that names the problem — the
+non-threads.com URL stops the run with an error that names the problem. The
 watcher never silently falls back to a built-in list.
 
 ## Smoke run
@@ -173,7 +173,7 @@ Trigger **Actions → watch → Run workflow** (workflow_dispatch). Expected:
   `HEARTBEAT_ENABLED=false` if that is too many.
 
 If the run gets no posts from Actions runner IPs, Threads is blocking
-datacenter traffic — escalate browser hardening (design decision D2) before
+datacenter traffic; escalate browser hardening (design decision D2) before
 trying other fixes.
 
 ## External cron (cron-job.org)
@@ -182,7 +182,7 @@ The native schedule is best-effort: GitHub can delay or skip runs, and it
 auto-disables schedules after 60 quiet days (see Maintenance). A
 cron-job.org job that calls the workflow trigger API makes the clock
 explicit. The workflow already accepts API triggers (`watch.yml:4-6`), so
-this section is documentation only — no repo file changes.
+the setup needs no repo file changes.
 
 The token below can start runs on your behalf. Treat it like a password:
 keep it out of the repo and paste it only into cron-job.org.
@@ -193,7 +193,7 @@ keep it out of the repo and paste it only into cron-job.org.
    and select this repo. Under **Permissions → Repository permissions →
    Actions**, pick **Read and write** (Metadata read-only is added
    automatically). Give it an expiry you will actually rotate.
-2. Pre-flight the token from a terminal. Expected: it prints `204` — GitHub
+2. Pre-flight the token from a terminal. Expected: it prints `204`, because GitHub
    answers `204 No Content` with an empty body on success:
 
    ```bash
@@ -208,8 +208,8 @@ keep it out of the repo and paste it only into cron-job.org.
 
    Check **Actions → watch** for a new run with event
    **workflow_dispatch**. On a fork, replace `ukind/loker-watcher` with
-   your `owner/repo` — here and in step 3.
-3. Put your real token into this line in place of the placeholder —
+   your `owner/repo`, here and in step 3.
+3. Put your real token into this line in place of the placeholder.
    cron-job.org does not expand variables, so the token must be in the
    text before you import it:
 
@@ -239,7 +239,7 @@ If the pre-flight fails, the status code names the problem:
 Two traps to know:
 
 - Address the workflow by filename. A URL with the wrong filename can
-  still answer `204` — and if the filename is `ci.yml`, every trigger
+  still answer `204`. If the filename is `ci.yml`, every trigger
   starts a CI run instead. The run must appear under **watch**.
 - The native schedule stays on. Both clocks share one concurrency group
   (`watch.yml:11-13`), so overlapping triggers cancel the older run instead of racing it.
@@ -250,7 +250,7 @@ Two traps to know:
 
 ## Refresh the Threads session
 
-The watcher signs in with a browser session exported from a real login —
+The watcher signs in with a browser session exported from a real login;
 no password is stored anywhere. The session is account-equivalent: treat it
 like a password, keep it in the secret only, and never commit it.
 
@@ -259,7 +259,7 @@ like a password, keep it in the secret only, and never commit it.
    document (`{ "cookies": [...], "origins": [] }`). A cookie-export
    extension or `pire-browser cookies --json` against the logged-in tab
    both work; keep `sessionid`, `ds_user_id`, `csrftoken`, `mid`, `ig_did`.
-   **The raw export is not a storageState document — convert it first.**
+   **The raw export is not a storageState document: convert it first.**
    Playwright rejects the pire-browser cookie objects outright:
    `browser.newContext: storageState.cookies[0].sameSite: expected one of
    (Strict|Lax|None)`, because the export uses `unspecified` and
@@ -274,13 +274,13 @@ like a password, keep it in the secret only, and never commit it.
 
 The session lasts roughly a year (`sessionid` expiry). When runs start
 logging the logged-out fallback warning or post counts drop back to ~19 per
-tag, repeat the export. With the secret unset or invalid the watcher falls
+tag, repeat the export. With the secret unset or invalid, the watcher falls
 back to the logged-out fetch and still runs.
 
 ## The LinkedIn leg on your PC (browser walk)
 
 LinkedIn posts come from a real browser walk of the LinkedIn content-search
-page, run on the developer's PC by an always-on npm loop — not from GitHub
+page, run on the developer's PC by an always-on npm loop, not from GitHub
 Actions. The walk signs in with the harvested cookie session, opens each
 linkedin surface's search URL, clicks **Load more** up to `scrollRounds`
 times per surface, and parses the pagination responses the page itself
@@ -293,35 +293,35 @@ only fetches the linkedin surfaces, writes `state/linkedin-posts.json`
 atomically, and pushes that single path with the same rebase+retry
 discipline the bot uses. Each file has exactly one writer, so the two
 pushes can never lose each other's commits. Run the loop from a dedicated
-clone of `main` — its `git pull --rebase` also auto-updates the loop's own
+clone of `main`: its `git pull --rebase` also auto-updates the loop's own
 code. One-time: set the clone's identity (`git config user.name` /
-`git config user.email`) — the push discipline commits as you, and an
+`git config user.email`): the push discipline commits as you, and an
 unconfigured identity fails the tick loudly instead of pushing nothing.
 
-One command runs the whole protocol — login hold, probe walk, exactly one
-fetch tick, in that order: `npm run linkedin-chain` (needs a real terminal;
+One command runs the whole protocol, in order: login hold, probe walk,
+exactly one fetch tick. Run `npm run linkedin-chain` (needs a real terminal;
 the login hold waits for Enter). The login and probe steps it sequences, for
 running them individually:
 
-1. `npm run login-linkedin` — opens a real Chrome window; log in by hand
+1. `npm run login-linkedin`: opens a real Chrome window; log in by hand
    (2FA included). The helper waits for the session, writes the cookie
    file, and adds the LINKEDIN_COOKIES_FILE line to .env automatically.
    The browser then STAYS OPEN: the mandatory feed warm-down rests the
-   session before close — press Enter in the terminal to close it
+   session before close. Press Enter in the terminal to close it
    (`--auto-close` restores fire-and-close, but the feed-first rest is
-   what keeps the session alive). Re-run it when the session dies — the browser profile persists, so a
+   what keeps the session alive). Re-run it when the session dies: the browser profile persists, so a
    still-signed-in jar is harvested without a new login; the loop's next
-   tick heals, no restart. Manual fallback (devtools export into
+   tick heals without a restart. Manual fallback (devtools export into
    `{ "liAt": "...", "jsessionid": "ajax:..." }`) still works: point
-   LINKEDIN_COOKIES_FILE at the file in .env or the shell.
+   `LINKEDIN_COOKIES_FILE` at the file in `.env` or the shell.
    No headless re-login exists (2FA dead-ends automated login); the
    headed helper keeps the operator in the loop.
-2. `npm run probe-linkedin` — twice, ≥6h apart, stored cookies only; walks
+2. `npm run probe-linkedin`: twice, ≥6h apart, stored cookies only; walks
    the first configured surface read-only and exits 1 on a checkpoint
    wall (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted
    walk (`probe: FAILED`), or fewer than 10 posts. Re-run after every
    `npm run login-linkedin` re-harvest.
-3. `npm run watch-linkedin` — tick, then a 28-33-minute sleep, forever;
+3. `npm run watch-linkedin`: tick, then a 28-33-minute sleep, forever;
    leave the console open.
 
 Env setup note: the PC scripts read `.env` beside the clone root
@@ -329,9 +329,9 @@ Env setup note: the PC scripts read `.env` beside the clone root
 set in the shell always wins and `.env` fills only unset keys, so the
 setup commands' lines work without any shell profile edit. Upgrading from
 a pre-walk checkout: the two old `.env` lines (the transport picker and
-the curl binary path) are inert — delete both; keep or delete the old
-local tools folder; the old daily-GET ledger file
-(`state/linkedin-get-budget.json`) is orphaned — delete it. Its ignore rule
+the curl binary path) are inert; delete both. Keep or delete the old
+local tools folder. The old daily-GET ledger file
+(`state/linkedin-get-budget.json`) is orphaned; delete it. Its ignore rule
 stays, because a clone that has not deleted it yet would otherwise fail the
 tick's clean-tree preflight.
 
@@ -339,8 +339,8 @@ tick's clean-tree preflight.
 
 The PC walk records every intercepted LinkedIn response body under
 `captures/<UTC session stamp>/` so `npm run replay-linkedin` can re-analyze a
-walk offline. The bodies carry post text and member identifiers verbatim —
-treat the directory as personal data at rest.
+walk offline. The bodies carry post text and member identifiers verbatim.
+Treat the directory as personal data at rest.
 
 - Retention: the sink keeps the newest 20 session stamps and prunes the rest
   after every write. At the measured ~85 MB per walk that is ~1.7 GB steady
@@ -350,11 +350,11 @@ treat the directory as personal data at rest.
 - Purge by hand: `rm -rf captures/`. The directory is gitignored and never
   committed; deleting it costs only the replay history.
 
-Troubleshooting: `git: rebase failed` / `git: payload push failed twice` —
-the tick ran from a non-dedicated or dirty checkout; the preflight (branch
+Troubleshooting: `git: rebase failed` / `git: payload push failed twice`.
+The tick ran from a non-dedicated or dirty checkout; the preflight (branch
 `main` + clean tree, checked BEFORE any fetch) names the branch or the
 dirty paths. Run from a dedicated clean clone of `main`, and re-run
-`npm run login-linkedin` inside the clone — it writes `<cwd>/.env`, so
+`npm run login-linkedin` inside the clone: it writes `<cwd>/.env`, so
 each clone carries its own line.
 
 Hosted side: the */10 cron reads the payload from its checkout, merges,
@@ -373,7 +373,7 @@ export GMAIL_USER=... GMAIL_APP_PASSWORD=...
 npm start
 ```
 
-The five LinkedIn leg entries (PC only — no LLM_* or GMAIL_* needed for
+The five LinkedIn leg entries (PC only; no LLM_* or GMAIL_* needed for
 them, and the cookie file must exist):
 
 ```bash
