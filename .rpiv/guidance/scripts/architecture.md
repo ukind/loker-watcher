@@ -1,7 +1,7 @@
 # scripts/ — production commit-back script, endpoint probe + agent hooks
 
 ## Responsibility
-Nine files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps (watch.yml's Commit state, the probe job's Commit ceilings, and watch.yml's Commit health), executed by the hosted write paths; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json` (live-only, BEFORE the dead-account gate, plus a `probedAt` freshness stamp) from an Actions runner; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` + `linkedin-chain.ts` are the PC-local LinkedIn leg (tick, loop, gate, chain); `login-linkedin.ts` is the headed cookie harvest; `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of judge.ts's API, measuring the EXACT production prompt).
+Eleven files, deliberately separate from src/ (the production watcher): `commit-state-rebase.sh` is PRODUCTION RUNTIME — the body of ALL THREE commit-back steps; `probe-judge.ts` measures the LLM endpoint's latency and per-account ceiling, then writes them to `state/judge-ceilings.json`; `fetch-linkedin.ts` + `watch-linkedin.ts` + `probe-linkedin.ts` + `linkedin-chain.ts` are the PC-local LinkedIn leg (tick, loop, gate, chain); `login-linkedin.ts` is the headed cookie harvest; `reset-linkedin.ts` is the operator reset; `replay-linkedin.ts` re-analyzes a capture session offline; `hooks/gate-destructive.js` and `hooks/format-on-edit.js` are Claude Code stdin hooks. Nothing here is imported by src/ — the arrow points one way: scripts → src (the probe is a "zero-edit site" of `judge-prompts.ts`'s API, measuring the EXACT production prompt).
 
 ## Invokers
 - **commit-state-rebase.sh**: THREE invokers, one call each — watch.yml's Commit state step, the probe job's Commit ceilings step, and watch.yml's Commit health step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
@@ -55,6 +55,11 @@ login-linkedin.ts            # .ts, entry-guarded (imports runLoginHelper side-e
                              #   from src/env-file.ts since the Phase 9 hoist); the CLI then HOLDS
                              #   (keep-open default): Enter closes the browser, --auto-close restores
                              #   fire-and-close; INSIDE typecheck + lint + lint-staged
+replay-linkedin.ts           # .ts, entry-guarded; reads captures/<stamp>/ and re-runs the parser over
+                             #   every recorded body; INSIDE typecheck + lint + lint-staged
+reset-linkedin.ts            # .ts, entry-guarded; deletes the cookie file, the browser profile, and the
+                             #   halt latch, in that order; idempotent (a missing path lands in absent);
+                             #   INSIDE typecheck + lint + lint-staged
 linkedin-chain.ts            # .ts, entry-guarded (imports the three legs side-effect free); exports
                              #   runLinkedInChain / ChainDeps / ChainResult; ONE command: login hold ->
                              #   runProbe -> exactly one fetchTick; the merged env resolves ONCE (D2) and
@@ -109,6 +114,9 @@ linkedin-chain.ts           exit 0 when all three stages ran — a quiet-zero ti
                             exit 0 (defb8af); exit 1 when any stage throws — the wrapper prints
                             `linkedin-chain: FAILED — <gate>`; INTERACTIVE (real TTY for the login hold)
 login-linkedin.ts           exit 1 on timeout (no session within the budget) or a failed poll/context — one alarm-free operator gate; keep-open DEFAULT at the CLI — Enter closes the browser (--auto-close = fire-and-close)
+replay-linkedin.ts          exit 1 on a missing capture root or an unreadable session dir
+reset-linkedin.ts           exit 1 when a deletion truly fails (naming the path); a missing path is
+                            reported as absent, never an error
 gate-destructive.js         exit 2 = DENY the tool call (reason on stderr); unreadable stdin → exit 0 (fail-open, never block)
 format-on-edit.js           ALWAYS exit 0 — post-edit feedback only, can never veto an edit
 ```

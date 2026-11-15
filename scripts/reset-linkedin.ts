@@ -7,7 +7,7 @@
  * the operator can start clean with ONE command:
  *
  *   1. the cookie file (LINKEDIN_COOKIES_FILE, else DEFAULT_COOKIE_PATH)
- *   2. the persistent browser profile (DEFAULT_PROFILE_DIR)
+ *   2. the persistent browser profile (LINKEDIN_PROFILE_DIR)
  *   3. the operator-cleared halt latch (the fetch-linkedin.ts DEFAULT_LATCH)
  *
  * Every path is reported; a missing path is a no-op, not an error — the
@@ -25,15 +25,16 @@ import { rm, stat } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { ENV_NAMES } from "../src/config.js";
 import { envWithDotEnv } from "../src/env-file.js";
+import { resolveLinkedInProfileDir } from "../src/linkedin-fetch.js";
 import { DEFAULT_LATCH } from "./fetch-linkedin.js";
-import { DEFAULT_COOKIE_PATH, DEFAULT_PROFILE_DIR } from "./login-linkedin.js";
+import { DEFAULT_COOKIE_PATH } from "./login-linkedin.js";
 
 export interface ResetLinkedInDeps {
   /** Environment for the cookie-path default. Default: envWithDotEnv(). */
   env?: Record<string, string | undefined>;
   /** Cookie file target. Default: LINKEDIN_COOKIES_FILE from the merged env, else DEFAULT_COOKIE_PATH. */
   cookiePath?: string;
-  /** Browser profile dir. Default: DEFAULT_PROFILE_DIR. */
+  /** Browser profile dir. Default: LINKEDIN_PROFILE_DIR from the merged env, else the module default. */
   profileDir?: string;
   /** Halt-latch flag. Default: DEFAULT_LATCH (exported by fetch-linkedin.ts). */
   latchPath?: string;
@@ -68,7 +69,7 @@ export async function resetLinkedIn(deps: ResetLinkedInDeps = {}): Promise<Reset
   const fromEnv = env[ENV_NAMES.linkedinCookiesFile]?.trim();
   const cookiePath =
     deps.cookiePath ?? (fromEnv !== undefined && fromEnv !== "" ? fromEnv : DEFAULT_COOKIE_PATH);
-  const profileDir = deps.profileDir ?? DEFAULT_PROFILE_DIR;
+  const profileDir = deps.profileDir ?? resolveLinkedInProfileDir(env);
   const latchPath = deps.latchPath ?? DEFAULT_LATCH;
   const remove =
     deps.remove ?? ((path: string): Promise<void> => rm(path, { recursive: true, force: true }));

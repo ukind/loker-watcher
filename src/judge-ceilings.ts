@@ -34,7 +34,7 @@ import { stateTempPath } from "./state.js";
 export type CeilingsFile = Record<string, number>;
 
 /** Result of the pure resolver: index-keyed ceilings plus the warnings. */
-export interface ResolvedCeilings {
+interface ResolvedCeilings {
   ceilings: Map<number, number>;
   warnings: readonly string[];
 }

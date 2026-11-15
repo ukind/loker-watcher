@@ -117,6 +117,17 @@ const MARKER_CONTROL = "commentary_text";
 const MAX_CLIMB_HOPS = 12;
 
 /**
+ * The activity-id digit floor (N055): LinkedIn ids are 19 digits, so 10 is a
+ * safety floor, not a real bound. ONE definition, two readers — the payload
+ * reader's row validator (src/linkedin-payload.ts) and the ACTIVITY_ID_RE
+ * for the walk's diagnostic id count, built in src/linkedin-walk-static.ts;
+ * the card join replaced this parser's own mint regexes. The payload reader
+ * used to accept 9+, so a 9-digit row passed the reader and could never be
+ * minted.
+ */
+export const ACTIVITY_ID_PATTERN = "\\d{10,}";
+
+/**
  * Split a flight stream and JSON-parse every data row. Lines outside the
  * "hex-id":payload form, and module-manifest rows like I[...], are skipped.
  * Row order is stream order. (Restored verbatim from 68c1e2d.)

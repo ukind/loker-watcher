@@ -26,13 +26,11 @@ import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { ENV_NAMES } from "../src/config.js";
 import { envWithDotEnv, upsertDotEnvLine } from "../src/env-file.js";
+import { resolveLinkedInProfileDir } from "../src/linkedin-fetch.js";
 import { stateTempPath } from "../src/state.js";
 
 /** Where the cookie pair lands when LINKEDIN_COOKIES_FILE is unset everywhere. */
 export const DEFAULT_COOKIE_PATH = "C:/loker-secrets/linkedin-cookies.json";
-
-/** Persistent browser profile (outside the repo): a signed-in jar skips the login on refresh runs. */
-export const DEFAULT_PROFILE_DIR = "C:/loker-secrets/linkedin-chromium-profile";
 
 /**
  * The feed URL the helper lands on at open and RE-VISITS before any close —
@@ -203,7 +201,8 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
       }));
   const now = deps.now ?? Date.now;
   const keepOpen = deps.keepOpen === true;
-  const openContext = deps.openContext ?? (() => openDefaultContext(DEFAULT_PROFILE_DIR));
+  const openContext =
+    deps.openContext ?? (() => openDefaultContext(resolveLinkedInProfileDir(env)));
 
   const context = await openContext();
   try {

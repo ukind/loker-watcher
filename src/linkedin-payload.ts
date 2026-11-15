@@ -22,6 +22,7 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Surface } from "./config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "./config.js";
+import { ACTIVITY_ID_PATTERN } from "./linkedin-parser.js";
 import { stateTempPath } from "./state.js";
 import type { Post } from "./types.js";
 
@@ -44,7 +45,7 @@ export interface PayloadEnvelope {
 }
 
 /** LinkedIn leg state for the heartbeat/digest lines (D6/D13). */
-export type LegStatus = "ok" | "stale" | "absent" | "malformed";
+type LegStatus = "ok" | "stale" | "absent" | "malformed";
 
 /** The leg state minus the posts — rides HeartbeatStats and the digest. */
 export interface LegLine {
@@ -62,7 +63,7 @@ export interface PayloadRead {
   detail?: string;
 }
 
-const ACTIVITY_URN_RE = /^urn:li:activity:\d{9,}$/;
+const ACTIVITY_URN_RE = new RegExp(`^urn:li:activity:(${ACTIVITY_ID_PATTERN})$`);
 
 /** One surface stamp inside a payload row (email-per-surface). */
 function isValidStamp(stamp: unknown): stamp is Surface {

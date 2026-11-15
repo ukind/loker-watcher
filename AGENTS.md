@@ -27,7 +27,7 @@ failure path).
 - `npm test` - unit tests (node:test runner via tsx, offline and deterministic)
 - `npm run typecheck` - `tsc --noEmit` over `src/`, `tests/`, and `scripts/`
 - `npx tsx scripts/probe-judge.ts` - measure how long the LLM endpoint takes to answer, ramp concurrent calls to find each account's ceiling, and write `state/judge-ceilings.json` (the probe job commits it; needs `LLM_*` env vars)
-- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, `scripts/fetch-linkedin.ts`, `scripts/watch-linkedin.ts`, `scripts/probe-linkedin.ts`, `scripts/login-linkedin.ts`, `scripts/reset-linkedin.ts`, `scripts/linkedin-chain.ts`, and `scripts/hooks`
+- `npm run lint` - Biome check over `src/`, `tests/`, `scripts/probe-judge.ts`, `scripts/fetch-linkedin.ts`, `scripts/watch-linkedin.ts`, `scripts/probe-linkedin.ts`, `scripts/login-linkedin.ts`, `scripts/reset-linkedin.ts`, `scripts/linkedin-chain.ts`, `scripts/replay-linkedin.ts`, and `scripts/hooks`
 - `npm run format` - Biome format in place
 - `npm start` - run the watcher locally (needs LLM_* and GMAIL_* env vars;
   an absent or stale `state/linkedin-posts.json` degrades to a
@@ -81,19 +81,33 @@ against the configured keywords, email digest, commit state.
   header (JSESSIONID quoted, last), and the csrf token; the walk's
   session rides the persistent profile — the cookie pair gates the run,
   it never synthesizes a browser document anymore
-- `src/linkedin-fetch.ts` - the browser-walk fetch leg: a LinkedIn-local
-  `LinkedInContextFactory` (headed Chromium on the persistent profile via
-  `launchPersistentContext` — msedge channel, viewport null — from its
-  own dynamic-import quarantine; the session rides the PROFILE and locale
-  en-US pins the Load-more text selector) walks each surface — one paced
-  navigation (shared 5-15s gate)
-  plus up to `scrollRounds` "Load more" clicks — parses every intercepted
-  flagship-web response through `src/linkedin-parser.ts`, and keeps the
-  walk skeleton: the FR-5 shuffle, the runPool surface walk, the drain
+- `src/linkedin-fetch.ts` - the LinkedIn walk's orchestration: the FR-5
+  shuffle, the runPool surface walk, the shared 5-15s pacing gate, the drain
   arms, the join priority halt > leg-dead > all-faulted, and
-  stamp-at-slot-write; a checkpoint/login-wall URL throws the tagged halt
-  (`HALT_CHECKPOINT_REASON`, the operator-cleared latch); no first
-  response inside the liveness window throws the tagged `LegDeadError`
+  stamp-at-slot-write; the factory and the walk live in the two modules below
+- `src/linkedin-context.ts` - the LinkedIn browser-context factory (headed
+  Chromium on the persistent profile via `launchPersistentContext` — msedge
+  channel, viewport null — from its own dynamic-import quarantine) and the
+  three tagged-error families (leg-dead, all-faulted, halt); a
+  checkpoint/login-wall URL throws the tagged halt (`HALT_CHECKPOINT_REASON`,
+  the operator-cleared latch), and no first response inside the liveness
+  window throws the tagged `LegDeadError`
+- `src/linkedin-walk.ts` - the LinkedIn surface walk: one paced navigation
+  plus up to `scrollRounds` "Load more" clicks, the response join, the
+  stream-order seen-stop fold, and the 150-post cap; the tuning constants,
+  JS snippets, and page regexes live in `linkedin-walk-static.ts` (N060)
+- `src/linkedin-walk-static.ts` - the walk's statics moved verbatim out of
+  the walk: the 11 tuning constants, `DOM_PROBE_JS` + `SCROLL_JS` (the
+  pinned content test reads them through `linkedin-fetch`), and the
+  checkpoint/Activity regexes plus the page-close vocabulary
+- `src/linkedin-behavior.ts` - the PC leg's pure policy machines: the
+  working-hours window, the jittered 28-33-minute wake cadence, and the
+  halt-latch reason vocabulary
+- `src/linkedin-capture.ts` - the raw-body capture sink: one atomic JSON
+  file per intercepted body under `captures/<UTC session stamp>/`, an 8 MB
+  per-body bound, 20-session retention, and the warn-once failure policy
+- `src/browser-constants.ts` - the user-agent string and the webdriver patch
+  both context factories share
 - `src/linkedin-payload.ts` - the atomic payload envelope writer/reader;
   reading never throws: absent -> quiet log, stale -> age log, malformed
   -> warn, bad rows -> drop+count
@@ -117,22 +131,39 @@ against the configured keywords, email digest, commit state.
   the login's harvested cookie path joins it for stages 2-3 when the env
   lacks `LINKEDIN_COOKIES_FILE`; quiet-zero ticks are reported no-ops
   (exit 0); entry-guarded, importing stays side-effect free
+- `scripts/replay-linkedin.ts` - offline replay of a capture session: reads
+  `captures/<stamp>/` and re-runs the parser over every recorded body
+- `scripts/reset-linkedin.ts` - the operator reset: deletes the cookie file,
+  the browser profile, and the halt latch, in that order
 - `src/extract.ts` - parses posts from graphql XHR responses or `data-sjs` blobs
 - `src/recency.ts` - drops posts outside the `recencyHours` window
 - `src/state.ts` - seen-post state; writes are atomic (temp file + rename)
-- `src/judge.ts` - ~10-post bulk chat-completions calls judged against the
-  keywords in `watcher.config.json`; accounts come from the `LLM_ACCOUNTS`
-  pool (an HTTP 429 cools that account for 60s and dispatches re-scan past
-  cooling accounts; when all are cooling, calls park up to a shared 180s
-  wait budget before the pool converts to exhaustion; 5xx retries the same
-  account with backoff; an exhausted pool throws a typed error that sends
-  one alarm email and exits 1), dispatches spread across the pool — each
-  starts at the next account and every account is capped at its
-  probe-measured ceiling from `state/judge-ceilings.json` — so batches
-  drain through a pool as wide as the ceilings sum; bulk misses fall back
-  to single-post calls, and a batch the
-  endpoint does not answer is deferred whole; returns
-  `{relevant, locationOk}` per post
+- `src/judge.ts` - the judge's orchestration: env parsing, the ~10-post
+  batch split, the two pools, and the drain-then-throw terminal; accounts
+  come from the `LLM_ACCOUNTS` pool, dispatches spread across it, and an
+  exhausted pool throws a typed error that sends one alarm email and exits 1
+- `src/judge-prompts.ts` - the judge's system message and the two message
+  builders (single-post and bulk), so the two prompts cannot drift
+- `src/judge-dispatch.ts` - the judge's dispatch core: the shared HTTP retry
+  loop and both wrappers (an HTTP 429 cools that account for 60s and dispatches re-scan
+  past cooling accounts; when all are cooling, calls park up to a shared
+  180s wait budget before the pool converts to exhaustion; 5xx retries the
+  same account with backoff; each dispatch starts at the next account and
+  every account is capped at its probe-measured ceiling from
+  `state/judge-ceilings.json`; bulk misses fall back to single-post calls,
+  and a batch the endpoint does not answer is deferred whole)
+- `src/judge-shared.ts` - the dispatch wire vocabulary (N060): the
+  URL/reason helpers `judge-availability` shares, the six dispatch types,
+  the availability predicate, and the exhaustion record
+- `src/judge-exhaustion.ts` - the blocked-pick policy: `resolveBlockedPick`
+  (the D4 flavor split + the D11 dead-pool guard) composed from rotation
+  primitives, so `judge-rotation.ts` keeps its zero-runtime-import identity
+- `src/sleep.ts` - the injectable wait seam (`sleep` + `SleepFn`),
+  cross-domain: `fetch-threads` and the entry point import it alongside the
+  judge group
+- `src/judge-availability.ts` - the pre-dispatch availability check: one
+  tiny parallel call per account, never throws; a refused account rides the
+  judge's blocked mask with the judge's own reason vocabulary
 - `src/judge-rotation.ts` - account-pool rotation primitives: the cooldown
   + in-flight + ceilings state, the dispatch dial (claim/release, ceiling
   waiters), the tagged exhaustion error, and the park helper

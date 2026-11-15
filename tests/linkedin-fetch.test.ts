@@ -30,6 +30,7 @@ import { fileURLToPath } from "node:url";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
+  LINKEDIN_PROFILE_DIR,
   type LinkedinSurface,
   PACE_MAX_MS,
   PACE_MIN_MS,
@@ -40,6 +41,7 @@ import {
   isHalt,
   isLegDead,
   legDead,
+  resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import type { Post } from "../src/types.js";
 
@@ -150,6 +152,13 @@ interface PageScript {
   readonly onWait?: (call: number, setUrl: (url: string) => void) => void;
   /** Extra responses fired on the first settle (the noise fixtures). */
   readonly noiseOnFirstSettle?: readonly ResponseLike[];
+  /**
+   * Deferred body completion (the N046 race fixture): called with the
+   * 1-based body fire index when a response's `text()` is invoked. Return a
+   * promise to make the body resolve when the test releases it, or
+   * undefined to resolve immediately.
+   */
+  readonly bodyGate?: (fireIndex: number) => Promise<string> | undefined;
 }
 
 /** One created page, with the handles a test needs to steer and observe it. */
@@ -187,6 +196,12 @@ function fakeContextFactory(options: {
         const evaluates: string[] = [];
         let clickCount = 0;
         let waitCalls = 0;
+        let bodyFire = 0;
+        /** Fire-order body delivery: the N046 fixture parks a body here. */
+        const deliverBody = (body: string): Promise<string> => {
+          bodyFire += 1;
+          return matched?.bodyGate?.(bodyFire) ?? Promise.resolve(body);
+        };
         let settleArmed = false;
         let currentUrl = "";
         let matched: PageScript | undefined;
@@ -206,7 +221,7 @@ function fakeContextFactory(options: {
                 fire({
                   url: () => FLAGSHIP_SEARCH_URL,
                   status: () => matched?.initialStatus ?? 200,
-                  text: async () => initial,
+                  text: () => deliverBody(initial),
                 });
               };
               if (matched?.initialGate === undefined) deliver();
@@ -254,7 +269,7 @@ function fakeContextFactory(options: {
                 fire({
                   url: () => PAGINATION_URL,
                   status: () => 200,
-                  text: async () => body,
+                  text: () => deliverBody(body),
                 });
               }
               if (clickCount === 1) {
@@ -323,15 +338,14 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         { fragment: "%23b", script: { initialBody: cardBody(idAt(2), postText(2)) } },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#a"), surface("#b")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0.999999999,
-    );
+    const posts = await fetchLinkedInPosts([surface("#a"), surface("#b")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0.999999999,
+    });
     assert.deepEqual(pageFor(factory, "%23a").gotos, [searchUrl("#a")]);
     assert.deepEqual(pageFor(factory, "%23b").gotos, [searchUrl("#b")]);
     assert.deepEqual(
@@ -353,8 +367,49 @@ describe("fetchLinkedInPosts (browser walk)", () => {
       profileDirs,
       scripts: [{ fragment: "%23s", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    await fetchLinkedInPosts([surface("#s")], PROFILE, factory, 8, instantSleep);
+    await fetchLinkedInPosts([surface("#s")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(profileDirs, [PROFILE]);
+  });
+
+  it("resolves every deps default the way the positional signature did (N054)", async () => {
+    // The defaults are the contract: the literal profile dir, the module
+    // scroll-rounds default, and capture OFF. Eight click bodies each gain
+    // two posts, so the dry exit never fires and the click transcript
+    // proves the ceiling rode.
+    const profileDirs: unknown[] = [];
+    const clickBodies = Array.from({ length: 8 }, (_, i) =>
+      cardBodyMany([
+        [idAt(100 + i * 2), postText(100 + i * 2)],
+        [idAt(101 + i * 2), postText(101 + i * 2)],
+      ]),
+    );
+    const factory = fakeContextFactory({
+      profileDirs,
+      scripts: [
+        {
+          fragment: "%23defaults",
+          script: { initialBody: cardBody(idAt(1), postText(1)), clickBodies },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts([surface("#defaults")], { contextFactory: factory });
+    assert.equal(posts.length, 17); // 1 initial + 8 rounds x 2
+    assert.deepEqual(profileDirs, [LINKEDIN_PROFILE_DIR]);
+    assert.deepEqual(pageFor(factory, "%23defaults").clicks, [1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it("resolves the profile dir from LINKEDIN_PROFILE_DIR, else the literal (N053)", () => {
+    assert.equal(
+      resolveLinkedInProfileDir({ LINKEDIN_PROFILE_DIR: "D:/other/profile" }),
+      "D:/other/profile",
+    );
+    assert.equal(resolveLinkedInProfileDir({ LINKEDIN_PROFILE_DIR: "   " }), LINKEDIN_PROFILE_DIR);
+    assert.equal(resolveLinkedInProfileDir({}), LINKEDIN_PROFILE_DIR);
   });
 
   it("clicks Load more up to the scrollRounds ceiling while every round gains", async (t) => {
@@ -383,7 +438,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#ceil")], PROFILE, factory, 2, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#ceil")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 2,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(pageFor(factory, "%23ceil").clicks, [1, 2]); // the knob, not the staged third body
     assert.equal(posts.length, 5); // 1 initial + 2 rounds x 2 posts
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
@@ -412,7 +472,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#dry")], PROFILE, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#dry")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(pageFor(factory, "%23dry").clicks, [1]);
     assert.deepEqual(
       posts.map((post) => post.id),
@@ -434,7 +499,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts([surface("#scroll")], PROFILE, factory, 1, instantSleep);
+    await fetchLinkedInPosts([surface("#scroll")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+    });
     const page = pageFor(factory, "%23scroll");
     // Round 1: DOM probe, column scroll, then a re-probe after the settle.
     assert.equal(page.evaluates.length, 3);
@@ -453,16 +523,15 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23floor", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#floor")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      5, // minClicks
-    );
+    const posts = await fetchLinkedInPosts([surface("#floor")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 5,
+    });
     assert.deepEqual(pageFor(factory, "%23floor").clicks, [1, 2, 3, 4, 5]);
     assert.equal(posts.length, 1); // only the initial body ever minted
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
@@ -481,16 +550,15 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts(
-      [surface("#absent")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      5, // minClicks — must NOT force 8 rounds
-    );
+    await fetchLinkedInPosts([surface("#absent")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 5, // must NOT force 8 rounds
+    });
     assert.equal(pageFor(factory, "%23absent").clicks.length, 0);
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     // Three dry rounds end it, exactly as with minClicks 0 — round 4 never runs.
@@ -511,7 +579,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    await fetchLinkedInPosts([surface("#nobtn")], PROFILE, factory, 8, instantSleep);
+    await fetchLinkedInPosts([surface("#nobtn")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /click 1: no button \(locator wait timeout\)/.test(line)));
     assert.equal(
@@ -525,7 +598,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23cap", script: { initialBody: cardBodyMany(all) } }],
     });
-    const posts = await fetchLinkedInPosts([surface("#cap")], PROFILE, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#cap")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     assert.equal(posts.length, 150); // one body may carry all 150 (the cap bounds clicks, not a body)
     assert.deepEqual(pageFor(factory, "%23cap").clicks, []);
   });
@@ -547,7 +625,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#dup")], PROFILE, factory, 1, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#dup")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(
       posts.map((post) => [post.id, post.text]),
       [
@@ -581,7 +664,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#noise")], PROFILE, factory, 1, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#noise")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(
       posts.map((post) => post.id),
       [`urn:li:activity:${idAt(1)}`],
@@ -602,7 +690,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#empty")], PROFILE, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#empty")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(posts, []);
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(
@@ -619,7 +712,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#silent")], PROFILE, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#silent")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -648,7 +746,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts([surface("#slow5")], PROFILE, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#slow5")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(posts, []);
   });
 
@@ -661,7 +764,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#cp")], PROFILE, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#cp")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -688,7 +796,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#slow")], PROFILE, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#slow")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -713,7 +826,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts([surface("#mid")], PROFILE, factory, 8, instantSleep);
+      await fetchLinkedInPosts([surface("#mid")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+      });
     } catch (error) {
       caught = error;
     }
@@ -732,15 +850,14 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts(
-        [surface("#a"), surface("#b"), surface("#c")],
-        PROFILE,
-        factory,
-        8,
-        instantSleep,
-        () => 0,
-        () => 0,
-      );
+      await fetchLinkedInPosts([surface("#a"), surface("#b"), surface("#c")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+        now: () => 0,
+        rng: () => 0,
+      });
     } catch (error) {
       caught = error;
     }
@@ -761,15 +878,14 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts(
-        [surface("#dead"), surface("#ok")],
-        PROFILE,
-        factory,
-        8,
-        instantSleep,
-        () => 0,
-        () => 0,
-      );
+      await fetchLinkedInPosts([surface("#dead"), surface("#ok")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+        now: () => 0,
+        rng: () => 0,
+      });
     } catch (error) {
       caught = error;
     }
@@ -790,15 +906,14 @@ describe("fetchLinkedInPosts (browser walk)", () => {
         { fragment: "%23good", script: { initialBody: cardBody(idAt(2), postText(2)) } },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#bad"), surface("#good")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-    );
+    const posts = await fetchLinkedInPosts([surface("#bad"), surface("#good")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+    });
     assert.deepEqual(
       posts.map((post) => post.id),
       [`urn:li:activity:${idAt(2)}`],
@@ -817,15 +932,14 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts(
-        [surface("#x"), surface("#y")],
-        PROFILE,
-        factory,
-        8,
-        instantSleep,
-        () => 0,
-        () => 0,
-      );
+      await fetchLinkedInPosts([surface("#x"), surface("#y")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+        now: () => 0,
+        rng: () => 0,
+      });
     } catch (error) {
       caught = error;
     }
@@ -839,7 +953,12 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     const built = { value: 0 };
     const profileDirs: unknown[] = [];
     const factory = fakeContextFactory({ built, profileDirs, scripts: [] });
-    const posts = await fetchLinkedInPosts([], PROFILE, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     assert.deepEqual(posts, []);
     assert.equal(built.value, 0);
     assert.deepEqual(profileDirs, []);
@@ -854,15 +973,14 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     });
     let caught: unknown;
     try {
-      await fetchLinkedInPosts(
-        [surface("#cp"), surface("#dead")],
-        PROFILE,
-        factory,
-        8,
-        instantSleep,
-        () => 0,
-        () => 0,
-      );
+      await fetchLinkedInPosts([surface("#cp"), surface("#dead")], {
+        profileDir: PROFILE,
+        contextFactory: factory,
+        scrollRounds: 8,
+        sleepFn: instantSleep,
+        now: () => 0,
+        rng: () => 0,
+      });
     } catch (error) {
       caught = error;
     }
@@ -881,15 +999,14 @@ describe("fetchLinkedInPosts surface shuffle (FR-5)", () => {
         { fragment: "%23c", script: { initialBody: cardBody(idAt(3), postText(3)) } },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#a"), surface("#b"), surface("#c")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-    );
+    const posts = await fetchLinkedInPosts([surface("#a"), surface("#b"), surface("#c")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+    });
     // The goto transcript proves the shuffle happened; reassembly is
     // structural (input order), independent of dispatch.
     assert.deepEqual(dispatchTranscript(factory), ["%23b", "%23c", "%23a"]);
@@ -910,19 +1027,18 @@ describe("pacing rides navigations", () => {
         { fragment: "%23b", script: { initialBody: cardBody(idAt(2), postText(2)) } },
       ],
     });
-    await fetchLinkedInPosts(
-      [surface("#a"), surface("#b")],
-      PROFILE,
-      factory,
-      8,
-      (ms) => {
+    await fetchLinkedInPosts([surface("#a"), surface("#b")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: (ms) => {
         sleeps.push(ms);
         tick += ms;
         return Promise.resolve();
       },
-      () => tick,
-      () => 0,
-    );
+      now: () => tick,
+      rng: () => 0,
+    });
     assert.deepEqual(sleeps, [PACE_MIN_MS]); // B free; A waits the floor
     assert.deepEqual(dispatchTranscript(factory), ["%23b", "%23a"]);
   });
@@ -937,19 +1053,18 @@ describe("pacing rides navigations", () => {
         script: { initialBody: cardBody(idAt(1), postText(1)) },
       })),
     });
-    await fetchLinkedInPosts(
-      five,
-      PROFILE,
-      factory,
-      8,
-      (ms) => {
+    await fetchLinkedInPosts(five, {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: (ms) => {
         sleeps.push(ms);
         tick += ms;
         return Promise.resolve();
       },
-      () => tick,
-      seededRng(2026_11_09),
-    );
+      now: () => tick,
+      rng: seededRng(2026_11_09),
+    });
     assert.equal(sleeps.length, 4); // first navigation free; four reservations
     for (const ms of sleeps) {
       assert.ok(ms >= PACE_MIN_MS && ms < PACE_MAX_MS, `out of band: ${ms}`);
@@ -981,15 +1096,14 @@ describe("pacing rides navigations", () => {
         },
       ],
     });
-    const walk = fetchLinkedInPosts(
-      [surface("#a"), surface("#b")],
-      PROFILE,
-      factory,
-      8,
-      sleepFn,
-      () => 0,
-      () => 0,
-    );
+    const walk = fetchLinkedInPosts([surface("#a"), surface("#b")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: sleepFn,
+      now: () => 0,
+      rng: () => 0,
+    });
     await flush();
     // rng=0 dispatches [B, A]: B takes the free slot (no sleep recorded),
     // A reserves the NEXT slot synchronously — its floor sleep is recorded
@@ -1026,7 +1140,12 @@ describe("walk guards and post shape", () => {
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23x", script: { initialBody: cardBody(idAt(1), postText(1)) } }],
     });
-    const posts = await fetchLinkedInPosts([surface("#x")], PROFILE, factory, 8, instantSleep);
+    const posts = await fetchLinkedInPosts([surface("#x")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
     const first = posts[0] as Post;
     assert.equal(first.platform, "linkedin");
     assert.equal(first.author, "linkedin-member");
@@ -1069,18 +1188,16 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
         },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#cap")],
-      PROFILE,
-      factory,
-      1,
-      instantSleep,
-      () => NOW_MS,
-      () => 0,
-      0,
-      undefined,
-      sink,
-    );
+    const posts = await fetchLinkedInPosts([surface("#cap")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+      now: () => NOW_MS,
+      rng: () => 0,
+      minClicks: 0,
+      captureSink: sink,
+    });
     assert.equal(posts.length, 2);
     assert.equal(records.length, 4); // initial + click + two diagnostic bodies
     assert.deepEqual(
@@ -1118,18 +1235,16 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
         { fragment: "%23b", script: { initialBody: cardBody(idAt(2), postText(2)) } },
       ],
     });
-    await fetchLinkedInPosts(
-      [surface("#a"), surface("#b")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      undefined,
-      sink,
-    );
+    await fetchLinkedInPosts([surface("#a"), surface("#b")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      captureSink: sink,
+    });
     assert.deepEqual(
       records.map((rec) => rec.ordinal).sort((a, b) => a - b),
       [1, 2],
@@ -1142,18 +1257,16 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
     const factory = fakeContextFactory({
       scripts: [{ fragment: "%23ssr", script: { initialBody: emptyBody() } }],
     });
-    await fetchLinkedInPosts(
-      [surface("#ssr")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      undefined,
-      sink,
-    );
+    await fetchLinkedInPosts([surface("#ssr")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      captureSink: sink,
+    });
     assert.equal(records.length, 1);
     assert.equal(records[0]?.matched, true);
     assert.equal(records[0]?.minted, 0);
@@ -1174,18 +1287,16 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
         },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#failing")],
-      PROFILE,
-      factory,
-      1,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      undefined,
-      sink,
-    );
+    const posts = await fetchLinkedInPosts([surface("#failing")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      captureSink: sink,
+    });
     await flush(); // drain the void'd sink rejections
     assert.deepEqual(records, []); // every write failed
     assert.deepEqual(
@@ -1238,17 +1349,16 @@ describe("seen-stop (design 2026-11-13)", () => {
     // The full 9-arg call — slot 9 carries the tick's seen set, so this
     // test doubles as the :722 threading pin (a dropped pass-through
     // leaves the walk the empty default, no stop fires, the rounds run).
-    const posts = await fetchLinkedInPosts(
-      [surface("#seenfull")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      seen,
-    );
+    const posts = await fetchLinkedInPosts([surface("#seenfull")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      seenIds: seen,
+    });
     const page = pageFor(factory, "%23seenfull");
     assert.deepEqual(page.clicks, []); // zero clicks — no round ever ran
     assert.equal(
@@ -1286,17 +1396,16 @@ describe("seen-stop (design 2026-11-13)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#reset")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      seen,
-    );
+    const posts = await fetchLinkedInPosts([surface("#reset")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      seenIds: seen,
+    });
     const page = pageFor(factory, "%23reset");
     assert.deepEqual(page.clicks, [1, 2]); // round 1 ran; the stop fires after round 2
     assert.equal(posts.length, 6); // 4 initial + 1 + 1
@@ -1330,17 +1439,16 @@ describe("seen-stop (design 2026-11-13)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#reserve")],
-      PROFILE,
-      factory,
-      3,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      seen,
-    );
+    const posts = await fetchLinkedInPosts([surface("#reserve")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 3,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      seenIds: seen,
+    });
     const page = pageFor(factory, "%23reserve");
     assert.deepEqual(page.clicks, [1, 2, 3]); // all three rounds ran
     assert.equal(posts.length, 4); // 2 initial + 1 + 1 (the re-served id minted once)
@@ -1372,22 +1480,182 @@ describe("seen-stop (design 2026-11-13)", () => {
         },
       ],
     });
-    const posts = await fetchLinkedInPosts(
-      [surface("#tie")],
-      PROFILE,
-      factory,
-      8,
-      instantSleep,
-      () => 0,
-      () => 0,
-      0,
-      seen,
-    );
+    const posts = await fetchLinkedInPosts([surface("#tie")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 0,
+      seenIds: seen,
+    });
     const page = pageFor(factory, "%23tie");
     assert.deepEqual(page.clicks, [1, 2, 3]); // the tie breaks after round 3; round 4 never runs
     assert.equal(posts.length, 5); // 2 fresh + 3 seen, all minted pre-stop
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => /\(dry 3\/3, total 5\)/.test(line)));
     assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(3)}`)));
+  });
+});
+
+describe("walk fixes (N046, N047, N048)", () => {
+  it("folds the seen streak in stream order, not body-completion order (N046)", async (t) => {
+    // Four bodies fire in order: 1 fresh, 2-4 seen. Stream order says the
+    // streak is 3 at body 4, so the stop names body 4's id. The bodies
+    // complete in REVERSE (4, 3, 2), so a completion-order fold would name
+    // body 2's id instead.
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const seen = new Set([2, 3, 4].map((n) => `urn:li:activity:${idAt(n)}`));
+    const bodies = [
+      cardBody(idAt(1), postText(1)), // fresh — resets the streak
+      cardBody(idAt(2), postText(2)), // seen
+      cardBody(idAt(3), postText(3)), // seen
+      cardBody(idAt(4), postText(4)), // seen — the stream-order tip
+    ];
+    const gates: Array<{ promise: Promise<string>; resolve: (body: string) => void }> = [];
+    const park = (): Promise<string> => {
+      let resolve!: (body: string) => void;
+      const promise = new Promise<string>((r) => {
+        resolve = r;
+      });
+      gates.push({ promise, resolve });
+      return promise;
+    };
+    // Release schedule, keyed by the 1-based waitForTimeout call count.
+    // Call 1 is the liveness poll, 2 is round 1's after-scroll wait, and
+    // 3.. are the round settles. A body fires at the settle BEFORE the next
+    // call's onWait, so each release lands one call after its fire.
+    const releaseAt: Record<number, number> = { 2: 1, 6: 4, 7: 3, 8: 2 };
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23race",
+          script: {
+            initialBody: bodies[0]!,
+            clickBodies: [bodies[1]!, bodies[2]!, bodies[3]!],
+            bodyGate: () => park(),
+            onWait: (call) => {
+              const fire = releaseAt[call];
+              if (fire !== undefined) gates[fire - 1]?.resolve(bodies[fire - 1]!);
+            },
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts([surface("#race")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 8, // suppress the dry exit so every round runs
+      seenIds: seen,
+    });
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(4)}`)));
+    assert.equal(
+      lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(2)}`)),
+      false,
+    );
+    assert.equal(posts.length, 4);
+  });
+
+  it("slices the return to the cap when the drain overshoots it (N047)", async () => {
+    // 100 posts in the initial body, 100 more in one click body: the loop's
+    // cap check stops the rounds, but the listener keeps inserting during
+    // the drain, so the map reaches 200. The return must be exactly 150,
+    // and the 150 must be the NEWEST.
+    const first = Array.from({ length: 100 }, (_, i) => [idAt(i + 1), postText(i + 1)] as const);
+    const second = Array.from(
+      { length: 100 },
+      (_, i) => [idAt(i + 101), postText(i + 101)] as const,
+    );
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23overcap",
+          script: { initialBody: cardBodyMany(first), clickBodies: [cardBodyMany(second)] },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts([surface("#overcap")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+    });
+    assert.equal(posts.length, 150);
+    assert.equal(posts[0]?.id, `urn:li:activity:${idAt(51)}`);
+    assert.equal(posts.at(-1)?.id, `urn:li:activity:${idAt(200)}`);
+  });
+
+  it("warns once when a listener arm throws a real fault (N048)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const { sink } = recordingSink();
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23fault",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            clickBodies: [cardBody(idAt(2), postText(2))],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts([surface("#fault")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+      now: () => Number.NaN, // the capture stamp throws RangeError: Invalid time value
+      rng: () => 0,
+      minClicks: 0,
+      captureSink: sink,
+    });
+    await flush();
+    assert.equal(posts.length, 2); // the insert ran before the stamp threw
+    const faults = warns.mock.calls
+      .map((call) => String(call.arguments[0] ?? ""))
+      .filter((line) => line.includes("body fault"));
+    assert.equal(faults.length, 1); // warn once per walk, not per body
+    assert.match(faults[0] ?? "", /Invalid time value/);
+  });
+
+  it("stays silent on the known page-close race (N048)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23raceclose",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            noiseOnFirstSettle: [
+              {
+                url: () => PAGINATION_URL,
+                status: () => 200,
+                text: async () => {
+                  throw new Error("Response body is unavailable");
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts([surface("#raceclose")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 1,
+      sleepFn: instantSleep,
+    });
+    await flush();
+    assert.equal(posts.length, 1);
+    assert.equal(
+      warns.mock.calls.some((call) => String(call.arguments[0] ?? "").includes("body fault")),
+      false,
+    );
   });
 });

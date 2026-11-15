@@ -156,7 +156,7 @@ export function csrfToken(cookies: LinkedInCookies): string {
 }
 
 /** One cookie entry shaped for Playwright's storageState contract (extras stay optional on Playwright's side). */
-export interface LinkedInStorageCookie {
+interface LinkedInStorageCookie {
   name: string;
   value: string;
   domain: string;
@@ -170,7 +170,7 @@ export interface LinkedInStorageCookie {
  * storageState context option; this factory returns a fresh object per
  * call, so purity is not at risk.
  */
-export interface LinkedInStorageState {
+interface LinkedInStorageState {
   cookies: LinkedInStorageCookie[];
   origins: never[];
 }
