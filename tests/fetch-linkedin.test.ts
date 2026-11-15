@@ -135,11 +135,15 @@ const row = (id: string, payload: unknown): string => `${id}:${JSON.stringify(pa
 
 let cardSeq = 0;
 
-/** One capture-shaped card: the activityUrn row precedes the commentary_text row. */
+/**
+ * One capture-shaped card (the card join reads URN STRINGS, never digit fields):
+ * the id row carries the urn string and the marker row $-refs it - the join's
+ * forward edge, the live split-card shape.
+ */
 const cardBody = (id: string, text: string): string => {
   const n = (cardSeq += 1) * 10;
   return [
-    row(String(n), { tracking: { activityUrn: { activityId: id } } }),
+    row(String(n), { tracking: { activityUrn: { urn: `urn:li:activity:${id}` } } }),
     row(String(n + 1), [
       "$",
       "$Lmark",
@@ -147,6 +151,7 @@ const cardBody = (id: string, text: string): string => {
       {
         viewTrackingSpecs: { viewName: "feed-commentary", legacyControlName: "commentary_text" },
         children: ["$", "$Ldiv", null, { textProps: { children: [text] } }],
+        interactionTypes: `$${n}`,
       },
     ]),
   ].join("\n");

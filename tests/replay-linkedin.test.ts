@@ -1,14 +1,17 @@
 /**
  * Offline suite for scripts/replay-linkedin.ts (Slice 3, the replay
- * harness): the entry-guard import pin, the zero-argv gate, the
- * envelope gates, and the analysis pins — per-row census lines, the
- * zip-paired/zip-unlinked dispositions, the junk causes (CTA shape vs
- * $-ref shrink), the six-point probe arms, and the verdict — against
- * synthetic captures built from the parser fixture shapes
- * (tests/linkedin-parser.test.ts). Cross-check: this suite pins the
- * replay's tallies to collectLinkedInPosts on the same bodies, so the
- * instrumented walk cannot drift from the frozen parser. Files live in
- * OS temp only (mkdtemp + one after) — the repo tree is never touched.
+ * harness on the card join): the entry-guard import pin, the zero-argv
+ * gate, the envelope gates, and the analysis pins — per-row census
+ * lines, the card-linked/card-dropped dispositions, the junk causes
+ * (CTA shape vs $-ref shrink), the six-point probe arms, and the
+ * verdict — against synthetic captures built the way the shipped join
+ * reads them: every card carries the $-ref join and urn STRINGS
+ * (tests/linkedin-parser.test.ts shapes). Cross-check: this suite
+ * pins the replay's tallies to the card-root identity on the same
+ * bodies — every card joinCards finds reads back from the census
+ * lines, and every census disposition names a card the join produced.
+ * Files live in OS temp only (mkdtemp + one after) — the repo tree is
+ * never touched.
  */
 import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -22,7 +25,7 @@ import {
   runReplay,
 } from "../scripts/replay-linkedin.js";
 import { CAPTURE_SCHEMA_VERSION, type CaptureRecord } from "../src/linkedin-capture.js";
-import { collectLinkedInPosts } from "../src/linkedin-parser.js";
+import { joinCards } from "../src/linkedin-parser.js";
 
 const NOW = Date.UTC(2026, 11, 13, 5, 0, 0);
 
@@ -33,32 +36,41 @@ const idAt = (n: number): string => (BigInt(BASE_MS + n * 60_000) << 22n).toStri
 /** One flight line. */
 const row = (id: string, payload: unknown): string => `${id}:${JSON.stringify(payload)}`;
 
-/** The commentary_text marker element (the parser fixture's shape). */
-const marker = (children: unknown[]): unknown => [
+/** The commentary_text marker element (the parser fixture's shape; extra rides interactionTypes-style props). */
+const marker = (children: unknown[], extra: Record<string, unknown> = {}): unknown => [
   "$",
   "$Lmark",
   null,
   {
     viewTrackingSpecs: { viewName: "feed-commentary", legacyControlName: "commentary_text" },
     children: ["$", "$Ldiv", null, { textProps: { children } }],
+    ...extra,
   },
 ];
 
-/** The bare id row (tracking.activityUrn.activityId). */
-const idRow = (id: string): unknown => ({ tracking: { activityUrn: { activityId: id } } });
+/** The bare id row carries the urn STRING — the join reads strings, never digit fields. */
+const idRow = (id: string): unknown => ({
+  tracking: { activityUrn: { urn: `urn:li:activity:${id}` } },
+});
 
-/** A card the way the real stream splits it: the id row, then the marker row. */
+/** A card the way the live stream splits it: the id row, then the marker row $-ref'ing it. */
 const splitCard = (n: number, id: string, text: string): string =>
-  [row(String(n), idRow(id)), row(String(n + 1), marker([text]))].join("\n");
+  [
+    row(String(n), idRow(id)),
+    row(String(n + 1), marker([text], { interactionTypes: `$L${n}` })),
+  ].join("\n");
 
-/** A card merged into ONE root row — ids=1 texts=1, the BOTH shape. */
+/** A card merged into ONE root row — ids+text in the same row, the BOTH shape. */
 const mergedCard = (n: number, id: string, text: string): string =>
-  row(String(n), { tracking: { activityUrn: { activityId: id } }, commentary: marker([text]) });
+  row(String(n), {
+    tracking: { activityUrn: { urn: `urn:li:activity:${id}` } },
+    commentary: marker([text]),
+  });
 
 /**
  * The mixed census body: manifest + garbage (skipped), a merged BOTH
- * card, a split card (ids-only row + texts-only row), a chip BOTH row
- * (textCount 2 — the longest text wins), and a bare id row.
+ * card, a split card (the marker row $-refs its id row), a chip BOTH
+ * row (textCount 2 — the longest text wins), and a bare id row.
  */
 const MIXED_BODY = [
   '0:I["$1",[],"default"]',
@@ -66,25 +78,16 @@ const MIXED_BODY = [
   mergedCard(10, idAt(1), "first posting — Jakarta"),
   splitCard(20, idAt(2), "second posting — Bandung"),
   row("30", {
-    tracking: { activityUrn: { activityId: idAt(3) } },
+    tracking: { activityUrn: { urn: `urn:li:activity:${idAt(3)}` } },
     commentary: [marker(["third posting, long form — Surabaya"]), marker(["#hiring"])],
   }),
   row("40", idRow(idAt(4))),
 ].join("\n");
 
-/** A marker row whose subtree $-refs an id row OUTSIDE the text (the chip's interactionTypes class). */
+/** A marker row whose subtree $-refs an id row OUTSIDE the text (the interactionTypes join). */
 const JOIN_BODY = [
   row("1", {
-    commentary: [
-      "$",
-      "$Lmark",
-      null,
-      {
-        viewTrackingSpecs: { viewName: "feed-commentary", legacyControlName: "commentary_text" },
-        children: ["$", "$Ldiv", null, { textProps: { children: ["join target text"] } }],
-        interactionTypes: "$2",
-      },
-    ],
+    commentary: [marker(["join target text"], { interactionTypes: "$L2" })],
   }),
   row("2", idRow(idAt(9))),
 ].join("\n");
@@ -115,7 +118,10 @@ const TAX_BODY = [
 /** Two rows share one contentTrackingId value; a third carries its own. */
 const TRACK_BODY = [
   row("1", { contentTrackingId: "t1", commentary: marker(["one"]) }),
-  row("2", { contentTrackingId: "t1", tracking: { activityUrn: { activityId: idAt(7) } } }),
+  row("2", {
+    contentTrackingId: "t1",
+    tracking: { activityUrn: { urn: `urn:li:activity:${idAt(7)}` } },
+  }),
   row("3", { contentTrackingId: "t2" }),
 ].join("\n");
 
@@ -221,34 +227,34 @@ describe("runReplay gates", () => {
 });
 
 describe("per-row census", () => {
-  it("prints the mixed-body census: BOTH/IDS-ONLY/TEXTS-ONLY rows, zip dispositions, verdict", async (t) => {
+  it("prints the mixed-body census: BOTH/IDS-ONLY/TEXTS-ONLY rows, card dispositions, verdict", async (t) => {
     const lines = await replayLines(t, MIXED_BODY);
     assert.deepEqual(lines, [
       "replay: body 7 — 5 root row(s), 3 distinct text(s), 4 distinct id(s)",
-      `replay: row 10 — ids=1 texts=1 — BOTH (zip-paired ↔ ${idAt(1).slice(-6)})`,
+      `replay: row 10 — ids=1 texts=1 — BOTH (card-linked ↔ ${idAt(1).slice(-6)})`,
       "replay: row 20 — ids=1 texts=0 — IDS-ONLY (no text harvest)",
-      `replay: row 21 — ids=0 texts=1 — TEXTS-ONLY (zip-paired ↔ ${idAt(2).slice(-6)})`,
-      `replay: row 30 — ids=1 texts=2 — BOTH (zip-paired ↔ ${idAt(3).slice(-6)})`,
+      `replay: row 21 — ids=0 texts=1 — TEXTS-ONLY (card-linked ↔ ${idAt(2).slice(-6)})`,
+      `replay: row 30 — ids=1 texts=2 — BOTH (card-linked ↔ ${idAt(3).slice(-6)})`,
       "replay: row 40 — ids=1 texts=0 — IDS-ONLY (no text harvest)",
-      "replay: probe — forwardBFS from 3 marker row(s): 0 id row(s) reached; reverse from 4 id row(s): 0 marker row(s) reached",
+      "replay: probe — forwardBFS from 3 marker row(s): 1 id row(s) reached; reverse from 4 id row(s): 1 marker row(s) reached",
       "replay: tracking — no contentTrackingId found",
       "replay: adjacency — marker→id distance within 1: 3, at 2: 0, further: 0",
       "replay: markers — feed-commentary/commentary_text: 4",
-      "replay: verdict — no card-scoped join found; 2/5 row(s) skipped ids-only",
+      "replay: verdict — 3 card(s) linked, 0 dropped (forward 1, reverse 1); 2/5 row(s) ids-only",
     ]);
   });
 
-  it("names the zip-unlinked disposition and the $-ref shrink cause; an empty harvest reads as text lost", async (t) => {
+  it("names the card-dropped disposition and the $-ref shrink cause; an empty harvest reads as text lost", async (t) => {
     const lines = await replayLines(t, SHRINK_BODY);
     assert.deepEqual(lines, [
       "replay: body 7 — 2 root row(s), 1 distinct text(s), 0 distinct id(s)",
-      "replay: row 1 — ids=0 texts=1 — TEXTS-ONLY (zip-unlinked) — text shrink-suspect (1 dropped $-ref(s))",
+      "replay: row 1 — ids=0 texts=1 — TEXTS-ONLY (card-dropped (no-urn)) — text shrink-suspect (1 dropped $-ref(s))",
       "replay: row 2 — ids=0 texts=0 — EMPTY (empty row) — text lost (shrink: 1 dropped $-ref(s))",
       "replay: probe — forwardBFS from 2 marker row(s): 0 id row(s) reached; reverse from 0 id row(s): 0 marker row(s) reached",
       "replay: tracking — no contentTrackingId found",
       "replay: adjacency — marker→id distance within 1: 0, at 2: 0, further: 2",
       "replay: markers — feed-commentary/commentary_text: 2",
-      "replay: verdict — no card-scoped join found; 0/2 row(s) skipped ids-only",
+      "replay: verdict — 0 card(s) linked, 2 dropped (forward 0, reverse 0); 0/2 row(s) ids-only",
     ]);
   });
 
@@ -256,25 +262,38 @@ describe("per-row census", () => {
     const lines = await replayLines(t, CTA_BODY);
     assert.deepEqual(lines, [
       "replay: body 7 — 1 root row(s), 1 distinct text(s), 1 distinct id(s)",
-      `replay: row 10 — ids=1 texts=1 — BOTH (zip-paired ↔ ${idAt(6).slice(-6)}) — text cta-suspect (bare URL)`,
+      `replay: row 10 — ids=1 texts=1 — BOTH (card-linked ↔ ${idAt(6).slice(-6)}) — text cta-suspect (bare URL)`,
       "replay: probe — forwardBFS from 1 marker row(s): 0 id row(s) reached; reverse from 1 id row(s): 0 marker row(s) reached",
       "replay: tracking — no contentTrackingId found",
       "replay: adjacency — marker→id distance within 1: 1, at 2: 0, further: 0",
       "replay: markers — feed-commentary/commentary_text: 1",
-      "replay: verdict — no card-scoped join found; 0/1 row(s) skipped ids-only",
+      "replay: verdict — 1 card(s) linked, 0 dropped (forward 0, reverse 0); 0/1 row(s) ids-only",
     ]);
   });
 
-  it("cross-checks the instrumented tallies against the frozen parser on the mixed body", async () => {
+  it("cross-checks the census lines to the card-root identity on the mixed body", async () => {
     const analysis = await replayBody(MIXED_BODY);
-    const minted = collectLinkedInPosts(MIXED_BODY);
-    assert.equal(Math.min(analysis.distinctIds, analysis.distinctTexts), minted.length);
-    for (const row of analysis.rows) {
-      if (row.disposition?.startsWith("zip-paired")) {
-        const tail = row.disposition.slice(-6);
+    const cards = joinCards(MIXED_BODY);
+    assert.equal(analysis.cards.linked, cards.filter((card) => card.outcome === "linked").length);
+    assert.equal(analysis.cards.dropped, cards.filter((card) => card.outcome !== "linked").length);
+    for (const card of cards) {
+      const line = analysis.rows.find((census) => census.hex === card.marker);
+      assert.ok(line, `card marker ${card.marker} has no census row`);
+      if (card.outcome === "linked" && card.linkUrn !== null) {
         assert.ok(
-          minted.some((post) => post.id.endsWith(tail)),
-          `zip-paired tail ${tail} names no urn the parser minted`,
+          line.disposition?.includes(`card-linked ↔ ${card.linkUrn.slice(-6)}`),
+          `card ${card.linkUrn} missing from row ${card.marker}: ${String(line.disposition)}`,
+        );
+      } else {
+        assert.equal(line.disposition, `card-dropped (${card.outcome})`);
+      }
+    }
+    for (const census of analysis.rows) {
+      if (census.disposition?.startsWith("card-linked")) {
+        const tail = census.disposition.slice(-6);
+        assert.ok(
+          cards.some((card) => card.outcome === "linked" && (card.linkUrn ?? "").endsWith(tail)),
+          `card-linked tail ${tail} names no card the join produced`,
         );
       }
     }
@@ -282,17 +301,17 @@ describe("per-row census", () => {
 });
 
 describe("six-point probe", () => {
-  it("finds the join in both BFS directions when a marker row refs an id row — verdict flips to CANDIDATE", async (t) => {
+  it("measures the same $L-strict graph the join climbs — a marker row ref'ing its id row links", async (t) => {
     const lines = await replayLines(t, JOIN_BODY);
     assert.deepEqual(lines, [
       "replay: body 7 — 2 root row(s), 1 distinct text(s), 1 distinct id(s)",
-      `replay: row 1 — ids=0 texts=1 — TEXTS-ONLY (zip-paired ↔ ${idAt(9).slice(-6)})`,
+      `replay: row 1 — ids=0 texts=1 — TEXTS-ONLY (card-linked ↔ ${idAt(9).slice(-6)})`,
       "replay: row 2 — ids=1 texts=0 — IDS-ONLY (no text harvest)",
       "replay: probe — forwardBFS from 1 marker row(s): 1 id row(s) reached; reverse from 1 id row(s): 1 marker row(s) reached",
       "replay: tracking — no contentTrackingId found",
       "replay: adjacency — marker→id distance within 1: 1, at 2: 0, further: 0",
       "replay: markers — feed-commentary/commentary_text: 1",
-      "replay: verdict — join CANDIDATE (forward 1, reverse 1) — the Option-A promotion condition is met; inspect the reachable rows before any pairing rule changes",
+      "replay: verdict — 1 card(s) linked, 0 dropped (forward 1, reverse 1); 1/2 row(s) ids-only",
     ]);
   });
 
