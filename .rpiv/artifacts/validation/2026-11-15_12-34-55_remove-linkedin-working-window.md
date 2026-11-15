@@ -2,7 +2,7 @@
 template_version: 1
 date: 2026-11-15T12:34:55+0700
 author: Yogiswara Utama
-commit: 9fded75
+commit: ec4f8e8
 branch: main
 repository: loker-watcher
 topic: "Validation of Remove the LinkedIn working-hours window"
@@ -10,7 +10,7 @@ status: ready
 verdict: pass
 parent: ".rpiv/artifacts/plans/2026-11-15_11-41-53_remove-linkedin-working-window.md"
 tags: [validation, linkedin-pc-leg, working-window, fetch-tick, linkedin-behavior]
-last_updated: 2026-11-15T12:55:34+07:00
+last_updated: 2026-11-15T12:58:19+07:00
 ---
 
 ## Validation Report: Remove the LinkedIn working-hours window
@@ -35,7 +35,7 @@ last_updated: 2026-11-15T12:55:34+07:00
 - ✓ `npm run lint` — pass (78 files, no fixes)
 - ✓ `npm test` — pass in the working tree: 642 tests / 642 pass / 0 fail / 0 skipped
 - ✓ `npm run knip` — pass (no surviving window export)
-- ✓ Commit split: `git show --stat HEAD~1 HEAD` — f0340d7 touches exactly the 4 Phase-1 files; 9fded75 touches exactly the 7 Phase-2 files; the pair was rebased onto origin/main after validation — the measurements below were taken pre-rebase against the plan base be5407a, where the pair carried the hashes e3904a6/363f2e3
+- ✓ Commit split: `git show --stat HEAD~1 HEAD` — f0340d7 touches exactly the 4 Phase-1 files; 9fded75 touches exactly the 7 Phase-2 files; the pair was rebased onto origin/main after validation — the measurements below were taken pre-rebase against the plan base be5407a, where the pair carried the hashes e3904a6/363f2e3. The literal HEAD~1/HEAD form resolves differently only after the artifact commit: with ec4f8e8 at the tip it names 9fded75+ec4f8e8. The split held at validation time and through the rebase; the pair now sits directly below the artifact commit
 - ✓ No regressions detected — base be5407a measured in a fresh detached worktree: 647 tests / 646 pass / 1 fail; delta -> 643/642/1 (HEAD, same fresh-worktree condition). The two HEAD totals reconcile by construction: on a fresh checkout the failing after-hook registers itself as one extra test entry, so a clean tree reads 642/0 while a fresh checkout reads 643/1. The single failure on both sides is the absence-oracle after-hook (`tests/fetch-linkedin.test.ts:69-78`, byte-identical at base and HEAD). It arms only when `<repo>/captures/` is absent — a fresh-checkout condition. CI shows the identical counts at base (run 43665629566: 647/646/1). The failure is pre-existing at base and outside the run's delta; in the working tree (captures/ exists from operator runs), HEAD passes 642/642/0
 
 ### Code Review Findings
