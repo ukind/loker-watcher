@@ -1,12 +1,12 @@
 /**
  * The always-on PC loop (design 2026-11-09, the anti-restriction
  * profile): one fetch tick, then a jittered 28-33-minute sleep, forever.
- * Every fetch gate (the working-hours window, the halt latch, the daily
- * budget) rides fetchTick — the loop stays a dumb cadence: tick, sleep,
- * repeat. Leg-dead edges send ONE alarm per episode (the marker file in
- * scripts/fetch-linkedin.ts) and the loop keeps running — a cookie-file
- * refresh self-heals on a later tick without a restart. Any other tick
- * fault warns and the loop continues; Ctrl-C stops it.
+ * Every fetch gate (the halt latch) rides fetchTick — the loop stays a
+ * dumb cadence: tick, sleep, repeat. Leg-dead edges send ONE alarm per
+ * episode (the marker file in scripts/fetch-linkedin.ts) and the loop
+ * keeps running — a cookie-file refresh self-heals on a later tick
+ * without a restart. Any other tick fault warns and the loop continues;
+ * Ctrl-C stops it.
  *
  * Entry-guarded main (the fetch-linkedin.ts idiom): importing the module
  * stays side-effect free — runLoop exports for the offline suite, and the

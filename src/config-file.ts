@@ -72,11 +72,10 @@ const THREADS_HOST = "www.threads.com";
 
 /**
  * FR-8 (browser-walk migration 2026-11-11): exactly 5 linkedin surfaces —
- * the PC leg's account-safety bound (the working-hours window and the
- * jittered cadence, times the per-surface scrollRounds click cap) is
- * calibrated for a five-surface fleet. The count is the invariant, not
- * the keywords: an operator may swap a surface's value, never grow the
- * fleet.
+ * the PC leg's account-safety bound (the jittered cadence, times the
+ * per-surface scrollRounds click cap) is calibrated for a five-surface
+ * fleet. The count is the invariant, not the keywords: an operator may
+ * swap a surface's value, never grow the fleet.
  */
 const LINKEDIN_SURFACE_COUNT = 5;
 

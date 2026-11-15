@@ -18,8 +18,8 @@
  *
  * Fail visible: every gate failure THROWS and the entry wrapper prints
  * linkedin-chain: FAILED — <gate and remedy>, exit 1. The tick quiet-zero
- * gates (working-hours window, halt latch, halt trip, all-faulted walk,
- * zero surfaces) are OUTCOMES, not failures (the defb8af rule): the chain
+ * gates (halt latch, halt trip, all-faulted walk, zero surfaces) are
+ * OUTCOMES, not failures (the defb8af rule): the chain
  * reports the no-op shape and exits 0.
  *
  * The wrapper MUST run in a real TTY: the login hold reads Enter from
@@ -109,7 +109,7 @@ export async function runLinkedInChain(deps: ChainDeps = {}): Promise<ChainResul
   console.log("linkedin-chain: stage 3/3 tick — exactly one fetch tick, then stop");
   const tickResult = await tick(legEnv);
 
-  // Quiet-zero classification reads the RESULT, not an exit code (D3): five
+  // Quiet-zero classification reads the RESULT, not an exit code (D3): four
   // gates return the identical {wrote:false, pushed:false, postCount:0} — the
   // tick itself already logged which gate held, so the chain reports the
   // no-op shape. A written payload (even 0 posts) is an outcome, not a noop.

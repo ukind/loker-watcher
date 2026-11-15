@@ -7,7 +7,7 @@ Eleven files, deliberately separate from src/ (the production watcher): `commit-
 - **commit-state-rebase.sh**: THREE invokers, one call each — watch.yml's Commit state step, the probe job's Commit ceilings step, and watch.yml's Commit health step (`bash scripts/commit-state-rebase.sh`, the bare last line; bot identity + the no-op guard stay in YAML). The single retry lives inside the script
 - **probe-judge.ts**: the dispatch-only `probe` GATE job in watch.yml, or locally `npx tsx scripts/probe-judge.ts` (needs `LLM_ACCOUNTS`; loads `watcher.config.json` at startup, so run from the repo root)
 - **fetch-linkedin.ts / watch-linkedin.ts / probe-linkedin.ts / login-linkedin.ts**: run via `npm run fetch-linkedin` / `watch-linkedin` / `probe-linkedin` / `login-linkedin` from a DEDICATED clone of main; exit contracts: tick = leg-dead exits 1 after the episode alarm (an all-faulted walk is a tagged no-op exit 0, payload untouched), loop = never exits on leg-dead, probe = gate exit 1, login = exit 1 on timeout/no session; keep-open is the DEFAULT at the CLI — the helper holds for Enter and closes the browser (--auto-close restores fire-and-close)
-- **linkedin-chain.ts**: run via `npm run linkedin-chain` from a DEDICATED clone of main (stage 3's guardCheckout enforces branch main + a clean tree BEFORE any fetch — the chain code itself must be committed first); exit contract: 0 when all three stages ran — a quiet-zero tick (working-hours window, halt latch, halt trip, all-faulted walk, zero surfaces) is a REPORTED NO-OP, still exit 0 (the defb8af rule) — and 1 when any stage throws (the wrapper prints `linkedin-chain: FAILED — <gate and remedy>`); INTERACTIVE: the login hold reads Enter, so a real TTY is required
+- **linkedin-chain.ts**: run via `npm run linkedin-chain` from a DEDICATED clone of main (stage 3's guardCheckout enforces branch main + a clean tree BEFORE any fetch — the chain code itself must be committed first); exit contract: 0 when all three stages ran — a quiet-zero tick (halt latch, halt trip, all-faulted walk, zero surfaces) is a REPORTED NO-OP, still exit 0 (the defb8af rule) — and 1 when any stage throws (the wrapper prints `linkedin-chain: FAILED — <gate and remedy>`); INTERACTIVE: the login hold reads Enter, so a real TTY is required
 - **hooks/**: `.claude/settings.json` only — PreToolUse matcher `Bash` → gate, PostToolUse matcher `Edit|Write` → formatter. NOT husky: husky runs only `lint-staged`
 
 ## Structure
@@ -29,7 +29,7 @@ probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (
                              #   INSIDE typecheck + lint + lint-staged
 fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect free); exports fetchTick /
                              #   pushPayload / handleLegDeadEpisode / guardCheckout; tick = preflight
-                             #   (the working-hours window and the checkpoint latch, then guardCheckout:
+                             #   (the checkpoint latch, then guardCheckout:
                              #   branch main + clean porcelain, BEFORE the cookie gate or any fetch)
                              #   → fetch → payload → add ONLY state/linkedin-posts.json
                              #   → commit → pull --rebase → push, ONE retry (realGit injectable; every
@@ -109,8 +109,8 @@ fetch-linkedin.ts           exit 1 on a mis-homed checkout (branch ≠ main or d
 watch entries               watch-linkedin.ts never exits on leg-dead; probe-linkedin.ts exits 1 on a checkpoint
                             wall (probe: HALT), a dead session (probe: LEG DEAD), a faulted walk (probe: FAILED),
                             or fewer than 10 posts (gate)
-linkedin-chain.ts           exit 0 when all three stages ran — a quiet-zero tick (working-hours window, halt
-                            latch, halt trip, all-faulted walk, zero surfaces) is a REPORTED NO-OP, still
+linkedin-chain.ts           exit 0 when all three stages ran — a quiet-zero tick (halt latch, halt trip,
+                            all-faulted walk, zero surfaces) is a REPORTED NO-OP, still
                             exit 0 (defb8af); exit 1 when any stage throws — the wrapper prints
                             `linkedin-chain: FAILED — <gate>`; INTERACTIVE (real TTY for the login hold)
 login-linkedin.ts           exit 1 on timeout (no session within the budget) or a failed poll/context — one alarm-free operator gate; keep-open DEFAULT at the CLI — Enter closes the browser (--auto-close = fire-and-close)

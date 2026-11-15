@@ -51,8 +51,9 @@
  * `replay: FAILED — <message>` + exit 1.
  *
  * Usage: npx tsx scripts/replay-linkedin.ts <capture.json> [more.json ...]
- *   (captures roll off after ~20 sessions — one working day; copy captures/
- *   out first — CAPTURE_KEEP_SESSIONS, src/linkedin-capture.ts)
+ *   (captures roll off after ~20 sessions — about 9-11 hours at the 24/7
+ *   loop cadence; copy captures/ out first — CAPTURE_KEEP_SESSIONS,
+ *   src/linkedin-capture.ts)
  */
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
@@ -69,14 +70,14 @@ import {
 /**
  * The usage line — the zero-argv gate's message, printed bare by the CLI
  * wrapper. Carries the retention window (CAPTURE_KEEP_SESSIONS,
- * src/linkedin-capture.ts): evidence rolls off after ~20 sessions — one
- * working day at the loop cadence — so replay promptly or copy captures/
- * out first (the operator-visible half of D8; a silent roll-off would
- * void the capture premise on D4's slower clock).
+ * src/linkedin-capture.ts): evidence rolls off after ~20 sessions — about
+ * 9-11 hours at the 24/7 loop cadence — so replay promptly or copy
+ * captures/ out first (the operator-visible half of D8; a silent roll-off
+ * would void the capture premise on D4's slower clock).
  */
 const USAGE =
   "replay: usage — npx tsx scripts/replay-linkedin.ts <capture.json> [more.json ...]" +
-  " — captures roll off after ~20 sessions (one working day); copy captures/ out first";
+  " — captures roll off after ~20 sessions (about 9-11 hours); copy captures/ out first";
 
 // --- the tagged zero-argv gate (the probeFloor idiom: name constant +
 //     factory + guard), local to this file because only the replay

@@ -55,8 +55,8 @@ failure path).
   dedicated clone of main: login hold -> probe gate -> exactly one fetch
   tick, in that order; the login's harvested cookie file carries the
   later stages when `.env` has no cookie line yet; a quiet-zero tick
-  (working-hours window, halt latch, halt trip, all-faulted walk, zero
-  surfaces) is a reported no-op with exit 0; any stage failure exits 1
+  (halt latch, halt trip, all-faulted walk, zero surfaces) is a reported
+  no-op with exit 0; any stage failure exits 1
   naming the gate (needs a real TTY for the login hold)
 - `npx playwright install chromium` - one-time browser install for local runs
 
@@ -101,8 +101,7 @@ against the configured keywords, email digest, commit state.
   pinned content test reads them through `linkedin-fetch`), and the
   checkpoint/Activity regexes plus the page-close vocabulary
 - `src/linkedin-behavior.ts` - the PC leg's pure policy machines: the
-  working-hours window, the jittered 28-33-minute wake cadence, and the
-  halt-latch reason vocabulary
+  jittered 28-33-minute wake cadence and the halt-latch reason vocabulary
 - `src/linkedin-capture.ts` - the raw-body capture sink: one atomic JSON
   file per intercepted body under `captures/<UTC session stamp>/`, an 8 MB
   per-body bound, 20-session retention, and the warn-once failure policy
