@@ -1,9 +1,10 @@
 /**
  * Behavioral policy machines for the PC-local LinkedIn leg (the
  * anti-restriction profile, design 2026-11-09; the daily GET budget
- * machine deleted by the browser-walk migration 2026-11-11): the
- * working-hours window, the jittered wake cadence, and the halt-latch
- * reason vocabulary.
+ * machine deleted by the browser-walk migration 2026-11-11; the
+ * working-hours window deleted 2026-11-15 — every tick runs any day,
+ * any hour): the jittered wake cadence and the halt-latch reason
+ * vocabulary.
  *
  * Extraction idiom (src/judge-rotation.ts:5-7): pure machines + constants
  * live here; IO and policy placement stay at the consumer
@@ -12,40 +13,12 @@
  * IO-free: dates and rng draws arrive as arguments, so the offline suite
  * pins every edge with zero doubles.
  *
- * Worst-case arithmetic (the account-safety bound): the window is 13
- * hours = 780 minutes; at the 28-minute floor that is at most 28 wake-ups
- * per local day, and each wake walks at most 5 surfaces x (1 navigation
- * + scrollRounds Load-more clicks). The window lives here; the click cap
- * rides the walk (src/linkedin-fetch.ts).
+ * Worst-case arithmetic (the account-safety bound): 1440 minutes per
+ * local day; at the 28-minute floor that is at most 52 wake-ups per
+ * local day, and each wake walks at most 5 surfaces x (1 navigation
+ * + scrollRounds Load-more clicks). The click cap rides the walk
+ * (src/linkedin-fetch.ts).
  */
-
-/**
- * Local hour the working window opens at (inclusive): Mon-Fri 08:00-21:00
- * local (FR-1). Unmeasured values stay constants.
- */
-export const WINDOW_START_HOUR = 8;
-
-/**
- * Local hour the working window closes at — EXCLUSIVE, so 21:00:00.000 is
- * already outside. The half-open [start, end) pair makes the 20:59/21:00
- * boundary unambiguous.
- */
-export const WINDOW_END_HOUR = 21;
-
-/**
- * True when `at` falls inside the working window: Monday-Friday, local
- * 08:00 <= time-of-day < 21:00. Every read is LOCAL — never UTC — so the
- * window tracks the operator's clock. The weekday guard uses getDay()
- * (0 = Sunday, 6 = Saturday); 1-5 is the Mon-Fri band. Boundary pins:
- * 07:59:59.999 false, 08:00:00.000 true, 20:59:59.999 true, 21:00:00.000
- * false.
- */
-export function isWithinWorkingHours(at: Date): boolean {
-  const day = at.getDay();
-  if (day < 1 || day > 5) return false;
-  const hour = at.getHours();
-  return hour >= WINDOW_START_HOUR && hour < WINDOW_END_HOUR;
-}
 
 /**
  * The jitter draw seam: a Math.random-shaped function over [0, 1). The

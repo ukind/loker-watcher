@@ -36,7 +36,6 @@ import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH, STATE_PATH } from "../src/config.js";
 import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/email.js";
 import { envWithDotEnv } from "../src/env-file.js";
-import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
   type LinkedInContextFactory,
@@ -130,12 +129,6 @@ export interface FetchTickDeps {
   rng?: () => number;
   /** Halt-latch alarm. Default: sendHaltAlarm, best-effort (warn on failure). */
   haltAlarm?: (reason: string) => Promise<void>;
-  /**
-   * Bypass the working-hours window gate. Default: false (the gate is on).
-   * The offline suite injects true so a tick can run at any pinned clock;
-   * production never sets it.
-   */
-  bypassWindow?: boolean;
 }
 
 /**
@@ -373,19 +366,13 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
     console.log("fetch-linkedin: no linkedin surfaces configured — nothing to do");
     return { wrote: false, pushed: false, postCount: 0 };
   }
-  // The anti-restriction preflight band (design 2026-11-09; the budget step
-  // deleted by the browser-walk migration 2026-11-11) runs BEFORE the
-  // checkout guard: a gated no-op costs zero git spawns, zero cookie reads,
-  // and zero browser navigations. Order: window -> latch.
+  // The preflight band runs BEFORE the checkout guard: a gated no-op costs
+  // zero git spawns, zero cookie reads, and zero browser navigations. The
+  // budget step is gone (browser-walk migration 2026-11-11); the
+  // working-hours window is gone too (removed 2026-11-15). Order: latch ->
+  // checkout guard.
   const latchPath = deps.latchPath ?? DEFAULT_LATCH;
   const rng = deps.rng ?? Math.random;
-  const at = new Date(now());
-  if (deps.bypassWindow !== true && !isWithinWorkingHours(at)) {
-    console.log(
-      "fetch-linkedin: outside the working window (Mon-Fri 08:00-21:00 local) — nothing to do",
-    );
-    return { wrote: false, pushed: false, postCount: 0 };
-  }
   if (await latchPresent(latchPath)) {
     console.log(
       "fetch-linkedin: HALT LATCH present — fetching is blocked until the operator deletes it",

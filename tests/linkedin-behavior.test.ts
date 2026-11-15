@@ -14,17 +14,8 @@ import {
   HALT_RATE_LIMIT_REASON,
   WAKE_MAX_MS,
   WAKE_MIN_MS,
-  WINDOW_END_HOUR,
-  WINDOW_START_HOUR,
-  isWithinWorkingHours,
   sampleTickDelayMs,
 } from "../src/linkedin-behavior.js";
-
-/** 2026-10-26 is a Monday; Oct 31 is the Saturday, Nov 1 the Sunday. */
-const MONDAY = { y: 2026, m: 9, d: 26 };
-
-const at = (y: number, m: number, d: number, hour: number, min = 0, sec = 0, ms = 0): Date =>
-  new Date(y, m, d, hour, min, sec, ms);
 
 /** Deterministic LCG (Numerical Recipes constants) — no ambient Math.random. */
 function seededRng(seed: number): () => number {
@@ -34,33 +25,6 @@ function seededRng(seed: number): () => number {
     return state / 0x1_0000_0000;
   };
 }
-
-describe("isWithinWorkingHours", () => {
-  it("admits 08:00:00.000 exactly and rejects 07:59:59.999", () => {
-    assert.equal(isWithinWorkingHours(at(MONDAY.y, MONDAY.m, MONDAY.d, 8)), true);
-    assert.equal(isWithinWorkingHours(at(MONDAY.y, MONDAY.m, MONDAY.d, 7, 59, 59, 999)), false);
-  });
-
-  it("admits 20:59:59.999 and rejects 21:00:00.000 — the end is exclusive", () => {
-    assert.equal(isWithinWorkingHours(at(MONDAY.y, MONDAY.m, MONDAY.d, 20, 59, 59, 999)), true);
-    assert.equal(isWithinWorkingHours(at(MONDAY.y, MONDAY.m, MONDAY.d, 21)), false);
-  });
-
-  it("rejects Saturday and Sunday even at midday", () => {
-    assert.equal(isWithinWorkingHours(at(2026, 9, 31, 12)), false);
-    assert.equal(isWithinWorkingHours(at(2026, 10, 1, 12)), false);
-  });
-
-  it("rejects a Friday late-evening tick past the window", () => {
-    assert.equal(isWithinWorkingHours(at(2026, 9, 30, 21, 30)), false);
-  });
-
-  it("admits every weekday hour from the start hour to one under the end hour", () => {
-    for (let hour = WINDOW_START_HOUR; hour < WINDOW_END_HOUR; hour += 1) {
-      assert.equal(isWithinWorkingHours(at(2026, 9, 28, hour)), true, `hour ${hour}`);
-    }
-  });
-});
 
 describe("sampleTickDelayMs", () => {
   it("pins the floor at exactly 28 minutes when rng returns 0", () => {

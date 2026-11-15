@@ -8,7 +8,7 @@
  * edge, the fault arms (an all-faulted walk is a quiet-zeros no-op while
  * a fine-empty walk still writes and pushes, defb8af; a checkpoint walk
  * trips the halt latch with the canonical reason), and the preflight
- * band: window -> latch -> checkout guard BEFORE any browser launch.
+ * band: latch -> checkout guard BEFORE any browser launch (the working-hours window removed 2026-11-15).
  * Zero network, zero real email, zero Playwright; the doubles carry every
  * behavior pin (realGit is exercised only by two read-only git spawns in
  * its block). The budget suites died with the budget machine (slice 5).
@@ -415,7 +415,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-1.flag"),
-      bypassWindow: true,
+
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -468,7 +468,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       async () =>
         fetchTick({
           latchPath: await workPath("latch-2.flag"),
-          bypassWindow: true,
+
           config: CONFIG,
           cookies: COOKIES,
           contextFactory,
@@ -502,7 +502,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-3.flag"),
-      bypassWindow: true,
+
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -539,7 +539,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-4.flag"),
-      bypassWindow: true,
+
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -570,7 +570,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     await fetchTick({
       latchPath: await workPath("latch-6.flag"),
-      bypassWindow: true,
+
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -594,7 +594,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     await fetchTick({
       latchPath: await workPath("latch-7.flag"),
-      bypassWindow: true,
+
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -612,7 +612,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const git = scriptGit({});
     const result = await fetchTick({
       latchPath: await workPath("latch-5.flag"),
-      bypassWindow: true,
+
       config: { ...CONFIG, surfaces: [{ type: "tag", value: "hiring" }] },
       git,
       env: {}, // no LINKEDIN_COOKIES_FILE — the cookie resolver would throw if reached
@@ -629,7 +629,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
       async () =>
         fetchTick({
           latchPath: await workPath("latch-factory.flag"),
-          bypassWindow: true,
+
           config: CONFIG,
           contextFactory,
           git: scriptGit({ "rev-parse": { code: 0, output: "main" } }),
@@ -664,7 +664,7 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
       async () =>
         fetchTick({
           latchPath: await workPath("latch-7.flag"),
-          bypassWindow: true,
+
           config: CONFIG,
           cookies: COOKIES,
           contextFactory,
@@ -698,7 +698,7 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
       async () =>
         fetchTick({
           latchPath: await workPath("latch-8.flag"),
-          bypassWindow: true,
+
           config: CONFIG,
           cookies: COOKIES,
           contextFactory,
@@ -804,9 +804,9 @@ describe("handleLegDeadEpisode (one alarm per episode)", () => {
   });
 });
 
-// --- the anti-restriction preflight band (design 2026-11-09; window -> latch, slice 5) ---
+// --- the preflight band (latch -> checkout guard; the window gate removed 2026-11-15) ---
 
-describe("the anti-restriction preflight band (window -> latch)", () => {
+describe("the preflight band (latch -> checkout guard)", () => {
   it("blocks a latched tick: zero browser builds, zero git spawns, quiet zeros", async () => {
     const latchPath = await workPath("latch-9.flag");
     await writeFile(latchPath, "LinkedIn security checkpoint\n", "utf8");
@@ -819,7 +819,6 @@ describe("the anti-restriction preflight band (window -> latch)", () => {
       git,
       payloadPath: await workPath("payload-latched.json"),
       latchPath,
-      bypassWindow: true,
       env: {},
     });
     assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
@@ -827,26 +826,29 @@ describe("the anti-restriction preflight band (window -> latch)", () => {
     assert.equal(git.calls.length, 0);
   });
 
-  it("outside the working window the tick is a quiet no-op (Saturday noon local)", async () => {
+  it("a Saturday-noon tick proceeds to the checkout guard (no day-of-week gate)", async () => {
     const saturdayNoon = new Date(2026, 9, 31, 12, 0).getTime(); // 2026-10-31 is a Saturday
     const built = { value: 0 };
     const contextFactory = contextFactoryFor({ built, script: {} });
-    const git = scriptGit();
-    const result = await fetchTick({
-      config: CONFIG,
-      contextFactory,
-      git,
-      payloadPath: await workPath("payload-weekend.json"),
-      latchPath: await workPath("latch-10.flag"),
-      now: () => saturdayNoon,
-      env: {},
-    });
-    assert.deepEqual(result, { wrote: false, pushed: false, postCount: 0 });
-    assert.equal(built.value, 0);
-    assert.equal(git.calls.length, 0);
+    const git = scriptGit(); // unscripted rev-parse -> empty branch -> /not main/
+    await assert.rejects(
+      async () =>
+        fetchTick({
+          config: CONFIG,
+          contextFactory,
+          git,
+          payloadPath: await workPath("payload-weekend.json"),
+          latchPath: await workPath("latch-10.flag"),
+          now: () => saturdayNoon,
+          env: {},
+        }),
+      /not main/,
+    );
+    assert.ok(git.calls.length >= 1); // the band let it through to the guard
+    assert.equal(built.value, 0); // the guard threw before any browser was built
   });
 
-  it("inside the window (Monday 10:00 local, latch absent) the tick reaches the checkout guard", async () => {
+  it("any weekday clock reaches the checkout guard (Monday 10:00 local, latch absent)", async () => {
     const mondayTen = new Date(2026, 9, 26, 10, 0).getTime(); // 2026-10-26 is a Monday
     const built = { value: 0 };
     const contextFactory = contextFactoryFor({ built, script: {} });
@@ -865,6 +867,28 @@ describe("the anti-restriction preflight band (window -> latch)", () => {
       /not main/,
     );
     assert.ok(git.calls.length >= 1); // the band let it through to the guard
+    assert.equal(built.value, 0); // the guard threw before any browser was built
+  });
+
+  it("a Wednesday-night tick proceeds to the checkout guard (no hours gate)", async () => {
+    const wednesdayNight = new Date(2026, 9, 28, 23, 30).getTime(); // 2026-10-28 is a Wednesday
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({ built, script: {} });
+    const git = scriptGit(); // unscripted rev-parse -> empty branch -> /not main/
+    await assert.rejects(
+      async () =>
+        fetchTick({
+          config: CONFIG,
+          contextFactory,
+          git,
+          payloadPath: await workPath("payload-night.json"),
+          latchPath: await workPath("latch-12.flag"),
+          now: () => wednesdayNight,
+          env: {},
+        }),
+      /not main/,
+    );
+    assert.ok(git.calls.length >= 1); // no clock gate held
     assert.equal(built.value, 0); // the guard threw before any browser was built
   });
 });
@@ -887,7 +911,7 @@ describe("the scrollRounds click bound rides the config into the walk", () => {
       git,
       payloadPath: await workPath("payload-rounds.json"),
       latchPath: await workPath("latch-rounds.flag"),
-      bypassWindow: true,
+
       env: {},
       seenPath: await workPath("seen-tick.json"),
       now: () => T0,
@@ -913,7 +937,7 @@ describe("the halt-latch trip (FR-7)", () => {
       payloadPath,
       latchPath,
       now: () => mondayTen,
-      bypassWindow: true,
+
       haltAlarm: async (reason) => {
         alarms.push(reason);
       },
@@ -941,7 +965,7 @@ describe("the halt-latch trip (FR-7)", () => {
       latchPath,
       markerPath,
       now: () => mondayTen,
-      bypassWindow: true,
+
       haltAlarm: async () => undefined,
       env: {},
       seenPath: await workPath("seen-tick.json"),
@@ -976,7 +1000,7 @@ describe("FR-0 stamp gate (slice 5)", () => {
           payloadPath,
           latchPath,
           now: () => new Date(2026, 9, 26, 10, 0).getTime(),
-          bypassWindow: true,
+
           env: {},
         }),
       /harvestedAt.*login-linkedin/,
@@ -1035,7 +1059,7 @@ describe("the seen-stop set rides the tick into the walk (design 2026-11-13)", (
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
       latchPath: await workPath("latch-seen-stop.flag"),
-      bypassWindow: true,
+
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
