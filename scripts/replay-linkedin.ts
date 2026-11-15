@@ -1,41 +1,48 @@
 /**
- * Offline replay for the LinkedIn raw-body captures (capture-first
- * precondition, design 2026-11-13): read one or more CaptureRecord
- * files written by the walk's capture sink (src/linkedin-capture.ts),
+ * Offline replay for the LinkedIn raw-body captures (the card-join
+ * harness, design 2026-11-14): read one or more CaptureRecord files
+ * written by the walk's capture sink (src/linkedin-capture.ts),
  * re-analyze each body per root row, and print the evidence the
- * mint-path design must be written from (the recorded R4 decision —
- * the replay output selects or upgrades the mint policy; this script
- * decides nothing).
+ * shipped join produced (the census names the row-level facts and
+ * drops the join swallows; this script decides nothing).
+ *
+ * The join itself is the PARSER'S (src/linkedin-parser.ts exports
+ * joinCards/CardJoin + the $L-strict graph forms + the urn-string
+ * form): this file imports them instead of copying — the frozen-copy
+ * era ended when the parser shipped the join. One local instrument
+ * remains: the text walk mirrors the parser's PRIVATE textFromChildren
+ * rule for rule with drop counting, so it carries its own $L-optional
+ * forms.
  *
  * Per body, every line rides the stable `replay:` prefix (the
  * oracle-channel doctrine — distinct outcomes never share a line):
- * - the census header: root rows, distinct texts, distinct ids (the
- *   parser's own global tallies, re-derived row by row);
+ * - the census header: root rows, distinct texts, distinct urn digits
+ *   (re-derived row by row);
  * - one line per root row: ids=, texts=, the classification (BOTH /
- *   IDS-ONLY / TEXTS-ONLY / EMPTY), what the incumbent zip did with
- *   the row's text (zip-paired ↔ <urn tail> / zip-unlinked), and the
- *   junk-cause signal — cta-suspect names the text shape (the marker
- *   specs are byte-identical between CTA components and real posts,
- *   so the text is the only signal); shrink-suspect counts the $-refs
- *   the text walk dropped (missing targets, already-consumed rows,
- *   path misses); text lost names the empty-harvest case;
+ *   IDS-ONLY / TEXTS-ONLY / EMPTY), what the CARD JOIN did with the
+ *   row's text (card-linked ↔ <urn tail> / card-dropped (<cause>) /
+ *   join-unlinked), and the junk-cause signal — cta-suspect names the
+ *   text shape (the marker specs are byte-identical between CTA
+ *   components and real posts, so the text is the only signal);
+ *   shrink-suspect counts the $-refs the text walk dropped (missing
+ *   targets, already-consumed rows, path misses); text lost names the
+ *   empty-harvest case;
  * - the six-point probe summary: forward BFS from the commentary
- *   marker rows over the $-ref graph, reverse BFS from the id rows
- *   over the same edges, the contentTrackingId grouping, the
- *   adjacency invariants (stream distance between marker and id
- *   rows), and the marker taxonomy (every viewTrackingSpecs shape);
- * - the verdict: whether any card-scoped join EXISTS (either BFS
- *   direction reaching across = the Option-A promotion condition)
- *   and the ids-only skip share.
+ *   marker rows over the SAME $L-strict graph the join climbs,
+ *   reverse BFS from the id rows over the same edges, the
+ *   contentTrackingId grouping, the adjacency invariants (stream
+ *   distance between marker and id rows), and the marker taxonomy
+ *   (every viewTrackingSpecs shape) — regression instrumentation now
+ *   (a forward-0 body is a body the join cannot link, not a missing
+ *   feature);
+ * - the verdict: the body's card tally (linked + dropped, the
+ *   joinCards outcome counts) and the ids-only skip share.
  *
- * The row walk here is an INSTRUMENTED copy of the parser's per-row
- * rules (src/linkedin-parser.ts collects the same ids and texts but
- * flattens the rows and swallows the $-ref drops silently). The
- * parser is frozen (the design's Not Building list), and Cause B is
- * exactly the drops the parser hides — so this walk records them.
- * The cross-check suite pins these tallies to collectLinkedInPosts
- * on the same bodies: drift between the two walks fails a test
- * instead of shipping wrong evidence.
+ * The cross-check suite pins this walk's tallies to the card-root
+ * identity on the same bodies: every card joinCards finds must read
+ * back from the census lines, and every census disposition must name
+ * a card the join produced — drift fails a test instead of shipping
+ * wrong evidence.
  *
  * Shape: the probe-linkedin idiom (design D2) — exported runReplay +
  * ReplayDeps (gate failures THROW, the caller owns the exit), one
@@ -50,7 +57,14 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { CAPTURE_SCHEMA_VERSION, type CaptureRecord } from "../src/linkedin-capture.js";
-import { collectLinkedInPosts, parseFlightRows } from "../src/linkedin-parser.js";
+import {
+  type CardJoin,
+  GRAPH_PATH_RE,
+  GRAPH_WHOLE_RE,
+  URN_ANYWHERE_RE,
+  joinCards,
+  parseFlightRows,
+} from "../src/linkedin-parser.js";
 
 /**
  * The usage line — the zero-argv gate's message, printed bare by the CLI
@@ -89,15 +103,6 @@ export function isReplayNoInput(error: unknown): error is ReplayNoInput {
   );
 }
 
-// Frozen copies of the parser's private shapes (src/linkedin-parser.ts
-// is out of scope by design): the $-ref forms and the urn forms. The
-// cross-check suite pins this walk's tallies to collectLinkedInPosts,
-// so drift here fails a test instead of shipping wrong evidence.
-const WHOLE_REF_RE = /^\$L?([0-9a-f]+)$/;
-const PATH_REF_RE = /^\$L?([0-9a-f]+):(.+)$/;
-const URN_RE = /^urn:li:activity:(\d{10,})$/;
-const DIGITS_RE = /^\d{10,}$/;
-
 /** $-refs the instrumented text walk dropped during one text harvest. */
 interface TextDrops {
   /** Whole-ref to a row the stream never carried. */
@@ -114,7 +119,7 @@ export interface RowCensus {
   hex: string;
   /** Stream position of the row. */
   index: number;
-  /** Distinct ids in first-appearance order (the parser's rule). */
+  /** Distinct urn digits in first-appearance order (the join's rule). */
   ids: string[];
   /** Commentary texts harvested (before the longest-wins pick). */
   textCount: number;
@@ -124,7 +129,7 @@ export interface RowCensus {
   hasMarker: boolean;
   /** Every viewTrackingSpecs shape seen in this row ("viewName/control"). */
   markerShapes: string[];
-  /** What the incumbent zip did with this row's text; null when no text. */
+  /** What the card join did with this row's text; null when no text. */
   disposition: string | null;
   /** Junk-cause signal for the row's text; null when it looks clean. */
   cause: string | null;
@@ -153,8 +158,8 @@ export interface BodyAnalysis {
   markerTally: Map<string, number>;
   /** Rows with ids but no text harvest (the skip share). */
   idsOnly: number;
-  /** Either BFS direction reached across — the Option-A promotion condition. */
-  joinCandidate: boolean;
+  /** The body's card tally — joinCards outcomes (the verdict line reads it). */
+  cards: { linked: number; dropped: number };
 }
 
 /** "viewName/legacyControlName" for one viewTrackingSpecs record; "-" for an absent name. */
@@ -197,7 +202,15 @@ function junkCause(bestText: string | null, drops: TextDrops): string | null {
  * ref to a missing row, the whole-ref to a row this harvest already
  * consumed, the path-ref that resolved to nothing. Those drops are
  * Cause B ($-ref shrink); the parser hides them, the replay names them.
+ * The walk carries its OWN $L-optional reference forms ($-prefixed,
+ * optional L — the historical text-walk shapes): the parser keeps its
+ * text-walk forms module-private by design, and the GRAPH forms above
+ * are the shared $L-strict edges (bare hex-ish data strings are never
+ * references — the phantom-edge guard, fresh corpus 2026-11-14).
  */
+const TEXT_WHOLE_REF_RE = /^\$L?([0-9a-f]+)$/;
+const TEXT_PATH_REF_RE = /^\$L?([0-9a-f]+):(.+)$/;
+
 function textFromChildrenInstrumented(
   children: unknown,
   rows: Map<string, unknown>,
@@ -225,7 +238,7 @@ function textFromChildrenInstrumented(
   };
   const walk = (node: unknown): void => {
     if (typeof node === "string") {
-      const whole = WHOLE_REF_RE.exec(node);
+      const whole = TEXT_WHOLE_REF_RE.exec(node);
       if (whole !== null) {
         const id: string = whole[1] ?? "";
         if (!rows.has(id)) {
@@ -240,7 +253,7 @@ function textFromChildrenInstrumented(
         walk(rows.get(id));
         return;
       }
-      const scoped = PATH_REF_RE.exec(node);
+      const scoped = TEXT_PATH_REF_RE.exec(node);
       if (scoped !== null) {
         const resolved = resolve(scoped[1] ?? "", scoped[2] ?? "");
         if (resolved === undefined) drops.pathMiss += 1;
@@ -278,21 +291,20 @@ function textFromChildrenInstrumented(
     .trim();
 }
 
-/** Every $-ref target one row's subtree points at (whole and path forms). */
+/** Every $L-strict graph edge one row's subtree names (the join's own edge forms). */
 function refTargets(payload: unknown, rows: Map<string, unknown>, into: Set<string>): void {
   const visit = (node: unknown): void => {
     if (typeof node === "string") {
-      const whole = WHOLE_REF_RE.exec(node);
+      const whole = GRAPH_WHOLE_RE.exec(node);
       if (whole !== null) {
-        const id = whole[1] ?? "";
+        const id: string = whole[1] ?? "";
         if (rows.has(id)) into.add(id);
         return;
       }
-      const scoped = PATH_REF_RE.exec(node);
+      const scoped = GRAPH_PATH_RE.exec(node);
       if (scoped !== null) {
-        const id = scoped[1] ?? "";
+        const id: string = scoped[1] ?? "";
         if (rows.has(id)) into.add(id);
-        return;
       }
       return;
     }
@@ -349,19 +361,20 @@ function reachableCount(
 }
 
 /**
- * The instrumented per-row walk: the parser's collectLinkedInPosts row
- * rules with the drops counted and the shapes named. Urn strings,
- * activityId digit fields, urn object keys; a commentary_text marker
- * harvests its text and RETURNS (its subtree carries no ids); every
- * other viewTrackingSpecs shape is recorded for the taxonomy and
- * recursed (the parser ignores it silently).
+ * The instrumented per-row walk: the join's row-level facts with the
+ * drops counted and the shapes named. Urn STRINGS (share/ugcPost/
+ * activity, embedded or standalone — the parser's URN_ANYWHERE_RE; the
+ * deleted digit-field and urn-object-key rules ride with the zip they
+ * served); a commentary_text marker harvests its text and RETURNS (its
+ * subtree carries no ids); every other viewTrackingSpecs shape is
+ * recorded for the taxonomy and recursed (the join ignores it silently).
  */
 function collectRowCensus(
   hex: string,
   index: number,
   payload: unknown,
   rows: Map<string, unknown>,
-  zipByText: Map<string, string>,
+  joinByText: Map<string, CardJoin>,
 ): RowCensus {
   const ids = new Set<string>();
   const rowTexts: string[] = [];
@@ -371,14 +384,15 @@ function collectRowCensus(
   const seenRows = new Set<string>();
   const visit = (node: unknown): void => {
     if (typeof node === "string") {
-      const urn = URN_RE.exec(node);
+      const urn = URN_ANYWHERE_RE.exec(node);
       if (urn !== null) {
-        ids.add(urn[1] ?? "");
+        const digits: string = urn[2] ?? "";
+        if (digits.length > 0) ids.add(digits);
         return;
       }
-      const whole = WHOLE_REF_RE.exec(node);
+      const whole = TEXT_WHOLE_REF_RE.exec(node);
       if (whole !== null) {
-        const id = whole[1] ?? "";
+        const id: string = whole[1] ?? "";
         if (rows.has(id) && !seenRows.has(id)) {
           seenRows.add(id);
           visit(rows.get(id));
@@ -393,8 +407,6 @@ function collectRowCensus(
     }
     if (node === null || typeof node !== "object") return;
     const record = node as Record<string, unknown>;
-    const activityId: unknown = record.activityId;
-    if (typeof activityId === "string" && DIGITS_RE.test(activityId)) ids.add(activityId);
     const specs: unknown = record.viewTrackingSpecs;
     if (specs !== null && typeof specs === "object") {
       const specRecord = specs as Record<string, unknown>;
@@ -406,10 +418,6 @@ function collectRowCensus(
         return; // the commentary subtree is text; it carries no ids
       }
     }
-    for (const key of Object.keys(record)) {
-      const urnKey = URN_RE.exec(key);
-      if (urnKey !== null) ids.add(urnKey[1] ?? "");
-    }
     for (const key of Object.keys(record)) visit(record[key]);
   };
   visit(payload);
@@ -417,8 +425,14 @@ function collectRowCensus(
     rowTexts.length > 0 ? rowTexts.reduce((a, b) => (b.length > a.length ? b : a)) : null;
   let disposition: string | null = null;
   if (bestText !== null) {
-    const paired = zipByText.get(bestText);
-    disposition = paired === undefined ? "zip-unlinked" : `zip-paired ↔ ${paired.slice(-6)}`;
+    const card = joinByText.get(bestText);
+    if (card === undefined) {
+      disposition = "join-unlinked";
+    } else if (card.outcome === "linked" && card.linkUrn !== null) {
+      disposition = `card-linked ↔ ${card.linkUrn.slice(-6)}`;
+    } else {
+      disposition = `card-dropped (${card.outcome})`;
+    }
   }
   return {
     hex,
@@ -436,22 +450,27 @@ function collectRowCensus(
 /**
  * Analyze one capture body: the per-row census, the six-point probe
  * (forward + reverse BFS, contentTrackingId grouping, adjacency,
- * marker taxonomy), and the incumbent zip's disposition per row.
- * Pure over the record's body — the only log line is the parser's own
- * pairing oracle, which rides along as extra evidence.
+ * marker taxonomy), and the shipped join's card tally. Pure over the
+ * record's body — joinCards is silent, so the only log lines are the
+ * census block itself.
  */
 export function analyzeBody(record: CaptureRecord): BodyAnalysis {
   const rows = parseFlightRows(record.body);
   const entries = [...rows.entries()];
-  // The incumbent zip's own output: which text got paired with which
-  // id. A paired urn is the pairing's CHOICE, never a proven
-  // association (the parser's header says why).
-  const zipByText = new Map<string, string>();
-  for (const post of collectLinkedInPosts(record.body)) {
-    zipByText.set(post.text, post.id);
+  // The shipped join's own output: which card claimed which text (the
+  // CardJoin record IS the decision — outcome carries the drop cause;
+  // the tally feeds the verdict line). joinCards is silent — the one
+  // req-9 log line belongs to the parser's mint path.
+  const joinByText = new Map<string, CardJoin>();
+  let linked = 0;
+  let dropped = 0;
+  for (const card of joinCards(record.body)) {
+    if (card.outcome === "linked") linked += 1;
+    else dropped += 1;
+    if (card.text !== null) joinByText.set(card.text, card);
   }
   const rowsCensus = entries.map(([hex, payload], index) =>
-    collectRowCensus(hex, index, payload, rows, zipByText),
+    collectRowCensus(hex, index, payload, rows, joinByText),
   );
   const distinctIds = new Set<string>();
   const distinctTexts = new Set<string>();
@@ -472,9 +491,10 @@ export function analyzeBody(record: CaptureRecord): BodyAnalysis {
   }
   const markerHexes = new Set(rowsCensus.filter((row) => row.hasMarker).map((row) => row.hex));
   const idHexes = new Set(rowsCensus.filter((row) => row.ids.length > 0).map((row) => row.hex));
-  // Six-point probe, arms 1-2: the $-ref graph in both directions. A
-  // hit in either arm is the Option-A promotion condition; zero in
-  // both is the committed census's answer re-measured on fresh bodies.
+  // Six-point probe, arms 1-2: the $-ref graph in both directions over
+  // the SAME $L-strict edges the join climbs. A hit in either arm is
+  // regression evidence the graph still carries the join; zero in both
+  // is a body the join cannot link, not a missing feature.
   const refs = new Map<string, Set<string>>();
   for (const [hex, payload] of entries) {
     const targets = new Set<string>();
@@ -532,7 +552,7 @@ export function analyzeBody(record: CaptureRecord): BodyAnalysis {
     adjacency,
     markerTally,
     idsOnly,
-    joinCandidate: forwardReached > 0 || reverseReached > 0,
+    cards: { linked, dropped },
   };
 }
 
@@ -582,10 +602,11 @@ function markersLine(analysis: BodyAnalysis): string {
 }
 
 function verdictLine(analysis: BodyAnalysis): string {
-  if (!analysis.joinCandidate) {
-    return `replay: verdict — no card-scoped join found; ${analysis.idsOnly}/${analysis.rootRows} row(s) skipped ids-only`;
-  }
-  return `replay: verdict — join CANDIDATE (forward ${analysis.forwardReached}, reverse ${analysis.reverseReached}) — the Option-A promotion condition is met; inspect the reachable rows before any pairing rule changes`;
+  return (
+    `replay: verdict — ${analysis.cards.linked} card(s) linked, ${analysis.cards.dropped} dropped ` +
+    `(forward ${analysis.forwardReached}, reverse ${analysis.reverseReached}); ` +
+    `${analysis.idsOnly}/${analysis.rootRows} row(s) ids-only`
+  );
 }
 
 /** Print one body's evidence block — every line under the `replay:` prefix. */
