@@ -71,15 +71,6 @@ const ALLOWED_KEYS = [
 const THREADS_HOST = "www.threads.com";
 
 /**
- * FR-8 (browser-walk migration 2026-11-11): exactly 5 linkedin surfaces —
- * the PC leg's account-safety bound (the jittered cadence, times the
- * per-surface scrollRounds click cap) is calibrated for a five-surface
- * fleet. The count is the invariant, not the keywords: an operator may
- * swap a surface's value, never grow the fleet.
- */
-const LINKEDIN_SURFACE_COUNT = 5;
-
-/**
  * Read and validate the config file. Throws with the path and the offending
  * key when the file is missing, unparsable, or fails any rule below.
  */
@@ -207,10 +198,15 @@ function readSurfaces(value: unknown, filePath: string): Surface[] {
     }
     out.push({ type, value: surfaceValue });
   }
+  // The PC leg walks every linkedin surface the operator configures (the
+  // probe: one browser launch per keyword; the tick: the production walk).
+  // The fleet size is a pacing decision, not a code invariant — any count
+  // >= 1 loads. This check owns only the non-empty, zero-linkedin shape:
+  // a fully empty surfaces array dies at the empty-array rule above.
   const linkedinCount = out.filter((surface) => surface.type === "linkedin").length;
-  if (linkedinCount !== LINKEDIN_SURFACE_COUNT) {
+  if (linkedinCount < 1) {
     throw new Error(
-      `config: ${filePath} has ${linkedinCount} linkedin surfaces — exactly ${LINKEDIN_SURFACE_COUNT} are required (the PC leg's pacing arithmetic assumes it); keep the five-surface spread`,
+      `config: ${filePath} has ${linkedinCount} linkedin surfaces — at least 1 is required`,
     );
   }
   warnDuplicateSurfaces(out, filePath);
