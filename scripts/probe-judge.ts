@@ -33,6 +33,14 @@
  * seconds) - the dispatch probe job skips itself for 8h after a success; a
  * failed probe never starts the window.
  *
+ * Revision 2026-11-15 (F005): a leg counts as ok only when the 2xx body
+ * carries the production answer envelope (choices[0].message.content is a
+ * non-empty string) — an error-shaped 2xx no longer inflates committed
+ * ceilings. The CLI is now importable: the entry guard replaces the bare
+ * await main(), the config read moved into main(), and timed takes an
+ * injectable fetch, so tests/probe-judge.test.ts replays the classifier
+ * offline.
+ *
  * Usage:
  *   LLM_ACCOUNTS='[{"baseUrl":"https://api.example.com/v1","apiKey":"key","model":"model"}]' npx tsx scripts/probe-judge.ts
  * Exits 1 when any account is auth-dead (401/403) or has a failed leg,
@@ -40,14 +48,13 @@
  * refused leg is data (the account is busy), not a gate failure — the
  * watch job itself is the real gate for throttling.
  */
-import { loadWatcherConfig } from "../src/config-file.js";
+import { pathToFileURL } from "node:url";
 import { JUDGE_CEILINGS_PATH } from "../src/config.js";
+import { loadWatcherConfig, type WatcherConfig } from "../src/config-file.js";
+import { type LlmAccount, resolveJudgeConfig } from "../src/judge.js";
 import { writeCeilingsAtomic } from "../src/judge-ceilings.js";
-import { type LlmAccount, buildBulkMessages, resolveJudgeConfig } from "../src/judge.js";
+import { buildBulkMessages } from "../src/judge-prompts.js";
 import type { Post } from "../src/types.js";
-
-// Read once at startup; a missing or malformed file fails the probe loudly.
-const CONFIG = await loadWatcherConfig();
 
 /**
  * Real captured Threads captions, kept verbatim so token counts match
@@ -101,10 +108,33 @@ interface AccountProbe {
  * is a broken endpoint. The ramp needs the difference: a level where every
  * call is refused is a ceiling, a level with failed calls fails the probe.
  */
-async function timed(label: string, payload: unknown, account: LlmAccount): Promise<ProbeOutcome> {
+/**
+ * True when a 2xx body carries the production answer envelope: parsable
+ * JSON with a non-empty choices[0].message.content string. An error
+ * envelope, an HTML interstitial, or a truncated answer is a FAILED leg,
+ * not a good one — the old brace check counted all three as ok and
+ * inflated committed ceilings (F005, 2026-11-15).
+ */
+function carriesAnswerEnvelope(body: string): boolean {
+  let data: { choices?: Array<{ message?: { content?: string } }> };
+  try {
+    data = JSON.parse(body) as { choices?: Array<{ message?: { content?: string } }> };
+  } catch {
+    return false;
+  }
+  const content = data.choices?.[0]?.message?.content;
+  return typeof content === "string" && content.trim().length > 0;
+}
+
+export async function timed(
+  label: string,
+  payload: unknown,
+  account: LlmAccount,
+  fetchFn: typeof fetch = fetch,
+): Promise<ProbeOutcome> {
   const started = Date.now();
   try {
-    const response = await fetch(`${account.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+    const response = await fetchFn(`${account.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -119,11 +149,13 @@ async function timed(label: string, payload: unknown, account: LlmAccount): Prom
       console.log(`probe: ${label} — ${elapsed}ms — HTTP ${response.status} REFUSED`);
       return { kind: "refused", status: response.status };
     }
-    const ok = body.includes("{");
+    const ok = carriesAnswerEnvelope(body);
     console.log(
-      `probe: ${label} — ${elapsed}ms — HTTP ${response.status} ${ok ? "OK" : "NO JSON"}`,
+      `probe: ${label} — ${elapsed}ms — HTTP ${response.status} ${ok ? "OK" : "NO ENVELOPE"}`,
     );
-    return ok ? { kind: "ok" } : { kind: "failed", message: "response carried no JSON" };
+    return ok
+      ? { kind: "ok" }
+      : { kind: "failed", message: "response carried no chat-completions envelope" };
   } catch (error) {
     const elapsed = Date.now() - started;
     const message = error instanceof Error ? error.message : String(error);
@@ -227,6 +259,7 @@ function classifyDead(probe: AccountProbe): string | null {
 async function probeAccount(
   index: number,
   account: LlmAccount,
+  config: WatcherConfig,
 ): Promise<{ probe: AccountProbe; ceiling: number }> {
   const label = `account ${index + 1} (${account.baseUrl})`;
   console.log(`probe: === ${label} ===`);
@@ -244,9 +277,9 @@ async function probeAccount(
   const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
   const bulkPayload = {
     model: account.model,
-    messages: buildBulkMessages(ten, CONFIG.keywords),
+    messages: buildBulkMessages(ten, config.keywords),
     temperature: 0,
-    reasoning_effort: CONFIG.reasoningEffort,
+    reasoning_effort: config.reasoningEffort,
     response_format: { type: "json_object" },
   };
   const bulk = await timed(
@@ -272,6 +305,8 @@ async function probeAccount(
 }
 
 async function main(): Promise<void> {
+  // Read once at startup; a missing or malformed file fails the probe loudly.
+  const CONFIG = await loadWatcherConfig();
   let accounts: LlmAccount[];
   try {
     accounts = [...resolveJudgeConfig(process.env)];
@@ -288,7 +323,7 @@ async function main(): Promise<void> {
   // rejection here is an unexpected bug — containment keeps the other
   // accounts' readings alive.
   const settled = await Promise.allSettled(
-    accounts.map((account, index) => probeAccount(index, account)),
+    accounts.map((account, index) => probeAccount(index, account, CONFIG)),
   );
   const ceilings: Record<string, number> = {};
   const dead: string[] = [];
@@ -337,4 +372,6 @@ async function main(): Promise<void> {
   console.log("probe: all accounts verified — gating probe passed");
 }
 
-await main();
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
