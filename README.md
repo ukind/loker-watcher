@@ -324,6 +324,18 @@ running them individually:
 3. `npm run watch-linkedin`: tick, then a 28-33-minute sleep, forever;
    leave the console open.
 
+Machine-default paths — single-operator Windows defaults, both overridable:
+
+| What | Default | Override |
+|---|---|---|
+| Browser profile the walk and the login helper open | `C:/loker-secrets/linkedin-chromium-profile` | `LINKEDIN_PROFILE_DIR` |
+| Cookie file `login-linkedin` writes and the tick reads | `C:/loker-secrets/linkedin-cookies.json` | `LINKEDIN_COOKIES_FILE` (the `.env` line the login helper writes) |
+
+An override set in the shell or `.env` wins over the default. A clone that
+overrides either variable must override it consistently for the login
+helper, the probe, and the tick, so the browser that logs in and the
+browser that walks share one profile.
+
 Env setup note: the PC scripts read `.env` beside the clone root
 (`LINKEDIN_COOKIES_FILE` written by `login-linkedin`); a variable already
 set in the shell always wins and `.env` fills only unset keys, so the
