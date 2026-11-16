@@ -28,11 +28,15 @@
       "nextjs",
       "typescript",
       "javascript",
-      "web dev",
+      "web devoper",
+      "software engineer",
+      "web engineer",
+      "lead",
       "coding",
       "coder",
       "indonesia",
-      "remote",
+      "jakarta",
+      "remote worldwide",
       "wfh",
       "work from home"
    ],
@@ -130,12 +134,20 @@
       {
          "type":"linkedin",
          "value":"hiring react"
+      },
+      {
+         "type":"linkedin",
+         "value":"front web"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring front end"
       }
    ],
-   "scrollRounds":50,
+   "scrollRounds":150,
    "platforms":{
       "linkedin":true,
-      "threads":true
+      "threads":false
    },
    "reasoningEffort":"high",
    "recencyHours":72
