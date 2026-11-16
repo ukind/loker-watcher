@@ -1047,6 +1047,7 @@ describe("the seen-stop set rides the tick into the walk (design 2026-11-13)", (
       T0,
     );
     const payload = await workPath("payload-seen-stop.json");
+    const capture = recordingSink();
     const contextFactory = contextFactoryFor({
       script: {
         initialBody: [
@@ -1063,6 +1064,10 @@ describe("the seen-stop set rides the tick into the walk (design 2026-11-13)", (
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
+      // Body-firing walk: the sink MUST be injected (the recordingSink
+      // doctrine above) — the fs default would write captures/ at the
+      // repo root and trip this suite's absence oracle.
+      captureSink: capture,
       payloadPath: payload,
       git,
       env: {},
@@ -1077,5 +1082,9 @@ describe("the seen-stop set rides the tick into the walk (design 2026-11-13)", (
     const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
     assert.ok(lines.some((line) => line.endsWith(`seen-stop: urn:li:activity:${idAt(3)}`)));
     assert.ok(git.calls.some((args) => args[0] === "push"));
+    // The injected sink rode the walk (npm test touches OS temp only):
+    // one flagship body fired, one record, arrival ordinal 1.
+    assert.equal(capture.records.length, 1);
+    assert.equal(capture.records[0]?.matched, true);
   });
 });
