@@ -1,6 +1,6 @@
 # Tech Debt Audit — loker-watcher
 
-Generated: 2026-11-15 · branch `ukind/feature-auto-login-threads` · commit `be5407a` · 24.1k LOC (src+scripts+tests, 733 tests)
+Generated: 2026-11-15 · branch `ukind/feature-auto-login-threads` · commit `be5407a` · 24.1k LOC (src+scripts+tests, 656 tests)
 
 ## Executive summary
 
@@ -63,7 +63,7 @@ Single-shot CLI pipeline, no server: every 10 minutes GitHub Actions runs `src/i
 
 ## Top 5 — if you fix nothing else, fix these
 
-1. **F001 — Close the capture-sink leak.** Export a `NOOP_CAPTURE_SINK` from `src/linkedin-capture.ts`; in `tests/fetch-linkedin.test.ts` pass it in every `fetchTick({…})` block that can fire a body (the 13 blocks that do not mention `captureSink` today); do the same for the 7 `runProbe` calls in `tests/probe-linkedin.test.ts` (`scripts/probe-linkedin.ts:183` has the identical `?? makeFsCaptureSink()` default). Then delete the leaked `captures/` dir and run `npm test` twice from a clean checkout — both must be green. ~30 minutes; 733 tests re-run in ~2 minutes.
+1. **F001 — Close the capture-sink leak.** Export a `NOOP_CAPTURE_SINK` from `src/linkedin-capture.ts`; in `tests/fetch-linkedin.test.ts` pass it in every `fetchTick({…})` block that can fire a body (the 13 blocks that do not mention `captureSink` today); do the same for the 7 `runProbe` calls in `tests/probe-linkedin.test.ts` (`scripts/probe-linkedin.ts:183` has the identical `?? makeFsCaptureSink()` default). Then delete the leaked `captures/` dir and run `npm test` twice from a clean checkout — both must be green. ~30 minutes; the full suite re-runs in ~23 seconds.
 2. **F002 — Fix the worst-day pointer.** The leg-dead alarm is the email you read when the PC leg dies. Either commit `docs/failure-matrix.md` with the §13/§14 content from `H:/fork/linkedin-reverse/DOCUMENTATION.md`, or inline the matrix into `buildLegDeadAlarmText` (src/email.ts:317). ~1 hour for the committed doc, ~15 minutes to inline.
 3. **F003 — Freeze the acyclic runtime graph.** Add to ci.yml after the knip step:
    ```yaml
