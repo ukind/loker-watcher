@@ -61,9 +61,9 @@ import {
   type CardJoin,
   GRAPH_PATH_RE,
   GRAPH_WHOLE_RE,
-  URN_ANYWHERE_RE,
   joinCards,
   parseFlightRows,
+  URN_ANYWHERE_RE,
 } from "../src/linkedin-parser.js";
 
 /**
