@@ -25,52 +25,34 @@
  * (linkedin-context.ts) — and the offline suite injects structural
  * ContextLike doubles.
  */
-import type { Surface } from "./config-file.js";
+
 import { ENV_NAMES } from "./config.js";
+import type { Surface } from "./config-file.js";
 import type { RandomFn } from "./linkedin-behavior.js";
 import type { CaptureSink } from "./linkedin-capture.js";
 import {
-  type LinkedInContextFactory,
   allSurfacesFaulted,
   halt,
-  isAllSurfacesFaulted,
   isHalt,
   isLegDead,
+  type LinkedInContextFactory,
   legDead,
   makeLinkedInContextFactory,
 } from "./linkedin-context.js";
 import { walkLinkedInSurface } from "./linkedin-walk.js";
 import { runPool } from "./pool.js";
+import type { SleepFn } from "./sleep.js";
 import type { Post } from "./types.js";
 
-// The re-export facade (N042b). Eight symbols keep their old import path so
-// three scripts and four test files stay unedited:
-//   scripts/fetch-linkedin.ts, scripts/probe-linkedin.ts,
-//   scripts/watch-linkedin.ts, src/index.ts,
-//   tests/linkedin-fetch.test.ts, tests/fetch-linkedin.test.ts,
-//   tests/probe-linkedin.test.ts, tests/watch-linkedin.test.ts.
-//
-// REMOVAL NOTE (run #7): re-point those imports at ./linkedin-context.js and
-// ./linkedin-walk.js, then delete this block. The N012 class is "export with
-// no cross-module importer" — every symbol below has one, so the facade is
-// knip-safe. It must NOT grow: makeLinkedInContextFactory, the two UA
-// constants, and the production factory have no importer from this
-// specifier.
-export {
-  type LinkedInContextFactory,
-  allSurfacesFaulted,
-  halt,
-  isAllSurfacesFaulted,
-  isHalt,
-  isLegDead,
-  legDead,
-};
-export { SCROLL_JS } from "./linkedin-walk-static.js";
 /** One configured linkedin surface (raw keyword string, never a URL). */
 export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
 
-/** Injectable sleep for the pacing gate (judge.ts trailing-param idiom). */
-export type SleepFn = (ms: number) => Promise<void>;
+// Injectable sleep for the pacing gate (judge.ts trailing-param idiom).
+// F014 (2026-11-15): sleep.ts is the canonical declaration; this module
+// re-exports it because scripts/watch-linkedin.ts keeps importing SleepFn
+// from here (D5 — re-pointing the consumer to sleep.js would orphan this
+// re-export and redden knip).
+export type { SleepFn };
 
 /** Walk width. The pacing gate, not this number, bounds the navigation rate. */
 const LINKEDIN_FETCH_CONCURRENCY = 2;

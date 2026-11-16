@@ -10,7 +10,7 @@
  * imported by rotation; the one-way runtime edges run into rotation (the
  * blocked-pick policy in judge-exhaustion.ts composes rotation primitives).
  */
-import { HARD_FAIL_TICKS_TO_CAP, buildFailuresFromLedger } from "./judge-health.js";
+import { buildFailuresFromLedger, HARD_FAIL_TICKS_TO_CAP } from "./judge-health.js";
 import type { RotationState } from "./judge-rotation.js";
 import type { AccountFailure, JudgeVerdict } from "./types.js";
 

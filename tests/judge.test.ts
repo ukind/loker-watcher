@@ -1,19 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { judgePosts, type LlmAccount, parseLlmAccounts, resolveJudgeConfig } from "../src/judge.js";
+import { judgePost } from "../src/judge-dispatch.js";
+import { buildBulkMessages } from "../src/judge-prompts.js";
 import {
+  isRotationExhausted,
   type RotationExhausted,
   type RotationState,
-  isRotationExhausted,
 } from "../src/judge-rotation.js";
-import {
-  type LlmAccount,
-  buildBulkMessages,
-  judgePost,
-  judgePosts,
-  parseLlmAccounts,
-  resolveJudgeConfig,
-} from "../src/judge.js";
-import { KEYWORDS, bulkContent, bulkPost, id19, ok, singleAccount } from "./judge-helpers.js";
+import { bulkContent, bulkPost, id19, KEYWORDS, ok, singleAccount } from "./judge-helpers.js";
 
 /** Mirror of tests/judge-rotation.test.ts's freshState (the canonical copy)
  * — kept for the residual its that call it directly
@@ -415,15 +410,11 @@ describe("judgePosts", () => {
     assert.equal(result.judged.length, 40); // FALLBACK_CALL_BUDGET posts judged
     assert.deepEqual(
       result.judged.map((j) => j.post.id),
-      posts
-        .slice(0, 40)
-        .map((p) => p.id), // the budget feeds the head of the input order
+      posts.slice(0, 40).map((p) => p.id), // the budget feeds the head of the input order
     );
     assert.deepEqual(
       result.skippedPostIds,
-      posts
-        .slice(40)
-        .map((p) => p.id), // the tail starves, in order
+      posts.slice(40).map((p) => p.id), // the tail starves, in order
     );
   });
 

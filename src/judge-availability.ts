@@ -24,8 +24,9 @@
  * this module's runtime symbols, never the reverse), and both are pure
  * functions. Everything else is type-only.
  */
-import { normalizeEndpoint, terminalFailureReason } from "./judge-shared.js";
+
 import type { LlmAccount } from "./judge.js";
+import { normalizeEndpoint, terminalFailureReason } from "./judge-shared.js";
 import type { AccountFailure } from "./types.js";
 
 /**

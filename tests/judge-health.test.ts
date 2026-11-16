@@ -3,25 +3,27 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
+import type { LlmAccount } from "../src/judge.js";
 import {
   type AccountTickOutcome,
-  type HealthFile,
-  type OutcomeLedgerState,
   buildDegradedAccountsLine,
   buildFailuresFromLedger,
   episodeAlarmDue,
   flushExhaustionHealth,
   flushHealthIfChanged,
   flushTickHealth,
+  HARD_FAIL_TICKS_TO_CAP,
+  type HealthFile,
   loadAccountHealth,
   nextHealthFile,
+  type OutcomeLedgerState,
   readTickOutcomes,
   resolveAccountHealth,
   stampFailure,
   stampSuccess,
   writeHealthAtomic,
 } from "../src/judge-health.js";
-import type { LlmAccount } from "../src/judge.js";
+import { HEALTH_CAP_STREAK } from "../src/judge-rotation.js";
 
 /** Two accounts with distinct hosts — the capped/streak cases need both. */
 const ACCOUNTS: LlmAccount[] = [
@@ -507,5 +509,11 @@ describe("episodeAlarmDue (the one-alarm gate)", () => {
 
   it("is false when the episode bit is open — the alarm already fired", () => {
     assert.equal(episodeAlarmDue(file({}, true)), false);
+  });
+});
+
+describe("the paired cap constants (F004, 2026-11-15)", () => {
+  it("rotation's HEALTH_CAP_STREAK equals health's HARD_FAIL_TICKS_TO_CAP - the zero-import boundary keeps two copies", () => {
+    assert.equal(HEALTH_CAP_STREAK, HARD_FAIL_TICKS_TO_CAP);
   });
 });

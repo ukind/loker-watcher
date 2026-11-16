@@ -12,28 +12,17 @@
  * terminal. The dispatch core, both wrappers, the prompt builders, and the
  * sleep seam live in judge-dispatch.ts and judge-prompts.ts.
  */
-import type { ReasoningEffort } from "./config-file.js";
+
 import { ENV_NAMES } from "./config.js";
+import type { ReasoningEffort } from "./config-file.js";
 import { judgeBatch, judgePost } from "./judge-dispatch.js";
-import { HARD_FAIL_TICKS_TO_CAP, type TickOutcomes, readTickOutcomes } from "./judge-health.js";
-import { type RotationState, isRotationExhausted, rotationExhausted } from "./judge-rotation.js";
+import { HARD_FAIL_TICKS_TO_CAP, readTickOutcomes, type TickOutcomes } from "./judge-health.js";
+import { isRotationExhausted, type RotationState, rotationExhausted } from "./judge-rotation.js";
 import { type BatchOutcome, exhaustionRecord } from "./judge-shared.js";
 import { runPool } from "./pool.js";
 import { type SleepFn, sleep } from "./sleep.js";
 import type { JudgeVerdict, Post } from "./types.js";
 
-// The re-export facade (N042a). Two symbols keep their old import path so
-// the offline suite stays unedited: tests/judge.test.ts:9-15 and
-// tests/judge-rotation.test.ts:22 import buildBulkMessages and judgePost
-// from ../src/judge.js, and scripts/probe-judge.ts:46 imports
-// buildBulkMessages from judge.js.
-//
-// REMOVAL NOTE (run #7): re-point those three imports at ./judge-prompts.js
-// and ./judge-dispatch.js, then delete this block. The run-5 plan's D3
-// forbade exactly this as a "second import path" drift class; the run-6
-// "tests unedited" criterion wins for this pass.
-export { buildBulkMessages } from "./judge-prompts.js";
-export { judgePost };
 /** Posts per bulk judge call. Module constant by design — no config key. */
 const BATCH_SIZE = 10;
 /**

@@ -1,14 +1,14 @@
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Transporter } from "nodemailer";
+import { isHeartbeatEnabled, LINKEDIN_PAYLOAD_PATH, runUrlFromEnv, STATE_PATH } from "./config.js";
 import {
+  loadWatcherConfig,
   type ResolvedSurface,
+  resolveSurfaces,
   type Surface,
   type WatcherConfig,
-  loadWatcherConfig,
-  resolveSurfaces,
 } from "./config-file.js";
-import { LINKEDIN_PAYLOAD_PATH, STATE_PATH, isHeartbeatEnabled, runUrlFromEnv } from "./config.js";
 import {
   groupMatchesBySurface,
   resolveEmailConfig,
@@ -36,19 +36,19 @@ import {
 import { extractPosts } from "./extract.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
+import { type JudgedPost, judgePosts, type LlmAccount, resolveJudgeConfig } from "./judge.js";
 import { type AvailabilityResult, checkJudgeAvailability } from "./judge-availability.js";
 import { loadAccountCeilings } from "./judge-ceilings.js";
 import {
-  type HealthRead,
-  type TickOutcomes,
   buildDegradedAccountsLine,
   episodeAlarmDue,
   flushExhaustionHealth,
   flushTickHealth,
+  type HealthRead,
   loadAccountHealth,
+  type TickOutcomes,
 } from "./judge-health.js";
 import { isRotationExhausted } from "./judge-rotation.js";
-import { type JudgedPost, type LlmAccount, judgePosts, resolveJudgeConfig } from "./judge.js";
 import type { LinkedinSurface } from "./linkedin-fetch.js";
 import { type LegLine, type PayloadRead, readPayloadPosts } from "./linkedin-payload.js";
 import { filterRecent } from "./recency.js";

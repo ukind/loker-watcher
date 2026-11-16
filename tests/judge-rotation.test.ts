@@ -6,27 +6,28 @@
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { judgePosts, type LlmAccount } from "../src/judge.js";
+import { judgePost } from "../src/judge-dispatch.js";
 import {
-  type RotationExhausted,
-  type RotationState,
   claimAccount,
   coolAccount,
   earliestCooldown,
   hasOutstandingRelease,
   isRotationExhausted,
   pickEligibleAccount,
+  type RotationExhausted,
+  type RotationState,
   releaseAccount,
   rotationExhausted,
   waitCeilingSlot,
 } from "../src/judge-rotation.js";
-import { type LlmAccount, judgePost, judgePosts } from "../src/judge.js";
 import type { AccountFailure, Post } from "../src/types.js";
 import {
-  KEYWORDS,
   bulkContent,
   bulkPost,
   fiveAccounts,
   id19,
+  KEYWORDS,
   ok,
   singleAccount,
 } from "./judge-helpers.js";
@@ -191,7 +192,7 @@ describe("judgePost", () => {
     const state = freshState(twoAccounts());
     const mockFetch = (async (): Promise<Response> =>
       new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
-    const inertSleep = (ms: number): Promise<void> => Promise.resolve();
+    const inertSleep = (): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
       await judgePost(samplePost, state, KEYWORDS, mockFetch, "medium", Date.now, inertSleep);
@@ -213,7 +214,7 @@ describe("judgePost", () => {
       new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
     // An expired entry is dispatchable again; the fresh 429 re-stamps it.
     state.cooldownUntil.set(0, Date.now() - 1_000);
-    const inertSleep = (ms: number): Promise<void> => Promise.resolve();
+    const inertSleep = (): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
       await judgePost(samplePost, state, KEYWORDS, mockFetch, "medium", Date.now, inertSleep);
@@ -365,7 +366,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       return new Response("Too Many Requests", { status: 429 }); // both accounts cool
     }) as unknown as typeof fetch;
 
-    const inertSleep = (ms: number): Promise<void> => Promise.resolve();
+    const inertSleep = (): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
       await judgePosts(
@@ -499,7 +500,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       return new Response("Too Many Requests", { status: 429 });
     }) as unknown as typeof fetch;
 
-    const inertSleep = (ms: number): Promise<void> => Promise.resolve();
+    const inertSleep = (): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
       await judgePosts(
@@ -991,7 +992,7 @@ describe("pool-truthful exhaustion wording (D9)", () => {
       }
       return new Response("Too Many Requests", { status: 429 }); // both accounts cool
     }) as unknown as typeof fetch;
-    const inertSleep = (ms: number): Promise<void> => Promise.resolve();
+    const inertSleep = (): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
       await judgePosts(

@@ -1,8 +1,8 @@
 import {
-  type RotationState,
   earliestCooldown,
   hasOutstandingRelease,
   parkUntilEligible,
+  type RotationState,
   waitCeilingSlot,
 } from "./judge-rotation.js";
 /**

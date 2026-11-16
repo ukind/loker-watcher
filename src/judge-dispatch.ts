@@ -23,15 +23,20 @@
  * cycle. judgePost defaults sleepFn to sleep from ./sleep.js (N060).
  */
 import type { ReasoningEffort } from "./config-file.js";
+// Type-only back-edge (the judge-rotation.ts:38-40 idiom): verbatimModuleSyntax
+// erases it, so judge.ts can import this module's runtime symbols with no
+// runtime cycle. LlmAccount stays in judge.ts — moving it would create
+// type-only back-edges from three LEAF modules into the FUNNEL group.
+import type { LlmAccount } from "./judge.js";
 import { resolveBlockedPick } from "./judge-exhaustion.js";
 import { stampFailure, stampSuccess } from "./judge-health.js";
 import { parseBulkVerdicts, parseVerdict } from "./judge-parse.js";
 import { buildBulkMessages, buildMessages } from "./judge-prompts.js";
 import {
-  type RotationState,
   claimAccount,
   coolAccount,
   pickEligibleAccount,
+  type RotationState,
   releaseAccount,
   rotationExhausted,
 } from "./judge-rotation.js";
@@ -41,23 +46,21 @@ import {
   type ContentDecision,
   type DispatchOutcome,
   type DispatchWarns,
-  allAvailabilityBlocked,
   exhaustionRecord,
   normalizeEndpoint,
   terminalFailureReason,
 } from "./judge-shared.js";
-// Type-only back-edge (the judge-rotation.ts:38-40 idiom): verbatimModuleSyntax
-// erases it, so judge.ts can import this module's runtime symbols with no
-// runtime cycle. LlmAccount stays in judge.ts — moving it would create
-// type-only back-edges from three LEAF modules into the FUNNEL group.
-import type { LlmAccount } from "./judge.js";
 import { type SleepFn, sleep } from "./sleep.js";
 import type { JudgeVerdict, Post } from "./types.js";
+
 /**
- * Per-request timeout. 15s was never validated from a GitHub runner: run
- * 40264368939 timed out every batch and every fallback call at exactly
- * 15.0s. Phase 0 measures the real latency from the runner and confirms
- * this value.
+ * Per-request timeout, sized from measured numbers: run 40264368939
+ * timed out every batch and every fallback call at exactly 15.0s from
+ * the GitHub runner, and the real-caption probe measured one bulk leg at
+ * 27.75s — 15s was never a valid bound on either machine. 60s covers the
+ * measured worst leg with headroom inside the 480s job budget. Unmeasured
+ * values stay constants — raise it only with a probe- or runner-measured
+ * reason.
  */
 const REQUEST_TIMEOUT_MS = 60_000;
 /**

@@ -38,8 +38,9 @@
 // judge-dispatch.ts can import this module's runtime symbols with no runtime
 // cycle. SleepFn moved to judge-dispatch.ts with judgePost (N042a) — the
 // default `sleepFn: SleepFn = sleep` lives there now.
-import type { TickOutcomes } from "./judge-health.js";
+
 import type { LlmAccount } from "./judge.js";
+import type { TickOutcomes } from "./judge-health.js";
 import type { SleepFn } from "./sleep.js";
 import type { AccountFailure } from "./types.js";
 
@@ -61,9 +62,10 @@ const WAKE_JITTER_MS = 500;
  * Consecutive hard-failed ticks that cap an account at ceiling 1 — the
  * paired twin of the judge-health module's HARD_FAIL_TICKS_TO_CAP (no
  * import exists: this module reads plain state fields only, the D5
- * boundary). The two MUST stay equal; both doc sites say so.
+ * boundary). The two MUST stay equal; the equality test in
+ * tests/judge-health.test.ts pins the pair (F004, 2026-11-15).
  */
-const HEALTH_CAP_STREAK = 2;
+export const HEALTH_CAP_STREAK = 2;
 
 /**
  * Run-level rotation state, owned by judgePosts and shared by reference with

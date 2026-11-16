@@ -6,8 +6,8 @@
  * email.
  */
 import nodemailer, { type Transporter } from "nodemailer";
-import type { Surface } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
+import type { Surface } from "./config-file.js";
 import type { LegLine } from "./linkedin-payload.js";
 import type { AccountFailure, Post } from "./types.js";
 
