@@ -3,12 +3,15 @@
  * the browser walk, migration 2026-11-11): drive the SAME production stack
  * — the cookie resolver, the headed persistent-profile Chromium context
  * factory, the content-search browser walk with its flagship-web response
- * join — against the first configured linkedin surface, one real browser
- * page.
+ * join — against the configured linkedin keywords IN CONFIG ORDER, one
+ * real browser page per keyword. First pass wins: the probe passes on the
+ * first keyword that clears the post floor; a thin or faulted keyword
+ * logs one line and the walk moves on.
  *
  * Exit 1 on a checkpoint or login wall (the walk's tagged halt), a dead
  * session (no flagship-web response within the liveness window — the
- * tagged leg-dead), every surface faulted, or fewer than 10 posts. The
+ * tagged leg-dead), or when EVERY keyword is thin or faulted (the floor
+ * terminal names each keyword and its count). The
  * probe writes no tracked state — no payload, no push, no latch, no
  * episode marker: it is a read-only diagnostic the fetch tick never
  * consults. Its ONE write is the capture harness's gitignored scratch
@@ -44,6 +47,7 @@ import {
   resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import { resolveLinkedInCookies } from "../src/linkedin-session.js";
+import type { Post } from "../src/types.js";
 
 /**
  * The probe's Load-more click floor (live rehearsal 2026-11-11): the dry
@@ -61,15 +65,13 @@ const PROBE_MIN_POSTS = 10;
 
 export const PROBE_FLOOR = "ProbeFloorError";
 
-/** Thrown when the walk minted fewer than PROBE_MIN_POSTS posts. */
+/** Thrown when NO configured keyword cleared PROBE_MIN_POSTS (every keyword thin or faulted). */
 export interface ProbeFloor extends Error {
   name: string;
 }
 
-export function probeFloor(): ProbeFloor {
-  const error = new Error(
-    "probe: fewer than 10 posts — pagination did not prove out (need >= 10 across several bodies)",
-  ) as ProbeFloor;
+export function probeFloor(message: string): ProbeFloor {
+  const error = new Error(message) as ProbeFloor;
   error.name = PROBE_FLOOR;
   return error;
 }
@@ -133,14 +135,31 @@ export interface ProbeResult {
 }
 
 /**
- * Run the probe: resolve config, pick the FIRST configured linkedin
- * surface, preflight the cookie file (presence/parse only — the browser
- * rides the persistent PROFILE, not this document), walk the surface
- * read-only, and enforce the 10-post floor. Resolves with the post count
- * and the elapsed wall clock on pass. Every failure THROWS — the walk's
- * tagged gate errors (halt, leg-dead, all-faulted) keep their names, the
- * two local gates carry theirs, and the cookie resolver's plain error
- * passes through: the caller maps them all (the fetchTick model).
+ * One keyword that did not clear the post floor, carried to the terminal
+ * line: a thin walk records its post count, a faulted walk records the
+ * (faulted) marker with count 0.
+ */
+interface SkippedSurface {
+  readonly value: string;
+  readonly count: number;
+  readonly faulted: boolean;
+}
+
+/**
+ * Run the probe: resolve config, preflight the cookie file (presence/parse
+ * only — the browser rides the persistent PROFILE, not this document),
+ * then walk the configured linkedin keywords in CONFIG ORDER, one
+ * fetchLinkedInPosts call per keyword, read-only. First pass wins: the
+ * first keyword minting >= PROBE_MIN_POSTS posts resolves the run with
+ * THAT attempt's count and wall clock. A keyword below the floor (thin)
+ * or one whose walk faulted (AllSurfacesFaulted, faulted === 1) logs one
+ * line and the loop moves on; the walk's tagged halt and leg-dead rethrow
+ * INSTANTLY, as does any plain error (a contextFactory or close failure
+ * recurs for every keyword — skipping would burn N launches to reach the
+ * same wall). When every keyword is thin or faulted, the floor terminal
+ * throws the probeFloor tag with one line naming each keyword and its
+ * count. Every failure THROWS — the caller maps them (the fetchTick
+ * model).
  */
 export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
   const config = deps.config ?? (await loadWatcherConfig());
@@ -150,7 +169,6 @@ export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
   if (surfaces.length === 0) {
     throw probeNoSurfaces();
   }
-  const surface = surfaces[0] as LinkedinSurface;
   // The merged env, resolved once: .env fills ONLY unset keys, the real
   // shell wins — an .env-only setup reaches the browser leg unaided.
   const env = deps.env ?? envWithDotEnv();
@@ -160,35 +178,74 @@ export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
   // missing or malformed file, which is the check worth keeping.
   resolveLinkedInCookies(env);
   const minClicks = deps.minClicks ?? PROBE_MIN_CLICKS;
-  console.log(
-    `probe: browser walk — content search for "${surface.value}" (scrollRounds ${config.scrollRounds}, minClicks ${minClicks}, headed on the persistent profile)`,
-  );
   const now = deps.now ?? Date.now;
-  const started = now();
-  // The undefined contextFactory selects the walk module's own production
-  // factory (the persistent profile, headed, the Playwright import lazy
-  // inside it) — the same lazy-default the tick suite pins.
-  // minClicks: the probe must sample several pagination bodies, not stop
-  // at the first dry exit — each body carries ~3 posts (live rehearsal
-  // 2026-11-11), so the floor proves the pagination leg works.
-  // scrollRounds stays the ceiling.
-  const posts = await fetchLinkedInPosts([surface], {
-    profileDir: resolveLinkedInProfileDir(env),
-    contextFactory: deps.contextFactory,
-    scrollRounds: config.scrollRounds,
-    now,
-    minClicks,
-    // seenIds stays unset: the probe never stops on seen ids, it needs the
-    // full walk. sleepFn and rng stay unset: the production defaults.
-    captureSink: deps.captureSink ?? makeFsCaptureSink(),
-  });
-  const elapsedMs = now() - started;
-  console.log(`probe: ${elapsedMs}ms — ${posts.length} post(s)`);
-  if (posts.length < PROBE_MIN_POSTS) {
-    throw probeFloor();
+  // Hoisted ABOVE the loop: the production sink mints its session stamp
+  // lazily on first capture — inside the loop it would mint one stamp
+  // (and one captures/<stamp>/ directory) PER KEYWORD.
+  const captureSink = deps.captureSink ?? makeFsCaptureSink();
+  const skipped: SkippedSurface[] = [];
+  // Duplicates walk as listed (D4): a repeated keyword reuses its capture
+  // slug and overwrites the earlier capture — accepted;
+  // warnDuplicateSurfaces already warns at config load.
+  for (const surface of surfaces) {
+    console.log(
+      `probe: browser walk — content search for "${surface.value}" (scrollRounds ${config.scrollRounds}, minClicks ${minClicks}, headed on the persistent profile)`,
+    );
+    // Per-keyword clock: elapsedMs is the WINNING attempt's duration.
+    const started = now();
+    let posts: Post[];
+    try {
+      // The undefined contextFactory selects the walk module's own production
+      // factory (the persistent profile, headed, the Playwright import lazy
+      // inside it) — the same lazy-default the tick suite pins.
+      // minClicks: the probe must sample several pagination bodies, not stop
+      // at the first dry exit — each body carries ~3 posts (live rehearsal
+      // 2026-11-11), so the floor proves the pagination leg works.
+      // scrollRounds stays the ceiling.
+      posts = await fetchLinkedInPosts([surface], {
+        profileDir: resolveLinkedInProfileDir(env),
+        contextFactory: deps.contextFactory,
+        scrollRounds: config.scrollRounds,
+        now,
+        minClicks,
+        // seenIds stays unset: the probe never stops on seen ids, it needs the
+        // full walk. sleepFn and rng stay unset: the production defaults.
+        captureSink,
+      });
+    } catch (error) {
+      // Halt and leg-dead abort the run instantly, and a plain error
+      // rethrows too: a factory failure recurs for every keyword, so
+      // skipping would burn N launches to reach the same wall.
+      if (isHalt(error) || isLegDead(error) || !isAllSurfacesFaulted(error)) {
+        throw error;
+      }
+      // Fault-skip: one line naming the keyword and the aggregate, then
+      // the next keyword.
+      console.log(`probe: ${surface.value} faulted — ${error.message}; trying the next surface`);
+      skipped.push({ value: surface.value, count: 0, faulted: true });
+      continue;
+    }
+    if (posts.length < PROBE_MIN_POSTS) {
+      // Thin-skip: a normal return below the floor is not a fault — one
+      // line naming the keyword and its count, then the next keyword.
+      console.log(
+        `probe: ${surface.value} — ${posts.length} post(s), below the ${PROBE_MIN_POSTS}-post floor; trying the next surface`,
+      );
+      skipped.push({ value: surface.value, count: posts.length, faulted: false });
+      continue;
+    }
+    console.log(`probe: ${posts.length} post(s)`);
+    console.log("probe: all checks passed");
+    return { postCount: posts.length, elapsedMs: now() - started };
   }
-  console.log("probe: all checks passed");
-  return { postCount: posts.length, elapsedMs };
+  // The floor terminal: every keyword thin or faulted. The probeFloor tag
+  // keeps the CLI's bare-print arm; the message names each keyword.
+  const report = skipped
+    .map((entry) =>
+      entry.faulted ? `${entry.value} 0 (faulted)` : `${entry.value} ${entry.count}`,
+    )
+    .join(", ");
+  throw probeFloor(`probe: no linkedin surface cleared ${PROBE_MIN_POSTS} posts — ${report}`);
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {

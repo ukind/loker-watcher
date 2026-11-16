@@ -3,9 +3,11 @@
  * design, Slice 1). Importing scripts/probe-linkedin.ts IS the
  * entry-guard pin: the module used to walk at import time, so reaching
  * this suite without a browser launch proves the guard. The rest pins
- * the behavior the chain depends on: the 10-post floor, the tagged gate
- * arms (halt / leg-dead / all-faulted propagate — the caller owns the
- * exit), the two local tagged gates, the zero-surfaces guard, the
+ * the behavior the chain depends on: the first-pass-wins keyword loop
+ * (thin-skip and fault-skip lines), the instant aborts (halt / leg-dead /
+ * plain errors rethrow — the caller owns the exit), the all-thin/
+ * all-faulted floor terminal naming every keyword, the two local tagged
+ * gates, the zero-surfaces guard, the
  * cookie preflight BEFORE any browser build, and the production
  * pass-through (scrollRounds rides config, minClicks defaults to 5, the
  * profile dir reaches the factory). Zero network, zero browser: the
@@ -46,6 +48,12 @@ const CONFIG: WatcherConfig = {
   reasoningEffort: "low",
   scrollRounds: 8,
 };
+
+/** A config carrying the given linkedin keywords, in config order (per-keyword loop cases). */
+const configWithSurfaces = (...values: string[]): WatcherConfig => ({
+  ...CONFIG,
+  surfaces: values.map((value) => ({ type: "linkedin" as const, value })),
+});
 
 let dir: string | undefined;
 
@@ -156,17 +164,32 @@ interface PageScript {
 
 /**
  * The LinkedInContextFactory double (the fetch-linkedin suite's shape,
- * trimmed): one context, one page, one script. Records the built count
- * and the profile path the walk opened.
+ * trimmed): one context, one page, one script PER BUILD — `script` runs
+ * every build the same way, `scripts` serves build N from scripts[N]
+ * (the per-keyword loop cases). Records the built count and the profile
+ * path the walk opened.
  */
 function contextFactoryFor(options: {
   built?: { value: number };
   profileDirs?: unknown[];
-  script: PageScript;
+  /** The script EVERY build runs (single-keyword cases). */
+  script?: PageScript;
+  /** Per-build scripts in build order — build N runs scripts[N]. */
+  scripts?: readonly PageScript[];
 }): LinkedInContextFactory {
+  const scriptFor = (build: number): PageScript => {
+    const chosen = options.scripts !== undefined ? options.scripts[build] : options.script;
+    if (chosen === undefined) {
+      throw new Error(`test double: no script for build ${build}`);
+    }
+    return chosen;
+  };
+  let builds = 0;
   const factory: LinkedInContextFactory = async (profileDir): Promise<ContextLike> => {
+    const build = builds++;
     if (options.built !== undefined) options.built.value += 1;
     options.profileDirs?.push(profileDir);
+    const script = scriptFor(build);
     const listeners: Array<(response: ResponseLike) => void> = [];
     const fire = (response: ResponseLike): void => {
       for (const listener of listeners) listener(response);
@@ -175,10 +198,10 @@ function contextFactoryFor(options: {
     let settleArmed = false;
     const context: ContextLike = {
       newPage: async (): Promise<PageLike> => ({
-        url: () => options.script.url ?? "https://www.linkedin.com/search/results/content/",
+        url: () => script.url ?? "https://www.linkedin.com/search/results/content/",
         goto: async () => {
-          if (options.script.gotoError !== undefined) throw new Error(options.script.gotoError);
-          const initial = options.script.initialBody;
+          if (script.gotoError !== undefined) throw new Error(script.gotoError);
+          const initial = script.initialBody;
           if (initial !== undefined) {
             fire({
               url: () => FLAGSHIP_SEARCH_URL,
@@ -198,7 +221,7 @@ function contextFactoryFor(options: {
           const handle: LocatorLike = {
             first: () => handle,
             waitFor: async () => {
-              const visible = options.script.loadMoreVisible?.(clickCount + 1) ?? false;
+              const visible = script.loadMoreVisible?.(clickCount + 1) ?? false;
               if (!visible) throw new Error("locator wait timeout");
             },
             click: async () => {
@@ -212,11 +235,11 @@ function contextFactoryFor(options: {
         // results are server-rendered, not a flagship body). A script with
         // an initial body simulates a healthy page; a silent script
         // simulates a dead session.
-        evaluate: async () => (options.script.initialBody !== undefined ? 8 : 0),
+        evaluate: async () => (script.initialBody !== undefined ? 8 : 0),
         waitForTimeout: async () => {
           if (settleArmed) {
             settleArmed = false;
-            const body = options.script.clickBodies?.[clickCount - 1];
+            const body = script.clickBodies?.[clickCount - 1];
             if (body !== undefined) {
               fire({ url: () => PAGINATION_URL, status: () => 200, text: async () => body });
             }
@@ -286,7 +309,7 @@ describe("runProbe pass path", () => {
         ),
       ),
     ); // scrollRounds rides config; minClicks defaults to PROBE_MIN_CLICKS
-    assert.ok(lines.some((line) => /probe: 0ms — 10 post\(s\)/.test(line)));
+    assert.ok(lines.some((line) => /^probe: 10 post\(s\)$/.test(line)));
     assert.ok(lines.some((line) => line === "probe: all checks passed"));
     // Capture-first (design 2026-11-13): the probe records the body it
     // walked — gitignored scratch, the replay's input.
@@ -295,39 +318,84 @@ describe("runProbe pass path", () => {
   });
 });
 
-describe("runProbe gate arms", () => {
-  it("throws the tagged floor gate on a short walk", async () => {
-    const contextFactory = contextFactoryFor({ script: { initialBody: bodyMinting(4) } });
+describe("runProbe keyword loop", () => {
+  it("skips a thin keyword and passes on the first clearing surface (first-pass-wins)", async (t) => {
+    const log = t.mock.method(console, "log", console.log.bind(console));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({
+      built,
+      scripts: [{ initialBody: bodyMinting(4) }, { initialBody: bodyMinting(12) }],
+    });
     const capture = recordingSink();
-    await assert.rejects(
-      async () =>
-        runProbe({
-          config: CONFIG,
-          env: await cookieEnv(),
-          contextFactory,
-          captureSink: capture,
-          now: () => T0,
-        }),
-      (error: unknown) => {
-        assert.equal(isProbeFloor(error), true); // tagged: the CLI prints today's exact line, the chain classifies it
-        assert.match(
-          (error as Error).message,
-          /probe: fewer than 10 posts — pagination did not prove out/,
-        );
-        assert.equal(isHalt(error), false); // disjoint from the walk's tags
-        assert.equal(isLegDead(error), false);
-        assert.equal(isAllSurfacesFaulted(error), false);
-        return true;
-      },
-    );
+    const result = await runProbe({
+      config: configWithSurfaces("react jakarta", "hiring jakarta", "react indonesia"),
+      env: await cookieEnv(),
+      contextFactory,
+      captureSink: capture,
+      now: () => T0,
+    });
+    assert.deepEqual(result, { postCount: 12, elapsedMs: 0 }); // the WINNING attempt's clock
+    assert.equal(built.value, 2); // first-pass-wins: the third keyword never launched
+    const lines = log.mock.calls.map((call) => String(call.arguments[0]));
+    assert.ok(lines.some((line) => /content search for "react jakarta"/.test(line)));
+    assert.ok(
+      lines.some((line) =>
+        /probe: react jakarta — 4 post\(s\), below the 10-post floor; trying the next surface/.test(
+          line,
+        ),
+      ),
+    ); // thin-skip: one line naming the keyword and its count, then move on
+    assert.ok(lines.some((line) => /content search for "hiring jakarta"/.test(line)));
+    assert.ok(lines.some((line) => /^probe: 12 post\(s\)$/.test(line)));
+    assert.ok(lines.some((line) => line === "probe: all checks passed"));
+    // Order: the thin-skip line lands BEFORE the second keyword's banner.
+    const thinAt = lines.findIndex((line) => line.includes("below the 10-post floor"));
+    const secondBannerAt = lines.findIndex((line) => line.includes('"hiring jakarta"'));
+    assert.ok(thinAt !== -1 && secondBannerAt !== -1 && thinAt < secondBannerAt);
+    assert.equal(capture.records.length, 2); // both walked bodies captured (one per attempt)
   });
 
-  it("propagates the walk's tagged halt on a checkpoint URL — the caller maps it", async () => {
-    const contextFactory = contextFactoryFor({ script: { url: CHECKPOINT_URL } });
+  it("skips a faulted keyword and passes on the next surface", async (t) => {
+    const log = t.mock.method(console, "log", console.log.bind(console));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({
+      built,
+      scripts: [{ gotoError: "navigation failed" }, { initialBody: bodyMinting(12) }],
+    });
+    const capture = recordingSink();
+    const result = await runProbe({
+      config: configWithSurfaces("react jakarta", "hiring jakarta"),
+      env: await cookieEnv(),
+      contextFactory,
+      captureSink: capture,
+      now: () => T0,
+    });
+    assert.deepEqual(result, { postCount: 12, elapsedMs: 0 });
+    assert.equal(built.value, 2);
+    const lines = log.mock.calls.map((call) => String(call.arguments[0]));
+    assert.ok(
+      lines.some((line) =>
+        /probe: react jakarta faulted — linkedin-fetch: all 1 surface\(s\) faulted — nothing fetched; trying the next surface/.test(
+          line,
+        ),
+      ),
+    ); // fault-skip names the keyword AND the aggregate message
+    assert.ok(lines.some((line) => /content search for "hiring jakarta"/.test(line)));
+  });
+});
+
+describe("runProbe gate arms", () => {
+  it("rethrows the tagged halt instantly — later keywords never walk", async (t) => {
+    const log = t.mock.method(console, "log", console.log.bind(console));
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({
+      built,
+      scripts: [{ url: CHECKPOINT_URL }, { initialBody: bodyMinting(12) }],
+    });
     await assert.rejects(
       async () =>
         runProbe({
-          config: CONFIG,
+          config: configWithSurfaces("react jakarta", "hiring jakarta"),
           env: await cookieEnv(),
           contextFactory,
           now: () => T0,
@@ -335,14 +403,21 @@ describe("runProbe gate arms", () => {
       (error: unknown) =>
         isHalt(error) && (error as { reason: string }).reason === HALT_CHECKPOINT_REASON,
     );
+    assert.equal(built.value, 1); // the checkpoint aborted BEFORE the second keyword's launch
+    const lines = log.mock.calls.map((call) => String(call.arguments[0]));
+    assert.ok(lines.every((line) => !line.includes("hiring jakarta"))); // no banner for keyword 2
   });
 
-  it("propagates the tagged leg-dead on a silent walk (no body, no rendered posts)", async () => {
-    const contextFactory = contextFactoryFor({ script: {} });
+  it("rethrows the tagged leg-dead instantly — later keywords never walk", async () => {
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({
+      built,
+      scripts: [{}, { initialBody: bodyMinting(12) }],
+    });
     await assert.rejects(
       async () =>
         runProbe({
-          config: CONFIG,
+          config: configWithSurfaces("react jakarta", "hiring jakarta"),
           env: await cookieEnv(),
           contextFactory,
           now: () => T0,
@@ -350,20 +425,112 @@ describe("runProbe gate arms", () => {
       (error: unknown) =>
         isLegDead(error) && /session may be dead/.test((error as { reason: string }).reason),
     );
+    assert.equal(built.value, 1);
   });
 
-  it("propagates the tagged all-faulted error when the single surface faults", async () => {
-    const contextFactory = contextFactoryFor({ script: { gotoError: "navigation failed" } });
+  it("rethrows a plain factory error instantly — later keywords never walk", async () => {
+    const built = { value: 0 };
+    const contextFactory: LinkedInContextFactory = async () => {
+      built.value += 1;
+      throw new Error("context factory exploded");
+    };
     await assert.rejects(
       async () =>
         runProbe({
-          config: CONFIG,
+          config: configWithSurfaces("react jakarta", "hiring jakarta"),
           env: await cookieEnv(),
           contextFactory,
           now: () => T0,
         }),
-      (error: unknown) =>
-        isAllSurfacesFaulted(error) && (error as { faulted: number }).faulted === 1,
+      /context factory exploded/,
+    );
+    assert.equal(built.value, 1); // no second launch: the wall recurs for every keyword
+  });
+
+  it("throws the tagged floor terminal when every keyword is thin", async () => {
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({
+      built,
+      scripts: [{ initialBody: bodyMinting(4) }, { initialBody: bodyMinting(3) }],
+    });
+    const capture = recordingSink();
+    await assert.rejects(
+      async () =>
+        runProbe({
+          config: configWithSurfaces("react jakarta", "hiring jakarta"),
+          env: await cookieEnv(),
+          contextFactory,
+          captureSink: capture,
+          now: () => T0,
+        }),
+      (error: unknown) => {
+        assert.equal(isProbeFloor(error), true); // the same tag the CLI floor arm prints bare
+        assert.match(
+          (error as Error).message,
+          /probe: no linkedin surface cleared 10 posts — react jakarta 4, hiring jakarta 3/,
+        );
+        assert.equal(isHalt(error), false); // disjoint from the walk's tags
+        assert.equal(isLegDead(error), false);
+        assert.equal(isAllSurfacesFaulted(error), false);
+        return true;
+      },
+    );
+    assert.equal(built.value, 2); // every keyword walked
+  });
+
+  it("throws the tagged floor terminal when every keyword faults", async () => {
+    const built = { value: 0 };
+    const contextFactory = contextFactoryFor({
+      built,
+      script: { gotoError: "navigation failed" },
+    });
+    await assert.rejects(
+      async () =>
+        runProbe({
+          config: configWithSurfaces("react jakarta", "hiring jakarta"),
+          env: await cookieEnv(),
+          contextFactory,
+          now: () => T0,
+        }),
+      (error: unknown) => {
+        assert.equal(isProbeFloor(error), true); // the walk's all-faulted tag NEVER reaches the caller
+        assert.match(
+          (error as Error).message,
+          /probe: no linkedin surface cleared 10 posts — react jakarta 0 \(faulted\), hiring jakarta 0 \(faulted\)/,
+        );
+        assert.equal(isAllSurfacesFaulted(error), false);
+        return true;
+      },
+    );
+    assert.equal(built.value, 2);
+  });
+
+  it("names thin and faulted keywords together in the floor terminal message", async () => {
+    const contextFactory = contextFactoryFor({
+      scripts: [
+        { initialBody: bodyMinting(4) },
+        { gotoError: "navigation failed" },
+        { initialBody: bodyMinting(3) },
+      ],
+    });
+    const capture = recordingSink();
+    await assert.rejects(
+      async () =>
+        runProbe({
+          config: configWithSurfaces("react jakarta", "hiring jakarta", "react indonesia"),
+          env: await cookieEnv(),
+          contextFactory,
+          captureSink: capture,
+          now: () => T0,
+        }),
+      (error: unknown) => {
+        assert.equal(isProbeFloor(error), true);
+        assert.match(
+          (error as Error).message,
+          /probe: no linkedin surface cleared 10 posts — react jakarta 4, hiring jakarta 0 \(faulted\), react indonesia 3/,
+        );
+        return true;
+      },
     );
   });
 });

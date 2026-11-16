@@ -334,7 +334,7 @@ describe("platforms", () => {
   });
 });
 
-describe("exactly five linkedin surfaces (FR-8, slice 6)", () => {
+describe("linkedin surface count (at least one)", () => {
   const FIVE = [
     { type: "linkedin", value: "hiring indonesia" },
     { type: "linkedin", value: "hiring jakarta" },
@@ -343,10 +343,30 @@ describe("exactly five linkedin surfaces (FR-8, slice 6)", () => {
     { type: "linkedin", value: "react indonesia" },
   ];
 
-  it("accepts exactly five linkedin surfaces and keeps their values", async () => {
+  it("accepts five linkedin surfaces and keeps their values", async () => {
     const path = await writeConfig({ ...VALID, surfaces: FIVE });
     const config = await loadWatcherConfig(path);
     assert.deepEqual(config.surfaces, FIVE);
+  });
+
+  it("accepts one linkedin surface", async () => {
+    const ONE = [{ type: "linkedin", value: "hiring indonesia" }];
+    const path = await writeConfig({ ...VALID, surfaces: ONE });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.surfaces, ONE);
+  });
+
+  it("accepts four linkedin surfaces", async () => {
+    const path = await writeConfig({ ...VALID, surfaces: FIVE.slice(0, 4) });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.surfaces, FIVE.slice(0, 4));
+  });
+
+  it("accepts six linkedin surfaces", async () => {
+    const SIX = [...FIVE, { type: "linkedin", value: "engineer indonesia" }];
+    const path = await writeConfig({ ...VALID, surfaces: SIX });
+    const config = await loadWatcherConfig(path);
+    assert.deepEqual(config.surfaces, SIX);
   });
 
   it("accepts five linkedin surfaces mixed with threads surfaces", async () => {
@@ -363,25 +383,6 @@ describe("exactly five linkedin surfaces (FR-8, slice 6)", () => {
     assert.equal(config.surfaces.length, 7);
   });
 
-  it("rejects four linkedin surfaces", async () => {
-    const path = await writeConfig({ ...VALID, surfaces: FIVE.slice(0, 4) });
-    await assert.rejects(
-      () => loadWatcherConfig(path),
-      /4 linkedin surfaces — exactly 5 are required/,
-    );
-  });
-
-  it("rejects six linkedin surfaces", async () => {
-    const path = await writeConfig({
-      ...VALID,
-      surfaces: [...FIVE, { type: "linkedin", value: "engineer indonesia" }],
-    });
-    await assert.rejects(
-      () => loadWatcherConfig(path),
-      /6 linkedin surfaces — exactly 5 are required/,
-    );
-  });
-
   it("rejects zero linkedin surfaces", async () => {
     const path = await writeConfig({
       ...VALID,
@@ -392,21 +393,14 @@ describe("exactly five linkedin surfaces (FR-8, slice 6)", () => {
     });
     await assert.rejects(
       () => loadWatcherConfig(path),
-      /0 linkedin surfaces — exactly 5 are required/,
+      /0 linkedin surfaces — at least 1 is required/,
     );
   });
 
-  it("keeps the committed spread at the FRD five", async () => {
-    const config = await loadWatcherConfig("watcher.config.json");
-    const linkedin = config.surfaces.filter((s) => s.type === "linkedin").map((s) => s.value);
-    assert.deepEqual(linkedin, [
-      "hiring indonesia",
-      "hiring jakarta",
-      "hiring developer indonesia",
-      "hiring engineer jakarta",
-      "react indonesia",
-    ]);
-  });
+  // The old FRD-five spread pin is DELETED:
+  // it pinned operator-editable committed data (the doctrine stated in the
+  // happy-path block above — pin the shape, not the values) and was already
+  // red before this change (operator edit a5af2a6 put "react jakarta" first).
 });
 
 describe("duplicate surfaces (email-per-surface: the notify loop groups on type|value)", () => {
