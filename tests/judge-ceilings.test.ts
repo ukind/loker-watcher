@@ -3,13 +3,13 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
+import type { LlmAccount } from "../src/judge.js";
 import {
   type CeilingsFile,
   loadAccountCeilings,
   resolveCeilings,
   writeCeilingsAtomic,
 } from "../src/judge-ceilings.js";
-import type { LlmAccount } from "../src/judge.js";
 
 /** Two accounts with distinct hosts — the missing-entry case needs one. */
 const ACCOUNTS: LlmAccount[] = [

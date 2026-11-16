@@ -16,6 +16,7 @@
  */
 import { BROWSER_USER_AGENT, WEBDRIVER_PATCH } from "./browser-constants.js";
 import type { ContextLike, LocatorLike, PageLike } from "./fetch-threads.js";
+
 // --- LegDeadError: the tagged-error idiom (judge-rotation.ts:51-75) ---
 
 const LEG_DEAD = "LegDeadError";

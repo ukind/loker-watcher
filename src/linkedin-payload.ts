@@ -20,8 +20,8 @@
  */
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Surface } from "./config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "./config.js";
+import type { Surface } from "./config-file.js";
 import { ACTIVITY_ID_PATTERN } from "./linkedin-parser.js";
 import { stateTempPath } from "./state.js";
 import type { Post } from "./types.js";

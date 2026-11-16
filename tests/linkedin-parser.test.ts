@@ -19,11 +19,11 @@ import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
-  type CardJoin,
-  LINKEDIN_RESPONSE_RE,
   buildContentSearchUrl,
+  type CardJoin,
   collectLinkedInPosts,
   joinCards,
+  LINKEDIN_RESPONSE_RE,
   parseFlightRows,
 } from "../src/linkedin-parser.js";
 import { readPayloadPosts, writePayloadAtomic } from "../src/linkedin-payload.js";

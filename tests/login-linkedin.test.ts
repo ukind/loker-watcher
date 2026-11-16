@@ -11,14 +11,14 @@
  * lands.)
  */
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import {
-  type LoginContext,
   findSessionCookies,
   keepOpenForArgv,
+  type LoginContext,
   runLoginHelper,
   writeCookieFile,
 } from "../scripts/login-linkedin.js";

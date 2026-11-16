@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts scripts/hooks",
     "knip": "knip",
-    "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts",
+    "cycles": "madge --circular --extensions ts src",
+    "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts scripts/probe-judge.ts scripts/hooks watcher.config.json",
     "fetch-linkedin": "tsx scripts/fetch-linkedin.ts",
     "watch-linkedin": "tsx scripts/watch-linkedin.ts",
     "probe-linkedin": "tsx scripts/probe-linkedin.ts",
@@ -28,16 +29,17 @@
     ]
   },
   "dependencies": {
-    "nodemailer": "^10.3.0",
-    "playwright": "^1.49.1"
+    "nodemailer": "^10.5.0",
+    "playwright": "^1.65.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.10.1",
+    "@biomejs/biome": "^2.6.7",
+    "@types/node": "^26.6.6",
     "husky": "^9.1.7",
-    "knip": "^5.88.1",
-    "lint-staged": "^15.3.0",
+    "knip": "^6.45.1",
+    "lint-staged": "^17.6.0",
+    "madge": "^8.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.9.3"
   }
 }

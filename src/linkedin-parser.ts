@@ -507,7 +507,7 @@ export function joinCards(body: string): CardJoin[] {
   const seedRows = new Set<string>([...markerRows].filter((marker) => !nested.has(marker)));
   const spanOf = makeSpanCounter(refs, seedRows);
   const cards: CardJoin[] = [];
-  for (const [hex, payload] of entries) {
+  for (const [hex] of entries) {
     if (!markerRows.has(hex) || nested.has(hex)) continue;
     // The card's text: the longest commentary across the seed's marker
     // closure — image cards carry the commentary in a nested marker row.

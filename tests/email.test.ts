@@ -3,11 +3,11 @@ import { describe, it } from "node:test";
 import type { Transporter } from "nodemailer";
 import type { Surface } from "../src/config-file.js";
 import {
-  type EmailConfig,
   buildExhaustionText,
   buildHaltAlarmText,
   buildSurfaceDigest,
   buildSurfaceSubject,
+  type EmailConfig,
   groupMatchesBySurface,
   renderSurface,
   resolveEmailConfig,

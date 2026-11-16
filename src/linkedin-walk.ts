@@ -26,9 +26,9 @@ import { halt, legDead } from "./linkedin-context.js";
 // surface type in a browser-context module for no gain.
 import type { LinkedinSurface } from "./linkedin-fetch.js";
 import {
-  LINKEDIN_RESPONSE_RE,
   buildContentSearchUrl,
   collectLinkedInPosts,
+  LINKEDIN_RESPONSE_RE,
 } from "./linkedin-parser.js";
 import {
   ACTIVITY_ID_RE,
@@ -49,6 +49,7 @@ import {
   SEEN_STOP_CONSECUTIVE,
 } from "./linkedin-walk-static.js";
 import type { Post } from "./types.js";
+
 function isPageCloseRace(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   if ((error as { name?: unknown }).name === "TargetClosedError") return true;

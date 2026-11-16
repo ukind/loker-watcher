@@ -19,8 +19,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import type { Transporter } from "nodemailer";
-import type { Surface, WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
+import type { Surface, WatcherConfig } from "../src/config-file.js";
 import type {
   ContextFactory,
   ContextLike,
@@ -29,10 +29,10 @@ import type {
   ResponseLike,
 } from "../src/fetch-threads.js";
 import { dedupePosts, flushAndSendExhaustionAlarm, runWatcher, timeStage } from "../src/index.js";
+import type { LlmAccount } from "../src/judge.js";
 import type { AvailabilityResult } from "../src/judge-availability.js";
 import { type HealthFile, loadAccountHealth } from "../src/judge-health.js";
 import { isRotationExhausted } from "../src/judge-rotation.js";
-import type { LlmAccount } from "../src/judge.js";
 import type { PayloadRead } from "../src/linkedin-payload.js";
 import type { AppState } from "../src/state.js";
 import type { AccountFailure, JudgeVerdict, Post } from "../src/types.js";

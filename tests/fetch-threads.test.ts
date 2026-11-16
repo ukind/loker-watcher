@@ -12,11 +12,11 @@ import {
   type ContextFactory,
   type ContextLike,
   FETCH_CONCURRENCY,
+  fetchSurfaces,
+  fetchSurfacesAuthenticated,
   type LocatorLike,
   type PageLike,
   type ResponseLike,
-  fetchSurfaces,
-  fetchSurfacesAuthenticated,
 } from "../src/fetch-threads.js";
 
 const surface = (label: string): ResolvedSurface => ({

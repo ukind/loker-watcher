@@ -12,12 +12,12 @@ import { describe, it } from "node:test";
 import {
   HALT_CHECKPOINT_REASON,
   HALT_RATE_LIMIT_REASON,
+  isWithinWorkingHours,
+  sampleTickDelayMs,
   WAKE_MAX_MS,
   WAKE_MIN_MS,
   WINDOW_END_HOUR,
   WINDOW_START_HOUR,
-  isWithinWorkingHours,
-  sampleTickDelayMs,
 } from "../src/linkedin-behavior.js";
 
 /** 2026-10-26 is a Monday; Oct 31 is the Saturday, Nov 1 the Sunday. */

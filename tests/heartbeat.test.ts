@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Transporter } from "nodemailer";
 import {
-  type Candidate,
-  type HeartbeatStats,
   ageHours,
   buildHeartbeatBody,
   buildHeartbeatSubject,
+  type Candidate,
+  type HeartbeatStats,
   linkedinLegLine,
   matchesCandidateTerms,
   selectCandidates,

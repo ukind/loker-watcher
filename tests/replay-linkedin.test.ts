@@ -17,11 +17,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type TestContext, after, describe, it } from "node:test";
+import { after, describe, it, type TestContext } from "node:test";
 import {
   type BodyAnalysis,
-  REPLAY_NO_INPUT,
   isReplayNoInput,
+  REPLAY_NO_INPUT,
   runReplay,
 } from "../scripts/replay-linkedin.js";
 import { CAPTURE_SCHEMA_VERSION, type CaptureRecord } from "../src/linkedin-capture.js";
