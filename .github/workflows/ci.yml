@@ -34,3 +34,24 @@ jobs:
 
       - name: Unused exports
         run: npm run knip
+
+      - name: No runtime import cycles
+        # F003: the runtime-graph invariant, frozen. .madgerc sets
+        # detectiveOptions.ts.skipTypeImports, so the type-only back-edges
+        # (erased by verbatimModuleSyntax) stay invisible to the gate and
+        # the first runtime cycle fails this step. Verified locally (D7,
+        # 2026-11-16): madge 8.0.0 exits 1 on the 9 type-only cycles
+        # without the rc file and exits 0 with it. The npm script runs
+        # the pinned devDependency, never npx — the lockfile is the pin
+        # (f50067d doctrine).
+        run: npm run cycles
+
+      - name: Audit runtime deps
+        # F013: the production-dependency audit rides CI as an advisory
+        # gate — the non-blocking flag keeps the job green while a new
+        # advisory annotates this step for triage against the F007 bump
+        # cadence. --omit=dev audits the closure the Actions runtime
+        # installs and runs (playwright, nodemailer); 0 vulnerabilities
+        # today, so the step is inert until an advisory lands.
+        continue-on-error: true
+        run: npm audit --omit=dev

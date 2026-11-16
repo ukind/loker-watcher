@@ -59,6 +59,12 @@ jobs:
 
       - name: Freshness gate (8h)
         id: freshness
+        env:
+          # F010: the dispatch input rides step env — the bash reads the
+          # variable, never a ${{ }} interpolation inside the script (the
+          # hygiene the doctrine mandates for secrets, applied to the one
+          # input the gate reads). The typed boolean renders "true"/"false".
+          FORCE: ${{ inputs.force }}
         # The 8-hour window (28800 s) is a hard-coded workflow literal, not
         # an env knob (the tuning-values doctrine). The clock is the
         # probedAt entry the probe script stamps on SUCCESS - a failed
@@ -66,7 +72,7 @@ jobs:
         # only ever widens the skip: scheduled ticks never run this job.
         run: |
           LAST=$(jq -r '.probedAt // 0' state/judge-ceilings.json 2>/dev/null || echo 0)
-          if [ "${{ inputs.force }}" = "true" ]; then
+          if [ "$FORCE" = "true" ]; then
             echo "probe: force re-probe requested - ignoring the freshness window"
             LAST=0
           fi
