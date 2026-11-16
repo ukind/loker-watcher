@@ -104,35 +104,7 @@
       },
       {
          "type":"linkedin",
-         "value":"hiring react"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring front end"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring software engineer"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring full stack"
-      },
-      {
-         "type":"linkedin",
          "value":"software engineer"
-      },
-      {
-         "type":"linkedin",
-         "value":"react"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring Indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring Jakarta"
       },
       {
          "type":"linkedin",
@@ -172,30 +144,14 @@
       },
       {
          "type":"linkedin",
-         "value":"full stack"
-      },
-      {
-         "type":"linkedin",
-         "value":"full-stack"
-      },
-      {
-         "type":"linkedin",
          "value":"engineer Indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring react"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring front end"
       },
       {
          "type":"linkedin",
          "value":"hiring full stack"
       }
    ],
-   "scrollRounds":150,
+   "scrollRounds":50,
    "platforms":{
       "linkedin":true,
       "threads":false
