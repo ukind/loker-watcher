@@ -13,7 +13,10 @@
       "angular",
       "svelte",
       "typescript",
-      "javascript"
+      "javascript",
+      "software engineer",
+      "full stack engineer",
+      "node js"
    ],
    "candidateTerms":[
       "developer",
@@ -101,23 +104,95 @@
       },
       {
          "type":"linkedin",
-         "value":"react jakarta"
+         "value":"hiring react"
       },
       {
          "type":"linkedin",
-         "value":"hiring jakarta"
+         "value":"hiring front end"
       },
       {
          "type":"linkedin",
-         "value":"hiring developer indonesia"
+         "value":"hiring software engineer"
       },
       {
          "type":"linkedin",
-         "value":"hiring engineer jakarta"
+         "value":"hiring full stack"
       },
       {
          "type":"linkedin",
-         "value":"react indonesia"
+         "value":"software engineer"
+      },
+      {
+         "type":"linkedin",
+         "value":"react"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring Indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring Jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"react Jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"react Indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"front end Jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"front end Indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"software engineer Indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"software engineer Jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"developer Jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"developer Indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"engineer Jakarta"
+      },
+      {
+         "type":"linkedin",
+         "value":"full stack"
+      },
+      {
+         "type":"linkedin",
+         "value":"full-stack"
+      },
+      {
+         "type":"linkedin",
+         "value":"engineer Indonesia"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring react"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring front end"
+      },
+      {
+         "type":"linkedin",
+         "value":"hiring full stack"
       }
    ],
    "scrollRounds":150,
