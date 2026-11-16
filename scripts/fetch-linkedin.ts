@@ -32,19 +32,21 @@ import { mkdir, readFile, rename, rm, unlink, writeFile } from "node:fs/promises
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH, STATE_PATH } from "../src/config.js";
+import { loadWatcherConfig, type WatcherConfig } from "../src/config-file.js";
 import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/email.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { isWithinWorkingHours } from "../src/linkedin-behavior.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
-  type LinkedInContextFactory,
-  type LinkedinSurface,
-  fetchLinkedInPosts,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
+  type LinkedInContextFactory,
+} from "../src/linkedin-context.js";
+import {
+  fetchLinkedInPosts,
+  type LinkedinSurface,
   resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import { writePayloadAtomic } from "../src/linkedin-payload.js";
@@ -97,13 +99,13 @@ export interface FetchTickDeps {
    */
   contextFactory?: LinkedInContextFactory;
   /**
-   * Capture sink for the walk (capture-first, design 2026-11-13). Default:
-   * the production fs sink — one atomic JSON file per intercepted body
-   * under captures/<UTC session stamp>/ (LINKEDIN_CAPTURES_ROOT; gitignored
-   * scratch, never committed state). Passing nothing means CAPTURE TO
-   * DISK, not capture disabled: the offline suite injects a recording
-   * sink in every walk-driving case, because npm test must never write
-   * captures/ into the repo.
+   * Capture sink for the walk (capture-first, design 2026-11-13). No
+   * default: passing nothing means CAPTURE DISABLED — the walk's guards
+   * skip capture when the sink is undefined (src/linkedin-walk.ts:173,
+   * :235). The production entry passes makeFsCaptureSink() explicitly
+   * (F001: the defaulting seam lives at script entries); the offline
+   * suite injects NOOP_CAPTURE_SINK or a recording sink in every
+   * walk-driving case, because npm test must never write captures/.
    */
   captureSink?: CaptureSink;
   /** Payload location. Default: LINKEDIN_PAYLOAD_PATH (the pushed path). */
@@ -435,7 +437,7 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
       rng,
       minClicks: 0, // the tick carries no click floor (the probe owns PROBE_MIN_CLICKS)
       seenIds,
-      captureSink: deps.captureSink ?? makeFsCaptureSink(),
+      ...(deps.captureSink !== undefined ? { captureSink: deps.captureSink } : {}),
     });
   } catch (error) {
     // The halt arm (FR-7): a security checkpoint or login wall trips the
@@ -484,7 +486,10 @@ export async function fetchTick(deps: FetchTickDeps = {}): Promise<FetchTickResu
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   // The merged env: .env fills ONLY unset keys, the real shell wins. The
   // fetchTick default stays process.env for the offline tests' injection.
-  fetchTick({ env: envWithDotEnv() }).catch(async (error: unknown) => {
+  fetchTick({
+    env: envWithDotEnv(),
+    captureSink: makeFsCaptureSink(),
+  }).catch(async (error: unknown) => {
     if (isLegDead(error)) {
       await handleLegDeadEpisode(error.reason);
       process.exit(1);

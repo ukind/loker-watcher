@@ -104,6 +104,17 @@ export interface CaptureRecord {
 export type CaptureSink = (record: CaptureRecord) => Promise<void>;
 
 /**
+ * The no-op sink (F001, 2026-11-15): the offline suites inject this into
+ * every walk-driving deps literal so the defaulting seam can never
+ * re-create the production fs sink. A body fired with this sink writes
+ * nothing, so `npm test` never touches the repo. Production callers
+ * construct makeFsCaptureSink() explicitly at the script-entry seams —
+ * the defaulting seam lives at script entries, never inside the tick or
+ * the probe (the harness guarantee 14ccec5 broke at exactly this seam).
+ */
+export const NOOP_CAPTURE_SINK: CaptureSink = async () => undefined;
+
+/**
  * Warn-once state for one surface walk: the page-local unit that owns the
  * listener. Created per walkLinkedInSurface invocation.
  */

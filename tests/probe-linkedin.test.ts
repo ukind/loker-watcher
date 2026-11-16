@@ -15,24 +15,28 @@
  * operator's live path.
  */
 import assert from "node:assert/strict";
-import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { after, describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
 import { isProbeFloor, isProbeNoSurfaces, runProbe } from "../scripts/probe-linkedin.js";
-import type { WatcherConfig } from "../src/config-file.js";
 import { ENV_NAMES } from "../src/config.js";
+import type { WatcherConfig } from "../src/config-file.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
-import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
-  LINKEDIN_PROFILE_DIR,
-  type LinkedInContextFactory,
+  type CaptureRecord,
+  type CaptureSink,
+  NOOP_CAPTURE_SINK,
+} from "../src/linkedin-capture.js";
+import {
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
-} from "../src/linkedin-fetch.js";
+  type LinkedInContextFactory,
+} from "../src/linkedin-context.js";
+import { LINKEDIN_PROFILE_DIR } from "../src/linkedin-fetch.js";
+import { assertNoFreshCaptures } from "./capture-oracle.js";
 
 const T0 = Date.UTC(2026, 11, 12, 9, 14, 0);
 
@@ -49,23 +53,12 @@ const CONFIG: WatcherConfig = {
 
 let dir: string | undefined;
 
-// The capture doctrine's absence-oracle snapshot (design 2026-11-13):
-// taken at module load, before any test runs.
-const repoCaptures = join(dirname(fileURLToPath(import.meta.url)), "..", "captures");
-const repoCapturesBefore = await access(repoCaptures).then(
-  () => true,
-  () => false,
-);
-
 after(async () => {
   if (dir !== undefined) await rm(dir, { recursive: true, force: true });
-  // The capture doctrine's absence oracle (design 2026-11-13): a FRESH
-  // captures/ directory at the repo root means a body-firing case above
-  // skipped its sink injection. A directory that already existed (a live
-  // operator run) is not this suite's problem.
-  if (!repoCapturesBefore) {
-    await assert.rejects(() => access(repoCaptures), /ENOENT/);
-  }
+  // The capture doctrine's absence oracle (F015, shared helper): fails
+  // naming the leaked session dirs when a body-firing case above skipped
+  // its sink injection; silent when captures/ pre-dated the run.
+  await assertNoFreshCaptures();
 });
 
 /**
@@ -327,6 +320,7 @@ describe("runProbe gate arms", () => {
     await assert.rejects(
       async () =>
         runProbe({
+          captureSink: NOOP_CAPTURE_SINK,
           config: CONFIG,
           env: await cookieEnv(),
           contextFactory,
@@ -342,6 +336,7 @@ describe("runProbe gate arms", () => {
     await assert.rejects(
       async () =>
         runProbe({
+          captureSink: NOOP_CAPTURE_SINK,
           config: CONFIG,
           env: await cookieEnv(),
           contextFactory,
@@ -357,6 +352,7 @@ describe("runProbe gate arms", () => {
     await assert.rejects(
       async () =>
         runProbe({
+          captureSink: NOOP_CAPTURE_SINK,
           config: CONFIG,
           env: await cookieEnv(),
           contextFactory,
@@ -375,6 +371,7 @@ describe("runProbe preflight", () => {
     await assert.rejects(
       () =>
         runProbe({
+          captureSink: NOOP_CAPTURE_SINK,
           config: { ...CONFIG, surfaces: [{ type: "tag", value: "hiring" }] },
           env: {}, // would also fail the cookie gate — this error must win first
           contextFactory,
@@ -393,7 +390,14 @@ describe("runProbe preflight", () => {
     const built = { value: 0 };
     const contextFactory = contextFactoryFor({ built, script: {} });
     await assert.rejects(
-      () => runProbe({ config: CONFIG, env: {}, contextFactory, now: () => T0 }),
+      () =>
+        runProbe({
+          captureSink: NOOP_CAPTURE_SINK,
+          config: CONFIG,
+          env: {},
+          contextFactory,
+          now: () => T0,
+        }),
       /LINKEDIN_COOKIES_FILE/,
     );
     assert.equal(built.value, 0); // no browser was ever built

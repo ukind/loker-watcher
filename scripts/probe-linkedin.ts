@@ -31,16 +31,18 @@
  * runs from the repo root — it loads watcher.config.json at startup)
  */
 import { pathToFileURL } from "node:url";
-import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
+import { loadWatcherConfig, type WatcherConfig } from "../src/config-file.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
-  type LinkedInContextFactory,
-  type LinkedinSurface,
-  fetchLinkedInPosts,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
+  type LinkedInContextFactory,
+} from "../src/linkedin-context.js";
+import {
+  fetchLinkedInPosts,
+  type LinkedinSurface,
   resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import { resolveLinkedInCookies } from "../src/linkedin-session.js";
@@ -113,11 +115,12 @@ export interface ProbeDeps {
   /** Browser-context factory. Default: the walk module's own production factory. */
   contextFactory?: LinkedInContextFactory;
   /**
-   * Capture sink for the walk (capture-first, design 2026-11-13). Default:
-   * the production fs sink under captures/<UTC session stamp>/ — gitignored
-   * scratch (D5: the probe stays read-only for TRACKED state; the captures
-   * are diagnostic evidence). Passing nothing means CAPTURE TO DISK: the
-   * offline suite injects a recording sink in its walk-driving cases.
+   * Capture sink for the walk (capture-first, design 2026-11-13). No
+   * default: passing nothing means CAPTURE DISABLED — the walk's guards
+   * skip capture when the sink is undefined. The production CLI entry
+   * passes makeFsCaptureSink() explicitly (F001: the defaulting seam
+   * lives at script entries); the offline suite injects NOOP_CAPTURE_SINK
+   * or a recording sink.
    */
   captureSink?: CaptureSink;
   /** The walk's Load-more click floor. Default: PROBE_MIN_CLICKS. */
@@ -180,7 +183,7 @@ export async function runProbe(deps: ProbeDeps = {}): Promise<ProbeResult> {
     minClicks,
     // seenIds stays unset: the probe never stops on seen ids, it needs the
     // full walk. sleepFn and rng stay unset: the production defaults.
-    captureSink: deps.captureSink ?? makeFsCaptureSink(),
+    ...(deps.captureSink !== undefined ? { captureSink: deps.captureSink } : {}),
   });
   const elapsedMs = now() - started;
   console.log(`probe: ${elapsedMs}ms — ${posts.length} post(s)`);
@@ -196,7 +199,7 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
   // today's byte-for-byte lines, the two local gates print their already-
   // prefixed message bare — the same line the pre-refactor script printed
   // — and the fallback keeps the FAILED wrapper.
-  runProbe().catch((error: unknown) => {
+  runProbe({ captureSink: makeFsCaptureSink() }).catch((error: unknown) => {
     if (isHalt(error)) {
       console.error(`probe: HALT — ${error.reason}`);
       process.exit(1);

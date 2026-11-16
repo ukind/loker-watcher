@@ -12,8 +12,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { runLoop } from "../scripts/watch-linkedin.js";
-import { WAKE_MAX_MS, WAKE_MIN_MS, sampleTickDelayMs } from "../src/linkedin-behavior.js";
-import { legDead } from "../src/linkedin-fetch.js";
+import { sampleTickDelayMs, WAKE_MAX_MS, WAKE_MIN_MS } from "../src/linkedin-behavior.js";
+import { legDead } from "../src/linkedin-context.js";
 
 /** Deterministic LCG (Numerical Recipes constants) — no ambient Math.random. */
 function seededRng(seed: number): () => number {

@@ -37,6 +37,7 @@
 import { pathToFileURL } from "node:url";
 import { ENV_NAMES } from "../src/config.js";
 import { envWithDotEnv } from "../src/env-file.js";
+import { makeFsCaptureSink } from "../src/linkedin-capture.js";
 import { type FetchTickResult, fetchTick } from "./fetch-linkedin.js";
 import { type LoginHelperResult, runLoginHelper } from "./login-linkedin.js";
 import { type ProbeResult, runProbe } from "./probe-linkedin.js";
@@ -83,8 +84,10 @@ export interface ChainResult {
 export async function runLinkedInChain(deps: ChainDeps = {}): Promise<ChainResult> {
   const env = deps.env ?? envWithDotEnv();
   const login = deps.login ?? ((legEnv: Env) => runLoginHelper({ env: legEnv, keepOpen: true }));
-  const probe = deps.probe ?? ((legEnv: Env) => runProbe({ env: legEnv }));
-  const tick = deps.tick ?? ((legEnv: Env) => fetchTick({ env: legEnv }));
+  const probe =
+    deps.probe ?? ((legEnv: Env) => runProbe({ env: legEnv, captureSink: makeFsCaptureSink() }));
+  const tick =
+    deps.tick ?? ((legEnv: Env) => fetchTick({ env: legEnv, captureSink: makeFsCaptureSink() }));
   const now = deps.now ?? Date.now;
   const started = now();
 

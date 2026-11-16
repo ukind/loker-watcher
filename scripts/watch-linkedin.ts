@@ -17,7 +17,9 @@
 import { pathToFileURL } from "node:url";
 import { envWithDotEnv } from "../src/env-file.js";
 import { type RandomFn, sampleTickDelayMs } from "../src/linkedin-behavior.js";
-import { type SleepFn, isLegDead } from "../src/linkedin-fetch.js";
+import { makeFsCaptureSink } from "../src/linkedin-capture.js";
+import { isLegDead } from "../src/linkedin-context.js";
+import type { SleepFn } from "../src/linkedin-fetch.js";
 import { fetchTick, handleLegDeadEpisode } from "./fetch-linkedin.js";
 
 /** Injectables for the offline suite; production defaults run the real tick. */
@@ -47,7 +49,7 @@ export interface RunLoopDeps {
  */
 export async function runLoop(deps: RunLoopDeps = {}): Promise<void> {
   const env = deps.env ?? envWithDotEnv();
-  const tick = deps.tick ?? (() => fetchTick({ env }));
+  const tick = deps.tick ?? (() => fetchTick({ env, captureSink: makeFsCaptureSink() }));
   const sleepFn =
     deps.sleepFn ??
     ((ms: number): Promise<void> =>

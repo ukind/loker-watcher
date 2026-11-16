@@ -14,29 +14,34 @@
  * its block). The budget suites died with the budget machine (slice 5).
  */
 import assert from "node:assert/strict";
-import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
 import {
-  type GitRunner,
   fetchTick,
+  type GitRunner,
   guardCheckout,
   handleLegDeadEpisode,
   pushPayload,
   realGit,
 } from "../scripts/fetch-linkedin.js";
-import type { WatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
+import type { WatcherConfig } from "../src/config-file.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
-import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
-import { type LinkedInContextFactory, SCROLL_JS, isLegDead } from "../src/linkedin-fetch.js";
+import {
+  type CaptureRecord,
+  type CaptureSink,
+  NOOP_CAPTURE_SINK,
+} from "../src/linkedin-capture.js";
+import { isLegDead, type LinkedInContextFactory } from "../src/linkedin-context.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
+import { SCROLL_JS } from "../src/linkedin-walk-static.js";
 import { CURRENT_STATE_VERSION, saveState } from "../src/state.js";
 import type { Post } from "../src/types.js";
+import { assertNoFreshCaptures } from "./capture-oracle.js";
 
 const T0 = Date.UTC(2026, 9, 26, 9, 14, 0);
 const COOKIES: LinkedInCookies = {
@@ -58,23 +63,12 @@ const CONFIG: WatcherConfig = {
 
 let dir: string | undefined;
 
-// The capture doctrine's absence-oracle snapshot (design 2026-11-13):
-// taken at module load, before any test runs.
-const repoCaptures = join(dirname(fileURLToPath(import.meta.url)), "..", "captures");
-const repoCapturesBefore = await access(repoCaptures).then(
-  () => true,
-  () => false,
-);
-
 after(async () => {
   if (dir !== undefined) await rm(dir, { recursive: true, force: true });
-  // The capture doctrine's absence oracle (design 2026-11-13): a FRESH
-  // captures/ directory at the repo root means a body-firing case above
-  // skipped its sink injection. A directory that already existed (a live
-  // operator run) is not this suite's problem.
-  if (!repoCapturesBefore) {
-    await assert.rejects(() => access(repoCaptures), /ENOENT/);
-  }
+  // The capture doctrine's absence oracle (F015, shared helper): fails
+  // naming the leaked session dirs when a body-firing case above skipped
+  // its sink injection; silent when captures/ pre-dated the run.
+  await assertNoFreshCaptures();
 });
 
 async function workPath(name: string): Promise<string> {
@@ -467,6 +461,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     await assert.rejects(
       async () =>
         fetchTick({
+          captureSink: NOOP_CAPTURE_SINK,
           latchPath: await workPath("latch-2.flag"),
           bypassWindow: true,
           config: CONFIG,
@@ -501,6 +496,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     const contextFactory = contextFactoryFor({ script: { gotoError: "navigation failed" } });
     const git = scriptGit({ "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       latchPath: await workPath("latch-3.flag"),
       bypassWindow: true,
       config: CONFIG,
@@ -611,6 +607,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
   it("returns early when no linkedin surfaces are configured (resolvers AND the checkout preflight never run)", async () => {
     const git = scriptGit({});
     const result = await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       latchPath: await workPath("latch-5.flag"),
       bypassWindow: true,
       config: { ...CONFIG, surfaces: [{ type: "tag", value: "hiring" }] },
@@ -628,6 +625,7 @@ describe("fetchTick (compose cookies → context factory → walk → payload �
     await assert.rejects(
       async () =>
         fetchTick({
+          captureSink: NOOP_CAPTURE_SINK,
           latchPath: await workPath("latch-factory.flag"),
           bypassWindow: true,
           config: CONFIG,
@@ -663,6 +661,7 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
     await assert.rejects(
       async () =>
         fetchTick({
+          captureSink: NOOP_CAPTURE_SINK,
           latchPath: await workPath("latch-7.flag"),
           bypassWindow: true,
           config: CONFIG,
@@ -697,6 +696,7 @@ describe("checkout preflight (guardCheckout before any fetch — Phase 10)", () 
     await assert.rejects(
       async () =>
         fetchTick({
+          captureSink: NOOP_CAPTURE_SINK,
           latchPath: await workPath("latch-8.flag"),
           bypassWindow: true,
           config: CONFIG,
@@ -814,6 +814,7 @@ describe("the anti-restriction preflight band (window -> latch)", () => {
     const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit();
     const result = await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       config: CONFIG,
       contextFactory,
       git,
@@ -833,6 +834,7 @@ describe("the anti-restriction preflight band (window -> latch)", () => {
     const contextFactory = contextFactoryFor({ built, script: {} });
     const git = scriptGit();
     const result = await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       config: CONFIG,
       contextFactory,
       git,
@@ -854,6 +856,7 @@ describe("the anti-restriction preflight band (window -> latch)", () => {
     await assert.rejects(
       async () =>
         fetchTick({
+          captureSink: NOOP_CAPTURE_SINK,
           config: CONFIG,
           contextFactory,
           git,
@@ -906,6 +909,7 @@ describe("the halt-latch trip (FR-7)", () => {
     const contextFactory = contextFactoryFor({ script: { url: CHECKPOINT_URL } });
     const git = scriptGit({ "rev-parse": { code: 0, output: "main\n" } });
     const result = await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -933,6 +937,7 @@ describe("the halt-latch trip (FR-7)", () => {
     const markerPath = await workPath("episode.flag");
     const contextFactory = contextFactoryFor({ script: { url: CHECKPOINT_URL } });
     await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       config: CONFIG,
       cookies: COOKIES,
       contextFactory,
@@ -969,6 +974,7 @@ describe("FR-0 stamp gate (slice 5)", () => {
     await assert.rejects(
       () =>
         fetchTick({
+          captureSink: NOOP_CAPTURE_SINK,
           config: CONFIG,
           cookies: stampless,
           contextFactory,
@@ -1034,6 +1040,7 @@ describe("the seen-stop set rides the tick into the walk (design 2026-11-13)", (
     });
     const git = scriptGit({ diff: 1, "rev-parse": { code: 0, output: "main" } });
     const result = await fetchTick({
+      captureSink: NOOP_CAPTURE_SINK,
       latchPath: await workPath("latch-seen-stop.flag"),
       bypassWindow: true,
       config: CONFIG,

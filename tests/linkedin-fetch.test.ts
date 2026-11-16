@@ -23,27 +23,27 @@
  * observation. Importing the module never loads Playwright.
  */
 import assert from "node:assert/strict";
-import { access } from "node:fs/promises";
-import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
-  LINKEDIN_PROFILE_DIR,
-  type LinkedinSurface,
-  PACE_MAX_MS,
-  PACE_MIN_MS,
   allSurfacesFaulted,
-  fetchLinkedInPosts,
   halt,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
   legDead,
+} from "../src/linkedin-context.js";
+import {
+  fetchLinkedInPosts,
+  LINKEDIN_PROFILE_DIR,
+  type LinkedinSurface,
+  PACE_MAX_MS,
+  PACE_MIN_MS,
   resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import type { Post } from "../src/types.js";
+import { assertNoFreshCaptures } from "./capture-oracle.js";
 
 /** The profile path the walk opens; the suite pins it rides through untouched. */
 const PROFILE = "C:/loker-secrets/linkedin-chromium-profile";
@@ -116,7 +116,6 @@ const emptyBody = (): string => row("e1", { tracking: { activityUrn: { activityI
 const LONG_FLAGSHIP_URL =
   "https://www.linkedin.com/flagship-web/rsc-action/actions/component?keywords=%23hiring%20indonesia&origin=SWITCH_SEARCH_VERTICAL&searchId=flagship-noise-capture";
 
-const SEARCH_RESULT_URL = "https://www.linkedin.com/search/results/content/";
 const FLAGSHIP_SEARCH_URL = "https://www.linkedin.com/flagship-web/search/results/content/";
 const PAGINATION_URL = "https://www.linkedin.com/flagship-web/rsc-action/actions/pagination";
 const CHECKPOINT_URL = "https://www.linkedin.com/checkpoint/challenge";
@@ -1309,22 +1308,12 @@ describe("fetchLinkedInPosts capture bolt-in (capture-first, design 2026-11-13)"
   });
 });
 
-// --- the offline-capture doctrine oracle (follow-up 2026-11-13): this
+// --- the offline-capture doctrine oracle (F015, shared helper): this
 // suite drives fetchLinkedInPosts DIRECTLY, so a future case handing the
 // walk a production-default sink fails HERE instead of writing captures/
-// into the repo. The imports gain access (node:fs/promises), dirname/join
-// (node:path), fileURLToPath (node:url), and after joins the node:test
-// import; the block sits before PROFILE at module top level.
-const repoCaptures = join(dirname(fileURLToPath(import.meta.url)), "..", "captures");
-const repoCapturesBefore = await access(repoCaptures).then(
-  () => true,
-  () => false,
-);
-
+// into the repo.
 after(async () => {
-  if (!repoCapturesBefore) {
-    await assert.rejects(() => access(repoCaptures), /ENOENT/);
-  }
+  await assertNoFreshCaptures();
 });
 
 describe("seen-stop (design 2026-11-13)", () => {
