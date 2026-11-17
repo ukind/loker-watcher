@@ -569,6 +569,52 @@ describe("fetchLinkedInPosts (browser walk)", () => {
     );
   });
 
+  it("ends at dry 3/3 when clicks landed then the button vanished (floor unmet)", async (t) => {
+    // The probe leg's shape (minClicks 5): rounds 1-2 click and gain,
+    // then the button is gone. The floor must not hold the loop once no
+    // click can land — dry 3/3 at round 5 ends it; rounds 6-8 never run.
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    const factory = fakeContextFactory({
+      scripts: [
+        {
+          fragment: "%23vanish",
+          script: {
+            initialBody: cardBody(idAt(1), postText(1)),
+            loadMoreVisible: (round) => round <= 2,
+            clickBodies: [
+              cardBodyMany([
+                [idAt(2), postText(2)],
+                [idAt(3), postText(3)],
+              ]),
+              cardBodyMany([
+                [idAt(4), postText(4)],
+                [idAt(5), postText(5)],
+              ]),
+            ],
+          },
+        },
+      ],
+    });
+    const posts = await fetchLinkedInPosts([surface("#vanish")], {
+      profileDir: PROFILE,
+      contextFactory: factory,
+      scrollRounds: 8,
+      sleepFn: instantSleep,
+      now: () => 0,
+      rng: () => 0,
+      minClicks: 5,
+    });
+    assert.deepEqual(pageFor(factory, "%23vanish").clicks, [1, 2]); // vanished after two
+    assert.equal(posts.length, 5); // 1 initial + 2 rounds x 2
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    // Dry accrues 3-5: the last round line is dry 3/3 and round 6 never runs.
+    assert.ok(lines.some((line) => /click 5: no button.*dry 3\/3/.test(line)));
+    assert.equal(
+      lines.some((line) => /click 6:/.test(line)),
+      false,
+    );
+  });
+
   it("names the click failure in the log — no button is never mistaken for a dry click", async (t) => {
     const logs = t.mock.method(console, "log", console.log.bind(console));
     const factory = fakeContextFactory({

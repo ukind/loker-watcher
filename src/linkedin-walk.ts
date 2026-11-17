@@ -385,16 +385,20 @@ export async function walkLinkedInSurface(
       }
       // The probe's floor: the dry exit may not fire before minClicks
       // clicks have landed, so one probe run samples several bodies
-      // (live rehearsal 2026-11-11: 3 posts per body). The floor is
-      // skipped when NO click has ever fired — an absent button would
+      // (live rehearsal 2026-11-11: 3 posts per body). The floor governs
+      // only rounds that actually clicked: `clicks` increments inside
+      // `if (clicked)`, so once the button is gone the floor is
+      // unreachable and must not hold the loop — an absent button would
       // otherwise burn every remaining round on a 5s waitFor timeout
-      // (measured: 8 rounds x 5s = 40s of pure timeout). Moved out of the
-      // dry arm UNCHANGED (same condition): with the streak at 0, the loop
-      // is byte-equivalent to the pre-seen-stop walk.
+      // (measured: 8 rounds x 5s = 40s; live 2026-11-17: dry 8/3 with
+      // minClicks 5 unmet). `clicks === 0` is subsumed by `!clicked`.
+      // REVISED 2026-11-17 (FRD 2026-11-17_07-34-52): the old
+      // `(clicks === 0 || clicks >= minClicks)` let the floor block the
+      // exit forever once clicks stopped landing (0 < clicks < minClicks).
       if (
         gained < LINKEDIN_MIN_GAIN &&
         dryRounds >= LINKEDIN_MAX_DRY_ROUNDS &&
-        (clicks === 0 || clicks >= minClicks)
+        (clicks >= minClicks || !clicked)
       ) {
         break;
       }
