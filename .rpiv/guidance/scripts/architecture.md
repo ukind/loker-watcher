@@ -34,7 +34,7 @@ fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect
                              #   → fetch → payload → add ONLY state/linkedin-posts.json
                              #   → commit → pull --rebase → push, ONE retry (realGit injectable; every
                              #   failure carries git's own merged output); INSIDE typecheck + lint + lint-staged
-watch-linkedin.ts            # .ts, always-on loop: one tick + a jittered 28-33-minute sleep; leg-dead →
+watch-linkedin.ts            # .ts, always-on loop: one tick + a sleep from the configured wake band; leg-dead →
                              #   ONE alarm per episode
                              #   (repo-local marker beside the payload) + continue; INSIDE typecheck + lint
 probe-linkedin.ts            # .ts, entry-guarded (importing stays side-effect free — the import IS the pin);

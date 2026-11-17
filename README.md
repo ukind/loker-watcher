@@ -142,6 +142,16 @@ No code change and no Actions variable is involved.
 | `recencyHours` | How far back a post can be and still count. Required: a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"`, or `"high"`. Absent defaults to `"medium"`. |
 | `scrollRounds` | Upper bound on scroll rounds per Threads surface walk, and on "Load more" clicks per LinkedIn surface walk. Must be a whole number >= 1; absent defaults to `8`. |
+| `linkedinWakeMinMinutes` | The PC loop's wake floor in minutes (`npm run watch-linkedin`). Whole number >= 1; absent defaults to `60`. |
+| `linkedinWakeMaxMinutes` | The PC loop's wake ceiling in minutes, exclusive. Whole number >= 1; absent defaults to `60`. Set both equal for a fixed cadence. |
+
+The two `linkedinWake*Minutes` keys set the always-on PC loop's wake band
+(`npm run watch-linkedin`): each wake delay draws uniformly from
+`[linkedinWakeMinMinutes, linkedinWakeMaxMinutes)` minutes, so equal
+values mean a fixed cadence and absent keys mean a flat 60-minute wake.
+`min > max` stops the loop at startup naming both keys; the hosted run
+and the probes stay green (the band is a PC-loop knob), and the 40-minute
+payload freshness rule on the hosted side is independent of the band.
 
 Adding a profile or a search URL is the same edit as adding a tag:
 
@@ -321,8 +331,8 @@ running them individually:
    wall (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted
    walk (`probe: FAILED`), or fewer than 10 posts. Re-run after every
    `npm run login-linkedin` re-harvest.
-3. `npm run watch-linkedin`: tick, then a 28-33-minute sleep, forever;
-   leave the console open.
+3. `npm run watch-linkedin`: tick, then a sleep from the configured wake
+   band (60 minutes flat by default), forever; leave the console open.
 
 Env setup note: the PC scripts read `.env` beside the clone root
 (`LINKEDIN_COOKIES_FILE` written by `login-linkedin`); a variable already
@@ -381,7 +391,7 @@ npm run linkedin-chain   # login hold -> probe -> exactly one tick, in order (re
 npm run login-linkedin   # headed login: writes the cookie file + the .env line
 npm run probe-linkedin   # browser-walk gate: exit 1 on a wall/dead/short walk
 npm run fetch-linkedin   # one tick: walk → payload → push
-npm run watch-linkedin   # the always-on loop: tick + 28-33-minute sleep
+npm run watch-linkedin   # the always-on loop: tick + configurable wake band
 ```
 
 ## Maintenance

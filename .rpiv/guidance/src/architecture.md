@@ -151,7 +151,7 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // (judgePosts D11 shape); FR-5 shuffle; join priority halt > leg-dead > all-faulted;
 // stamp-at-slot-write; the rate is pacing-bound, not width-bound.
 // linkedin-payload.ts: {version, writtenAt, posts}; writePayloadAtomic (temp+rename); readPayloadPosts
-// NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(30min)→stale+age; non-ENOENT unreadable→
+// NEVER THROWS (D13): ENOENT→quiet absent; >PAYLOAD_MAX_AGE_MS(40min)→stale+age; non-ENOENT unreadable→
 // malformed; bad envelope→malformed; bad rows→drop+count. {posts, leg} feeds HeartbeatStats.linkedinLeg
 // (heartbeat line ALWAYS; digest line when not ok).
 // index.ts arm: linkedinFetch re-keyed to (payloadPath, now) => PayloadRead; no token gate — absence

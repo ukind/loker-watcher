@@ -49,7 +49,7 @@ threads-session.ts → session.test.ts         # GRANDFATHERED name drift — ne
 scripts/fetch-linkedin.ts → fetch-linkedin.test.ts   # CLI suite: scriptGit argv-transcript doubles (the transcript IS
 #                                              #   the oracle), contextFactory pass-through, parked deferred() flush,
 #                                              #   marker-file episode edges (preflight, rebase/retry, leg-dead)
-watch-linkedin.ts  → watch-linkedin.test.ts   # seeded cadence transcript (28-33 min, never the old 600 s),
+watch-linkedin.ts  → watch-linkedin.test.ts   # cadence transcript (band-injected + flat default, never the old 600 s),
 #                                              #   tick-before-sleep order, cap 0, both fault arms, the
 #                                              #   entry-guard pin (importing starts no loop) — the suite
 #                                              #   deliberately supersedes the old NO-TESTS-BY-DESIGN line
