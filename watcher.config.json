@@ -51,7 +51,8 @@
       "Job from India",
       "Dikshatek",
       "remote india",
-      "Liferay"
+      "Liferay",
+      "QA Quality Assurance"
    ],
    "surfaces":[
       {
@@ -100,61 +101,65 @@
       },
       {
          "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=hiring%20indonesia&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=hiring%20jakarta&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=react%20jakarta&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=react%20indonesia&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=hiring%20engineer&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
+         "value":"https://www.threads.com/search?exact_match=false&q=hiring%20developer&serp_type=default&filter=recent"
+      },
+      {
+         "type":"url",
          "value":"https://www.threads.com"
       },
       {
          "type":"linkedin",
-         "value":"software engineer"
+         "value":"react jakarta"
       },
       {
          "type":"linkedin",
-         "value":"react Jakarta"
+         "value":"react indonesia"
       },
       {
          "type":"linkedin",
-         "value":"react Indonesia"
+         "value":"developer indonesia"
       },
       {
          "type":"linkedin",
-         "value":"front end Jakarta"
+         "value":"engineer indonesia"
       },
       {
          "type":"linkedin",
-         "value":"front end Indonesia"
+         "value":"hiring indonesia"
       },
       {
          "type":"linkedin",
-         "value":"software engineer Indonesia"
+         "value":"engineer jakarta"
       },
       {
          "type":"linkedin",
-         "value":"software engineer Jakarta"
-      },
-      {
-         "type":"linkedin",
-         "value":"developer Jakarta"
-      },
-      {
-         "type":"linkedin",
-         "value":"developer Indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"engineer Jakarta"
-      },
-      {
-         "type":"linkedin",
-         "value":"engineer Indonesia"
-      },
-      {
-         "type":"linkedin",
-         "value":"hiring full stack"
+         "value":"developer jakarta"
       }
    ],
    "scrollRounds":50,
    "platforms":{
       "linkedin":true,
-      "threads":false
+      "threads":true
    },
    "reasoningEffort":"high",
    "recencyHours":72
