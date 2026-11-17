@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-17T12:56:18.924Z",
+  "writtenAt": "2026-11-17T13:27:37.464Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -37,34 +37,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528290964411482112",
       "timestamp": "2026-11-17T03:01:14.187Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "react jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528187237679730688",
-      "text": "Earnings season shows something about access. A result comes out at 4:05 PM in New York. A trader there reacts in seconds. Someone in Lisbon, Lagos or Jakarta often has to open an overseas brokerage account first. We built Bloom to close that gap. \n\nYou can fund it with a card, bank transfer or USDC, trade from $1 in fractions, and see proof of reserves at any time. Markets are global, and access should be too. bloom.markets. All investments carry risk. Not available in restricted jurisdictions.",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528187234877960193",
-      "timestamp": "2026-11-16T20:08:24.418Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "react jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528141541962375168",
-      "text": "🚀 I'm looking for Open Source Contributors! Let's Build Something Meaningful Together.\nOpen source is more than writing code. It's about collaboration, sharing knowledge, solving real-world engineering challenges, and learning from one another.\nI'm currently building and maintaining two open-source projects and would love to welcome developers who want to contribute, learn, and grow together.\n💳 1. FinSim – Financial Network Simulator\n🔗 https://lnkd.in/dsSezB8Q\nAn open-source simulator for distributed financial networks.\nWe're exploring real-world engineering challenges, including:\nDistributed payment orchestration\nMicroservices and service integration\nIdempotency and transaction reconciliation\nFault injection and deterministic simulation\nDouble-entry ledger and financial invariants\nObservability and simulation tooling\nTechnologies: Java 21, Spring Boot 4, PostgreSQL, Spring Modulith, Docker, Next.js, TypeScript.\n☕ 2. Jakarta Data TCK EE Runner\n🔗https://lnkd.in/d37a9-kg\nA multi-provider testing environment for Jakarta Data 1.1, running TCK suites against:\nOpen Liberty\nEclipse GlassFish\nWildFly\nTechnologies: Java 21, Maven, Arquillian, Jakarta EE, JUnit.\n🤝 Who Can Join?\nI'm particularly interested in connecting with:\nJava developers (Core Java, Spring Boot, Jakarta EE)\nBackend and distributed systems engineers\nReact / Next.js / TypeScript developers\nNode.js developers\nQA engineers interested in automated testing\nDevelopers interested in documentation, testing, architecture, and developer experience\nStudents and developers looking to gain practical open-source experience\nYou don't need to be an expert. Curiosity, consistency, collaboration, and willingness to learn matter more.\n🌍 How to Get Started\nVisit the repositories.\nRead the README and explore the architecture.\nCheck the open GitHub issues.\nPick a task that matches your interests.\nStart a discussion or open a pull request.\nWe use GitHub Issues, Discussions, and Pull Requests to keep collaboration transparent and accessible.\nMy vision: Build projects that are useful to the developer community while creating opportunities for developers to learn from real-world engineering challenges.\nIf you're interested, comment below or send me a message. Let's connect and build together!\n⭐ GitHub:https://lnkd.in/gWJfRHn8\n#OpenSource #Java #SpringBoot #JakartaEE #DistributedSystems #Microservices #FinTech #SoftwareEngineering #Hacktoberfest #ContributeToOpenSource",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528141538762227713",
-      "timestamp": "2026-11-16T17:06:49.710Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -116,6 +88,62 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7528442152746590208",
+      "text": "🚀 WE ARE HIRING –JAVA PROGRAMMER (BI-FAST PROJECT)\n\nPT Murni Solusindo Nusantara is currently looking for an experienced Java Programmer to join our team and contribute to the BI-FAST Project.\n\nQualifications:\n- Bachelor's degree (S1) in Informatics Engineering, Computer Science, Information Systems, or a related field.\n- Minimum 5 years of experience as a Java Programmer/Developer.\n- Proficient in Java Frameworks, particularly Spring Boot and Spring Framework.\n- Experienced in REST API and Microservices Architecture.\n- Familiar with Apache Kafka or other asynchronous messaging technologies.\n- Experience in banking, payment systems, switching, or financial technology projects.\n- Strong analytical, problem-solving, and communication skills.\n- Able to work independently and collaboratively within a team.\n\nKey Responsibilities:\n- Develop and maintain backend applications using Java.\n- Build and integrate REST APIs and microservices.\n- Integrate applications with payment systems, switching, and middleware.\n- Optimize application performance for high-volume transactions.\n- Perform testing, troubleshooting, bug fixing, and application maintenance.\n\n📩 Interested candidates are welcome to submit their updated CV to:\n\nEmail: recruitment@murni.co.id\n\n📍Placement: Bank Indonesia ( Project Based)\n\nSubject: Java Programmer – [Full Name]\n\nJoin us and be part of an exciting project in the financial technology industry!\n\n#Hiring #WeAreHiring #JavaDeveloper #JavaProgrammer #SpringBoot #BackendDeveloper #Microservices #Kafka #ITJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528442151391711232",
+      "timestamp": "2026-11-17T13:01:20.906Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528437764330143744",
+      "text": "U.S. export controls now reach rented AI computing power\n- Washington is tightening its grip on how Chinese companies access advanced American chips, including those they never physically import.\n- Rules announced by the Commerce Department on 16 November target a route around existing restrictions: renting computing power from overseas data centers to train AI models.\n- The mechanism centers on hardware exports. Certain advanced chips and servers supplied to overseas data centers will require licenses if those facilities provide substantial computing to companies headquartered in China or other restricted countries. The requirement also covers companies whose ultimate parent is based there.\n- The rule takes effect on 19 November. Operators already serving affected customers have 90 days to obtain authorization or risk future export restrictions. Applications will be assessed case by case.\n- Advanced chip shipments to Indonesia, Malaysia, Singapore, Thailand, and Brazil will also require licenses because Commerce considers them potential diversion routes. Qualifying U.S.-headquartered end users are exempt but must submit reports.\n- For data center operators, the commercial implications are substantial:\nCustomer ownership and ultimate parent companies become central to access to American hardware.\n- Contracts with Chinese AI developers face greater regulatory uncertainty.\nChip exporters and foreign foundries face closer scrutiny of their customers.\n- The broader shift is clear: Washington is extending controls from where chips are shipped to who benefits from their computing power.\n- The *enforcement challenge* is *identifying* the *ultimate customer*. A data center may contract with a locally registered company while the computing serves a Chinese parent or client.\n- The likely result is a continuing contest between tighter customer checks and attempts to secure access through intermediaries. How effectively operators establish ownership and end use will help determine whether these rules materially slow Chinese AI development. #Geopolitics #AI #Compute #Chips",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528437761545146368",
+      "timestamp": "2026-11-17T12:43:54.626Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528432341845868544",
+      "text": "HIRING: Software Developers \n\nMercor | Global, fully remote | $50–$60/hr | Hourly Contractor | ~10–20 hrs/week\n\nAbout\nResearch project with a leading AI lab. Work through real development workflows on your own Mac to help benchmark and improve cutting-edge AI models. Open to software developers with 2–3 years of professional coding experience, or currently enrolled postgrad Computer Science students.\n\nWork\nComplete and narrate real software development tasks on your Mac — building, debugging, refactoring, reviewing code — to create high-quality training data · Clearly explain your reasoning while you work · Structured responsibilities without the high pressure of internships or full-time consulting\n\nNeed\nMust own a MacBook or Mac with Apple M-series chip or Intel processor, running macOS 15+ — applicants without a Mac cannot be considered · Hands-on experience with one or more languages (Python, JavaScript/TypeScript, Swift, Java, Go) · Comfortable with everyday macOS developer tools: VS Code, Xcode, Terminal, Git, package managers · Currently pursuing or recently completed Masters studies, OR 2–3 years relevant experience + Bachelors from a prestigious institution · Ability to clearly explain your reasoning · Excellent written and verbal communication\n\nDetails\nGlobal remote · flexible schedule · ~10–20 hrs/week · $50–$60/hr · independent contractor · weekly payments via Stripe or Wise · immediate start preferred\n\nProcess\nSubmit resume · brief 3-minute AI interviewer conversation (research and reasoning skills) · brief paid assessment · follow-up within a few days\n⚠️ no H1-B/STEM OPT\n\nApply here: https://t.mercor.com/lkPZf\n\n#USA #Canada #UK #Ireland #Germany #France #Netherlands #Belgium #Switzerland #Austria #Sweden #Norway #Denmark #Finland #Iceland #Italy #Spain #Portugal #Poland #CzechRepublic #Slovakia #Hungary #Romania #Bulgaria #Greece #Croatia #Slovenia #Serbia #Estonia #Latvia #Lithuania #Luxembourg #Malta #Cyprus #Australia #NewZealand #Japan #SouthKorea #Taiwan #Singapore #Malaysia #Thailand #Vietnam #Philippines #Indonesia #India #Israel #UAE #SaudiArabia #Qatar #Turkey #SouthAfrica #Nigeria #Kenya #Egypt #Morocco #Ghana #Brazil #Mexico #Argentina #Chile #Colombia #Peru #CostaRica #Uruguay #Ecuador #Panama #GlobalRemote #RemoteJobs #WorkFromHome #SoftwareDeveloper #Python #JavaScript #TypeScript #Swift #Java #Golang #VSCode #Xcode #Git #MacBook #AIResearch #DeveloperJobs #Hiring #JobOpening #Mercor",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432340864307201",
+      "timestamp": "2026-11-17T12:22:21.805Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528419523843174401",
+      "text": "🚨 SOUTHEAST ASIA DATA CENTRE STOCKS PLUNGE AS US TIGHTENS AI CHIP RESTRICTIONS\n\nShares of Southeast Asian data-centre and technology companies came under heavy pressure on November 17 after Washington introduced new restrictions on advanced AI chip exports.\n\nThe market reaction:\n\n🔸 🇲🇾 MN Holdings and Critical Holdings plunged nearly 20%.\n🔸 YTL Power fell close to 10%.\n🔸 Singapore's Frencken dropped 3.91%.\n🔸 Semiconductor and data-centre suppliers across Asia also faced selling pressure.\n🔸 China's SMIC gained around 7% as investors anticipated stronger demand for domestic alternatives.\n\nWhat triggered the sell-off?\n\nThe new US rules:\n\n🔸 Require export licences for covered advanced AI chips shipped to Malaysia, Singapore, Thailand, Indonesia and Brazil.\n🔸 Introduce customer-verification requirements for overseas data centres supplying significant computing capacity to companies headquartered in restricted countries.\n🔸 Aim to prevent Chinese AI developers from accessing restricted US computing technology through third-country data centres.\n\nWhy it matters:\n\nSoutheast Asia has become a major destination for AI infrastructure investment. Malaysia alone has approved approximately $95 billion in data-centre-related investments since 2021.\n\nThe restrictions could complicate expansion plans, reduce demand from certain Chinese customers and increase compliance costs.\n\nThe bigger picture: The AI infrastructure boom is increasingly being shaped not just by technology and capital, but also by geopolitics and export controls.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528419522719027200",
+      "timestamp": "2026-11-17T11:31:25.755Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7528415641897226240",
       "text": "US Chip Curbs Target Compute Arbitrage, But AI Buildout May Advance Rather Than Retreat (IVI-SD Take, 17 Nov 26 11Z, w/GenAI)\n\nWashington’s new restrictions on China’s access to advanced AI chips target a compliance loophole rather than the entire global semiconductor market. The US Commerce Department’s interim final rule requires licences for covered advanced-chip shipments to data centres in Singapore, Malaysia, Thailand, Indonesia and Brazil, and restricts overseas facilities from supplying high-threshold computing capacity to China-headquartered firms. It also rescinds the January 2025 global AI Diffusion framework, facilitating approved buyers in non-restricted jurisdictions to obtain advanced AI infrastructure, subject to normal export-control and compliance rules.\n\nThe immediate market impact has been concentrated in Asian semiconductor and Southeast Asian data-centre exposure. Malaysian infrastructure shares sold off sharply in Tuesday trading, while YTL Power, an Nvidia infrastructure partner, declined materially; Samsung Electronics and TSMC also weakened in Asian trading. The repricing reflects uncertainty over regional utilisation, compliance costs and the durability of cross-border AI-capacity arrangements, not confirmed evidence that global AI investment has slowed.\n\nThe rule is better understood as a move from regulating chip ownership to regulating access to computational capability. Its practical importance will depend less on the announcement than on licence-approval rates, due-diligence standards, audits and enforcement against cloud and data-centre operators. US companies operating data centres in the five named jurisdictions are reportedly exempt from the licensing requirement, suggesting Washington is attempting to curb diversion risk rather than suppress allied AI infrastructure outright.\n\nAcross the wider industry, the measures may redirect demand rather than eliminate it. Western hyperscalers, sovereign AI programmes and enterprises retain broad access to advanced compute, while Chinese firms face narrower, compliance-gated routes to non-frontier workloads and may still access capacity in US data centres subject to screening. Cloud providers are becoming de facto compliance gatekeepers, with potential exposure to customer vetting, utilisation monitoring and legal liability if restricted parties obtain remote access.\n\nBeijing has criticised the restrictions and said it would take necessary measures to defend its interests, but has not announced an immediate, sweeping retaliation package.  With APEC underway in Shenzhen and President Trump expected to meet President Xi, Beijing may has an incentive to keep any response calibrated to preserve trade stability while accelerating domestic substitution.  Retaliation, if it comes, need not be confined to semiconductors or critical minerals; procurement restrictions, regulatory scrutiny and cybersecurity measures remain possible channels.\n\nFor Nvidia, export controls now intersect with an acute governance shake-up. Jensen Huang resigned as president, chief executive and director on November 12, and CFO Colette Kress was appointed interim chief executive while the board searches for a permanent successor.  The company’s board said operations, customer commitments and the product roadmap should continue without interruption, but the abrupt transition adds execution and credibility risks at a sensitive moment for AI infrastructure spending.\n\nThe Megaspeed controversy compounds those risks. US authorities have investigated the Singapore-based cloud operator over suspicions that it helped route restricted Nvidia chips to China, while reporting has linked former executive Alice Huang to allegations of Chinese intelligence activity; those allegations have not been publicly proven, and Beijing has denied them.  For data-centre operators, the issue illustrates how a single compliance failure can turn a regional capacity advantage into a geopolitical and legal liability.\n\nNvidia’s investment plans may face more scrutiny rather than automatic expansion. Its reported direct China exposure has fallen materially, but the more immediate question is whether Kress and the board reassess Huang’s multi-billion-dollar ecosystem commitments, particularly where returns depend on uncertain cross-border compute access or speculative project economics. A plausible market interpretation is that capital may increasingly favor established cloud, power, networking and data-centre projects with clearer cash flows as demand from non-restricted jurisdictions increases, although that remains an inference rather than a stated Nvidia strategy.\n\nCompetitive pressure is likely to intensify regardless of the policy outcome. AMD, Intel, Broadcom and custom cloud-silicon programmes are seeking to diversify supply, while Chinese vendors including Huawei and Cambricon are positioned to benefit from domestic substitution.  Chinese laboratories’ reported use of US-model outputs for distillation may reduce some training-compute requirements, but it will unlikely remove the need for advanced accelerators at the frontier.\n\nThe emerging landscape points toward a more tightly policed, bifurcated AI buildout. Compliant Western capacity may consolidate around hyperscalers and financially stronger infrastructure platforms, while Chinese developers lean more heavily on domestic chips, software efficiency and alternative compute routes.  Some factors to monitor include Nvidia’s results and leadership update, licence approvals and enforcement in Southeast Asia, Beijing’s response, and evidence on whether AI capex shifts from speculative projects toward established infrastructure.",
       "author": "linkedin-member",
@@ -144,11 +172,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528412834230284288",
-      "text": "Closing the Cloud Loophole: The U.S. Tightens Control Over Global AI Infrastructure\nPhysical borders no longer define where computing power lives and U.S. regulators are adjusting their playbook accordingly.\nThe U.S. Department of Commerce’s Bureau of Industry and Security (BIS) has introduced sweeping new rules aimed at stopping Chinese companies from remotely accessing advanced American AI chips—such as Nvidia’s top-tier processors—through overseas data centers.\nUntil now, export controls largely focused on blocking the physical shipment of advanced semiconductors into restricted regions. However, cloud computing created an obvious workaround: companies unable to import high-end hardware could simply rent massive computing capacity hosted in third-party countries to train frontier AI models.\nWhat is changing?\n * Tighter Licensing in Key Hubs: Exporting advanced AI chips to major data center hubs—specifically Singapore, Malaysia, Thailand, Indonesia, and Brazil—now requires special U.S. export licenses to prevent diversion.\n * Strict Due Diligence on Cloud Customers: Overseas data center operators using U.S.-designed hardware must verify the ultimate ownership and control of their clients. If a facility provides substantial computing power to companies linked to restricted nations, it faces strict licensing requirements or operational limits.\n * Targeting Indirect Workloads: The regulations look beyond direct contracts, accounting for linked data centers and third-party intermediaries training AI models on behalf of restricted entities.\nWhy this matters for the tech ecosystem:\nFor cloud providers and data center operators across Southeast Asia and Latin America, compliance just became a primary competitive differentiator. Infrastructure projects built around international AI demand must now navigate rigorous Know-Your-Customer (KYC) protocols to maintain access to American silicon.\nMeanwhile, for AI developers globally, the message is clear: geopolitics isn't just shaping semiconductor supply chains anymore—it is actively redrawing the map of global cloud computing.\nHow do you see these new cloud restrictions impacting data center investments across emerging tech hubs?\n#ArtificialIntelligence #Semiconductors #CloudComputing #TechPolicy #DataCenters #AIInfrastructure #Nvidia #Geopolitics #ExportControls #TechNews",
+      "id": "urn:li:activity:7528413010801909761",
+      "text": "Closing the Cloud Loophole: The U.S. Tightens Control Over Global AI Infrastructure\nPhysical borders no longer define where computing power lives—and U.S. regulators are adjusting their playbook accordingly.\nThe U.S. Department of Commerce’s Bureau of Industry and Security (BIS) has introduced sweeping new rules aimed at stopping Chinese companies from remotely accessing advanced American AI chips—such as Nvidia’s top-tier processors—through overseas data centers.\nUntil now, export controls largely focused on blocking the physical shipment of advanced semiconductors into restricted regions. However, cloud computing created an obvious workaround: companies unable to import high-end hardware could simply rent massive computing capacity hosted in third-party countries to train frontier AI models.\nWhat is changing?\n * Tighter Licensing in Key Hubs: Exporting advanced AI chips to major data center hubs—specifically Singapore, Malaysia, Thailand, Indonesia, and Brazil—now requires special U.S. export licenses to prevent diversion.\n * Strict Due Diligence on Cloud Customers: Overseas data center operators using U.S.-designed hardware must verify the ultimate ownership and control of their clients. If a facility provides substantial computing power to companies linked to restricted nations, it faces strict licensing requirements or operational limits.\n * Targeting Indirect Workloads: The regulations look beyond direct contracts, accounting for linked data centers and third-party intermediaries training AI models on behalf of restricted entities.\nWhy this matters for the tech ecosystem:\nFor cloud providers and data center operators across Southeast Asia and Latin America, compliance just became a primary competitive differentiator. Infrastructure projects built around international AI demand must now navigate rigorous Know-Your-Customer (KYC) protocols to maintain access to American silicon.\nMeanwhile, for AI developers globally, the message is clear: geopolitics isn't just shaping semiconductor supply chains anymore—it is actively redrawing the map of global cloud computing.\nHow do you see these new cloud restrictions impacting data center investments across emerging tech hubs?\n#ArtificialIntelligence #Semiconductors #CloudComputing #TechPolicy #DataCenters #AIInfrastructure #Nvidia #Geopolitics #ExportControls #TechNews",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528412832187596800",
-      "timestamp": "2026-11-17T11:04:50.827Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528413008901951488",
+      "timestamp": "2026-11-17T11:05:32.925Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -158,11 +186,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528413010801909761",
-      "text": "Closing the Cloud Loophole: The U.S. Tightens Control Over Global AI Infrastructure\nPhysical borders no longer define where computing power lives—and U.S. regulators are adjusting their playbook accordingly.\nThe U.S. Department of Commerce’s Bureau of Industry and Security (BIS) has introduced sweeping new rules aimed at stopping Chinese companies from remotely accessing advanced American AI chips—such as Nvidia’s top-tier processors—through overseas data centers.\nUntil now, export controls largely focused on blocking the physical shipment of advanced semiconductors into restricted regions. However, cloud computing created an obvious workaround: companies unable to import high-end hardware could simply rent massive computing capacity hosted in third-party countries to train frontier AI models.\nWhat is changing?\n * Tighter Licensing in Key Hubs: Exporting advanced AI chips to major data center hubs—specifically Singapore, Malaysia, Thailand, Indonesia, and Brazil—now requires special U.S. export licenses to prevent diversion.\n * Strict Due Diligence on Cloud Customers: Overseas data center operators using U.S.-designed hardware must verify the ultimate ownership and control of their clients. If a facility provides substantial computing power to companies linked to restricted nations, it faces strict licensing requirements or operational limits.\n * Targeting Indirect Workloads: The regulations look beyond direct contracts, accounting for linked data centers and third-party intermediaries training AI models on behalf of restricted entities.\nWhy this matters for the tech ecosystem:\nFor cloud providers and data center operators across Southeast Asia and Latin America, compliance just became a primary competitive differentiator. Infrastructure projects built around international AI demand must now navigate rigorous Know-Your-Customer (KYC) protocols to maintain access to American silicon.\nMeanwhile, for AI developers globally, the message is clear: geopolitics isn't just shaping semiconductor supply chains anymore—it is actively redrawing the map of global cloud computing.\nHow do you see these new cloud restrictions impacting data center investments across emerging tech hubs?\n#ArtificialIntelligence #Semiconductors #CloudComputing #TechPolicy #DataCenters #AIInfrastructure #Nvidia #Geopolitics #ExportControls #TechNews",
+      "id": "urn:li:activity:7528412834230284288",
+      "text": "Closing the Cloud Loophole: The U.S. Tightens Control Over Global AI Infrastructure\nPhysical borders no longer define where computing power lives and U.S. regulators are adjusting their playbook accordingly.\nThe U.S. Department of Commerce’s Bureau of Industry and Security (BIS) has introduced sweeping new rules aimed at stopping Chinese companies from remotely accessing advanced American AI chips—such as Nvidia’s top-tier processors—through overseas data centers.\nUntil now, export controls largely focused on blocking the physical shipment of advanced semiconductors into restricted regions. However, cloud computing created an obvious workaround: companies unable to import high-end hardware could simply rent massive computing capacity hosted in third-party countries to train frontier AI models.\nWhat is changing?\n * Tighter Licensing in Key Hubs: Exporting advanced AI chips to major data center hubs—specifically Singapore, Malaysia, Thailand, Indonesia, and Brazil—now requires special U.S. export licenses to prevent diversion.\n * Strict Due Diligence on Cloud Customers: Overseas data center operators using U.S.-designed hardware must verify the ultimate ownership and control of their clients. If a facility provides substantial computing power to companies linked to restricted nations, it faces strict licensing requirements or operational limits.\n * Targeting Indirect Workloads: The regulations look beyond direct contracts, accounting for linked data centers and third-party intermediaries training AI models on behalf of restricted entities.\nWhy this matters for the tech ecosystem:\nFor cloud providers and data center operators across Southeast Asia and Latin America, compliance just became a primary competitive differentiator. Infrastructure projects built around international AI demand must now navigate rigorous Know-Your-Customer (KYC) protocols to maintain access to American silicon.\nMeanwhile, for AI developers globally, the message is clear: geopolitics isn't just shaping semiconductor supply chains anymore—it is actively redrawing the map of global cloud computing.\nHow do you see these new cloud restrictions impacting data center investments across emerging tech hubs?\n#ArtificialIntelligence #Semiconductors #CloudComputing #TechPolicy #DataCenters #AIInfrastructure #Nvidia #Geopolitics #ExportControls #TechNews",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528413008901951488",
-      "timestamp": "2026-11-17T11:05:32.925Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528412832187596800",
+      "timestamp": "2026-11-17T11:04:50.827Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -186,15 +214,71 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528411693723525120",
-      "text": "Another proud milestone for RINA in Indonesia 🇮🇩⚓\n\nWe are pleased to celebrate the issuance of a RINA Type Approval Certificate for Altonout PMS Software, a Planned Maintenance System for Machinery (PMS) developed byPT Alto Nautika Teknologi, Indonesia.\n\nThis marks the first RINA Type Approval of its kind issued to an Indonesian company, making this achievement particularly meaningful. It reflects the growing capability of Indonesia’s maritime technology sector and demonstrates what can be achieved through local innovation, collaboration, and commitment to international standards.\n\nMore than just a certification milestone, this achievement also reflects RINA’s continued commitment to supporting and strengthening Indonesia’s maritime industry and ecosystem. By working together with local maritime stakeholders and technology developers, we aim to encourage Indonesian innovation, strengthen local capabilities, and support Indonesian maritime solutions in gaining wider recognition.\n\nThis achievement would not have been possible without the dedication and teamwork of everyone involved. Special appreciation to our RINA Surveyor Ir. Fauzan Fikri, S.T., IPP. AMIMarEST., PA Engineers Hadi Abdillah, Ahmad Bagas, and Kashvinder Bhathal, as well as the PT Alto Nautika Teknologi team for the excellent collaboration throughout the approval process.\n\nProud to see another Indonesian-developed maritime solution taking an important step forward.\n\nTogether, we continue contributing to a stronger, more innovative, and globally connected Indonesian maritime ecosystem. 🇮🇩🌊\n\n#RINA #MaritimeIndonesia #TypeApproval #MaritimeTechnology #MaritimeInnovation #PMS #Classification #Indonesia #IndonesiaEmas2045 #IndonesiaRaya\n\nPang Yong Song Ivan Ang David Rieger Indra Gunawan Kusuma Amirul Hidayat Rizal Hidayat Fadillah Asnawi Asnawi Richson Hasibuan Moh Hilmy Fadlillah Handy Noormindha Stefan Layanto",
+      "id": "urn:li:activity:7528441012428488705",
+      "text": "I’m happy to share that I’m starting a new position as Production Engineer at PT Denso Indonesia!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528411691324325888",
-      "timestamp": "2026-11-17T11:00:18.909Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528441011648258048",
+      "timestamp": "2026-11-17T12:56:49.033Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528441016136318976",
+      "text": "Following the closing of our Graduate Hydropower Engineer recruitment, Powerchina Huadong Engineering Corporation Limited, through its Global Hydropower Engineering Technological Center (GHETC), is now seeking a Business Development Support professional to join our team in Jakarta. We are particularly interested inMandarin-speaking candidates with backgrounds in Business, Management, Engineering, or related fields, with prior experience and interest in business development activities withinIndonesia's hydropower and renewable energy sector.\n\nApply here: https://lnkd.in/grHUU2wa",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441014944976896",
+      "timestamp": "2026-11-17T12:56:49.917Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528434783295553536",
+      "text": "We're #hiring a new Manufacturing Process Engineer in Kota Salatiga, Central Java. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528434782779641856",
+      "timestamp": "2026-11-17T12:32:03.892Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528433811085307904",
+      "text": "I’m happy to share that I’m starting a new position as Graduate Trainee Program - Production Engineer at PT Indonesia Body Maker!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528433810284118016",
+      "timestamp": "2026-11-17T12:28:12.099Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528431639694204928",
+      "text": "HIRING: Mechanical Engineering Writer\n\nMercor | Global, fully remote | $80/hr | Hourly Contractor\n\nAbout\nBuild evaluation tasks for AI systems in Fortune 500 product design and manufacturing contexts, calibrated to F500 design complexity, safety stakes, and production scale. Two standards tracks: US (ASME) and International (ISO) — experts in either or both encouraged to apply. Design enterprise scenarios, draft reference outputs, and write rubrics capturing how senior F500 engineering leaders think.\n\nWork\nEnterprise scenarios spanning complex product design cycles, multi-stakeholder design reviews, and manufacturing/regulatory certification · Tasks across product design and CAD modeling, thermal/fluid systems, structural/stress analysis, manufacturing process engineering, and reliability/failure analysis · Tools: SolidWorks, ANSYS, CATIA, MATLAB/Simulink, PLM (Teamcenter, Windchill) · Methodologies: FEA/CFD, DFM/DFA, Six Sigma/DFSS, GD&T (ASME Y14.5 / ISO GPS) · Author rubrics distinguishing real enterprise judgment from textbook recall\n\nNeed\n5+ yrs as mechanical engineer or engineering lead at a Fortune 500 or major industrial, automotive, aerospace, or manufacturing company (GE, Boeing, Caterpillar, Ford, Honeywell, Siemens, Bosch, Rolls-Royce, MHI) · Direct ownership of large-scale designs, manufacturing processes, or certification programs · Fluency in enterprise tooling/methodologies and understanding of safety standards, regulatory certification (ASME, ISO, FAA, FDA), and design governance\n\nPlus: US PE, CEng, or EUR ING · prior rubric, curriculum, or design documentation authorship\n\nDetails\nGlobal remote · flexible · $80/hr · contractor · weekly payments via Stripe/Wise\n⚠️ no H1-B/STEM OPT\n\nApply here: https://t.mercor.com/o6hUW\n\n#USA #Canada #UK #Ireland #Germany #France #Netherlands #Belgium #Switzerland #Austria #Sweden #Norway #Denmark #Finland #Iceland #Italy #Spain #Portugal #Poland #CzechRepublic #Slovakia #Hungary #Romania #Bulgaria #Greece #Croatia #Slovenia #Serbia #Estonia #Latvia #Lithuania #Luxembourg #Malta #Cyprus #Australia #NewZealand #Japan #SouthKorea #Taiwan #Singapore #Malaysia #Thailand #Vietnam #Philippines #Indonesia #India #Israel #UAE #SaudiArabia #Qatar #Turkey #SouthAfrica #Nigeria #Kenya #Egypt #Morocco #Ghana #Brazil #Mexico #Argentina #Chile #Colombia #Peru #CostaRica #Uruguay #Ecuador #Panama #GlobalRemote #RemoteJobs #WorkFromHome #MechanicalEngineering #FEA #CFD #SolidWorks #ANSYS #CATIA #GDandT #ASME #ISO #SixSigma #Fortune500 #Hiring #JobOpening #Mercor",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528431638863859712",
+      "timestamp": "2026-11-17T12:19:34.399Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -284,85 +368,141 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528412319735853057",
-      "text": "Indonesia’s pharma industry grew 7.5% year on year, and its digital economy was projected at nearly US$100B in 2025. Growth like that opens roles faster than the talent pool can fill them.\n\nAliya, Recruitment Consultant at HuntHire, worked on three of them this year. A pharma company needed a Strategic Management Manager, and most candidates were strong in either operations or strategy, rarely both. She looked for pharma experience paired with strategic planning, KPIs, and continuous improvement. A tech company’s Senior Site Reliability Engineer role had a small pool with niche skills, so she reassessed the brief and added the certifications the role actually required. For a VVIP Household Manager, few expats were willing to relocate, so the search went beyond LinkedIn and checked each candidate’s motivation to move.\n\nEach brief got its own search. What stayed the same was how she worked with candidates. In her words: “Every role is different, and so is every candidate.”\n\nHuntHire builds each search around the role, with a consultant who makes every hire personal.\n\n📩 recruitment@hunthire.id\n📞 +62 811-1011-6867",
+      "id": "urn:li:activity:7528444671187005440",
+      "text": "🚨 WE'RE HIRING! 🚨\n\n📑 ADMIN EKSPOR IMPOR\n\nIt's time to take a new step in your career! ✨\n\nPT Global Service Indonesia, part of the PT United Tractors Tbk. business group, is once again opening opportunities for those of you who want to grow with us as an ADMIN EKSPOR IMPOR.\n\nIf you have the appropriate qualifications, send your CV immediately via the link provided. Don't miss this opportunity, as the recruitment process will be closed once the position needs are met.\n\nThank you for your enthusiasm and trust to be part of GSI.\n\nBest Regards,\nGSI Recruitment Team",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528412318703996929",
-      "timestamp": "2026-11-17T11:02:48.162Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528444669035364353",
+      "timestamp": "2026-11-17T13:11:21.349Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528411642464919554",
-      "text": "Title: Penetration Tester\nCompany: Protergo\nCountry: Indonesia\nCity: Tangerang\nEmployment Type: full-time\nLocation: onsite\nRemote/Onsite: onsite\nVisa Support: false\n- - - - - - - - - - - - - - - - - - \nLink: https://lnkd.in/dHeA_ewP\n- - - - - - - - - - - - - - - - - -\n#burpsuite #cloudsecurity #ethicalhacking #infrastructuresecuritytesting #metasploit #mobileapplicationsecurity #networksecurity #nmap #penetrationtesting #powershell #python #redteaming #ruby #securecoding #vulnerabilityassessment #webapplicationsecurity #softwaretesting #jobs #qualityassurance #tester #automation #engineer #ai #selenium #playwright",
+      "id": "urn:li:activity:7528443904107618305",
+      "text": "📢Hello LATAM and Europe 📢📢\n\n🚨Except for Brazil🚨\n\n🚀 **WE'RE HIRING: STAFF PRODUCT MANAGER – PRODUCT-LED GROWTH (B2C SaaS)**\n\n🌎 **Location:** 100% Remote (US East Coast, Europe or Indonesia)  \n🕒 **Workload:** Full-time or 20 hours/week to start  \n📌 **Reports to:** CEO\n\nWe are looking for an experienced **Staff Product Manager** to own the growth strategy of a B2C subscription SaaS product, driving activation, retention, expansion and monetization.\n\n**🔹 Key Responsibilities**\n- Own retention strategies and roadmaps to reduce customer churn.\n- Improve user activation, onboarding and time-to-value.\n- Drive user engagement through behavioral triggers and lifecycle messaging.\n- Define product strategy, manage the backlog and prioritize initiatives based on business impact.\n- Lead product and engineering collaboration.\n- Design, execute and measure continuous growth experiments.\n- Use customer insights and data to drive product decisions.\n\n**🔹 Requirements**\n- 7+ years of experience in Product Management (Senior, Staff, Principal or Senior Growth PM).\n- Strong experience with product-led, self-service subscription products (B2C SaaS preferred).\n- Proven experience across the user journey: acquisition, activation, retention, monetization and expansion.\n- Demonstrated success in reducing churn and improving activation, supported by measurable results.\n- Hands-on experience with product analytics tools such as Amplitude, Mixpanel, GA4, SQL or similar.\n- Strong knowledge of subscription metrics: LTV, ARPU, churn, retention cohorts and payback.\n- Experience conducting user interviews, churn analysis and customer discovery.\n- Strong UX and behavioral design skills.\n- **Fluent written and spoken English.**\n\n📩 Interested or know someone who could be a great fit? Feel free to apply or send me a DM!\n\n#Hiring #ProductManager #StaffProductManager #ProductLedGrowth #B2CSaaS #RemoteJobs #ProductManagement",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528411641319919616",
-      "timestamp": "2026-11-17T11:00:06.688Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528443901351976960",
+      "timestamp": "2026-11-17T13:08:18.463Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528411693723525120",
-      "text": "Another proud milestone for RINA in Indonesia 🇮🇩⚓\n\nWe are pleased to celebrate the issuance of a RINA Type Approval Certificate for Altonout PMS Software, a Planned Maintenance System for Machinery (PMS) developed byPT Alto Nautika Teknologi, Indonesia.\n\nThis marks the first RINA Type Approval of its kind issued to an Indonesian company, making this achievement particularly meaningful. It reflects the growing capability of Indonesia’s maritime technology sector and demonstrates what can be achieved through local innovation, collaboration, and commitment to international standards.\n\nMore than just a certification milestone, this achievement also reflects RINA’s continued commitment to supporting and strengthening Indonesia’s maritime industry and ecosystem. By working together with local maritime stakeholders and technology developers, we aim to encourage Indonesian innovation, strengthen local capabilities, and support Indonesian maritime solutions in gaining wider recognition.\n\nThis achievement would not have been possible without the dedication and teamwork of everyone involved. Special appreciation to our RINA Surveyor Ir. Fauzan Fikri, S.T., IPP. AMIMarEST., PA Engineers Hadi Abdillah, Ahmad Bagas, and Kashvinder Bhathal, as well as the PT Alto Nautika Teknologi team for the excellent collaboration throughout the approval process.\n\nProud to see another Indonesian-developed maritime solution taking an important step forward.\n\nTogether, we continue contributing to a stronger, more innovative, and globally connected Indonesian maritime ecosystem. 🇮🇩🌊\n\n#RINA #MaritimeIndonesia #TypeApproval #MaritimeTechnology #MaritimeInnovation #PMS #Classification #Indonesia #IndonesiaEmas2045 #IndonesiaRaya\n\nPang Yong Song Ivan Ang David Rieger Indra Gunawan Kusuma Amirul Hidayat Rizal Hidayat Fadillah Asnawi Asnawi Richson Hasibuan Moh Hilmy Fadlillah Handy Noormindha Stefan Layanto",
+      "id": "urn:li:activity:7528442152746590208",
+      "text": "🚀 WE ARE HIRING –JAVA PROGRAMMER (BI-FAST PROJECT)\n\nPT Murni Solusindo Nusantara is currently looking for an experienced Java Programmer to join our team and contribute to the BI-FAST Project.\n\nQualifications:\n- Bachelor's degree (S1) in Informatics Engineering, Computer Science, Information Systems, or a related field.\n- Minimum 5 years of experience as a Java Programmer/Developer.\n- Proficient in Java Frameworks, particularly Spring Boot and Spring Framework.\n- Experienced in REST API and Microservices Architecture.\n- Familiar with Apache Kafka or other asynchronous messaging technologies.\n- Experience in banking, payment systems, switching, or financial technology projects.\n- Strong analytical, problem-solving, and communication skills.\n- Able to work independently and collaboratively within a team.\n\nKey Responsibilities:\n- Develop and maintain backend applications using Java.\n- Build and integrate REST APIs and microservices.\n- Integrate applications with payment systems, switching, and middleware.\n- Optimize application performance for high-volume transactions.\n- Perform testing, troubleshooting, bug fixing, and application maintenance.\n\n📩 Interested candidates are welcome to submit their updated CV to:\n\nEmail: recruitment@murni.co.id\n\n📍Placement: Bank Indonesia ( Project Based)\n\nSubject: Java Programmer – [Full Name]\n\nJoin us and be part of an exciting project in the financial technology industry!\n\n#Hiring #WeAreHiring #JavaDeveloper #JavaProgrammer #SpringBoot #BackendDeveloper #Microservices #Kafka #ITJobs",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528411691324325888",
-      "timestamp": "2026-11-17T11:00:18.909Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528442151391711232",
+      "timestamp": "2026-11-17T13:01:20.906Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528408790359150592",
-      "text": "Successfully finished the cleaning work on the Bag Filter PA10 ducting and cyclone project with PT. Surya Pranoesa at Cheil Jedang Indonesia, Pasuruan Site.\n\nThe task included cleaning with a high-pressure water jet, where the pressure went as high as 400 bar, using a machine that can handle up to 500 bar.\n\nDuring the project, I worked with the contractor team, CJI Safety Team, area users, engineers, and other related departments to coordinate activities in the field.\n\nAnother helpful experience that helps understand how field work is done, working with a team, and how different departments work together.\n\n#HSE #SafetyOfficer #ProjectExperience #IndustrialCleaning",
+      "id": "urn:li:activity:7528441796033437696",
+      "text": "🚀 BIG OPPORTUNITY ALERT! UMAX HUB IS HIRING! 💙\n✨ YOUR NEXT CAREER STARTS HERE! ✨\nLooking for a new opportunity? This is your chance!\nPT UMAX HUB INDONESIA is expanding, and we're looking for passionate, creative, and talented individuals to grow with us! 🔥\n💼 WE'RE HIRING FOR MULTIPLE POSITIONS!\n🛒 E-COMMERCE & OPERATIONS\nE-Commerce Manager\nE-Commerce Supervisor\nE-Commerce Content Operation\nE-Commerce After-sales Operation\nProduct Admin\n🎬 CONTENT, CREATIVE & DIGITAL\nHead of Creative\nSocial Media Specialist\nContent Planner\nContent Creator\nVideographer\nVideo Editor\nAI Video Editor\nAI Short Video Creator\n📈 BUSINESS & SALES\nBusiness Development\nB2B Sales Admin\nHost Live Streaming\n📦 WAREHOUSE & LOGISTICS\nWarehouse Manager\nWarehouse Staff\n🎓 INTERNSHIP OPPORTUNITIES\nEcommerce Operation Intern\nEcommerce Content Operation Intern\n━━━━━━━━━━━━━━━━━━\n📍 WORK LOCATION\nJakarta Barat & Tangerang (sesuai posisi)\n💼 EMPLOYMENT\nFull-Time & Part-Time (sesuai posisi)\n🎯 WHO ARE WE LOOKING FOR?\nWe're looking for individuals who are:\n✅ Passionate & eager to grow\n✅ Creative, proactive & responsible\n✅ Strong team players\n✅ Ready to learn, innovate & make an impact\n✅ Target-oriented & problem solvers\n💙 WHY JOIN UMAX HUB?\nBe part of a growing e-commerce company where your ideas matter, your skills develop, and your career has room to grow!\n━━━━━━━━━━━━━━━━━━\n🔥 DON'T JUST LOOK FOR A JOB. BUILD YOUR FUTURE WITH US!\n📩 READY TO JOIN? APPLY NOW!\n🔗 Apply through our official JobStreet page:\nhttps://lnkd.in/gf_W9Fsb\n💌 Know someone who's looking for a new opportunity? Tag them or share this post!\nYOUR TALENT. YOUR FUTURE. YOUR UMAX HUB. 🚀\n#UMAXHUB #UMAXHiring #WereHiring #HiringNow #LowonganKerja #LokerJakarta #LokerJakartaBarat #LokerTangerang #EcommerceJobs #CreativeJobs #DigitalMarketing #BusinessDevelopment #ContentCreator #InternshipOpportunity #FreshGraduate #CareerOpportunity",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528408789474201601",
-      "timestamp": "2026-11-17T10:48:46.693Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441793193889792",
+      "timestamp": "2026-11-17T12:59:55.859Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528408025137815552",
-      "text": "Indonesia: roles open on the Kutei North Hub FPSO project and at McDermott's Batam fabrication yard, read on the employers' own portals on 16 November.\n\n- Production Planner · Saipem (GPS AG) · advert: Kutei, closes 31 Dec 2026\n- Lead Cost Controller · Saipem (GPS AG) · advert: KUTEI North Hub FPSO Project, closes 30 Dec 2026\n- Scaffolder (Fab) · McDermott · Batam · scaffolder certificate (Kemnaker RI)\n- Structural Fitter · McDermott · Batam\n- Principal Commissioning Engineer · McDermott · Batam\n\nIf you know fabrication or FPSO people in Indonesia, send them the list. Apply early: adverts can close before the deadline once enough people have applied.\n\nEvery link, with the employer's own application page: https://epcradar.com/jobs\n\nWe never ask for money for jobs.",
+      "id": "urn:li:activity:7528441858708910082",
+      "text": "WE ARE HIRING: Mandarin-Speaking Customer Service Agent\n📌Location: Lippo Plaza, Yogyakarta, Indonesia\n\n✅Open to negotiation\n✅Project: Travel Account\n✅Immediate Joiners Only\n✅8 headcounts\n✅Employment Type: Full-time\n✅Required Language: Mandarin + English (B2)\n✅Education: Diploma or Minimum S1 equivalent (Bachelor's degree or equivalent qualification)\n\n✅Job Overview\nOur client is hiring Mandarin-speaking Customer Service Representatives for its Travel Account in Yogyakarta. This opportunity is suitable for candidates with strong Mandarin communication skills and good English proficiency who are ready to join immediately.\nCandidates with previous experience in customer service or online travel agencies (OTAs) are preferred, but fresh graduates and entry-level applicants are also welcome to apply.\n\n✅Key Responsibilities\n* Assist customers with travel-related inquiries, bookings, reservations, cancellations, and changes.\n* Provide accurate information and support regarding travel services and booking issues.\n* Respond to customer inquiries through the assigned communication channels.\n* Resolve customer complaints professionally and work toward customer satisfaction.\n* Communicate effectively with Mandarin-speaking customers and use English when required.\n* Follow company procedures, service standards, and quality guidelines.\n* Maintain accurate customer records and document interactions.\n* Escalate complex issues to the appropriate team when necessary.\n✅Requirements\n* Strong Mandarin communication skills.\n* English proficiency at B2 level or above.\n* Must be available to join immediately and commence work on October 18, 2026.\n* Minimum education equivalent to S1 (Bachelor's degree).\n* Previous customer service or Online Travel Agency (OTA) experience is preferred, but not mandatory.\n* Freshers are welcome if they have the required language skills and are eager to learn.\n* Must be willing to work at the client's office at Lippo Plaza, Yogyakarta.\n* Must be able to complete the required voice assessment (SVAR).\n✅Benefits\n* Opportunity to gain experience in an international customer service environment.\n* Training and development opportunities for eligible candidates.\n* Other benefits and allowances, if applicable, will be communicated during the recruitment process.\nApplication Instructions\nInterested candidates who meet the requirements and can join immediately are encouraged to apply.\n📩 How to Apply Send your updated resume to Afeez.Owolabi@recruitifyhrcom \nSubject: Mandarin-Speaking Customer Service Agent",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528408024047185921",
-      "timestamp": "2026-11-17T10:45:44.250Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441855940694016",
+      "timestamp": "2026-11-17T13:00:10.802Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528405851858960384",
-      "text": "📢 Level Up Your Career : Designing a Sustainable Tomorrow with ASHRAE\n\nJoin us in Young Engineer ASHRAE Webinar #1 with topics :\n\n1) Start and Build Your Career from Student Member to Young Engineer in ASHRAE (YEA)\n2) Changing the Game : Retrofitting for Resilience\n\n📅: Thursday, 26th November 2026\n⏰: 15.00 ~ 16.30 WIB\n💻: Zoom Meeting \n💵: FREE for ASHRAE Member and Non-Member \n\nRegistration link :\nhttps://lnkd.in/gA6ic8bW\n\nWhat will you get? \n\n1) E-certificate\n2) E-wallet voucher for 3 winners*\n\n*download HVAC Hero Game from ASHRAE and play during the event\n\nHVAC Hero Game installation instruction :\nhttps://lnkd.in/echtZGJS\n\nLooking forward to seeing you there!\n\n#ASHRAEIndonesiaChapter #YoungEngineerASHRAE #StudentActivityASHRAE",
+      "id": "urn:li:activity:7528441910475096064",
+      "text": "WE ARE HIRING: Mandarin-Speaking Customer Service Agent\n📌Location: Lippo Plaza, Yogyakarta, Indonesia\n\n✅Open to negotiation\n✅Project: Travel Account\n✅Immediate Joiners Only\n✅8 headcounts\n✅Employment Type: Full-time\n✅Required Language: Mandarin + English (B2)\n✅Education: Diploma or Minimum S1 equivalent (Bachelor's degree or equivalent qualification)\n\n✅Job Overview\nOur client is hiring Mandarin-speaking Customer Service Representatives for its Travel Account in Yogyakarta. This opportunity is suitable for candidates with strong Mandarin communication skills and good English proficiency who are ready to join immediately.\nCandidates with previous experience in customer service or online travel agencies (OTAs) are preferred, but fresh graduates and entry-level applicants are also welcome to apply.\n\n✅Key Responsibilities\n* Assist customers with travel-related inquiries, bookings, reservations, cancellations, and changes.\n* Provide accurate information and support regarding travel services and booking issues.\n* Respond to customer inquiries through the assigned communication channels.\n* Resolve customer complaints professionally and work toward customer satisfaction.\n* Communicate effectively with Mandarin-speaking customers and use English when required.\n* Follow company procedures, service standards, and quality guidelines.\n* Maintain accurate customer records and document interactions.\n* Escalate complex issues to the appropriate team when necessary.\n✅Requirements\n* Strong Mandarin communication skills.\n* English proficiency at B2 level or above.\n* Must be available to join immediately and commence work on October 18, 2026.\n* Minimum education equivalent to S1 (Bachelor's degree).\n* Previous customer service or Online Travel Agency (OTA) experience is preferred, but not mandatory.\n* Freshers are welcome if they have the required language skills and are eager to learn.\n* Must be willing to work at the client's office at Lippo Plaza, Yogyakarta.\n* Must be able to complete the required voice assessment (SVAR).\n✅Benefits\n* Opportunity to gain experience in an international customer service environment.\n* Training and development opportunities for eligible candidates.\n* Other benefits and allowances, if applicable, will be communicated during the recruitment process.\nApplication Instructions\nInterested candidates who meet the requirements and can join immediately are encouraged to apply.\n📩 How to Apply Send your updated resume to Afeez.Owolabi@recruitifyhrcom \nSubject: Mandarin-Speaking Customer Service Agent",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528405850852446209",
-      "timestamp": "2026-11-17T10:37:06.100Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441907656458241",
+      "timestamp": "2026-11-17T13:00:23.144Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528441988392861698",
+      "text": "WE ARE HIRING: Mandarin-Speaking Customer Service Agent\n📌Location: Lippo Plaza, Yogyakarta, Indonesia\n\n✅Open to negotiation\n✅Project: Travel Account\n✅Immediate Joiners Only\n✅8 headcounts\n✅Employment Type: Full-time\n✅Required Language: Mandarin + English (B2)\n✅Education: Diploma or Minimum S1 equivalent (Bachelor's degree or equivalent qualification)\n\n✅Job Overview\nOur client is hiring Mandarin-speaking Customer Service Representatives for its Travel Account in Yogyakarta. This opportunity is suitable for candidates with strong Mandarin communication skills and good English proficiency who are ready to join immediately.\nCandidates with previous experience in customer service or online travel agencies (OTAs) are preferred, but fresh graduates and entry-level applicants are also welcome to apply.\n\n✅Key Responsibilities\n* Assist customers with travel-related inquiries, bookings, reservations, cancellations, and changes.\n* Provide accurate information and support regarding travel services and booking issues.\n* Respond to customer inquiries through the assigned communication channels.\n* Resolve customer complaints professionally and work toward customer satisfaction.\n* Communicate effectively with Mandarin-speaking customers and use English when required.\n* Follow company procedures, service standards, and quality guidelines.\n* Maintain accurate customer records and document interactions.\n* Escalate complex issues to the appropriate team when necessary.\n✅Requirements\n* Strong Mandarin communication skills.\n* English proficiency at B2 level or above.\n* Must be available to join immediately and commence work on October 18, 2026.\n* Minimum education equivalent to S1 (Bachelor's degree).\n* Previous customer service or Online Travel Agency (OTA) experience is preferred, but not mandatory.\n* Freshers are welcome if they have the required language skills and are eager to learn.\n* Must be willing to work at the client's office at Lippo Plaza, Yogyakarta.\n* Must be able to complete the required voice assessment (SVAR).\n✅Benefits\n* Opportunity to gain experience in an international customer service environment.\n* Training and development opportunities for eligible candidates.\n* Other benefits and allowances, if applicable, will be communicated during the recruitment process.\nApplication Instructions\nInterested candidates who meet the requirements and can join immediately are encouraged to apply.\n📩 How to Apply Send your updated resume to Afeez.Owolabi@recruitifyhrcom \nSubject: Mandarin-Speaking Customer Service Agent",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441985582678017",
+      "timestamp": "2026-11-17T13:00:41.721Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528441280280875008",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 AUDITOR INTERN – INDONESIA\n\nAnwar & Rekan (DFK International) is currently hiring Auditor Intern.\n\nCompany: Anwar & Rekan (DFK International)\nPosition: Auditor Intern\n\nRequirements:\n- Final-year Accounting student (thesis only) from a reputable university, holding a minimum GPA of 3.00\n- Capable of interacting professionally with individuals at all levels\n- Fluent in English, both spoken and written\n- Proficient in Microsoft Office applications\n- Duration: Approximately 5 months\n\n🔗 Apply: human.capital@anwar-rekan.com (Subject: Auditor Intern - Name)\n📌 Source:KAP Anwar & Rekan\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528441279483891712",
+      "timestamp": "2026-11-17T12:57:52.894Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528438661411958784",
+      "text": "We're #hiring a new Work from Home - Marketing Execution Lead in Indonesia. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528438660887674880",
+      "timestamp": "2026-11-17T12:47:28.507Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528436310420865024",
+      "text": "We're #hiring a new Secretary (Mandarin Speaker) in Central Cikarang, West Java. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528436309883785216",
+      "timestamp": "2026-11-17T12:38:07.987Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -382,11 +522,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528435781431083008",
-      "text": "We're #hiring a new Head of Affiliate & MCN in Cisauk, Banten. Apply today or share this post with your network.",
+      "id": "urn:li:activity:7528440841502244865",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 JUNIOR AUDITOR – INDONESIA\n\nAnwar & Rekan (DFK International) is currently hiring Junior Auditor.\n\nCompany: Anwar & Rekan (DFK International)\nPosition: Junior Auditor\n\nRequirements:\n- Accounting Bachelor or PPAk from a reputable university with a minimum GPA of 3.00\n- Able to work effectively under pressure and meet established objectives\n- Excellent communication, presentation, and interpersonal skills\n- Fluency in English both verbal and written\n- Familiarity with Microsoft Office applications (Excel, Word & PowerPoint)\n\n🔗 Apply: human.capital@anwar-rekan.com (Subject: Junior Auditor - Name)\n📌 Source:KAP Anwar & Rekan\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528435780868812800",
-      "timestamp": "2026-11-17T12:36:01.866Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528440838641672192",
+      "timestamp": "2026-11-17T12:56:08.281Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -396,11 +536,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528435989158002689",
-      "text": "📌 Caelum's Shared Opportunities!\n📸 ACCOUNT PAYABLE STAFF – INDONESIA\n\nPT Multi Kontrol Nusantara is currently hiring Account Payable Staff.\n\nCompany: PT Multi Kontrol Nusantara\nPosition: Account Payable Staff\n\nRequirements:\n- Bachelor's degree in Accounting from a reputable university\n- Minimum 1 year of experience in Finance or Accounting roles\n- Familiar with basic accounting principles and financial administration\n- Proficient in Microsoft Excel (ERP/accounting system experience is a plus)\n- Strong analytical, communication, problem-solving, and detail-oriented skills\n\n🔗 Apply: bit.ly/MKNHiring2026\n📌 Source: PT Multi Kontrol Nusantara\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "id": "urn:li:activity:7528435781431083008",
+      "text": "We're #hiring a new Head of Affiliate & MCN in Cisauk, Banten. Apply today or share this post with your network.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528435988176666625",
-      "timestamp": "2026-11-17T12:36:51.392Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528435780868812800",
+      "timestamp": "2026-11-17T12:36:01.866Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -452,11 +592,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528434402624946176",
-      "text": "We're #hiring a new Head of Sales in Jakarta Metropolitan Area. Apply today or share this post with your network.",
+      "id": "urn:li:activity:7528440016683917312",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 FINANCE MANAGER (MANDARIN SPEAKER) – SOUTH TANGERANG\n\nA financial services company is currently hiring Finance Manager (Mandarin Speaker).\n\nCompany: Confidential (Financial Services Industry)\nPosition: Finance Manager (Mandarin Speaker)\nLocation: South Tangerang, Indonesia\n\nRequirements:\n- Bachelor's degree in Accounting, Finance, or related field\n- Minimum 5 years of experience in FAT, preferably with leadership experience\n- Brevet A & B certification is a MUST\n- HSK 5 certification preferred or equivalent professional Mandarin speaking and writing proficiency\n- Strong hands-on experience in financial reconciliation (ability to explain in Mandarin is required) and payroll processing\n- Background in Banking, Fintech/P2P Lending, Insurance, Multifinance, or Cryptocurrency preferred\n\n🔗 Apply: +62 87886975817 (WhatsApp)\n📌 Source: Clara Verena\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528434402020966401",
-      "timestamp": "2026-11-17T12:30:33.133Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528440015618703361",
+      "timestamp": "2026-11-17T12:52:51.629Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -466,11 +606,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528434317375651840",
-      "text": "📌 Caelum's Shared Opportunities!\n📸 ACCOUNTING & PAYROLL SPECIALIST – KUNINGAN, SOUTH JAKARTA\n\nAscentium Indonesia is currently hiring Accounting & Payroll Specialist.\n\nCompany: Ascentium Indonesia\nPosition: Accounting & Payroll Specialist\nLocation: Kuningan, South Jakarta\n\nRequirements:\n- Minimum 1 year of experience in accounting\n- Proficiency in accounting software\n- Good English communication skills\n- Ready to thrive in a dynamic consulting environment\n\n🔗 Apply: https://lnkd.in/gXJXjQem orJob.id@incorp.asia\n📌 Source: Raihanah Hedyant Herbat\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "id": "urn:li:activity:7528434402624946176",
+      "text": "We're #hiring a new Head of Sales in Jakarta Metropolitan Area. Apply today or share this post with your network.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528434316587008000",
-      "timestamp": "2026-11-17T12:30:12.808Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528434402020966401",
+      "timestamp": "2026-11-17T12:30:33.133Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -522,6 +662,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7528435989158002689",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 ACCOUNT PAYABLE STAFF – INDONESIA\n\nPT Multi Kontrol Nusantara is currently hiring Account Payable Staff.\n\nCompany: PT Multi Kontrol Nusantara\nPosition: Account Payable Staff\n\nRequirements:\n- Bachelor's degree in Accounting from a reputable university\n- Minimum 1 year of experience in Finance or Accounting roles\n- Familiar with basic accounting principles and financial administration\n- Proficient in Microsoft Excel (ERP/accounting system experience is a plus)\n- Strong analytical, communication, problem-solving, and detail-oriented skills\n\n🔗 Apply: bit.ly/MKNHiring2026\n📌 Source: PT Multi Kontrol Nusantara\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528435988176666625",
+      "timestamp": "2026-11-17T12:36:51.392Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7528433071918915584",
       "text": "We're #hiring a new Area Specialist in Greater Semarang. Apply today or share this post with your network.",
       "author": "linkedin-member",
@@ -550,6 +704,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7528432728657076224",
+      "text": "We're #hiring a new Credit Analyst (SME) in Jakarta. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432728128548864",
+      "timestamp": "2026-11-17T12:23:54.028Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7528432956475080704",
       "text": "We're #hiring a new Business Development - Denpasar in Greater Yogyakarta. Apply today or share this post with your network.",
       "author": "linkedin-member",
@@ -564,25 +732,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528432959285092352",
-      "text": "📌 Caelum's Shared Opportunities!\n📸 TRANSFER PRICING SENIOR ASSOCIATE / ASSISTANT MANAGER – INDONESIA\n\nDeloitte Indonesia is currently hiring Transfer Pricing Senior Associate / Assistant Manager.\n\nCompany: Deloitte Indonesia\nPosition: Transfer Pricing Senior Associate / Assistant Manager\n\nRequirements:\n- Relevant academic background in Accounting, Finance, Tax, or related fields\n- Professional experience in Transfer Pricing at a Senior Associate or Assistant Manager level\n- Strong understanding of local tax regulations and international tax concepts\n- Excellent leadership, analytical, and communication skills\n\n🔗 Apply: https://lnkd.in/g78jWNd9\n📌 Source: Maria Veda SK\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "id": "urn:li:activity:7528434317375651840",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 ACCOUNTING & PAYROLL SPECIALIST – KUNINGAN, SOUTH JAKARTA\n\nAscentium Indonesia is currently hiring Accounting & Payroll Specialist.\n\nCompany: Ascentium Indonesia\nPosition: Accounting & Payroll Specialist\nLocation: Kuningan, South Jakarta\n\nRequirements:\n- Minimum 1 year of experience in accounting\n- Proficiency in accounting software\n- Good English communication skills\n- Ready to thrive in a dynamic consulting environment\n\n🔗 Apply: https://lnkd.in/gXJXjQem orJob.id@incorp.asia\n📌 Source: Raihanah Hedyant Herbat\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432958534389761",
-      "timestamp": "2026-11-17T12:24:49.014Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528432728657076224",
-      "text": "We're #hiring a new Credit Analyst (SME) in Jakarta. Apply today or share this post with your network.",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432728128548864",
-      "timestamp": "2026-11-17T12:23:54.028Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528434316587008000",
+      "timestamp": "2026-11-17T12:30:12.808Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -620,11 +774,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528432568417890305",
-      "text": "📌 Caelum's Shared Opportunities!\n📸 TRANSFER PRICING ASSOCIATE – INDONESIA\n\nDeloitte Indonesia is currently hiring Transfer Pricing Associate.\n\nCompany: Deloitte Indonesia\nPosition: Transfer Pricing Associate\n\nRequirements:\n- Relevant academic background in Accounting, Finance, Tax, or related fields\n- Strong understanding of tax regulations and Transfer Pricing concepts\n- Excellent analytical, communication, and problem-solving skills\n\n🔗 Apply: https://lnkd.in/gpCRnuBc\n📌 Source: Maria Veda SK\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "id": "urn:li:activity:7528431018060705793",
+      "text": "Opportunity alert: German Teacher\n\nGerman Teacher at PT Guntner Indonesia. Main Task: Design, prepare, and deliver engaging corporate German language training sessions tailored to employees at various levels from Basic to Advance, focusing on business communication, vocabulary, and workplace etiquette. Develop specialized learning materials, modules, and…\n\nKey details\nOrganization: PT Guntner Indonesia\nOpportunity type: Job\nSector: Education\nLocation: Pasuruan, East Java, Indonesia, Indonesia\nWork mode: On-site\nDeadline: Nov 14, 2028\nCompensation: Not specified\n\nWho should consider this\nEducation: Bachelor’s or Master’s degree in German Language, German Studies, Linguistics, Education, or a related field. Experience: Minimum 2–3 years of experience teaching German as a foreign language, preferably in a corporate environment or adult education setting. Language Proficiency: Native or near-native fluency in German with professional...\n\nWhat to review on Aitomic Jobs\nFull description, responsibilities or submission instructions, eligibility requirements, benefits or compensation notes, and the official source link.\n\nFull details and official application link\nhttps://lnkd.in/dGKZqKnW\n\n#AitomicJobs #Opportunities #CareerOpportunity #Jobs #Hiring #Education #Indonesia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432567692312576",
-      "timestamp": "2026-11-17T12:23:15.824Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528431016504614912",
+      "timestamp": "2026-11-17T12:17:06.190Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -634,11 +788,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528431018060705793",
-      "text": "Opportunity alert: German Teacher\n\nGerman Teacher at PT Guntner Indonesia. Main Task: Design, prepare, and deliver engaging corporate German language training sessions tailored to employees at various levels from Basic to Advance, focusing on business communication, vocabulary, and workplace etiquette. Develop specialized learning materials, modules, and…\n\nKey details\nOrganization: PT Guntner Indonesia\nOpportunity type: Job\nSector: Education\nLocation: Pasuruan, East Java, Indonesia, Indonesia\nWork mode: On-site\nDeadline: Nov 14, 2028\nCompensation: Not specified\n\nWho should consider this\nEducation: Bachelor’s or Master’s degree in German Language, German Studies, Linguistics, Education, or a related field. Experience: Minimum 2–3 years of experience teaching German as a foreign language, preferably in a corporate environment or adult education setting. Language Proficiency: Native or near-native fluency in German with professional...\n\nWhat to review on Aitomic Jobs\nFull description, responsibilities or submission instructions, eligibility requirements, benefits or compensation notes, and the official source link.\n\nFull details and official application link\nhttps://lnkd.in/dGKZqKnW\n\n#AitomicJobs #Opportunities #CareerOpportunity #Jobs #Hiring #Education #Indonesia",
+      "id": "urn:li:activity:7528432959285092352",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 TRANSFER PRICING SENIOR ASSOCIATE / ASSISTANT MANAGER – INDONESIA\n\nDeloitte Indonesia is currently hiring Transfer Pricing Senior Associate / Assistant Manager.\n\nCompany: Deloitte Indonesia\nPosition: Transfer Pricing Senior Associate / Assistant Manager\n\nRequirements:\n- Relevant academic background in Accounting, Finance, Tax, or related fields\n- Professional experience in Transfer Pricing at a Senior Associate or Assistant Manager level\n- Strong understanding of local tax regulations and international tax concepts\n- Excellent leadership, analytical, and communication skills\n\n🔗 Apply: https://lnkd.in/g78jWNd9\n📌 Source: Maria Veda SK\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528431016504614912",
-      "timestamp": "2026-11-17T12:17:06.190Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432958534389761",
+      "timestamp": "2026-11-17T12:24:49.014Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -667,6 +821,20 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528431638863859712",
       "timestamp": "2026-11-17T12:19:34.399Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528432568417890305",
+      "text": "📌 Caelum's Shared Opportunities!\n📸 TRANSFER PRICING ASSOCIATE – INDONESIA\n\nDeloitte Indonesia is currently hiring Transfer Pricing Associate.\n\nCompany: Deloitte Indonesia\nPosition: Transfer Pricing Associate\n\nRequirements:\n- Relevant academic background in Accounting, Finance, Tax, or related fields\n- Strong understanding of tax regulations and Transfer Pricing concepts\n- Excellent analytical, communication, and problem-solving skills\n\n🔗 Apply: https://lnkd.in/gpCRnuBc\n📌 Source: Maria Veda SK\n\nFollow this page for more opportunities in Accounting, Finance, Audit & Tax.\n\n-JFA-\n\n#Hiring #JobVacancy #CareerOpportunity #LokerAkuntansi #LokerFinance #InfoLoker #AccountingJobs #Loker #Opportunity #Jobs #Accounting #CostAccounting #CostControl #Audit",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432567692312576",
+      "timestamp": "2026-11-17T12:23:15.824Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -746,43 +914,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528421983445733377",
-      "text": "🚀 WE'RE HIRING | BUSINESS DEVELOPMENT MANAGER – LIQUID PRODUCTS\n\nWe're looking for a driven and results oriented professional to expand our liquid product business across Indonesia!\n\nWhat will you do?\nMaintain and strengthen relationships with existing distributors.\nDevelop new markets and acquire potential distributors.\nDrive sales growth and achieve business targets.\nConduct regular market visits across Indonesia.\n\nWhat We're Looking For:\nMinimum 2–3 years of experience in Sales or Business Development.\nProven sales achievements and distributor management experience.\nStrong communication and negotiation skills.\nProactive, target-oriented, and willing to travel nationwide.\nVape industry experience is a plus!\n\n📍 Placement: Jakarta, Indonesia\n📩 Interested? Send your CV to ayravapebay@gmail.com\nSubject: LinkedIn  – BDM – Full Name\n\n#Hiring #LokerJakarta #BusinessDevelopment",
+      "id": "urn:li:activity:7528433109101453312",
+      "text": "We're #hiring a new Java Software Engineer in Jakarta Metropolitan Area. Apply today or share this post with your network.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528421982846164993",
-      "timestamp": "2026-11-17T11:41:12.170Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528433108489011200",
+      "timestamp": "2026-11-17T12:25:24.733Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528420625644822529",
-      "text": "we are accelerating its expansion across the Asia-Pacific region.\nAs a global green-energy technology company, Jackery specializes in portable solar energy storage, balcony solar solutions, and residential green-energy products—making clean, reliable power more accessible for outdoor and everyday life.\nAs our international business continues to grow, we are hiring a high-caliber Country Manager for each of the following markets:\nJapan, South Korea, Taiwan, Singapore, Thailand, Indonesia, the Philippines, and Malaysia.\nThis is not simply a role focused on short-term sales targets. We are looking for market leaders who understand their local markets, can build channels and teams, strengthen brand presence, and lead business growth from market entry to scale.\nSoutheast Asia is an especially important part of Jackery’s global growth strategy. We welcome entrepreneurial, commercially minded leaders with strong local market insight, channel resources, and the ambition to make a lasting impact.\nWe would be particularly interested in candidates with:\nExperience leading a country organization, regional business, or market-entry operation;\nStrong knowledge of local sales channels, retail, distributors, e-commerce, or agency networks;\nBackgrounds in portable power, residential solar and storage, renewable energy, smart hardware, consumer electronics, or international consumer brands;\nA successful track record of building local teams, developing sales channels, and driving brand and retail operations;\nStrong cross-cultural communication skills and the ability to collaborate effectively with international teams.\nIf you are looking for an opportunity to play a meaningful role in a global growth journey, we would love to connect. Referrals of outstanding commercial leaders with deep APAC or Southeast Asia experience are also very welcome.\nTo apply or refer a candidate, please send an English CV to karl.shang@baiguan-consulting.com\nPlease use the subject line: Country Manager – [Country/Region]\n#Jackery #CountryManager #Hiring #APAC #SoutheastAsia #InternationalExpansion #PortablePower #SolarEnergy #EnergyStorage #RenewableEnergy #CleanEnergy #Leadership #Recruitment",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528420622515871745",
-      "timestamp": "2026-11-17T11:35:48.445Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528420359394537473",
-      "text": "𝐀𝐫𝐞 𝐲𝐨𝐮 𝐚𝐧 𝐞𝐱𝐩𝐞𝐫𝐢𝐞𝐧𝐜𝐞𝐝 𝐇𝐑 𝐩𝐫𝐨𝐟𝐞𝐬𝐬𝐢𝐨𝐧𝐚𝐥 𝐰𝐡𝐨 𝐞𝐧𝐣𝐨𝐲𝐬 𝐡𝐚𝐧𝐝𝐥𝐢𝐧𝐠 𝐝𝐢𝐯𝐞𝐫𝐬𝐞 𝐇𝐑 𝐟𝐮𝐧𝐜𝐭𝐢𝐨𝐧𝐬 𝐚𝐧𝐝 𝐦𝐚𝐤𝐢𝐧𝐠 𝐚 𝐫𝐞𝐚𝐥 𝐢𝐦𝐩𝐚𝐜𝐭 𝐨𝐧 𝐩𝐞𝐨𝐩𝐥𝐞 𝐚𝐧𝐝 𝐨𝐫𝐠𝐚𝐧𝐢𝐳𝐚𝐭𝐢𝐨𝐧𝐚𝐥 𝐝𝐞𝐯𝐞𝐥𝐨𝐩𝐦𝐞𝐧𝐭?\n\nCPCM Indonesia is looking for a capable, proactive, and hands-on 𝐇𝐑 𝐆𝐞𝐧𝐞𝐫𝐚𝐥𝐢𝐬𝐭 to join our team!\n\n📍 𝐏𝐥𝐚𝐜𝐞𝐦𝐞𝐧𝐭: BSD, Tangerang\n📅 𝐖𝐨𝐫𝐤 𝐒𝐜𝐡𝐞𝐝𝐮𝐥𝐞: Monday–Saturday (WFO)\n📩 𝐇𝐨𝐰 𝐭𝐨 𝐀𝐩𝐩𝐥𝐲:\nSend your updated CV to 𝒓𝒆𝒄𝒓𝒖𝒊𝒕𝒎𝒆𝒏𝒕@𝒄𝒑𝒄𝒎.𝒊𝒅\n𝐒𝐮𝐛𝐣𝐞𝐜𝐭: 𝐇𝐑 𝐆𝐞𝐧𝐞𝐫𝐚𝐥𝐢𝐬𝐭 – [𝐘𝐨𝐮𝐫 𝐍𝐚𝐦𝐞]\n\nIf this sounds like you, we'd love to hear from you!\n\n#Hiring #HRGeneralist #HumanResources #HRJobs #JobOpportunity #CPCMIndonesia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528420358488629248",
-      "timestamp": "2026-11-17T11:34:44.966Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
@@ -844,20 +984,6 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528406668427300864",
-      "text": "STOP SCROLLING! Your next career opportunity might be here. 👀\n\nSometimes, the opportunity you're waiting for doesn't come from where you expect.\n\nMaybe it's a new environment.\nMaybe it's a bigger challenge.\nOr maybe it's the right team where you can grow and make an impact.\n\nAt Kame, we're growing, and we're looking for talented people who are ready to grow with us!\n\n🚀 WE'RE HIRING!\nHere are the positions currently open:\n\n- B2B Sales – Commercial\n- Content Creator & Social Media\n- HRGA Staff\n- Junior Product Manager – Tech\n- Front End Engineer – Remote\n- Quality Assurance Engineer – Remote\n\n📍Work Location:\n- Kame Hub, Central Jakarta (for onsite positions)\n- Work From Anywhere (for remote positions)\n\n💡 Why KAME?\n\nWe're looking for people who don't just want to work, but also want to contribute, learn, collaborate, and create meaningful impact.\n\nThink you're the one we're looking for?\n\n📩 Send your latest CV to hrd@kame.co.id\nSubject: Position_Name\n\nOr apply through:\n\n🔗 https://bit.ly/KameHiring\n\nOne more thing!\nKnow someone who might be a great fit?\nTag them in the comments or share this post with your network. Your one share could lead someone to their next big opportunity!\nLet's grow together. 🌱",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528406667315748864",
-      "timestamp": "2026-11-17T10:40:20.785Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
       "id": "urn:li:activity:7528406758952697859",
       "text": "Hi everyone! 👋\nWe are currently looking for an experienced Middleware / Linux / Cloud Vulnerability Remediation Engineer to join our team.\n\n📌 Job Details:\nIndustry: Insurance\nEmployment Type: Contract (3–6 Months)\nWork Arrangement: Full WFO\nLocation: Kuningan, South Jakarta\n\nRequirements:\n- Bachelor's Degree (S1) in Information Technology, Computer Science, or a related field.\n- Minimum 3 years of hands-on experience in Infrastructure or System Engineering.\n- Strong hands-on experience in vulnerability remediation, not limited to vulnerability assessment (VA) or scanning.\n- Experienced in Linux/RHEL patching, hardening, kernel/package remediation, and SSH/OpenSSL security configuration.\n- Familiar with Windows Server, IIS, web hosting, middleware, and web server remediation.\n- Experienced in Java/JDK/JRE, .NET, application runtime, and vulnerable library/dependency remediation.\n- Knowledge of TLS, certificates, web, and middleware security configurations.\n- Able to prepare implementation and rollback plans, perform troubleshooting, and support remediation through UAT and Production environments.\n\n📩 Interested? Please send your updated CV via DM or email to Sheila.widjaya@accordinnovations.com\n\n#Hiring #MiddlewareEngineer #LinuxEngineer #CloudSecurity #VulnerabilityRemediation #InfrastructureEngineer #ITJobs #InsuranceIndustry",
       "author": "linkedin-member",
@@ -872,53 +998,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528405839855005697",
-      "text": "Great design only becomes reality when every stakeholder sees the exact same vision.\n\n​When Indonesian multidisciplinary design firm Arkonin took on civic landmarks like Jakarta’s Pinisi Crossing Bridge, aligning engineers, urban planners, and decision-makers around the vision was critical. \n\n\"SketchUp was pivotal in enabling our architects to visualize material interactions, particularly between concrete and steel. The team leveraged the software's dynamic 3D modeling and scene creation tools to illustrate how the new bridge would evolve from its existing structure.\"\n\nBy building a shared 3D foundation in Trimble SketchUp—the firm brought their vision to life with SketchUp.\n\n​AECO teams can now use SketchUp from initial concept to project execution:\n\n→ Align stakeholders: Anchor architecture, engineering, and landscape scopes around one clear base model.\n→ De-risk complex sites: Test massing, walkability, and topography before committing to detailed documentation.\n→ Accelerate client buy-in: Convey how the final design will look like\n\n​Read the full Arkonin story - link in comments below 👇 \n\n​#SketchUp #Trimble #Architecture #UrbanDesign #3DModeling #AECO #InfrastructureDesign",
+      "id": "urn:li:activity:7528406668427300864",
+      "text": "STOP SCROLLING! Your next career opportunity might be here. 👀\n\nSometimes, the opportunity you're waiting for doesn't come from where you expect.\n\nMaybe it's a new environment.\nMaybe it's a bigger challenge.\nOr maybe it's the right team where you can grow and make an impact.\n\nAt Kame, we're growing, and we're looking for talented people who are ready to grow with us!\n\n🚀 WE'RE HIRING!\nHere are the positions currently open:\n\n- B2B Sales – Commercial\n- Content Creator & Social Media\n- HRGA Staff\n- Junior Product Manager – Tech\n- Front End Engineer – Remote\n- Quality Assurance Engineer – Remote\n\n📍Work Location:\n- Kame Hub, Central Jakarta (for onsite positions)\n- Work From Anywhere (for remote positions)\n\n💡 Why KAME?\n\nWe're looking for people who don't just want to work, but also want to contribute, learn, collaborate, and create meaningful impact.\n\nThink you're the one we're looking for?\n\n📩 Send your latest CV to hrd@kame.co.id\nSubject: Position_Name\n\nOr apply through:\n\n🔗 https://bit.ly/KameHiring\n\nOne more thing!\nKnow someone who might be a great fit?\nTag them in the comments or share this post with your network. Your one share could lead someone to their next big opportunity!\nLet's grow together. 🌱",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528405744275128320",
-      "timestamp": "2026-11-17T10:37:03.238Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528404278932164608",
-      "text": "Hi everyone,\n\nWe are currently #hiring for our client in the Construction Engineering Industry with this position:\n\nPosition:  Senior Structural Engineer\nLocation: Jakarta\n\nIf you or someone you know would be interested in this opening, kindly message me or send your latest CV to this link below:\n\nhttps://wkf.ms/4hp6zZG\n\nThank you",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528392102062215168",
-      "timestamp": "2026-11-17T10:30:51.085Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528404419663548417",
-      "text": "I’m excited to share that I’ll be presenting at the AAPG International Conference & Exhibition (ICE) 2026 in Jakarta, Indonesia, on 7-9 December 2026!\n\nI will be presenting our technical paper:\n“Optimization of Well Stimulation in the MNR#1 Layer, MLK Field: A Case Study in a Low Quality Reservoir Onshore, South Sumatra” \nAbstract ID: 4538521\n\nThis study explores well stimulation optimization in a challenging, low-quality reservoir. By integrating reservoir evaluation, geomechanical analysis, hydraulic fracture simulation, and techno-economic assessment, the research aims to identify technically sound stimulation strategies and support more informed production decisions.\n\n𝐏𝐫𝐞𝐬𝐞𝐧𝐭𝐚𝐭𝐢𝐨𝐧 𝐃𝐞𝐭𝐚𝐢𝐥𝐬:\n📅 8 December 2026\n🕝 2:30-3:00 PM (Jakarta Time)  \n📍 Room 3, NICE, Jakarta\n📌 Theme 4: Advanced Stimulation and Emerging Technologies for Unconventional and \nChallenging Reservoirs\n\nI’m grateful to the mentors and colleagues who have supported this research journey and provided valuable technical guidance.\n\nI look forward to sharing the findings, learning from industry experts, and exchanging perspectives with fellow engineers and researchers on advancing well performance and stimulation technologies.\n\n𝐒𝐞𝐞 𝐲𝐨𝐮 𝐚𝐭 𝐈𝐂𝐄 𝐉𝐚𝐤𝐚𝐫𝐭𝐚 𝟐𝟎𝟐𝟔!\n\n🔗 Conference information: https://lnkd.in/g84pGPsn\n\n#AAPGICE26 #ICEJakarta2026 #PetroleumEngineering #ReservoirEngineering #WellStimulation #HydraulicFracturing #PertaminaHuluEnergi #Indonesia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528404418459992064",
-      "timestamp": "2026-11-17T10:31:24.638Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528403323591458817",
-      "text": "🚀 WE'RE HIRING | NOW OPEN | URGENT🔥\n\n📍Jakarta, Indonesia \n💻Full Onsite/WFO \n🏭Service & Logistics Industry\n🎖Level Middle (min. 3 YoE) \n🎓 D3/S1\n\nSITE RELIABILITY ENGINEER (SRE)\n\n𝐊𝐞𝐲 𝐄𝐱𝐩𝐞𝐫𝐭𝐢𝐬𝐞: DevOps Engineering, CLI, Cloud Platforms (e.g. AWS, GCP), Docker, Kubernetes (GKE, EKS), Terraform, Computer Networks Extensive, Linux OS (Ubuntu, CentOS, etc.), Databases (MySQL, PostgreSQL, MongoDB, Redis, Elasticsearch), CI/CD (Jenkins & Github action), Monitoring System (Prometheus, Grafana, Elastic, and Kibana) , 24/7 high-availability, Customer-facing Production Systems.\n\n📩 Send me your updated CV ➡️ azha@msbukonsultan.com\n✉️ Subject: [Role - Your Name]\n\nThank you!⭐️",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528403322844909569",
-      "timestamp": "2026-11-17T10:27:03.314Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528406667315748864",
+      "timestamp": "2026-11-17T10:40:20.785Z",
       "surfaces": [
         {
           "type": "linkedin",
