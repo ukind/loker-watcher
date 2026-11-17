@@ -3,6 +3,10 @@ name: ci
 on:
   push:
     branches: [main]
+    # The bot's ~10 state/ commits/day change committed data, not code —
+    # a full gate run per state push is noise (and, at N061, red noise).
+    paths-ignore:
+      - "state/**"
   pull_request:
   workflow_dispatch:
 
