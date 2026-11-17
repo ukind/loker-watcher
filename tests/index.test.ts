@@ -52,6 +52,8 @@ const CONFIG: WatcherConfig = {
   recencyHours: 72,
   reasoningEffort: "medium",
   scrollRounds: 8,
+  linkedinWakeMinMinutes: 60,
+  linkedinWakeMaxMinutes: 60,
 };
 
 /** Mixed-platform config: the tag surface plus one linkedin surface. */

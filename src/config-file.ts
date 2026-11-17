@@ -55,6 +55,10 @@ export interface WatcherConfig {
   recencyHours: number;
   reasoningEffort: ReasoningEffort;
   scrollRounds: number;
+  /** PC-loop wake band floor in minutes. Absent -> 60 (the operator target). */
+  linkedinWakeMinMinutes: number;
+  /** PC-loop wake band ceiling in minutes. Absent -> 60. */
+  linkedinWakeMaxMinutes: number;
 }
 
 const ALLOWED_KEYS = [
@@ -66,6 +70,8 @@ const ALLOWED_KEYS = [
   "recencyHours",
   "reasoningEffort",
   "scrollRounds",
+  "linkedinWakeMinMinutes",
+  "linkedinWakeMaxMinutes",
 ] as const;
 
 const THREADS_HOST = "www.threads.com";
@@ -121,6 +127,16 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
   const recencyHours = readRecencyHours(record.recencyHours, filePath);
   const reasoningEffort = readReasoningEffort(record.reasoningEffort, filePath);
   const scrollRounds = readScrollRounds(record.scrollRounds, filePath);
+  const linkedinWakeMinMinutes = readLinkedinWakeMinutes(
+    record.linkedinWakeMinMinutes,
+    "linkedinWakeMinMinutes",
+    filePath,
+  );
+  const linkedinWakeMaxMinutes = readLinkedinWakeMinutes(
+    record.linkedinWakeMaxMinutes,
+    "linkedinWakeMaxMinutes",
+    filePath,
+  );
 
   return {
     keywords,
@@ -131,6 +147,8 @@ function validateConfig(parsed: unknown, filePath: string): WatcherConfig {
     recencyHours,
     reasoningEffort,
     scrollRounds,
+    linkedinWakeMinMinutes,
+    linkedinWakeMaxMinutes,
   };
 }
 
@@ -313,6 +331,30 @@ function readScrollRounds(value: unknown, filePath: string): number {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
     throw new Error(
       `config: ${filePath} "scrollRounds" must be an integer >= 1, got ${JSON.stringify(value)}`,
+    );
+  }
+  return value;
+}
+
+/** PC-loop wake band bound in minutes: both keys default to 60 (a flat hour). */
+const DEFAULT_LINKEDIN_WAKE_MINUTES = 60;
+
+/**
+ * Optional wake-cadence knob, shared by both keys: absent -> the default,
+ * present but not a whole number >= 1 -> fail with the path and key. One
+ * reader serves both keys because the validation, default, and error shape
+ * are identical; only the key name differs (the readStringArray idiom).
+ * The cross-key min > max rule is NOT here: it is loop-side only, so the
+ * hosted run, the probes, and the one-shot tick stay green on a broken
+ * band (resolveLinkedInWakeBand, src/linkedin-behavior.ts, Phase 2).
+ */
+function readLinkedinWakeMinutes(value: unknown, key: string, filePath: string): number {
+  if (value === undefined) {
+    return DEFAULT_LINKEDIN_WAKE_MINUTES;
+  }
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+    throw new Error(
+      `config: ${filePath} "${key}" must be an integer >= 1, got ${JSON.stringify(value)}`,
     );
   }
   return value;

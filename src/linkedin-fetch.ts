@@ -81,7 +81,8 @@ export const PACE_MIN_MS = 5_000;
 /**
  * Pace ceiling: EXCLUSIVE upper bound of the spacing draw (the anti-
  * restriction profile's 5-15 s band, design 2026-11-09). floor() keeps a
- * draw at most MAX - 1 ms, mirroring the wake-cadence bounds.
+ * draw at most MAX - 1 ms (the floor idiom shared with sampleTickDelayMs,
+ * whose wake bounds are parameters now, not constants).
  */
 export const PACE_MAX_MS = 15_000;
 

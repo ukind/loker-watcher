@@ -54,6 +54,8 @@ const CONFIG: WatcherConfig = {
   recencyHours: 72,
   reasoningEffort: "low",
   scrollRounds: 1,
+  linkedinWakeMinMinutes: 60,
+  linkedinWakeMaxMinutes: 60,
 };
 
 let dir: string | undefined;

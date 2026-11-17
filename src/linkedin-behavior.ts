@@ -13,11 +13,12 @@
  * IO-free: dates and rng draws arrive as arguments, so the offline suite
  * pins every edge with zero doubles.
  *
- * Worst-case arithmetic (the account-safety bound): 1440 minutes per
- * local day; at the 28-minute floor that is at most 52 wake-ups per
- * local day, and each wake walks at most 5 surfaces x (1 navigation
- * + scrollRounds Load-more clicks). The click cap rides the walk
- * (src/linkedin-fetch.ts).
+ * Wake-cadence arithmetic (the account-safety bound): 1440 minutes per
+ * local day; wake-ups per local day = 1440 / linkedinWakeMinMinutes (the
+ * configured floor — 24 at the 60-minute default; the historic 28-minute
+ * floor gave 52, the number older docs quote). Each wake walks at most
+ * 5 surfaces x (1 navigation + scrollRounds Load-more clicks). The click
+ * cap rides the walk (src/linkedin-fetch.ts).
  */
 
 /**
@@ -27,24 +28,62 @@
  */
 export type RandomFn = () => number;
 
-/** Wake floor: 28 minutes. Uniform draw lower bound, inclusive. */
-export const WAKE_MIN_MS = 28 * 60_000;
+/** One validated wake band, converted to whole milliseconds. */
+export interface LinkedInWakeBand {
+  /** Uniform draw lower bound, inclusive. */
+  minMs: number;
+  /** Uniform draw upper bound, EXCLUSIVE — a Math.random contract never returns 1. */
+  maxMs: number;
+}
 
 /**
- * Wake ceiling: 33 minutes. Exclusive — a Math.random contract never
- * returns 1, so floor() keeps every draw at most MAX - 1 ms and a tick can
- * never sit exactly at the ceiling. The payload staleness amendment
- * (PAYLOAD_MAX_AGE_MS 30 -> 40 min) clears this worst case with margin.
+ * Default wake floor in ms: 60 minutes, the bare-runLoop fallback when
+ * the deps omit the bound (the rng ?? Math.random idiom). The operator
+ * value lives in watcher.config.json (linkedinWakeMinMinutes); these
+ * constants only keep the offline suite's bare calls hermetic.
  */
-export const WAKE_MAX_MS = 33 * 60_000;
+export const DEFAULT_WAKE_MIN_MS = 3_600_000;
 
 /**
- * One uniform draw in [WAKE_MIN_MS, WAKE_MAX_MS), whole milliseconds
- * (floor, never round — rounding could land ON the exclusive ceiling).
- * rng() === 0 pins the floor exactly; the loop logs the delay in minutes.
+ * Default wake ceiling in ms, EXCLUSIVE: 60 minutes, the bare-runLoop
+ * fallback. Equal to the floor, so the default band is flat — every draw
+ * is exactly 3,600,000 ms with no special-casing (max - min === 0
+ * collapses).
  */
-export function sampleTickDelayMs(rng: RandomFn): number {
-  return Math.floor(WAKE_MIN_MS + rng() * (WAKE_MAX_MS - WAKE_MIN_MS));
+export const DEFAULT_WAKE_MAX_MS = 3_600_000;
+
+/**
+ * One uniform draw in [minMs, maxMs), whole milliseconds (floor, never
+ * round — rounding could land ON the exclusive ceiling). rng() === 0
+ * pins the floor exactly; exactly one rng() call per draw (the transcript
+ * oracle depends on exact stream consumption); the ceiling is exclusive
+ * because RandomFn is [0, 1); a degenerate band (minMs === maxMs)
+ * collapses every draw to exactly minMs with no special-casing. The loop
+ * logs the delay in minutes plus the band.
+ */
+export function sampleTickDelayMs(minMs: number, maxMs: number, rng: RandomFn): number {
+  return Math.floor(minMs + rng() * (maxMs - minMs));
+}
+
+/**
+ * Loop-side pairwise gate over the two validated config keys (the readers
+ * in src/config-file.ts guarantee integers >= 1 and the 60 defaults; this
+ * owns ONLY the cross-key rule, so a broken band exit-1s the PC loop
+ * alone — the hosted run, the probes, and the one-shot tick load the same
+ * config but never call this). The two-key message extends the config
+ * module's error vocabulary with both keys and their values.
+ */
+export function resolveLinkedInWakeBand(
+  minMinutes: number,
+  maxMinutes: number,
+  filePath: string,
+): LinkedInWakeBand {
+  if (minMinutes > maxMinutes) {
+    throw new Error(
+      `config: ${filePath} "linkedinWakeMinMinutes" (${minMinutes}) must not exceed "linkedinWakeMaxMinutes" (${maxMinutes})`,
+    );
+  }
+  return { minMs: minMinutes * 60_000, maxMs: maxMinutes * 60_000 };
 }
 
 /**

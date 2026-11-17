@@ -31,9 +31,14 @@ import type { Post } from "./types.js";
 export const PAYLOAD_VERSION = 2;
 
 /**
- * The jittered wake cadence's worst case (33 minutes) plus margin: a
- * payload older than this reads as stale (design 2026-11-09; was twice
- * the old 10-minute cadence).
+ * Operator-frozen (decision 2026-11-17), decoupled from the now-
+ * configurable wake cadence (linkedinWakeMinMinutes/MaxMinutes): a
+ * payload older than this reads as stale. Under the 60-minute default
+ * the payload is fresh 40 of every 60 minutes, so roughly one hosted run
+ * in three reads stale and degrades to threads-only (the email leg line
+ * surfaces it). History: sized as "the 33-minute worst case plus margin"
+ * back when the band was hard-coded (design 2026-11-09; was twice the
+ * old 10-minute cadence).
  */
 export const PAYLOAD_MAX_AGE_MS = 2_400_000;
 
