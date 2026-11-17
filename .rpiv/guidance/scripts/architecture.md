@@ -16,7 +16,7 @@ commit-state-rebase.sh       # bash, set -e self-owned; OUTSIDE typecheck + lint
                              #   (biome never sees .sh); LF-pinned by .gitattributes; offline
                              #   spawnSync-tested by tests/commit-state-rebase.test.ts; conflict
                              #   skips = set membership over the three committed state files, bounded
-                             #   by a hard-coded 50-skip runaway guard with an exhaustion echo;
+                             #   by a hard-coded 50-skip runaway guard that ABORTS the rebase and exits 1 on exhaustion (N062: the former fall-through pushed the partial replay); a detached HEAD exits 1 before any rebase work (N084);
                              #   rebases onto the CHECKOUT BRANCH's own remote head (branch --show-current,
                              #   NOT origin/main — run 885: a dispatched non-main branch must commit back
                              #   onto its own remote head or its push fights the sibling job's push)
@@ -139,7 +139,7 @@ process.exit(0);                              // allow
 **Caveats:**
 - The probe walks EVERY `LLM_ACCOUNTS` entry (the doubling ramp fires ~62 calls worst case each) — a rotten key in the pool fails the gating probe job loudly
 - Weak success check: a 2xx body counts as ok if it merely `includes("{")` — no verdict parsing
-- Gate regexes are a seatbelt, not a sandbox: `git push -f` evades, `--force-with-lease` is caught, `tee` evades the state-file rule
+- Gate regexes are a seatbelt, not a sandbox: `git push -f` evades, `--force-with-lease` is caught, `tee` evades the state-file rule (`truncate` caught since N086, 2026-11-17)
 
 <important if="you are running the judge probe or changing judge ceilings">
 ## Running the Judge Probe and Applying the Reading
