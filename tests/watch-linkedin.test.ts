@@ -153,6 +153,27 @@ describe("runLoop fault arms", () => {
     assert.deepEqual(reasons, ["HTTP 401 {} — dead li_at session"]);
   });
 
+  it("keeps running when the leg-dead handler itself faults (N064)", async (t) => {
+    const warn = t.mock.method(console, "warn", console.warn.bind(console));
+    let calls = 0;
+    await runLoop({
+      tick: async () => {
+        calls += 1;
+        if (calls === 1) throw legDead("HTTP 401 {} — dead li_at session");
+      },
+      sleepFn: async () => {},
+      onLegDead: async () => {
+        throw new Error("marker write failed");
+      },
+      maxIterations: 2,
+    });
+    assert.equal(calls, 2); // the loop survived the handler fault
+    assert.match(
+      String(warn.mock.calls[0]?.arguments[0]),
+      /watch-linkedin: leg-dead handler FAILED — marker write failed/,
+    );
+  });
+
   it("warns on any other fault and keeps running", async (t) => {
     const warn = t.mock.method(console, "warn", console.warn.bind(console));
     let calls = 0;

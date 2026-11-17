@@ -40,12 +40,17 @@
 # single-literal equality to set membership over the committed state
 # files. Third deviation (2026-11-07, provider health): the skip set grew
 # to the three committed state files — the health file joins seen-posts
-# and judge-ceilings. Fourth deviation (2026-11-07, dispatch-run
+# Fourth deviation (2026-11-07, dispatch-run
 # commit-back): the rebase target grew from main to the checkout branch's
 # own remote head (run 885: the sibling probe job's push advanced the
 # dispatched branch past the checkout's pinned github.sha; the
 # main-targeted pull never learned it and both lease pushes died "stale
-# info"). Everything else is a verbatim move of watch.yml's
+# info"). Fifth deviation (2026-11-17, tech-debt run 7, N062): the FR2
+# fall-through is REVERSED — skip-bound exhaustion now aborts
+# (`git rebase --abort` + exit 1) instead of pushing the partial replay;
+# a wedged rebase must fail the run, never rewrite main. Low likelihood
+# (>50 conflicting state commits in one rebase), severe direction.
+# Everything else is a verbatim move of watch.yml's
 # former :123-167.
 #
 # The 50-skip bound is a runaway guard, not a tuning knob: a replayed
@@ -67,6 +72,13 @@ attempt() {
   # branch's own remote head is what lets a dispatch run's commit-back see
   # the sibling probe job's push; a main-targeted pull never learns it.
   branch=$(git branch --show-current)
+  # N084: a detached-HEAD checkout (a tag dispatch, a manual run) leaves
+  # this empty; `git pull --rebase origin ""` would burn the retry with a
+  # confusing error. Fail before any rebase work instead.
+  if [ -z "$branch" ]; then
+    echo "state commit-back: detached HEAD — no branch to rebase onto; refusing"
+    exit 1
+  fi
   if ! git pull --rebase origin "$branch"; then
     echo "state rebase conflicted; skipping conflicting state commits"
     skips=0
@@ -96,11 +108,15 @@ EOF
       git rebase --skip || true
       skips=$((skips + 1))
     done
-    # Deviation (the ledger's single entry): the bound exhausted with a
-    # conflict still on the table — say so, then fall through to the same
-    # push the unbounded former body would have attempted.
+    # Run-7 (N062): the bound exhausted with a conflict still on the
+    # table — the rebase is wedged. Abort loudly and fail the run; the
+    # former fall-through to `git push --force-with-lease` rewrote main
+    # with the PARTIAL replay and dropped the un-replayed tail from the
+    # remote silently.
     if test -d .git/rebase-merge; then
-      echo "state skip bound (50) exhausted; conflicts remain — attempting push anyway"
+      echo "state skip bound (50) exhausted; conflicts remain — aborting, no push"
+      git rebase --abort
+      exit 1
     fi
   fi
   if git push --force-with-lease; then

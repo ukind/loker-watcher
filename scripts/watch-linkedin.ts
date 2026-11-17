@@ -93,7 +93,16 @@ export async function runLoop(deps: RunLoopDeps = {}): Promise<void> {
       await tick();
     } catch (error) {
       if (isLegDead(error)) {
-        await onLegDead(error.reason);
+        // N064: the episode handler can fault (the marker write is an fs
+        // op); its failure must not kill the loop that never exits on
+        // leg-dead. Warn and keep the cadence.
+        try {
+          await onLegDead(error.reason);
+        } catch (handlerError) {
+          const handlerMessage =
+            handlerError instanceof Error ? handlerError.message : String(handlerError);
+          console.warn(`watch-linkedin: leg-dead handler FAILED — ${handlerMessage}`);
+        }
       } else {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`watch-linkedin: tick FAILED — ${message}`);
