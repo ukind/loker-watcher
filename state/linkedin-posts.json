@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-17T22:05:29.473Z",
+  "writtenAt": "2026-11-17T23:07:39.073Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -83,6 +83,20 @@
         {
           "type": "linkedin",
           "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528564042559356929",
+      "text": "Inverto Earth, led by CEO Dr. Jürg Germann, raised $2.4M: a Seed round led by Bloom Foundation, to build a restoration intelligence platform for coastal ecosystems.\n\nMangroves, saltmarshes and seagrass protect coastlines and store carbon, but restoring them is slow, costly and risky. Inverto Earth combines ecohydrology, robotics and digital monitoring to help project developers pick the right sites, plant at scale and verify results. Its patent-pending Seed Darts anchor mangrove seeds directly into the soil, planted by hand or from drones. The founders first built drone systems for UN mosquito-control programmes before pivoting to coastal restoration. It works on projects across Pakistan, Senegal, Saudi Arabia and Indonesia, with partners including Delta Blue Carbon, WWF and Universitas Gadjah Mada. The round connects site selection and monitoring with field hardware such as robotic planting systems and sensors. Zürcher Kantonalbank, Venture Kick, Kickfund, Techstars, Valery Foundation and SICTIC angels joined, with Innosuisse providing public innovation funding.\n\nFOUNDER: Jürg Germann (CEO), Cameron Dowd (CTO)\nINVESTORS: Bloom Foundation, Zürcher Kantonalbank, Venture Kick, Kickfund, Techstars, Valery Foundation, SICTIC angels, Innosuisse\nAMOUNT: $2,400,000\nHQ: Switzerland\n\n#VentureCapital #InvertoEarth #BloomFoundation",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528564041565384704",
+      "timestamp": "2026-11-17T21:05:41.702Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
         }
       ]
     },
@@ -396,15 +410,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528415641897226240",
-      "text": "US Chip Curbs Target Compute Arbitrage, But AI Buildout May Advance Rather Than Retreat (IVI-SD Take, 17 Nov 26 11Z, w/GenAI)\n\nWashington’s new restrictions on China’s access to advanced AI chips target a compliance loophole rather than the entire global semiconductor market. The US Commerce Department’s interim final rule requires licences for covered advanced-chip shipments to data centres in Singapore, Malaysia, Thailand, Indonesia and Brazil, and restricts overseas facilities from supplying high-threshold computing capacity to China-headquartered firms. It also rescinds the January 2025 global AI Diffusion framework, facilitating approved buyers in non-restricted jurisdictions to obtain advanced AI infrastructure, subject to normal export-control and compliance rules.\n\nThe immediate market impact has been concentrated in Asian semiconductor and Southeast Asian data-centre exposure. Malaysian infrastructure shares sold off sharply in Tuesday trading, while YTL Power, an Nvidia infrastructure partner, declined materially; Samsung Electronics and TSMC also weakened in Asian trading. The repricing reflects uncertainty over regional utilisation, compliance costs and the durability of cross-border AI-capacity arrangements, not confirmed evidence that global AI investment has slowed.\n\nThe rule is better understood as a move from regulating chip ownership to regulating access to computational capability. Its practical importance will depend less on the announcement than on licence-approval rates, due-diligence standards, audits and enforcement against cloud and data-centre operators. US companies operating data centres in the five named jurisdictions are reportedly exempt from the licensing requirement, suggesting Washington is attempting to curb diversion risk rather than suppress allied AI infrastructure outright.\n\nAcross the wider industry, the measures may redirect demand rather than eliminate it. Western hyperscalers, sovereign AI programmes and enterprises retain broad access to advanced compute, while Chinese firms face narrower, compliance-gated routes to non-frontier workloads and may still access capacity in US data centres subject to screening. Cloud providers are becoming de facto compliance gatekeepers, with potential exposure to customer vetting, utilisation monitoring and legal liability if restricted parties obtain remote access.\n\nBeijing has criticised the restrictions and said it would take necessary measures to defend its interests, but has not announced an immediate, sweeping retaliation package.  With APEC underway in Shenzhen and President Trump expected to meet President Xi, Beijing may has an incentive to keep any response calibrated to preserve trade stability while accelerating domestic substitution.  Retaliation, if it comes, need not be confined to semiconductors or critical minerals; procurement restrictions, regulatory scrutiny and cybersecurity measures remain possible channels.\n\nFor Nvidia, export controls now intersect with an acute governance shake-up. Jensen Huang resigned as president, chief executive and director on November 12, and CFO Colette Kress was appointed interim chief executive while the board searches for a permanent successor.  The company’s board said operations, customer commitments and the product roadmap should continue without interruption, but the abrupt transition adds execution and credibility risks at a sensitive moment for AI infrastructure spending.\n\nThe Megaspeed controversy compounds those risks. US authorities have investigated the Singapore-based cloud operator over suspicions that it helped route restricted Nvidia chips to China, while reporting has linked former executive Alice Huang to allegations of Chinese intelligence activity; those allegations have not been publicly proven, and Beijing has denied them.  For data-centre operators, the issue illustrates how a single compliance failure can turn a regional capacity advantage into a geopolitical and legal liability.\n\nNvidia’s investment plans may face more scrutiny rather than automatic expansion. Its reported direct China exposure has fallen materially, but the more immediate question is whether Kress and the board reassess Huang’s multi-billion-dollar ecosystem commitments, particularly where returns depend on uncertain cross-border compute access or speculative project economics. A plausible market interpretation is that capital may increasingly favor established cloud, power, networking and data-centre projects with clearer cash flows as demand from non-restricted jurisdictions increases, although that remains an inference rather than a stated Nvidia strategy.\n\nCompetitive pressure is likely to intensify regardless of the policy outcome. AMD, Intel, Broadcom and custom cloud-silicon programmes are seeking to diversify supply, while Chinese vendors including Huawei and Cambricon are positioned to benefit from domestic substitution.  Chinese laboratories’ reported use of US-model outputs for distillation may reduce some training-compute requirements, but it will unlikely remove the need for advanced accelerators at the frontier.\n\nThe emerging landscape points toward a more tightly policed, bifurcated AI buildout. Compliant Western capacity may consolidate around hyperscalers and financially stronger infrastructure platforms, while Chinese developers lean more heavily on domestic chips, software efficiency and alternative compute routes.  Some factors to monitor include Nvidia’s results and leadership update, licence approvals and enforcement in Southeast Asia, Beijing’s response, and evidence on whether AI capex shifts from speculative projects toward established infrastructure.",
+      "id": "urn:li:activity:7528552880614703106",
+      "text": "The world of AI and fintech continues to get more complicated. There are multiple initiatives taking place around AI agents, plus concerns over the leadership patterns of large organisations that throw the premise of diligent, thorough, and effective leadership into question. On a brighter note, the SME market in the UK is showing some rates of improvement. To finish off, I've included a rather relevant video that covers the AI usage in the UK.\n- IBM's new Chief AI Officer study finds 75% say governance, risk or compliance delays AI-driven action, even as 48% report AI agents already initiating and executing workflow actions on their own\n- Gartner: 74% of organisations expect to deploy agentic AI within 12 months, but only 14% of Asia-Pacific CIOs have governance ready — Gartner is warning AI risk is growing faster than business value as firms rush in\n- The UK Pensions Regulator published new guidance for trustees on responsible AI use, built around a low/medium/high risk-based approach rather than new rules.\n- The EU is piloting a rights-impact-assessment questionnaire for high-risk AI systems under Article 27 of the AI Act\n- The US is closing a chip-export loophole, requiring licences for shipments to Indonesia, Malaysia, Singapore, Thailand and Brazil, to stop Chinese firms accessing advanced chips via third-country data centres; Reuters separately reports Chinese firms increasingly \"distilling\" US models to train domestic rivals\n- The AI trade wobbled further as Anthropic heads toward an IPO reportedly eyeing a $1.5 trillion valuation, down from $2 trillion expected just weeks ago; Nvidia fell again on the export-control news\n- A government-commissioned Access to Banking Review could force digital-only banks like Monzo and Revolut to help fund face-to-face banking services for the roughly 3 million people who still rely on branches\n- Revolut's Italian arm was placed under one-year judicial administration over anti-money-laundering control concerns; not a criminal probe, and it must submit an action plan within 60 days\n- DDI's Global Leadership Forecast 2027, surveying over 11,000 leaders, finds only 25% say their manager coaches them effectively\n- HBR examines why CEOs wait too long to shake up underperforming leadership teams, using Netflix's recent content-chief change as the case study\n- Wharton's Peter Cappelli argues companies have largely abandoned structured management-development pipelines, which is part of why engineer-led firms can make riskier leadership calls\n- iwoca's SME Expert Index shows UK small businesses swinging back to growth: hiring-cut reports have halved since Q2, and two-thirds of advisers expect SME finance demand to rise over the next six months\n- From April 2027, young side-hustlers and freelancers get a tripled tax-free trading allowance, up to £3,000\n\nAnd here's that video.....",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528415639149891584",
-      "timestamp": "2026-11-17T11:16:00.227Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528552879566041088",
+      "timestamp": "2026-11-17T20:21:20.487Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -424,11 +438,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528519467895754752",
+      "id": "urn:li:activity:7528519570194771970",
       "text": "🚨 VIP GLOBAL FIELD ENGINEER NETWORK | NORWAY & WORLDWIDE 🌍\n\n🔥 URGENTLY EXPANDING OUR VERIFIED ENGINEER & RECRUITER NETWORK\n\n🇳🇴 NORWAY – PRIORITY COVERAGE\nOslo • Bergen • Stavanger • Trondheim • Drammen • Kristiansand • Tromsø • Sandnes • Ålesund • Tønsberg • Moss • Bodø • Haugesund\n\n🌍 EUROPE\n🇸🇪 Sweden | 🇩🇰 Denmark | 🇳🇱 Netherlands | 🇩🇪 Germany | 🇫🇷 France | 🇮🇹 Italy | 🇪🇸 Spain | 🇵🇱 Poland | 🇨🇿 Czechia | 🇧🇪 Belgium | 🇦🇹 Austria | 🇫🇮 Finland | 🇮🇪 Ireland | 🇵🇹 Portugal | 🇨🇭 Switzerland | 🇭🇺 Hungary | 🇷🇴 Romania\n\n🌏 ASIA & PACIFIC\nSingapore | Japan | South Korea | Malaysia | Indonesia | Thailand | Philippines | Australia | New Zealand\n\n🌎 AMERICAS | MIDDLE EAST | AFRICA\nUSA | Canada | Mexico | Brazil | UAE | Saudi Arabia | Qatar | Oman | Kuwait | South Africa | Kenya | Nigeria | Morocco\n\n🔧 PROJECT TYPES\nInstallation • Turn-Up • Break/Fix • Smart Hands • Remote Hands • Cisco/Network • Data Center • Server • EUC/Desktop • Migration • Rollout • Troubleshooting\n\n🤝 ENGINEERS | RECRUITERS | CLIENTS\nReliable local engineers and professional recruiters are welcome to join our global dispatch network.\n\n🏢 Outsourceforge Solutions LLC\n📲 WhatsApp: +92 335 1853292 | +92 316 8552042\n📧 noman18533@gmail.com\n\n🌐 190+ Countries | Global Dispatch | 24/7 IT Support",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528519467266502656",
-      "timestamp": "2026-11-17T18:08:34.274Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528519569569918977",
+      "timestamp": "2026-11-17T18:08:58.664Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -452,11 +466,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528519570194771970",
+      "id": "urn:li:activity:7528519467895754752",
       "text": "🚨 VIP GLOBAL FIELD ENGINEER NETWORK | NORWAY & WORLDWIDE 🌍\n\n🔥 URGENTLY EXPANDING OUR VERIFIED ENGINEER & RECRUITER NETWORK\n\n🇳🇴 NORWAY – PRIORITY COVERAGE\nOslo • Bergen • Stavanger • Trondheim • Drammen • Kristiansand • Tromsø • Sandnes • Ålesund • Tønsberg • Moss • Bodø • Haugesund\n\n🌍 EUROPE\n🇸🇪 Sweden | 🇩🇰 Denmark | 🇳🇱 Netherlands | 🇩🇪 Germany | 🇫🇷 France | 🇮🇹 Italy | 🇪🇸 Spain | 🇵🇱 Poland | 🇨🇿 Czechia | 🇧🇪 Belgium | 🇦🇹 Austria | 🇫🇮 Finland | 🇮🇪 Ireland | 🇵🇹 Portugal | 🇨🇭 Switzerland | 🇭🇺 Hungary | 🇷🇴 Romania\n\n🌏 ASIA & PACIFIC\nSingapore | Japan | South Korea | Malaysia | Indonesia | Thailand | Philippines | Australia | New Zealand\n\n🌎 AMERICAS | MIDDLE EAST | AFRICA\nUSA | Canada | Mexico | Brazil | UAE | Saudi Arabia | Qatar | Oman | Kuwait | South Africa | Kenya | Nigeria | Morocco\n\n🔧 PROJECT TYPES\nInstallation • Turn-Up • Break/Fix • Smart Hands • Remote Hands • Cisco/Network • Data Center • Server • EUC/Desktop • Migration • Rollout • Troubleshooting\n\n🤝 ENGINEERS | RECRUITERS | CLIENTS\nReliable local engineers and professional recruiters are welcome to join our global dispatch network.\n\n🏢 Outsourceforge Solutions LLC\n📲 WhatsApp: +92 335 1853292 | +92 316 8552042\n📧 noman18533@gmail.com\n\n🌐 190+ Countries | Global Dispatch | 24/7 IT Support",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528519569569918977",
-      "timestamp": "2026-11-17T18:08:58.664Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528519467266502656",
+      "timestamp": "2026-11-17T18:08:34.274Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -648,11 +662,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528473402802618369",
-      "text": "🚀 Helping a young engineering student take the next step in his career!\nI'm happy to share this internship search with my network.\n\nCurrently in his 4th year at IPSA Toulouse and studying abroad atInstitut Teknologi Bandung (ITB) in Indonesia, this motivated engineering student is looking for a 4-month Assistant Engineer internship starting in late May 2027, in the aerospace and space sectors. 🛰️\nFollowing a first valuable experience at CNES, at the Guiana Space Centre, he is eager to further develop his skills and contribute to exciting engineering projects, particularly in space systems, satellites, mechanical design, or systems engineering.\n\n🌍 Open to opportunities in France and internationally.\nIf you know of any opportunities, have relevant contacts, or could help connect him with professionals in the industry, your support would be greatly appreciated!\n🙏 Thank you for sharing and helping a young talent take his next step!\n\n--------------------------------------------------------------------------------------\n🚀 Un petit coup de pouce pour accompagner un jeune étudiant ingénieur dans la prochaine étape de son parcours !\n\nJe suis ravie de partager cette recherche de stage avec mon réseau.\nActuellement en 4ᵉ année à l’IPSA Toulouse et en mobilité internationale à l’Institut Teknologi Bandung (ITB), en Indonésie, ce jeune étudiant motivé recherche un stage assistant ingénieur de 4 mois, à partir de fin mai 2027, dans les secteurs de l’aéronautique et du spatial. 🛰️\nAprès une première expérience enrichissante au CNES, au Centre Spatial Guyanais, il souhaite aujourd’hui approfondir ses compétences et contribuer à des projets techniques stimulants, notamment dans les domaines des systèmes spatiaux, des satellites, de la conception mécanique ou encore de l’ingénierie système.\n\n🌍 Ouvert aux opportunités en France comme à l’international.\nSi vous avez connaissance d’opportunités, de contacts ou si vous pouvez faciliter une mise en relation avec des professionnels du secteur, votre aide serait précieuse !\n\n🙏 Merci à toutes celles et ceux qui pourront relayer cette publication et aider un jeune talent à franchir une nouvelle étape dans son parcours !\n\n#Internship2027 #Aerospace #SpaceIndustry #Engineering #YoungTalent",
+      "id": "urn:li:activity:7528473544779907072",
+      "text": "We are thrilled to announce a landmark cross-border academic collaboration! SUST Student Chapter of AIChE (Bangladesh) is joining forces with AIChE VIT (India), AIChE PIEAS Student Chapter (Pakistan), AIChE BUET Student Chapter (Bangladesh), and AIChE PEM AKAMIGAS SC (Indonesia) to bring you an exclusive international technical webinar.\n\nAs the global chemical engineering community accelerates toward net-zero targets, green hydrogen and synthetic fuel technologies stand at the forefront of industrial decarbonization. This historic five-chapter synergy unites future engineers across South and Southeast Asia to delve into cutting-edge electrochemical energy conversion systems.\n\n📌 Webinar Topic: Solid Oxide Electrolyzers for Synthetic Fuel Production Using Renewable Energy\n\nDistinguished Speaker: Dr. Asif Mahmood\nProfessor & PhD Coordinator, Pakistan Institute of Engineering and Applied Sciences (PIEAS)\n\nDuring this session, Dr. Asif Mahmood will provide an in-depth technical exploration of high-temperature solid oxide electrolysis cells (SOECs), material advancements in solid-state electrochemistry, and the thermodynamic pathways for integrating renewable energy into sustainable synthetic fuel production.\n\nEvent Details & Regional Timings:\n\nDate: Thursday, 19 November 2026\nPlatform: Microsoft Teams\n\nSchedule According to Participating Chapters:\n\nPakistan (PKT): 6:00 PM – 9:00 PM\nIndia (IST): 6:30 PM – 9:30 PM\nBangladesh (BST): 7:00 PM – 10:00 PM\nIndonesia (WIB): 8:00 PM – 11:00 PM\n\nRegistration is completely free of cost for all students and enthusiasts. All registered attendees will be awarded an official E-Certificate of Attendance upon the successful completion of the webinar.\n\nSimply scan the QR Code featured on the official poster to complete your registration and reserve your virtual seat.\n\nOr Register Here:\nhttps://lnkd.in/gsFZWCY4\n\n#AIChE #AIChEPIEAS #AIChEVIT #AIChESUST #AIChEBUET #AIChEPEMAkamigas #ChemicalEngineering #SolidOxideElectrolyzers #SyntheticFuels #RenewableEnergy #SolidStateElectrochemistry #FuelCells #CleanEnergyTransition #GreenHydrogen #InternationalWebinar #EngineeringCollaboration #STEMEducation",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528473401921949696",
-      "timestamp": "2026-11-17T15:05:31.500Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528473543743995904",
+      "timestamp": "2026-11-17T15:06:05.350Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -662,11 +676,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528473544779907072",
-      "text": "We are thrilled to announce a landmark cross-border academic collaboration! SUST Student Chapter of AIChE (Bangladesh) is joining forces with AIChE VIT (India), AIChE PIEAS Student Chapter (Pakistan), AIChE BUET Student Chapter (Bangladesh), and AIChE PEM AKAMIGAS SC (Indonesia) to bring you an exclusive international technical webinar.\n\nAs the global chemical engineering community accelerates toward net-zero targets, green hydrogen and synthetic fuel technologies stand at the forefront of industrial decarbonization. This historic five-chapter synergy unites future engineers across South and Southeast Asia to delve into cutting-edge electrochemical energy conversion systems.\n\n📌 Webinar Topic: Solid Oxide Electrolyzers for Synthetic Fuel Production Using Renewable Energy\n\nDistinguished Speaker: Dr. Asif Mahmood\nProfessor & PhD Coordinator, Pakistan Institute of Engineering and Applied Sciences (PIEAS)\n\nDuring this session, Dr. Asif Mahmood will provide an in-depth technical exploration of high-temperature solid oxide electrolysis cells (SOECs), material advancements in solid-state electrochemistry, and the thermodynamic pathways for integrating renewable energy into sustainable synthetic fuel production.\n\nEvent Details & Regional Timings:\n\nDate: Thursday, 19 November 2026\nPlatform: Microsoft Teams\n\nSchedule According to Participating Chapters:\n\nPakistan (PKT): 6:00 PM – 9:00 PM\nIndia (IST): 6:30 PM – 9:30 PM\nBangladesh (BST): 7:00 PM – 10:00 PM\nIndonesia (WIB): 8:00 PM – 11:00 PM\n\nRegistration is completely free of cost for all students and enthusiasts. All registered attendees will be awarded an official E-Certificate of Attendance upon the successful completion of the webinar.\n\nSimply scan the QR Code featured on the official poster to complete your registration and reserve your virtual seat.\n\nOr Register Here:\nhttps://lnkd.in/gsFZWCY4\n\n#AIChE #AIChEPIEAS #AIChEVIT #AIChESUST #AIChEBUET #AIChEPEMAkamigas #ChemicalEngineering #SolidOxideElectrolyzers #SyntheticFuels #RenewableEnergy #SolidStateElectrochemistry #FuelCells #CleanEnergyTransition #GreenHydrogen #InternationalWebinar #EngineeringCollaboration #STEMEducation",
+      "id": "urn:li:activity:7528473402802618369",
+      "text": "🚀 Helping a young engineering student take the next step in his career!\nI'm happy to share this internship search with my network.\n\nCurrently in his 4th year at IPSA Toulouse and studying abroad atInstitut Teknologi Bandung (ITB) in Indonesia, this motivated engineering student is looking for a 4-month Assistant Engineer internship starting in late May 2027, in the aerospace and space sectors. 🛰️\nFollowing a first valuable experience at CNES, at the Guiana Space Centre, he is eager to further develop his skills and contribute to exciting engineering projects, particularly in space systems, satellites, mechanical design, or systems engineering.\n\n🌍 Open to opportunities in France and internationally.\nIf you know of any opportunities, have relevant contacts, or could help connect him with professionals in the industry, your support would be greatly appreciated!\n🙏 Thank you for sharing and helping a young talent take his next step!\n\n--------------------------------------------------------------------------------------\n🚀 Un petit coup de pouce pour accompagner un jeune étudiant ingénieur dans la prochaine étape de son parcours !\n\nJe suis ravie de partager cette recherche de stage avec mon réseau.\nActuellement en 4ᵉ année à l’IPSA Toulouse et en mobilité internationale à l’Institut Teknologi Bandung (ITB), en Indonésie, ce jeune étudiant motivé recherche un stage assistant ingénieur de 4 mois, à partir de fin mai 2027, dans les secteurs de l’aéronautique et du spatial. 🛰️\nAprès une première expérience enrichissante au CNES, au Centre Spatial Guyanais, il souhaite aujourd’hui approfondir ses compétences et contribuer à des projets techniques stimulants, notamment dans les domaines des systèmes spatiaux, des satellites, de la conception mécanique ou encore de l’ingénierie système.\n\n🌍 Ouvert aux opportunités en France comme à l’international.\nSi vous avez connaissance d’opportunités, de contacts ou si vous pouvez faciliter une mise en relation avec des professionnels du secteur, votre aide serait précieuse !\n\n🙏 Merci à toutes celles et ceux qui pourront relayer cette publication et aider un jeune talent à franchir une nouvelle étape dans son parcours !\n\n#Internship2027 #Aerospace #SpaceIndustry #Engineering #YoungTalent",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528473543743995904",
-      "timestamp": "2026-11-17T15:06:05.350Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528473401921949696",
+      "timestamp": "2026-11-17T15:05:31.500Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -807,20 +821,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528434782779641856",
       "timestamp": "2026-11-17T12:32:03.892Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528433811085307904",
-      "text": "I’m happy to share that I’m starting a new position as Graduate Trainee Program - Production Engineer at PT Indonesia Body Maker!",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528433810284118016",
-      "timestamp": "2026-11-17T12:28:12.099Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -1306,15 +1306,127 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528441796033437696",
-      "text": "🚀 BIG OPPORTUNITY ALERT! UMAX HUB IS HIRING! 💙\n✨ YOUR NEXT CAREER STARTS HERE! ✨\nLooking for a new opportunity? This is your chance!\nPT UMAX HUB INDONESIA is expanding, and we're looking for passionate, creative, and talented individuals to grow with us! 🔥\n💼 WE'RE HIRING FOR MULTIPLE POSITIONS!\n🛒 E-COMMERCE & OPERATIONS\nE-Commerce Manager\nE-Commerce Supervisor\nE-Commerce Content Operation\nE-Commerce After-sales Operation\nProduct Admin\n🎬 CONTENT, CREATIVE & DIGITAL\nHead of Creative\nSocial Media Specialist\nContent Planner\nContent Creator\nVideographer\nVideo Editor\nAI Video Editor\nAI Short Video Creator\n📈 BUSINESS & SALES\nBusiness Development\nB2B Sales Admin\nHost Live Streaming\n📦 WAREHOUSE & LOGISTICS\nWarehouse Manager\nWarehouse Staff\n🎓 INTERNSHIP OPPORTUNITIES\nEcommerce Operation Intern\nEcommerce Content Operation Intern\n━━━━━━━━━━━━━━━━━━\n📍 WORK LOCATION\nJakarta Barat & Tangerang (sesuai posisi)\n💼 EMPLOYMENT\nFull-Time & Part-Time (sesuai posisi)\n🎯 WHO ARE WE LOOKING FOR?\nWe're looking for individuals who are:\n✅ Passionate & eager to grow\n✅ Creative, proactive & responsible\n✅ Strong team players\n✅ Ready to learn, innovate & make an impact\n✅ Target-oriented & problem solvers\n💙 WHY JOIN UMAX HUB?\nBe part of a growing e-commerce company where your ideas matter, your skills develop, and your career has room to grow!\n━━━━━━━━━━━━━━━━━━\n🔥 DON'T JUST LOOK FOR A JOB. BUILD YOUR FUTURE WITH US!\n📩 READY TO JOIN? APPLY NOW!\n🔗 Apply through our official JobStreet page:\nhttps://lnkd.in/gf_W9Fsb\n💌 Know someone who's looking for a new opportunity? Tag them or share this post!\nYOUR TALENT. YOUR FUTURE. YOUR UMAX HUB. 🚀\n#UMAXHUB #UMAXHiring #WereHiring #HiringNow #LowonganKerja #LokerJakarta #LokerJakartaBarat #LokerTangerang #EcommerceJobs #CreativeJobs #DigitalMarketing #BusinessDevelopment #ContentCreator #InternshipOpportunity #FreshGraduate #CareerOpportunity",
+      "id": "urn:li:activity:7528441858708910082",
+      "text": "WE ARE HIRING: Mandarin-Speaking Customer Service Agent\n📌Location: Lippo Plaza, Yogyakarta, Indonesia\n\n✅Open to negotiation\n✅Project: Travel Account\n✅Immediate Joiners Only\n✅8 headcounts\n✅Employment Type: Full-time\n✅Required Language: Mandarin + English (B2)\n✅Education: Diploma or Minimum S1 equivalent (Bachelor's degree or equivalent qualification)\n\n✅Job Overview\nOur client is hiring Mandarin-speaking Customer Service Representatives for its Travel Account in Yogyakarta. This opportunity is suitable for candidates with strong Mandarin communication skills and good English proficiency who are ready to join immediately.\nCandidates with previous experience in customer service or online travel agencies (OTAs) are preferred, but fresh graduates and entry-level applicants are also welcome to apply.\n\n✅Key Responsibilities\n* Assist customers with travel-related inquiries, bookings, reservations, cancellations, and changes.\n* Provide accurate information and support regarding travel services and booking issues.\n* Respond to customer inquiries through the assigned communication channels.\n* Resolve customer complaints professionally and work toward customer satisfaction.\n* Communicate effectively with Mandarin-speaking customers and use English when required.\n* Follow company procedures, service standards, and quality guidelines.\n* Maintain accurate customer records and document interactions.\n* Escalate complex issues to the appropriate team when necessary.\n✅Requirements\n* Strong Mandarin communication skills.\n* English proficiency at B2 level or above.\n* Must be available to join immediately and commence work on October 18, 2026.\n* Minimum education equivalent to S1 (Bachelor's degree).\n* Previous customer service or Online Travel Agency (OTA) experience is preferred, but not mandatory.\n* Freshers are welcome if they have the required language skills and are eager to learn.\n* Must be willing to work at the client's office at Lippo Plaza, Yogyakarta.\n* Must be able to complete the required voice assessment (SVAR).\n✅Benefits\n* Opportunity to gain experience in an international customer service environment.\n* Training and development opportunities for eligible candidates.\n* Other benefits and allowances, if applicable, will be communicated during the recruitment process.\nApplication Instructions\nInterested candidates who meet the requirements and can join immediately are encouraged to apply.\n📩 How to Apply Send your updated resume to Afeez.Owolabi@recruitifyhrcom \nSubject: Mandarin-Speaking Customer Service Agent",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441793193889792",
-      "timestamp": "2026-11-17T12:59:55.859Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441855940694016",
+      "timestamp": "2026-11-17T13:00:10.802Z",
       "surfaces": [
         {
           "type": "linkedin",
           "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528441910475096064",
+      "text": "WE ARE HIRING: Mandarin-Speaking Customer Service Agent\n📌Location: Lippo Plaza, Yogyakarta, Indonesia\n\n✅Open to negotiation\n✅Project: Travel Account\n✅Immediate Joiners Only\n✅8 headcounts\n✅Employment Type: Full-time\n✅Required Language: Mandarin + English (B2)\n✅Education: Diploma or Minimum S1 equivalent (Bachelor's degree or equivalent qualification)\n\n✅Job Overview\nOur client is hiring Mandarin-speaking Customer Service Representatives for its Travel Account in Yogyakarta. This opportunity is suitable for candidates with strong Mandarin communication skills and good English proficiency who are ready to join immediately.\nCandidates with previous experience in customer service or online travel agencies (OTAs) are preferred, but fresh graduates and entry-level applicants are also welcome to apply.\n\n✅Key Responsibilities\n* Assist customers with travel-related inquiries, bookings, reservations, cancellations, and changes.\n* Provide accurate information and support regarding travel services and booking issues.\n* Respond to customer inquiries through the assigned communication channels.\n* Resolve customer complaints professionally and work toward customer satisfaction.\n* Communicate effectively with Mandarin-speaking customers and use English when required.\n* Follow company procedures, service standards, and quality guidelines.\n* Maintain accurate customer records and document interactions.\n* Escalate complex issues to the appropriate team when necessary.\n✅Requirements\n* Strong Mandarin communication skills.\n* English proficiency at B2 level or above.\n* Must be available to join immediately and commence work on October 18, 2026.\n* Minimum education equivalent to S1 (Bachelor's degree).\n* Previous customer service or Online Travel Agency (OTA) experience is preferred, but not mandatory.\n* Freshers are welcome if they have the required language skills and are eager to learn.\n* Must be willing to work at the client's office at Lippo Plaza, Yogyakarta.\n* Must be able to complete the required voice assessment (SVAR).\n✅Benefits\n* Opportunity to gain experience in an international customer service environment.\n* Training and development opportunities for eligible candidates.\n* Other benefits and allowances, if applicable, will be communicated during the recruitment process.\nApplication Instructions\nInterested candidates who meet the requirements and can join immediately are encouraged to apply.\n📩 How to Apply Send your updated resume to Afeez.Owolabi@recruitifyhrcom \nSubject: Mandarin-Speaking Customer Service Agent",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441907656458241",
+      "timestamp": "2026-11-17T13:00:23.144Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528453735887515648",
+      "text": "Hi everyone! I’m seeking a new role and would appreciate your support. If you hear of any opportunities or just want to catch up, please send me a message or comment below. I’d love to reconnect. #OpenToWork\n\nAbout me & what I’m looking for:\n💼 I’m looking for Quality Control Engineer, Quality Control Inspector, Civil Engineer, Assistant Civil Engineer, and Graduate Civil Engineer roles.\n🌎 I’m open to roles in Tangerang, Jakarta Metropolitan Area, and Semarang.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528453733140127744",
+      "timestamp": "2026-11-17T13:47:22.542Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528441016136318976",
+      "text": "Following the closing of our Graduate Hydropower Engineer recruitment, Powerchina Huadong Engineering Corporation Limited, through its Global Hydropower Engineering Technological Center (GHETC), is now seeking a Business Development Support professional to join our team in Jakarta. \n\nWe are particularly interested inMandarin-speaking candidates with backgrounds in Business, Management, Engineering, or related fields, with prior experience and interest in business development activities withinIndonesia's hydropower and renewable energy sector.\n\nApply here: https://lnkd.in/grHUU2wa",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528441014944976896",
+      "timestamp": "2026-11-17T12:56:49.917Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528435514539151360",
+      "text": "We're hiring! 🚀\n\nIf you’re open to exploring new challenges and want to be part of a team that’s continuously growing and evolving, we’re looking for a System Analyst to join us!\n\n📍 Location: Jakarta (Onsite)\n📋 Employment Type: Contract\n\nRequirements:\n🔹Minimum 3 years of experience as a System Analyst or IT Business Analyst.\n\nPreferred Qualifications:\n🔹Previous experience working in an IT Consulting company.\n🔹Previous experience as a Software Engineer / Developer.\n🔹Experience working on AI-related projects.\n🔹Can Join ASAP\n\nFeel free to apply by sending your resume, along with your project portfolio (optional), to:\n📩 ivan@nusantarabetastudio.com\n📩 hiring@nusantarabetastudio.com\n\nOr share with someone who might be interested ✨\nLooking forward to connecting with you!\n\n#Hiring #SystemAnalyst #BusinessAnalyst #ITJobs #JakartaJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528435512999772161",
+      "timestamp": "2026-11-17T12:34:58.234Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528433558340878337",
+      "text": "We're #hiring a new System Engineer L1 in Jakarta Metropolitan Area. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528433557728329728",
+      "timestamp": "2026-11-17T12:27:11.840Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528433109101453312",
+      "text": "We're #hiring a new Java Software Engineer in Jakarta Metropolitan Area. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528433108489011200",
+      "timestamp": "2026-11-17T12:25:24.733Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528432231816572929",
+      "text": "We're #hiring a new Site Reliability Engineer in East Jakarta, Jakarta. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528432231250313216",
+      "timestamp": "2026-11-17T12:21:55.572Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528431167285616640",
+      "text": "We're #hiring a new Quality Assurance Engineer in Jakarta. Apply today or share this post with your network.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528431165926453248",
+      "timestamp": "2026-11-17T12:17:41.768Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
         }
       ]
     },
@@ -1353,6 +1465,90 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528468591743098880",
       "timestamp": "2026-11-17T14:46:24.763Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528435514539151360",
+      "text": "We're hiring! 🚀\n\nIf you’re open to exploring new challenges and want to be part of a team that’s continuously growing and evolving, we’re looking for a System Analyst to join us!\n\n📍 Location: Jakarta (Onsite)\n📋 Employment Type: Contract\n\nRequirements:\n🔹Minimum 3 years of experience as a System Analyst or IT Business Analyst.\n\nPreferred Qualifications:\n🔹Previous experience working in an IT Consulting company.\n🔹Previous experience as a Software Engineer / Developer.\n🔹Experience working on AI-related projects.\n🔹Can Join ASAP\n\nFeel free to apply by sending your resume, along with your project portfolio (optional), to:\n📩 ivan@nusantarabetastudio.com\n📩 hiring@nusantarabetastudio.com\n\nOr share with someone who might be interested ✨\nLooking forward to connecting with you!\n\n#Hiring #SystemAnalyst #BusinessAnalyst #ITJobs #JakartaJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528435512999772161",
+      "timestamp": "2026-11-17T12:34:58.234Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528424591699103744",
+      "text": "📣 [HIRING: B2B PARTNERSHIP MANAGER – TANGERANG/JAKARTA] 📣\nWells is growing beyond the showroom — we’re now looking for a B2B Partnership Manager to bring our premium Korean water purifiers into Jakarta’s best projects: interior design, property developments, hotels, and hospitals. If your network opens doors in the design and building world, this role was made for you.\n⸻\nPosition:\nB2B Partnership Manager\nLocation: Tangerang/Jakarta\nEmployment Type: Full-Time, On-Site + Field Visits\nCompensation: Base Salary + Uncapped Commission\n⸻\nRequirements:\n– Minimum 3 years experience in B2B sales (interior, building materials, property, or premium appliances) with provable deals\n– A live network of interior designers, architects, contractors, or developers — firms that would take your call this week\n– Experience with hospitality or healthcare projects is a strong plus\n– Confident and consultative with management-level clients\n– Hunter mentality — the commission is uncapped for a reason\n⸻\nWhat you’ll own:\n– The full B2B pipeline end-to-end — prospecting, quotations, negotiation, and closing with owner-level support\n– Getting Wells specified into projects and building partnerships that last\n⸻\nIf this sounds like you, apply here: https://bit.ly/wells-b2b\nStart your application with commenting  \"Interested\"\nKnow someone perfect for this role? Tag them or share this post! 🙏",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528424590658875392",
+      "timestamp": "2026-11-17T11:51:34.026Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528503500037681152",
+      "text": "💼 PART-TIME – FREELANCE OPPORTUNITY – JOB SUPPORT – REMOTE\n\n**“CA Gen Application Developer with Java Experience” – JOB SUPPORT**\n⏱️ 2-3 Hrs/Day | Mon–Fri\n**Experience:** 10+ Yrs\n\n**Mandatory Skills:** CA Gen, AllFusion Gen, Cool:Gen, Java, J2EE, Jakarta EE, ORM Frameworks, SQL, Application Development, Application Maintenance, Legacy Application Modernization, Legacy System Re-platforming, CA Gen to Java Conversion, Application Migration, Application Enhancement, Analysis, Design, Coding, Testing & Troubleshooting.\n📩 Reach out to me on:\n👉 https://wa.me/8971620905\n📱 +91-89716-20905 (WhatsApp)\n#CAGen #AllFusionGen #CoolGen #CAGenDeveloper #JavaDeveloper #Java #J2EE #JakartaEE #ORM #Hibernate #SQL #ApplicationDeveloper #ApplicationMaintenance #LegacyModernization #LegacyMigration #Replatforming #ApplicationModernization #JavaMigration #EnterpriseJava #BackendDevelopment #SoftwareDevelopment #TexasMedicaid #HealthcareIT #MedicaidSystems #ITJobs #TechJobs #FreelanceJobs #JobSupport #RemoteJobs #PartTimeJobs #LinkedInJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528503499555303425",
+      "timestamp": "2026-11-17T17:05:07.240Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528412195014148096",
+      "text": "🚨 Avows Technologies Indonesia is HIRING! | Multiple Tech Positions \n\nWe’re currently looking for talented professionals to join our team for the following positions:\n\n🔹Frontend Developer (Next.js)\n• Min. 3 years of experience\n• Strong proficiency in Next.js, React.js, and JavaScript/TypeScript\n• Familiar with REST API integration and responsive web development\n\n🔹 Fullstack .NET Developer\n• Min. 3 years of experience\n• Strong in .NET / C# and frontend technologies\n• Familiar with REST API, database, and Git\n\n🔹 Technical Writer \n• Min. 3 years of experience\n• Experienced in technical documentation & user guides\n• Able to translate complex technical information into clear documentation\n\n📍 Location: Jakarta\n📩 Interested in any of these opportunities? Send your updated CV and apply through Application Form: https://lnkd.in/g6XYFamh\n\n#Hiring #OpenToWork #JobOpportunity #TechJobs #FullstackDeveloper #DotNetDeveloper #TechnicalWriter #ScrumMaster #Agile #JakartaJobs #ITJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528412194196148224",
+      "timestamp": "2026-11-17T11:02:18.426Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528410512154570752",
+      "text": "🚨 We’re Hiring: Penetration Tester (Red Team) 🚨\n🏢 Industry: Banking\n🕒 Duration: 7 Months\n⚡ Availability: 1 Month Notice\n📍 Location: South Jakarta\n\n🎓 Requirements:\n▪️ OSCP certified (Red Team)\n▪️ Min. 3–5 years of experience in penetration testing\n▪️ Able to perform vulnerability assessments and penetration testing on web, mobile (iOS and Android), API, network, and infrastructure\n▪️ Able to identify weaknesses and vulnerabilities and propose clear recommendations\n▪️ Own all necessary penetration testing tools and equipment\n▪️ Able to collaborate with application developers, their management, and PMO\n▪️ Able to advise on penetration testing practices and propose preventive measures for key risks\n\n🔑 Key Responsibilities:\n▪️ Conduct penetration tests across web applications, mobile applications, and infrastructure\n▪️ Provide network and application vulnerability assessments and recommendations\n▪️ Contribute to the Bank’s penetration testing and web application security programs\n▪️ Review current penetration testing practices and identify key risks\n▪️ Act as an advisor on all aspects of penetration testing\n═══════════════════\n📩 How to Apply:\nFill out the questionnaire: https://lnkd.in/g4g23MpE\nOR send your CV to ghani.rifqi@accordinnovations.com\n📝 Subject: “[Role Title]_[Your Name]”\n#Hiring #Jobs #Careers #JobSearch #JobSeekers #Recruitment #PenetrationTesting #RedTeam #CyberSecurity #BankingIndustry #LokerIndonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528410511412133888",
+      "timestamp": "2026-11-17T10:55:37.201Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528406001474207744",
+      "text": "📢 WE ARE HIRING: Senior Penetration Tester\n \n \nHello Job Seekers!\n\nI’m Muhammad Hafizh, Tech Recruiter from PT. MSBU Konsultan Indonesia. We are currently looking for one person to join as a Senior Penetration Tester of our client companies for Information Technology Sector Industry in Location DKI Jakarta Area and 12 month Employment Contract.\n \nJob Description:\n-   Lead technical scoping, establish Rules of Engagement (RoE) with stakeholder and execute end-to-end assessment independently\n-   Perform deep dive assessment on Web, Mobile (Android/iOS), API (REST/GraphQL), Network, Active Directory, and Cloud/Container environments with manual validation to eliminate false positives\n-   Produce clear, two-tiered report consisting of an Executive Summary for leadership and reproducible technical details with prioritized remediation steps for developer\n-   Lead debrief session, presenting complex technical finding effectively to both non-technical business leader and technical engineering team\n-   Conduct retest to verify fix effectiveness and ensure long-term risk mitigation\n-   Drive continuous improvement by building internal tooling, refining checklist/playbook and mentoring junior team member\n \n \nRequirement:\n-   Minimum 4 years of experience in offensive security or 7 years in general cybersecurity with at least 4 years exclusively focus on penetration testing, experience bug bounty.\n-   Proven experience independently managing critical engagement within high-risk sector (Financial Services, Telecommunication, E-Commerce or Government)\n-   In-depth knowledge of OWASP Top 10 and WSTG. Expertise in testing authentication/authorization flaws, IDOR, SSRF, insecure deserialization, business logic bugs, and API vulnerabilities (REST & GraphQL batching/introspection abuse)\n-  Deep knowledge of OWASP MASTG, Hands on experience with static/dynamic analysis on Android & iOS, including client-side security bypasses\n-  Proficient in Python, Bash or PowerShell (Go or C# is a plus).\n-  Familiar with PTES, OSSTMM, NIST SP 800-115, MITRE ATT&CK, CVSS v3.1/v4.0, PCI DSS, ISO 27001, as well as Indonesian regulation (POJK/SEOJK and UU PDP)\n-  Preferred Certification (Practical/Hands-on): OSCP (Primary), paired with OSEP, OSWE, GPEN, GWAPT, CRTO or CREST CRT\n-  Bonus / Advanced: OSCE³, GXPN, CARTP/CARTS, eWPTX, or GMOB\n-  Complementary: CEH, CompTIA PenTest+\n \nif you are interested in this opportunity, feel free to send your Curriculum Vitae to Google Form link:https://lnkd.in/gTuKjDKh or DM for further details.\n\nOnly candidate who meet the qualification will be contact!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528406000429686784",
+      "timestamp": "2026-11-17T10:37:41.771Z",
       "surfaces": [
         {
           "type": "linkedin",
