@@ -11,6 +11,7 @@ const RULES = [
   [/\bdrop\s+table\b/i, "DROP TABLE"],
   [/\bmkfs\b/i, "mkfs"],
   [/state[\\/]seen-posts\.json\s*(>|>>)/, "truncate the state file in place"],
+  [/\btruncate\b.*state[\\/]seen-posts\.json/i, "truncate the state file in place (truncate)"],
 ];
 
 let event;

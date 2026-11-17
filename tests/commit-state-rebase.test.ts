@@ -550,4 +550,86 @@ describe("commit-state-rebase script", () => {
       }
     },
   );
+
+  it(
+    "aborts on skip-bound exhaustion: exit 1, no push, origin unmoved (N062)",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("skip-bound");
+      try {
+        // 51 conflicting state commits on BOTH sides: every replayed
+        // commit conflicts, so the 50-skip bound exhausts with a conflict
+        // still on the table. The former fall-through pushed the PARTIAL
+        // replay and dropped the un-replayed tail from origin silently;
+        // the run-7 behavior aborts and fails the run instead.
+        for (let i = 0; i < 51; i += 1) {
+          await writeFile(
+            join(work, "state", "seen-posts.json"),
+            stateJson({ a: T0, [`w${i}`]: T1 }),
+            "utf8",
+          );
+          git(work, ["add", "state/seen-posts.json"]);
+          git(work, ["commit", "-m", `state: load ${i}`]);
+        }
+        const before = git(work, ["rev-parse", "HEAD"]).trim();
+        const other = join(root, "origin-side");
+        git(root, ["clone", "--quiet", origin, "origin-side"]);
+        git(other, ["config", "user.name", "human pusher"]);
+        git(other, ["config", "user.email", "human@loker-watcher.invalid"]);
+        for (let i = 0; i < 51; i += 1) {
+          await writeFile(
+            join(other, "state", "seen-posts.json"),
+            stateJson({ a: T0, [`o${i}`]: T1 }),
+            "utf8",
+          );
+          git(other, ["add", "state/seen-posts.json"]);
+          git(other, ["commit", "-m", `origin advance ${i}`]);
+        }
+        git(other, ["push", "origin", "main"]);
+        // Captured AFTER the fixture's origin-side push: the assertion
+        // below pins that the SCRIPT RUN left origin alone (no partial
+        // replay pushed), not that the fixture did.
+        const originBefore = git(origin, ["rev-parse", "main"]).trim();
+        const run = runScript(work);
+        assert.equal(run.status, 1, `status ${String(run.status)}: ${run.stderr}`);
+        assert.match(
+          run.stdout,
+          /skip bound \(50\) exhausted; conflicts remain — aborting, no push/,
+        );
+        // The abort actually unwound: no rebase in flight, HEAD unmoved,
+        // and origin kept its own tail — the partial replay was NOT pushed.
+        await assert.rejects(() => access(join(work, ".git", "rebase-merge")), /ENOENT/);
+        assert.equal(git(work, ["rev-parse", "HEAD"]).trim(), before);
+        assert.equal(git(origin, ["rev-parse", "main"]).trim(), originBefore);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "refuses a detached HEAD before any rebase work (N084): exit 1",
+    { skip: BASH_PROBLEM ?? false },
+    async () => {
+      const { root, origin, work } = await makeScratch("detached");
+      try {
+        await writeFile(
+          join(work, "state", "seen-posts.json"),
+          stateJson({ a: T0, b: T1 }),
+          "utf8",
+        );
+        git(work, ["add", "state/seen-posts.json"]);
+        git(work, ["commit", "-m", "state: 1 new seen post ids"]);
+        const originBefore = git(origin, ["rev-parse", "main"]).trim();
+        git(work, ["checkout", "--detach", "HEAD"]);
+        const run = runScript(work);
+        assert.equal(run.status, 1, `status ${String(run.status)}: ${run.stderr}`);
+        assert.match(run.stdout, /detached HEAD/);
+        // Nothing ran: no branch to rebase onto means no pull, no push.
+        assert.equal(git(origin, ["rev-parse", "main"]).trim(), originBefore);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
 });

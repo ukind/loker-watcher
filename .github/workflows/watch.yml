@@ -249,6 +249,8 @@ jobs:
             exit 0
           fi
           PREV=$(git show HEAD:state/seen-posts.json | jq '.seenPostIds | length' 2>/dev/null || echo 0)
-          CURR=$(jq '.seenPostIds | length' state/seen-posts.json)
+          # N083: the same || echo 0 guard PREV carries — a jq hiccup must
+          # degrade the delta subject, not fail the step before commit-back.
+          CURR=$(jq '.seenPostIds | length' state/seen-posts.json 2>/dev/null || echo 0)
           git commit -m "state: $((CURR - PREV)) new seen post ids"
           bash scripts/commit-state-rebase.sh

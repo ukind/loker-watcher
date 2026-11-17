@@ -194,6 +194,14 @@ async function writeFlagAtomic(path: string, content: string, now: () => number)
  * Send the leg-dead alarm ONCE per episode: the marker file edges the
  * healthy→dead transition, so a 144-tick dead day emails once. Every dead
  * tick still warns in the run log.
+ *
+ * N063 (tech-debt run 7): the marker is written only after a SUCCESSFUL
+ * send. The former order (marker first, best-effort send second) let one
+ * transient SMTP failure suppress the alarm for the WHOLE episode — every
+ * later dead tick read the marker and stayed quiet. The doctrine's stated
+ * preference is the opposite direction: a duplicate alarm costs one email,
+ * a suppressed alarm costs the outage. A crash between send and marker
+ * write now costs exactly one duplicate.
  */
 export async function handleLegDeadEpisode(
   reason: string,
@@ -205,24 +213,31 @@ export async function handleLegDeadEpisode(
     console.warn(`fetch-linkedin: leg still dead — ${reason} (alarm already sent this episode)`);
     return;
   }
+  console.error(`fetch-linkedin: LEG DEAD — ${reason}`);
+  // The default send THROWS on failure (no internal catch): this function
+  // owns the episode policy. An injected deps.alam keeps the same
+  // contract — reject to leave the episode open.
+  const sendAlarm =
+    deps.alarm ??
+    (async (alarmReason: string) => {
+      await sendLegDeadAlarm(alarmReason, resolveEmailConfig(env));
+    });
+  try {
+    await sendAlarm(reason);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `fetch-linkedin: alarm not sent — ${message} — episode stays open; the next dead tick retries`,
+    );
+    return;
+  }
+  // The marker lands only after a successful send (N063).
   await writeFlagAtomic(
     marker,
     `${reason}
 `,
     deps.now ?? Date.now,
   );
-  console.error(`fetch-linkedin: LEG DEAD — ${reason}`);
-  const alarm =
-    deps.alarm ??
-    (async (alarmReason: string) => {
-      try {
-        await sendLegDeadAlarm(alarmReason, resolveEmailConfig(env));
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn(`fetch-linkedin: alarm not sent — ${message}`);
-      }
-    });
-  await alarm(reason);
 }
 
 /** Clear a prior episode marker on a healthy tick (the dead→healthy edge). */

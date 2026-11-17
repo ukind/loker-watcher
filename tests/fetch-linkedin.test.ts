@@ -773,13 +773,44 @@ describe("handleLegDeadEpisode (one alarm per episode)", () => {
     assert.deepEqual(alarms, ["dead"]);
   });
 
-  it("default alarm is best-effort: a broken GMAIL env warns instead of throwing", async (t) => {
+  it("leaves the episode OPEN when the send fails — the next dead tick retries (N063)", async (t) => {
     const warns = t.mock.method(console, "warn", console.warn.bind(console));
     const marker = await workPath("episode-4.flag");
+    // The default send THROWS on failure (no internal catch): a broken
+    // GMAIL env rejects, the marker is NOT written, and the episode stays
+    // open — the next dead tick retries the alarm.
     await handleLegDeadEpisode("dead", { markerPath: marker, env: {} });
-    assert.equal(await readFile(marker, "utf8"), "dead\n"); // marker persists despite the send failure
+    await assert.rejects(() => access(marker), /ENOENT/);
     const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
-    assert.ok(lines.some((line) => /alarm not sent/.test(line)));
+    assert.ok(lines.some((line) => /alarm not sent.*episode stays open/.test(line)));
+    // The retry: a second dead tick with a WORKING alarm now alarms —
+    // the old order suppressed it for the whole episode.
+    const alarms: string[] = [];
+    await handleLegDeadEpisode("dead again", {
+      markerPath: marker,
+      env: {},
+      alarm: async (reason) => {
+        alarms.push(reason);
+      },
+    });
+    assert.deepEqual(alarms, ["dead again"]);
+    assert.equal(await readFile(marker, "utf8"), "dead again\n");
+  });
+
+  it("writes the marker only after a successful send (N063)", async () => {
+    const marker = await workPath("episode-5.flag");
+    const order: string[] = [];
+    await handleLegDeadEpisode("dead", {
+      markerPath: marker,
+      env: {},
+      alarm: async () => {
+        order.push("alarm");
+        await assert.rejects(() => access(marker), /ENOENT/);
+      },
+    });
+    order.push("marker");
+    assert.equal(await readFile(marker, "utf8"), "dead\n");
+    assert.deepEqual(order, ["alarm", "marker"]);
   });
 
   it("writes the episode marker atomically — a failed rename leaves no flag (N049)", async () => {
