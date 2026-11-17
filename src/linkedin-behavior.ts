@@ -28,8 +28,8 @@
  */
 export type RandomFn = () => number;
 
-/** One validated wake band, converted to whole milliseconds. */
-export interface LinkedInWakeBand {
+/** One validated wake band, converted to whole milliseconds (internal: consumers read the shape off `resolveLinkedInWakeBand`'s return type — N061). */
+interface LinkedInWakeBand {
   /** Uniform draw lower bound, inclusive. */
   minMs: number;
   /** Uniform draw upper bound, EXCLUSIVE — a Math.random contract never returns 1. */
