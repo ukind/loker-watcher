@@ -54,6 +54,8 @@ describe("loadWatcherConfig — happy path", () => {
     assert.equal(typeof config.platforms.linkedin, "boolean");
     assert.equal(typeof config.platforms.threads, "boolean");
     assert.equal(config.recencyHours, 72);
+    assert.equal(config.linkedinWakeMinMinutes, 60);
+    assert.equal(config.linkedinWakeMaxMinutes, 60);
   });
 
   it("keeps every configured surface", async () => {
@@ -265,6 +267,73 @@ describe("scrollRounds", () => {
     await assert.rejects(
       () => loadWatcherConfig(path),
       /"scrollRounds" must be an integer >= 1, got "five"/,
+    );
+  });
+});
+
+describe("linkedinWakeMinutes", () => {
+  it("defaults both keys to 60 when absent", async () => {
+    const path = await writeConfig({ ...VALID });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.linkedinWakeMinMinutes, 60);
+    assert.equal(config.linkedinWakeMaxMinutes, 60);
+  });
+
+  it("accepts positive integers", async () => {
+    const path = await writeConfig({
+      ...VALID,
+      linkedinWakeMinMinutes: 55,
+      linkedinWakeMaxMinutes: 65,
+    });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.linkedinWakeMinMinutes, 55);
+    assert.equal(config.linkedinWakeMaxMinutes, 65);
+  });
+
+  it("accepts a partial band — an absent key defaults to 60", async () => {
+    const path = await writeConfig({ ...VALID, linkedinWakeMinMinutes: 55 });
+    const config = await loadWatcherConfig(path);
+    assert.equal(config.linkedinWakeMinMinutes, 55);
+    assert.equal(config.linkedinWakeMaxMinutes, 60);
+  });
+
+  it("rejects a fractional min", async () => {
+    const path = await writeConfig({ ...VALID, linkedinWakeMinMinutes: 2.5 });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"linkedinWakeMinMinutes" must be an integer >= 1/,
+    );
+  });
+
+  it("rejects zero", async () => {
+    const path = await writeConfig({ ...VALID, linkedinWakeMaxMinutes: 0 });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"linkedinWakeMaxMinutes" must be an integer >= 1/,
+    );
+  });
+
+  it("rejects a non-numeric value with the got-clause", async () => {
+    const path = await writeConfig({ ...VALID, linkedinWakeMinMinutes: "sixty" });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"linkedinWakeMinMinutes" must be an integer >= 1, got "sixty"/,
+    );
+  });
+
+  it("rejects an explicit null (absence is omission, not null)", async () => {
+    const path = await writeConfig({ ...VALID, linkedinWakeMaxMinutes: null });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"linkedinWakeMaxMinutes" must be an integer >= 1, got null/,
+    );
+  });
+
+  it("rejects a negative value", async () => {
+    const path = await writeConfig({ ...VALID, linkedinWakeMinMinutes: -5 });
+    await assert.rejects(
+      () => loadWatcherConfig(path),
+      /"linkedinWakeMinMinutes" must be an integer >= 1/,
     );
   });
 });

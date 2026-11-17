@@ -47,6 +47,8 @@ const CONFIG: WatcherConfig = {
   recencyHours: 72,
   reasoningEffort: "low",
   scrollRounds: 8,
+  linkedinWakeMinMinutes: 60,
+  linkedinWakeMaxMinutes: 60,
 };
 
 /** A config carrying the given linkedin keywords, in config order (per-keyword loop cases). */

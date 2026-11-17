@@ -39,7 +39,7 @@ Detailed guidance:
 | `npx biome check --write <path>` | scoped check+fix for the given files (the lint-staged form) |
 | `npm start` | run the watcher locally (needs LLM_* and GMAIL_* env vars; an absent or stale `state/linkedin-posts.json` degrades to a threads-only run with one log line) |
 | `npx tsx scripts/probe-judge.ts` | gate every LLM_ACCOUNTS entry: latency, bulk shape, per-account `ceiling=N`; exit 1 on a dead account (needs LLM_ACCOUNTS) |
-| `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + 28-33-min sleep) from a dedicated clone of main |
+| `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + wake band from `watcher.config.json`, 60 min default) from a dedicated clone of main |
 | `npm run probe-linkedin` | gate the LinkedIn browser walk: a read-only walk of the first configured surface; exit 1 on a checkpoint wall, a dead session, a faulted walk, or fewer than 10 posts |
 | `npm run login-linkedin` | headed cookie harvest: the operator logs in by hand; writes the cookie file + the `.env` line |
 | `npm run linkedin-chain` | one-command operator chain: login hold -> probe -> exactly one fetch tick, in order, from a dedicated clone of main; a quiet-zero tick is a reported no-op (exit 0); any stage failure exits 1 naming the gate (real TTY for the login hold) |
@@ -47,7 +47,7 @@ Detailed guidance:
 
 ## Business Context
 
-A scheduled GitHub Actions run is the only hosted runtime. Zero-match runs email a status digest (the heartbeat) instead — `HEARTBEAT_ENABLED` unset means enabled. A dark LinkedIn leg (absent or stale `state/linkedin-posts.json` — the PC loop is off) degrades to a threads-only run with one log line; the heartbeat still fires and renders the leg state. Operator configuration lives in `watcher.config.json`; a typo stops the run with an error that names the problem. Repo doctrine: probe-measured values are committed data, not env knobs (per-account judge ceilings in `state/judge-ceilings.json`, freshness stamped with `probedAt`); all other tuning values are hard-coded module constants.
+A scheduled GitHub Actions run is the only hosted runtime. Zero-match runs email a status digest (the heartbeat) instead — `HEARTBEAT_ENABLED` unset means enabled. A dark LinkedIn leg (absent or stale `state/linkedin-posts.json` — the PC loop is off) degrades to a threads-only run with one log line; the heartbeat still fires and renders the leg state. Operator configuration lives in `watcher.config.json`; a typo stops the run with an error that names the problem. Repo doctrine: probe-measured values are committed data, not env knobs (per-account judge ceilings in `state/judge-ceilings.json`, freshness stamped with `probedAt`); other tuning values are hard-coded module constants, except the operator-configurable cadence keys in `watcher.config.json` (`linkedinWakeMinMinutes` / `linkedinWakeMaxMinutes`).
 
 ## State history policy (N043, decided 2026-11-13)
 

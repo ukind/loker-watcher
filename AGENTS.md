@@ -42,8 +42,8 @@ failure path).
   or dirty tree), then fetch, write the payload, push that single path
   (leg-dead exits 1 after the episode alarm)
 - `npm run watch-linkedin` - the always-on PC loop: one tick, then a
-  28-33-minute sleep, forever; leg-dead sends ONE alarm per episode and
-  the loop keeps running
+  sleep from the configurable wake band (60 minutes flat by default),
+  forever; leg-dead sends ONE alarm per episode and the loop keeps running
 - `npm run login-linkedin` - headed LinkedIn login helper: the operator
   logs in by hand in the opened window (2FA included); the helper writes
   the cookie file and the `LINKEDIN_COOKIES_FILE` line in `.env` (exit 1
@@ -101,7 +101,8 @@ against the configured keywords, email digest, commit state.
   pinned content test reads them through `linkedin-fetch`), and the
   checkpoint/Activity regexes plus the page-close vocabulary
 - `src/linkedin-behavior.ts` - the PC leg's pure policy machines: the
-  jittered 28-33-minute wake cadence and the halt-latch reason vocabulary
+  wake-band resolver and sampler (band from `watcher.config.json`) and
+  the halt-latch reason vocabulary
 - `src/linkedin-capture.ts` - the raw-body capture sink: one atomic JSON
   file per intercepted body under `captures/<UTC session stamp>/`, an 8 MB
   per-body bound, 20-session retention, and the warn-once failure policy
@@ -116,7 +117,7 @@ against the configured keywords, email digest, commit state.
   `state/linkedin-posts.json` -> commit -> pull --rebase -> push with one
   retry (mirrors `scripts/commit-state-rebase.sh`; leg-dead = ONE alarm per
   episode via a repo-local marker, then exit 1)
-- `scripts/watch-linkedin.ts` - the always-on PC loop (tick + a 28-33-minute sleep)
+- `scripts/watch-linkedin.ts` - the always-on PC loop (tick + a configurable wake band)
 - `scripts/probe-linkedin.ts` - the browser-walk gate probe (exit
   contracts: tick = leg-dead exits 1; loop = never exits on leg-dead;
   probe = a read-only walk of the first configured surface, gate exit 1)

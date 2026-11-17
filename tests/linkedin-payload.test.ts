@@ -76,7 +76,7 @@ describe("writePayloadAtomic / readPayloadPosts round trip", () => {
     assert.equal(LINKEDIN_PAYLOAD_PATH, "state/linkedin-posts.json");
   });
 
-  it("pins the 40-minute staleness window (the 33-minute worst-case wake plus margin)", () => {
+  it("pins the 40-minute staleness window (operator-frozen, decoupled from the wake band)", () => {
     assert.equal(PAYLOAD_MAX_AGE_MS, 2_400_000);
   });
 });
