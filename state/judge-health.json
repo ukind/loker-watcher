@@ -1,5 +1,7 @@
 {
   "version": 1,
-  "marks": {},
+  "marks": {
+    "https://api.z.ai/api/coding/paas/v4": 1
+  },
   "outageOpen": false
 }
