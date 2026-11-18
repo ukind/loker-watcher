@@ -157,8 +157,8 @@
       }
    ],
    "scrollRounds":50,
-   "linkedinWakeMinMinutes":60,
-   "linkedinWakeMaxMinutes":60,
+   "linkedinWakeMinMinutes":15,
+   "linkedinWakeMaxMinutes":45,
    "platforms":{
       "linkedin":true,
       "threads":true
