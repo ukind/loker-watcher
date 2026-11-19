@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-19T01:11:12.116Z",
+  "writtenAt": "2026-11-19T01:45:13.075Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -46,11 +46,39 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7528834321659387904",
+      "text": "Most business websites look fine. Very few actually work.\n\nThat gap is why me and my team started Lazulab 🚀\n\nLazulab is a web design and development studio helping businesses in Indonesia, from small local brands to fast-growing companies, build websites that grow with them.\n\nHere’s what makes us different:\n🔹One team, start to finish. We plan, design, build and launch everything in-house, so nothing gets lost in hand-offs.\n🔹The right tool for the job. WordPress when you need to move fast. Custom code (Next.js, React) when you need precision.\n🔹No jargon. Every decision is explained in plain business terms, so you always know why.\n🔹It’s yours. Your code, your domain, your content. No lock-in, ever.\nThe name comes from lazuardi, the Indonesian word for a clear blue sky, plus lab, a place where we design, test and keep improving.\n\nThis is just the beginning, and I’m genuinely excited to see where it goes.\n\nIf you’re a business owner thinking about a new website, or you know someone who is, let’s talk. My DMs are open 👇\n🌐https://lazulab.com/\n\n#Lazulab #WebDevelopment #WebDesign #SmallBusiness #Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528834320514396161",
+      "timestamp": "2026-11-18T14:59:41.261Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7528821697903501313",
       "text": "20 new roles from companies hiring this week (curated on CareerBee)\n\n• Software Engineer – .NET — Mohali, Pune\nhttps://lnkd.in/devpnMRr\n\n• Database Developer — Mohali\nhttps://lnkd.in/dShVHbzZ\n\n• Software Engineer- Zoho — Mohali\nhttps://lnkd.in/dY4VC9rZ\n\n• Software Engineer- Shopify & Big Commerce — Mohali, Pune\nhttps://lnkd.in/d9uyp4Qv\n\n• Technical Lead- PHP/MEAN/MERN — Mohali\nhttps://lnkd.in/d3G4xwDH\n\n• Team Lead- PHP/MEAN/MERN — Mohali\nhttps://lnkd.in/dGdqMkJs\n\n• Project Manager- PHP — Mohali\nhttps://lnkd.in/dYQPFEQs\n\n• Business Development Executive — Mohali, Pune\nhttps://lnkd.in/dun9f7nB\n\n• Software Engineer – PHP — Mohali, Pune\nhttps://lnkd.in/dAtUrngB\n\n• React UI Developer — Indore\nhttps://lnkd.in/dSMECpFS\n\n• Java Full Stack Developer — Indore\nhttps://lnkd.in/dwkjZVdQ\n\n• Field Sales Executive — Indore\nhttps://lnkd.in/deyZqdS5\n\n• Dot Net Developer — Indore\nhttps://lnkd.in/dK8gjWjr\n\n• React JS Developer — Indore\nhttps://lnkd.in/dEWSbmqr\n\n• Business Analyst — Indore\nhttps://lnkd.in/deEZ8XY5\n\n• Node JS Developer — Indore\nhttps://lnkd.in/d7Wf36rt\n\n• Digital PR Specialist — Remote (Indonesia, India, or global)\nhttps://lnkd.in/d9cbuDmZ\n\n• Marketing Systems Manager — Remote (Indonesia, India, or global)\nhttps://lnkd.in/dHZ7uQX9\n\n• Director of Digital Advertising — Remote (Indonesia, India, or global)\nhttps://lnkd.in/deNW6rgV\n\n• SEO & AI Search Specialist — Remote (Indonesia, India, or global)\nhttps://lnkd.in/dk9JVC5n\n\nSee all roles\nhttps://careerbee.in/jobs\n\nCareerBee is a job discovery platform — we list roles from other companies.\n\n#JobAlert #JobSearch #CareerBeeIndia #Hiring #Careers",
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528821696544550912",
       "timestamp": "2026-11-18T14:09:31.523Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528994749047799809",
+      "text": "I’m happy to share that I’ve obtained a new certification: Fundamental Aplikasi Web dengan React from Dicoding Indonesia!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528994748288720896",
+      "timestamp": "2026-11-19T01:37:10.131Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -79,6 +107,20 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528758906580320256",
       "timestamp": "2026-11-18T10:00:01.159Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528755140976320512",
+      "text": "Stop scrubbing through 2-hour YouTube lectures to find one 20-second explanation.\n\nI built TimeSliceIQ—paste any YouTube URL, ask a question, and get AI answers backed by click-to-seek timestamp citations synced directly to the embedded video and transcript.\n\nUnder the hood: → Grounded RAG with zero fake timestamps: Gemini 2.5 Flash cites strict chunk IDs via JSON schema; the FastAPI backend deterministically maps them to exact video timecodes. → < 1 ms vector retrieval: Custom pure-NumPy vector store (gemini-embedding-001) built for lightweight Vercel serverless functions. → Production-ready extras: Cloudflare Worker transcript proxy, Firebase Auth + Firestore history, OpenAPI-synced TypeScript types, and a Swiss Minimalist dark UI.\nThank you Sir !\nPraveen jogi\nSmartBridge Indonesia\nLive demo: https://lnkd.in/dzZwrb6U GitHub:https://lnkd.in/djvWFNAC\n\nDrop a long YouTube lecture you've been meaning to get through—I'd love to hear how it holds up!\n\n#AI #RAG #Gemini #React #FastAPI #TypeScript #BuildInPublic #SoftwareEngineering",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528755139462131712",
+      "timestamp": "2026-11-18T09:45:03.115Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -223,6 +265,90 @@
         {
           "type": "linkedin",
           "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528989077636001792",
+      "text": "🚨 WE ARE HIRING! | NEW PROJECT – BALI \nPT China State Construction Overseas Development Shanghai is currently seeking qualified and experienced professionals to join our team for a new project in Bali.\nOpen Positions:\n\n1.\tQS MEP – 1 Person\n2.\tStore Man – 1 Person\n3.\tFinance – 1 Person\n4.\tStructure Engineer (Civil Engineering) – 2 Persons\n5.\tStructure Drafter (Civil Engineering) – 2 Persons\n6.\tChief Surveyor – 1 Person\n7.\tSurveyor – 2 Persons\n8.\tSurveyor Assistant – 3 Persons\n9.\tQC Inspector – 2 Persons\n10.\tQC Inspector MEP – 1 Person\n11.\tSPV Structure (Civil Engineering) – 2 Persons\n12.\tSPV Plumbing – 2 Persons\n13.\tSafety Officer – 1 Person\n\nGeneral Requirements:\n1.\tMinimum Bachelor's Degree in a relevant major.\n2.\tProven experience in a related field or position.\n3.\tGood command of English, both written and spoken, is mandatory.\n4.\tFor Structure Engineer, Structure Drafter, and SPV Structure positions, a Bachelor's Degree in Civil Engineering (Teknik Sipil) is required.\n\n📍 Project Location: Bali, Indonesia\n📩 How to Apply:\n\nInterested candidates are invited to submit their updated CV to:\nmaukuta5@gmail.com\n\nEmail Subject Format: POSITION – DOMICILE\nExample: QS MEP – JAKARTA\nWe look forward to welcoming talented and dedicated professionals to our team!\nFeel free to share this opportunity with anyone who may be interested.\n\nSource: Sadaqa Maukuta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528989076436332544",
+      "timestamp": "2026-11-19T01:14:37.961Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528988393431748608",
+      "text": "COFFEE AND THE SPACE CUP ☕ She sips coffee from an open cup in space.\nAnd she can smell it too.\nThat should not work. There is no gravity up there to pour it.\n\nAt 07:00 on the station, most coffee still starts in a sealed pouch.\nHot water goes into coffee powder.\nThe astronaut sips through a clamped straw.\nSafe. Practical.\nBut the smell stays trapped inside the pouch.\n\nSo engineers built a different cup.\nThe space cup has a sharp inside corner.\nSurface tension pulls the coffee along that corner to the rim.\n𝐂𝐚𝐩𝐢𝐥𝐥𝐚𝐫𝐲 𝐟𝐥𝐨𝐰 does the job gravity does on Earth.\nNo pump. No pouring.\n\nBecause the coffee reaches the rim on its own, she can sip from an open rim.\nAnd here is what most people get 𝐖𝐑𝐎𝐍𝐆.\nA normal mug does not pour in space.\nTip it all you want. The coffee just stays stuck to the cup.\nAstronaut Don Pettit made the first version of this cup in 2008 from a sheet of plastic.\nHe said smell is a huge part of coffee pleasure.\n\nSave this for your space facts list.\nSend this to a friend who cannot start the day without coffee.\n\nThis series is our portfolio. Imagine YOUR brand, every day, like this. 𝐈𝐧𝐭𝐞𝐥𝐥𝐢𝐠𝐞𝐧𝐭 𝐓𝐞𝐚𝐜𝐡𝐢𝐧𝐠 makes video content for companies in Singapore & Indonesia. https://lnkd.in/gFGEPag\n\n#Astronaut #SpaceLife #SpaceStation #ISS #Space #Astronomy #Science #Education #Indonesia #Singapore #FYP #Viral #Trending #Explore #Innovation #Technology #HumanResources #CEO #Komdigi #Kemkomdigi #SobatKom #Menkomdigi #SpaceCoffee\n\nThis video is AI-generated.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528988354781044736",
+      "timestamp": "2026-11-19T01:11:54.834Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528988428290596864",
+      "text": "In 2022 my job was getting releases out. In 2025 part of my job was showing a bank's change management process that a release was ready to go out.\r\n\r\nBetween those two dates I was a release engineer at Vascomm from June 2022, ran a small software house from July 2023, and from January 2025 worked on-site as a DevOps engineer at Bank Syariah Indonesia, building CI/CD on OpenShift.\r\n\r\nAt the bank, a release did not move on a green pipeline alone. The automated security checks had to pass before production, and the approval step needed deployment evidence that someone could read without an engineer beside them.\r\n\r\nSince then I ask three questions of any release:\r\n\r\n1. What exactly was deployed?\r\n2. Which checks ran against it, and did they pass?\r\n3. Who approved it, and when?\r\n\r\nThat is why I am now looking at technology risk and IT audit roles. The pipeline was the part I built. The evidence was the part other people relied on.\r\n\r\nFor people in change management or IT audit: when you review a release approval, which piece of evidence do you open first?\n\n#TechnologyRisk #ITAudit",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528988425501167616",
+      "timestamp": "2026-11-19T01:12:03.145Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528987338337697792",
+      "text": "𝐇𝐢𝐫𝐢𝐧𝐠: SOFTWARE ENGINEER (GOLANG)\nNationality: Indonesians\nLocation: Jakarta, Indonesia (Onsite)\nIndustry: Banking\nEmployment Type: 6 months Contract (Renewable)\nNotice Period: Immediate joiner or 1 month notice period\nExperience: 2+ Years (Mid-Level)\n\n𝐉𝐨𝐛 𝐒𝐮𝐦𝐦𝐚𝐫𝐲\nWe are looking for a Golang Software Engineer with at least 2 years of experience in backend development. The ideal candidate should have strong knowledge of Go programming, API development, and relational databases, with exposure to modern distributed systems and containerization.\n\n𝐊𝐞𝐲 𝐑𝐞𝐬𝐩𝐨𝐧𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐢𝐞𝐬\n• Design, develop, and maintain backend applications using Go (Golang).\n• Build and integrate APIs using HTTP REST and/or gRPC.\n• Implement efficient concurrent processes using goroutines and channels.\n• Develop and maintain database operations using SQL and relational databases.\n• Work with NoSQL databases where required.\n• Support application development using microservices and distributed architecture.\n• Collaborate with team members to troubleshoot issues and deliver reliable software solutions.\n\n𝐑𝐞𝐪𝐮𝐢𝐫𝐞𝐝 𝐒𝐤𝐢𝐥𝐥𝐬\n• Minimum 2 years of relevant Software Engineering / Backend Development experience.\n• Strong knowledge of Go programming language, including its paradigms, constructs, and idioms.\n• Good understanding of goroutines and channel patterns.\n• Hands-on experience building APIs using HTTP REST and/or gRPC.\n• Strong knowledge of SQL and relational databases, such as MySQL/MariaDB and PostgreSQL.\n• Experience with NoSQL databases such as Redis or MongoDB is preferred.\n• Experience with containerization technologies such as Docker and Kubernetes is preferred.\n• Exposure to microservices and distributed architecture is preferred.\n• Strong problem-solving and analytical skills.\n\n📲 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐜𝐚𝐧𝐝𝐢𝐝𝐚𝐭𝐞𝐬:\nSend your Resume via email: 𝐒𝐡𝐞𝐚𝐬𝐭𝐢𝐤𝐚@𝐚𝐦𝐤𝐭𝐞𝐜𝐡𝐧𝐨𝐥𝐨𝐠𝐲.𝐜𝐨𝐦\nor whatsapp +6012-984 6785\n\n#Hiring #GolangDeveloper #GoDeveloper #SoftwareEngineer #BackendDeveloper #Golang #JakartaJobs #IndonesiaJobs #ITJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987337222037504",
+      "timestamp": "2026-11-19T01:07:43.280Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528987521070850048",
+      "text": "faraudiaras@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987520047632384",
+      "timestamp": "2026-11-19T01:08:26.847Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528986667626692608",
+      "text": "Remote work opportunity: Gramian Consulting Group is searching for a Analog IC Design Lead - AI Benchmarking. 🏢 Employment type: Contract, 📍Remote locations: Asia, Africa, Bangladesh, Egypt, Ghana, India, Indonesia, Nigeria\n\nRepost to help your network 🌱\n\n#remotework #remoteworking #remotejobs #workfromhome #wfh #software #developer #dev #coding #hiring #tech #engineer #development #career #jobopening #other #contract\n\nApply now: https://lnkd.in/ee3yh4vS",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528986666942775296",
+      "timestamp": "2026-11-19T01:05:03.370Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -452,11 +578,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528987338337697792",
-      "text": "𝐇𝐢𝐫𝐢𝐧𝐠: SOFTWARE ENGINEER (GOLANG)\nNationality: Indonesians\nLocation: Jakarta, Indonesia (Onsite)\nIndustry: Banking\nEmployment Type: 6 months Contract (Renewable)\nNotice Period: Immediate joiner or 1 month notice period\nExperience: 2+ Years (Mid-Level)\n\n𝐉𝐨𝐛 𝐒𝐮𝐦𝐦𝐚𝐫𝐲\nWe are looking for a Golang Software Engineer with at least 2 years of experience in backend development. The ideal candidate should have strong knowledge of Go programming, API development, and relational databases, with exposure to modern distributed systems and containerization.\n\n𝐊𝐞𝐲 𝐑𝐞𝐬𝐩𝐨𝐧𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐢𝐞𝐬\n• Design, develop, and maintain backend applications using Go (Golang).\n• Build and integrate APIs using HTTP REST and/or gRPC.\n• Implement efficient concurrent processes using goroutines and channels.\n• Develop and maintain database operations using SQL and relational databases.\n• Work with NoSQL databases where required.\n• Support application development using microservices and distributed architecture.\n• Collaborate with team members to troubleshoot issues and deliver reliable software solutions.\n\n𝐑𝐞𝐪𝐮𝐢𝐫𝐞𝐝 𝐒𝐤𝐢𝐥𝐥𝐬\n• Minimum 2 years of relevant Software Engineering / Backend Development experience.\n• Strong knowledge of Go programming language, including its paradigms, constructs, and idioms.\n• Good understanding of goroutines and channel patterns.\n• Hands-on experience building APIs using HTTP REST and/or gRPC.\n• Strong knowledge of SQL and relational databases, such as MySQL/MariaDB and PostgreSQL.\n• Experience with NoSQL databases such as Redis or MongoDB is preferred.\n• Experience with containerization technologies such as Docker and Kubernetes is preferred.\n• Exposure to microservices and distributed architecture is preferred.\n• Strong problem-solving and analytical skills.\n\n📲 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐜𝐚𝐧𝐝𝐢𝐝𝐚𝐭𝐞𝐬:\nSend your Resume via email: 𝐒𝐡𝐞𝐚𝐬𝐭𝐢𝐤𝐚@𝐚𝐦𝐤𝐭𝐞𝐜𝐡𝐧𝐨𝐥𝐨𝐠𝐲.𝐜𝐨𝐦\nor whatsapp +6012-984 6785\n\n#Hiring #GolangDeveloper #GoDeveloper #SoftwareEngineer #BackendDeveloper #Golang #JakartaJobs #IndonesiaJobs #ITJobs",
+      "id": "urn:li:activity:7528994208569831425",
+      "text": "FIRST CAREER INDONESIA HIRING!\n\nLEARNING PROGRAM DEVELOPMENT 🎓\n\nOwn your First Career Move! ✨\n\nAbout First Career Indonesia 💙\nFounded in August 2026, First Career helps university students prepare for their careers before graduation through proper guidance, exposure, and real opportunities. We connect students, young professionals, and HR practitioners to learn, grow, and collaborate.\n\nAbout the Program 📌\nA program to help students develop themselves and get ready for the professional world. You'll gain practical experience through real tasks and projects that support First Career Indonesia's growth.\n\nRequirements ✅\n🎓 Currently enrolled Indonesian university students (2023, 2024, 2025, or 2026 cohorts)\n⏳ Able to commit for 4 months\n💬 Good communication skills\n📍 Based in Bandung, Jakarta, or Bogor (a plus)\n🌟 Open to all academic majors\n\nDepartments Available 👇\n• Learning & Academic Development\n• Software Development\n• Program Development\n• Program Scouting Information\n• Product Development\n• Human Resources\n• Graphic Design\n• Marketing\n• Social Media Specialist\n• Public Relation\n• Business Development\n\nBenefits 🎁\n• Free products worth IDR 1,500,000\n• Professional coaching\n• LinkedIn recommendation\n• HR recommendation\n• Free training\n• Professional work experience\n• Skills & portfolio development\n• Performance-based bonus\n• Real project experience\n\nRecruitment Process 🗓️\n1️⃣ CV Screening: Nov – Dec 2026\n2️⃣ HR Interview: Nov – Dec 2026\n3️⃣ Stakeholder Interview: Nov – Dec 2026\n4️⃣ Offering Letter: Jan 2027\n5️⃣Onboarding: Jan 2027 \n\n🔗Register here\nhttps://lnkd.in/g5vUXv7J\n\n📖 Read the guidebook\nhttps://lnkd.in/gpxBGMRp\n\n📲 Follow us on Social Media \n\nInstagram & TikTok: @firstcareer_id\nLinkedIn: First Career Indonesia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987337222037504",
-      "timestamp": "2026-11-19T01:07:43.280Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528994207613628416",
+      "timestamp": "2026-11-19T01:35:01.271Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -466,11 +592,207 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528986578095058945",
-      "text": "https://lnkd.in/g89wqcZp",
+      "id": "urn:li:activity:7528994323003125760",
+      "text": "🚀 WE ARE HIRING! | SAP & ACCOUNT EXECUTIVE POSITIONS\nTMS Consulting is expanding, and we're looking for talented professionals to join our growing team!\n\n📌 Open Positions:\n1. SAP FICO – Senior Consultant\n2. SAP BASIS Consultant\n3. Account Executive – SAP & Banking Industry\n4. SAP Governance, Risk, and Compliance (GRC) Consultant\n5. SAP Supply Chain Management (SCM) Consultant\n\n📍 Location: Jakarta, Indonesia\n\n📩 Interested candidates can submit their updated CV to:\n👉 https://lnkd.in/gBusa_MG\n\nKnow someone who might be a great fit? Feel free to share this opportunity with your network!\n\n#Hiring #WeAreHiring #SAPJobs #SAPFICO #SAPBASIS #SAPGRC #SAPSCM #AccountExecutive #BankingIndustry #TMSConsulting #CareerOpportunity",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528986577302261760",
-      "timestamp": "2026-11-19T01:04:42.024Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528994322218786816",
+      "timestamp": "2026-11-19T01:35:28.554Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528994183068471296",
+      "text": "https://lnkd.in/gjGSDa2B",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528994182347087872",
+      "timestamp": "2026-11-19T01:34:55.191Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528993282211655681",
+      "text": "FIRST CAREER INDONESIA HIRING\n\nLEARNING PROGRAM DEVELOPMENT 🎓\nOwn your First Career Move! ✨\n\nAbout First Career Indonesia 💙\n\nFounded in August 2026, First Career helps university students prepare for their careers before graduation through proper guidance, exposure, and real opportunities. We connect students, young professionals, and HR practitioners to learn, grow, and collaborate.\n\nAbout the Program 📌\nA program to help students develop themselves and get ready for the professional world. You'll gain practical experience through real tasks and projects that support First Career Indonesia's growth.\n\nRequirements ✅\n🎓 Currently enrolled Indonesian university students (2023, 2024, 2025, or 2026 cohorts)\n⏳ Able to commit for 4 months\n💬 Good communication skills\n📍 Based in Bandung, Jakarta, or Bogor (a plus)\n🌟 Open to all academic majors\n\nDepartments Available 👇\n• Learning & Academic Development\n• Software Development\n• Program Development\n• Program Scouting Information\n• Product Development\n• Human Resources\n• Graphic Design\n• Marketing\n• Social Media Specialist\n• Public Relation\n• Business Development\n\nBenefits 🎁\n• Free products worth IDR 1,500,000+\n• Professional coaching\n• LinkedIn recommendation\n• HR recommendation\n• Free training\n• Professional work experience\n• Skills & portfolio development\n• Performance-based bonus\n• Real project experience\n\nRecruitment Process 🗓️\n1️⃣ CV Screening: Nov – Dec 2026\n2️⃣ HR Interview: Nov – Dec 2026\n3️⃣ Stakeholder Interview: Nov – Dec 2026\n4️⃣ Offering Letter: Jan 2027\n5️⃣ Onboarding: Jan 2027\n\n🔗Register here\nhttps://lnkd.in/g5vUXv7J\n\n📖 Read the guidebook\nhttps://lnkd.in/gpxBGMRp\n\n📲 Follow us on Social Media \n\nInstagram & TikTok: @firstcareer_id\nLinkedIn: First Career Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528825100222181376",
+      "timestamp": "2026-11-19T01:31:20.410Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528992240640184320",
+      "text": "WE ARE HIRING!\nFURNITURE PRODUCT DEVELOPMENT SPECIALIST\nPT IDELUX FURNITURE INDONESIA\n📍 Terboyo, Semarang, Central Java\nWe are looking for an experienced Furniture Product Development Specialist with 4–6 years of experience in furniture manufacturing.\nWe need someone who can transform customer drawings and design concepts into technically feasible furniture products, develop prototypes, understand furniture construction, and ensure a smooth transition from sample development to mass production.\nKey Requirements:\n1. 4-6 years of experience in furniture product development or furniture manufacturing.\n2. Able to interpret customer drawings, sketches, and design references.\n3. Strong understanding of furniture construction, materials, joints, hardware, upholstery, and manufacturing processes.\n4. Experienced in sample development and prototyping.\n5. Able to identify technical problems and provide practical solutions.\n6. Ensure samples are technically feasible and can be consistently reproduced by mass production.\n7. Able to coordinate with Sample, Engineering, and Production teams.\n8. Familiar with AutoCAD, SolidWorks, or equivalent software.\nWe are looking for someone who doesn't just design furniture, but understands how to make it work in real production.\n📩 Apply now and become part of our growing team!\nSend your CV and Portofolio Product to: anggi@idelux.id\n#Hiring #FurnitureProductDevelopment #ProductDevelopment #FurnitureEngineering #FurnitureDesign #FurnitureManufacturing #RND #SampleDevelopment #ProductEngineering #TechnicalDesigner #ManufacturingEngineer #FurnitureIndustry #LokerSemarang #LokerJateng #IndonesiaJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528992237821579264",
+      "timestamp": "2026-11-19T01:27:12.080Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528991982615113728",
+      "text": "📢 WE ARE HIRING – HR INCURANCE (BPJS)\n\nPT ARMADA FOOTWEAR INDONESIA\nWe are looking for a qualified and motivated HR Incurance (BPJS) professional to join our team in Kabupaten Tegal, Central Java.\n\n✅ Qualifications\n- Minimum Diploma (D3) or Bachelor's Degree (S1) in Human Resources, Management, Administration, or a related field.\n- Minimum 1–2 years of experience in HR Administration, particularly BPJS Kesehatan and BPJS Ketenagakerjaan.\n- Familiar with BPJS online systems (SIPP, Edabu, and other relevant platforms).\n- Good understanding of Indonesian employment regulations and social security programs.\n- Detail-oriented, responsible, well-organized, and able to work independently or in a team.\n- Proficient in Microsoft Office, especially Excel.\n📍 Work Location: Kabupaten Tegal, Central Java\n\n📩 How to Apply\nInterested candidates are welcome to apply through the following link:\n🔗 bit.ly/PTArmadaFI\n\nJoin our team and contribute to building a positive, compliant, and productive working environment!\n\n#Hiring #WeAreHiring #HRJobs #IndustrialRelations #HumanResources #ManufacturingJobs #FootwearIndustry #PTArmadaFootwearIndonesia #Incurance #BPJS",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528991981889355777",
+      "timestamp": "2026-11-19T01:26:10.562Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528991555039313920",
+      "text": "#HIRING\n\nPT INDOVIKAS CAKRAWALA KONSULTASI\n\nWe are currently recruiting qualified candidates for our client, PT KING POWER PLASTIC, for the following positions:\n\n1. Marketing & Business Development (2 Positions)\n\n- Age 25–42 years.\n- Bachelor's degree.\n- Experienced in Marketing & Sales.\n- Able to speak Mandarin.\n- Possess a driving license and willing to travel.\n\nSalary: IDR 12 million + unlimited commission OR IDR 15–30 million (without commission).\n\n2. Production Management Assistant\n\n- Able to speak Mandarin (translation).\n- Good computer skills.\n- Able to handle spreadsheets and data processing.\n- Production management experience is an advantage.\n- Training will be provided for candidates without experience.\n\n📍 Placement: PT King Power Plastic, Neglasari, Tangerang, Indonesia.\n\n📩 HOW TO APPLY\n\nInterested candidates can submit their updated CV through the registration link below:\n\nhttps://lnkd.in/gjidEN8B\n\n#Hiring #Recruitment #MandarinSpeaker #TangerangJobs #MarketingJobs #ProductionJobs #lokermandarin #lowonganmandarin #mandarintranslator #hiringindovikas",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528991554452180992",
+      "timestamp": "2026-11-19T01:24:28.620Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528989360155856896",
+      "text": "https://lnkd.in/g2CAEExw",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528989359384084480",
+      "timestamp": "2026-11-19T01:15:45.319Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528989077636001792",
+      "text": "🚨 WE ARE HIRING! | NEW PROJECT – BALI \nPT China State Construction Overseas Development Shanghai is currently seeking qualified and experienced professionals to join our team for a new project in Bali.\nOpen Positions:\n\n1.\tQS MEP – 1 Person\n2.\tStore Man – 1 Person\n3.\tFinance – 1 Person\n4.\tStructure Engineer (Civil Engineering) – 2 Persons\n5.\tStructure Drafter (Civil Engineering) – 2 Persons\n6.\tChief Surveyor – 1 Person\n7.\tSurveyor – 2 Persons\n8.\tSurveyor Assistant – 3 Persons\n9.\tQC Inspector – 2 Persons\n10.\tQC Inspector MEP – 1 Person\n11.\tSPV Structure (Civil Engineering) – 2 Persons\n12.\tSPV Plumbing – 2 Persons\n13.\tSafety Officer – 1 Person\n\nGeneral Requirements:\n1.\tMinimum Bachelor's Degree in a relevant major.\n2.\tProven experience in a related field or position.\n3.\tGood command of English, both written and spoken, is mandatory.\n4.\tFor Structure Engineer, Structure Drafter, and SPV Structure positions, a Bachelor's Degree in Civil Engineering (Teknik Sipil) is required.\n\n📍 Project Location: Bali, Indonesia\n📩 How to Apply:\n\nInterested candidates are invited to submit their updated CV to:\nmaukuta5@gmail.com\n\nEmail Subject Format: POSITION – DOMICILE\nExample: QS MEP – JAKARTA\nWe look forward to welcoming talented and dedicated professionals to our team!\nFeel free to share this opportunity with anyone who may be interested.\n\nSource: Sadaqa Maukuta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528989076436332544",
+      "timestamp": "2026-11-19T01:14:37.961Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528988161356636160",
+      "text": "🚨 WE’RE HIRING — SENIOR CREATIVE DESIGNER 🎨\nSociolla is looking for aSenior Creative Designer to join our creative team and bring fresh ideas, strong visual concepts, and impactful brand experiences to life!\n📍Location: Head Office – Jakarta Barat\n💼Employment Type: Full Time\n🧑‍💻Experience: 3–5 years\n\nWhat you’ll do:\n• Develop creative concepts with strong artistic and design sensibilities\n• Work across branding, social media content, booth branding, packaging, and other creative projects\n• Collaborate with multiple divisions and cross-functional teams\n• Manage multiple projects, priorities, and deadlines effectively\n• Contribute creative solutions with strong problem-solving and critical thinking skills\nWhat we’re looking for:\n✨ Strong understanding of color theory, typography, layout, and branding\n✨ Proficient in Adobe Creative Suite (Photoshop & Illustrator)\n✨ Familiar with Canva and G Suite\n✨ Highly adaptive, responsible, and collaborative\n✨ Strong communication skills in both Bahasa Indonesia and English\n✨ Passion or strong interest in the Mom & Baby industry\n➕ Experience in Motion Design and/or UI Design is a plus\n\nIf you're a creative thinker who loves turning ideas into impactful visual experiences,we’d love to hear from you!\n\n📩 Interested? Apply by sending your CV and portfolio through [haniffah.oktaviana@sociolla.com] with subject [Name-Sr.Graphic Design]\n\nKnow someone who might be a great fit? Feel free to tag or share this post with them! 🚀\n\n#CareerAtSociolla #WorkingAtSociolla #Jobvacancy #Sociolla #WeAreHiring #Hiring #SeniorCreativeDesigner #CreativeDesigner #GraphicDesigner #DesignJobs #JakartaJobs #CareerOpportunity #HiringJakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528988160580640768",
+      "timestamp": "2026-11-19T01:10:59.503Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528988099251462144",
+      "text": "We're Hiring: E-Commerce Specialist  (Client : Electronics / Semiconductor / IC)\n📍 Location: Jakarta, Indonesia\n💼Employment Type: Full-Time\n🏢Work Arrangement: Work From Office (WFO)\n🎓Education: Bachelor's Degree\n📅Experience: 1–3 Years\n🌐Language: English & Indonesia\n\nRequirements\n1. Bachelor's degree in Marketing, Digital Marketing, Business, or a related field.\n2. Min 1–2 years of experience in e-commerce, marketplace management, digital marketing, or a similar role.\n3. Experience in the telecommunications industry or mobile phone accessories sector will be an added advantage.\n4. Proven experience in managing and optimizing e-commerce platforms and executing digital marketing campaigns.\n5. Strong analytical and problem-solving skills, with the ability to interpret data and translate insights into actionable strategies.\n6. Good understanding of online consumer behavior, Search Engine Optimization (SEO), and social media marketing.\n7. Proficient in using e-commerce and digital marketing tools, such as Google Analytics, Google Ads, and social media platforms.\n8. Excellent communication and collaboration skills, with the ability to work effectively with cross-functional\n\nPlease send your update CV to :Vionajobs@gmail.com (Subject : Ecommerce Specialist)\n\n#DigitalMarketing #Ecommerce",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528988098672668672",
+      "timestamp": "2026-11-19T01:10:44.696Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528988830075596800",
+      "text": "🏗️ WE'RE HIRING | CIVIL & BUILDING CONSTRUCTION SUPERVISOR\nWe are looking for a qualified and experienced Civil & Building Construction Supervisor to join our team!\nWe are seeking a candidate with strong leadership, project supervision, coordination, and construction management skills to oversee construction projects and ensure quality, safety, and timely project completion.\n📍 Work Location: Taifa Industrial Park, Subang, West Java\n📩 How to Apply:\nPlease send your updated CV in PDF format (maximum 5 MB) to:\nhuman.resource@meiloon.co.id\nEmail Subject: Civil & Building Construction Supervisor_Name_Major\nTake this opportunity to grow your career and become part of our team!\n\nSource: PT. Meiloon Technology Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528988828930539522",
+      "timestamp": "2026-11-19T01:13:38.938Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528987521070850048",
+      "text": "faraudiaras@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987520047632384",
+      "timestamp": "2026-11-19T01:08:26.847Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528987271434387457",
+      "text": "📢 WE ARE HIRING – FINANCE STAFF\nPT Indonesia Fullcare Medical is looking for a qualified and experienced Finance Staff to join our team in Batang, Central Java.\nWe are looking for a detail-oriented, analytical, and responsible professional who has strong experience in financial operations, accounting, taxation, and financial reporting, preferably within a manufacturing environment.\n\nQualifications:\n- Bachelor's degree (S1) in Accounting, Finance, or a related field.\n- Minimum 3–5 years of experience in Finance & Accounting.\n- Preferably experienced in the manufacturing industry.\n- Strong understanding of Accounting principles, including AP, AR, and General Ledger.\n- Experienced in financial reporting, cash flow management, bank reconciliation, and budget monitoring.\n- Good understanding of Indonesian taxation, including PPh 21, PPh 23, PPh 4(2), and VAT/PPN.\n- Proficient in Microsoft Excel, including Pivot Tables, VLOOKUP/XLOOKUP, and other advanced formulas.\n- Familiarity with ERP systems, preferably SAP, is an advantage.\n- Knowledge of Special Economic Zone (SEZ/KEK) regulations and administrative requirements is an advantage.\n- Good communication and analytical skills.\n- Able to work independently, accurately, and meet deadlines.\n- Mandarin or English proficiency will be an advantage.\n\nKey Responsibilities:\n- Manage and monitor daily financial transactions.\n- Handle accounts payable, accounts receivable, and general ledger activities.\n- Prepare monthly financial reports and budget realization reports.\n- Monitor cash flow and conduct bank reconciliations.\n- Ensure accurate financial documentation and tax compliance.\n- Monitor operational expenses and analyze budget variances.\n- Support internal and external audit processes.\n- Coordinate financial matters with other departments and relevant external parties.\n\n📍 Placement: Kawasan Industri Terpadu Batang (KITB), Central Java, Indonesia.\n\n📩 How to Apply:\nInterested candidates are welcome to send their updated CV to:\nhrdindonesiafullcaremedical@gmail.com\n\nPlease use the email subject: Finance Staff – [Your Name]\n\nJoin our team and grow your career with us!\n#WeAreHiring #Hiring #SeniorFinanceStaff #FinanceJobs #AccountingJobs #FinanceAndAccounting #ManufacturingIndustry #BatangJobs #CentralJavaJobs #KEKBatang",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987270561869825",
+      "timestamp": "2026-11-19T01:07:27.329Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528987825606746112",
+      "text": "We're Hiring: HR Supervisor (Client : Trading / Import & Export Company)\n📍 Location: Tangerang, Indonesia\n💼Employment Type: Full-Time\n🏢Work Arrangement: Work From Office (WFO)\n🎓Education: Bachelor's Degree\n📅Experience: 3–5 years\n🌐Languages: Indonesian & English\n\nRequirements\n1. Bachelor's Degree in Human Resources Management, Psychology, Management, or a related field.\n2. Min 3–5 years of experience in Human Resources, preferably at a supervisory level.\n3. Previous experience in a trading, shipping, or import/export company is highly preferred.\n4. Good understanding of Indonesian labor laws and employment regulations.\n5. Hands-on experience in HR administration, employee data auditing, employment contracts, recruitment, and onboarding.\n6. Familiarity with organizational structure development, SOP implementation, and KPI management.\n7. Good communication skills in both Bahasa Indonesia and English.\n\nSend your Update CV to :Vionajobs@gmail.com (Subject : HR SPV)\n\n#HumanResources #HRSupervisor",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987824935567360",
+      "timestamp": "2026-11-19T01:09:39.454Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528987338337697792",
+      "text": "𝐇𝐢𝐫𝐢𝐧𝐠: SOFTWARE ENGINEER (GOLANG)\nNationality: Indonesians\nLocation: Jakarta, Indonesia (Onsite)\nIndustry: Banking\nEmployment Type: 6 months Contract (Renewable)\nNotice Period: Immediate joiner or 1 month notice period\nExperience: 2+ Years (Mid-Level)\n\n𝐉𝐨𝐛 𝐒𝐮𝐦𝐦𝐚𝐫𝐲\nWe are looking for a Golang Software Engineer with at least 2 years of experience in backend development. The ideal candidate should have strong knowledge of Go programming, API development, and relational databases, with exposure to modern distributed systems and containerization.\n\n𝐊𝐞𝐲 𝐑𝐞𝐬𝐩𝐨𝐧𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐢𝐞𝐬\n• Design, develop, and maintain backend applications using Go (Golang).\n• Build and integrate APIs using HTTP REST and/or gRPC.\n• Implement efficient concurrent processes using goroutines and channels.\n• Develop and maintain database operations using SQL and relational databases.\n• Work with NoSQL databases where required.\n• Support application development using microservices and distributed architecture.\n• Collaborate with team members to troubleshoot issues and deliver reliable software solutions.\n\n𝐑𝐞𝐪𝐮𝐢𝐫𝐞𝐝 𝐒𝐤𝐢𝐥𝐥𝐬\n• Minimum 2 years of relevant Software Engineering / Backend Development experience.\n• Strong knowledge of Go programming language, including its paradigms, constructs, and idioms.\n• Good understanding of goroutines and channel patterns.\n• Hands-on experience building APIs using HTTP REST and/or gRPC.\n• Strong knowledge of SQL and relational databases, such as MySQL/MariaDB and PostgreSQL.\n• Experience with NoSQL databases such as Redis or MongoDB is preferred.\n• Experience with containerization technologies such as Docker and Kubernetes is preferred.\n• Exposure to microservices and distributed architecture is preferred.\n• Strong problem-solving and analytical skills.\n\n📲 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐜𝐚𝐧𝐝𝐢𝐝𝐚𝐭𝐞𝐬:\nSend your Resume via email: 𝐒𝐡𝐞𝐚𝐬𝐭𝐢𝐤𝐚@𝐚𝐦𝐤𝐭𝐞𝐜𝐡𝐧𝐨𝐥𝐨𝐠𝐲.𝐜𝐨𝐦\nor whatsapp +6012-984 6785\n\n#Hiring #GolangDeveloper #GoDeveloper #SoftwareEngineer #BackendDeveloper #Golang #JakartaJobs #IndonesiaJobs #ITJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987337222037504",
+      "timestamp": "2026-11-19T01:07:43.280Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -494,25 +816,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528986038313144320",
-      "text": "📢 WE ARE HIRING! \nDapodik Staff – January 2027\n\nAre you familiar with Indonesia's school administration system and passionate about keeping educational records accurate and well-organized?\n\nJakarta Multicultural School (JMS) is looking for a capable and detail-oriented Dapodik Staff to strengthen our administrative team.\n\n🏢 POSITION: DAPODIK STAFF\n\nWhat We're Looking For:\n\n- 1–2 years of relevant experience in school administration, preferably within an International School or SPK environment.\n- Hands-on experience with Dapodik, including data input, updates, verification, and reporting.\n- Good understanding of student, teacher, staff, and school institutional data management.\n- Familiarity with Indonesian education regulations and administrative reporting procedures.\n- Able to maintain accurate records and ensure data is updated within required deadlines.\n- Strong organizational skills, attention to detail, and a sense of responsibility.\n- Comfortable coordinating with different departments and working collaboratively.\n\n✨ Why JMS?\n\nAt JMS, you'll be part of a multicultural educational community that values collaboration, professionalism, and continuous growth. This is an opportunity to contribute to the smooth operation of our school while developing your career in the education sector.\n\n📩 Ready to take the next step?\n\nWe'd love to hear from you!\n\nPlease submit your updated CV to hrd@jimsch.org using the subject line:\n\nApplication – Dapodik Staff – [Your Name]\n\n📍 Jakarta Multicultural School (JMS)\n📅 Expected Joining Date: January 2027\n\nKnow someone who fits this role? Feel free to share this opportunity with them!\n\n#JMSCareers #Hiring #DapodikStaff #SchoolAdministration #EducationCareers #InternationalSchool #SPK #CareerOpportunity",
+      "id": "urn:li:activity:7528986578095058945",
+      "text": "https://lnkd.in/g89wqcZp",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528986035490369536",
-      "timestamp": "2026-11-19T01:02:33.330Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528985725619548160",
-      "text": "https://lnkd.in/gv3mhNJs",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985724973625344",
-      "timestamp": "2026-11-19T01:01:18.778Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528986577302261760",
+      "timestamp": "2026-11-19T01:04:42.024Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -527,6 +835,34 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985923812835328",
       "timestamp": "2026-11-19T01:02:06.694Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528986038313144320",
+      "text": "📢 WE ARE HIRING! \nDapodik Staff – January 2027\n\nAre you familiar with Indonesia's school administration system and passionate about keeping educational records accurate and well-organized?\n\nJakarta Multicultural School (JMS) is looking for a capable and detail-oriented Dapodik Staff to strengthen our administrative team.\n\n🏢 POSITION: DAPODIK STAFF\n\nWhat We're Looking For:\n\n- 1–2 years of relevant experience in school administration, preferably within an International School or SPK environment.\n- Hands-on experience with Dapodik, including data input, updates, verification, and reporting.\n- Good understanding of student, teacher, staff, and school institutional data management.\n- Familiarity with Indonesian education regulations and administrative reporting procedures.\n- Able to maintain accurate records and ensure data is updated within required deadlines.\n- Strong organizational skills, attention to detail, and a sense of responsibility.\n- Comfortable coordinating with different departments and working collaboratively.\n\n✨ Why JMS?\n\nAt JMS, you'll be part of a multicultural educational community that values collaboration, professionalism, and continuous growth. This is an opportunity to contribute to the smooth operation of our school while developing your career in the education sector.\n\n📩 Ready to take the next step?\n\nWe'd love to hear from you!\n\nPlease submit your updated CV to hrd@jimsch.org using the subject line:\n\nApplication – Dapodik Staff – [Your Name]\n\n📍 Jakarta Multicultural School (JMS)\n📅 Expected Joining Date: January 2027\n\nKnow someone who fits this role? Feel free to share this opportunity with them!\n\n#JMSCareers #Hiring #DapodikStaff #SchoolAdministration #EducationCareers #InternationalSchool #SPK #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528986035490369536",
+      "timestamp": "2026-11-19T01:02:33.330Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528985687522463745",
+      "text": "hrglobalpetindo@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985686801272832",
+      "timestamp": "2026-11-19T01:01:09.695Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -564,20 +900,6 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528985798294056960",
-      "text": "hrglobalpetindo@gmail.com",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985797656743936",
-      "timestamp": "2026-11-19T01:01:36.105Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
       "id": "urn:li:activity:7528985913335513088",
       "text": "Gramian Consulting Group is hiring a Remote Cybersecurity Engineer - AI Benchmarking Lead. 🏢 Employment type: Contract, 📍Remote locations: Indonesia, Kenya, Nigeria, Pakistan, Turkey, Viet Nam\n\n💻 Skills: JavaScript, TypeScript, Docker, Git, Web security, Python, Bash, Java, C, PHP, Go, Rust, Kotlin, Ruby, Swift, C++, C#\n\nRepost to help your network 🌱\n\n#remotework #remoteworking #remotejobs #workfromhome #wfh #software #developer #dev #coding #hiring #tech #engineer #development #career #jobopening #javascript #typescript #docker #git #websecurity #python #bash #java #c #php #go #rust #kotlin #ruby #swift #cpp #csharp #cybersecurityengineer #contract\n\nApply now: https://lnkd.in/ejaam8JY",
       "author": "linkedin-member",
@@ -606,6 +928,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7528985725619548160",
+      "text": "https://lnkd.in/gv3mhNJs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985724973625344",
+      "timestamp": "2026-11-19T01:01:18.778Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7528983982722560000",
       "text": "Hi LinkedIn!\n\nSNF Indonesia is Hiring!\n\nWe are looking for a detail-oriented and well organized Admin Warehouse to join our growing team at SNF Polymers Indonesia, Plant Cikande, Serang, Banten.\n\nIf you have experience in warehouse administration, inventory management, and warehouse documentation, we'd love to hear from you!\n\nApply through Jobstreet:https://lnkd.in/gUaKY9qi\n\nThank you!\n\n#Hiring #SNFIndonesia #AdminWarehouse #WarehouseJobs #WarehouseAdministration #InventoryManagement #LogisticsJobs #SupplyChain #IndonesiaJobs #CareerOpportunity",
       "author": "linkedin-member",
@@ -620,11 +956,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528985485520773120",
-      "text": "m.hidayatullah@sumbersolusihebat.com",
+      "id": "urn:li:activity:7528985798294056960",
+      "text": "hrglobalpetindo@gmail.com",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985484547579904",
-      "timestamp": "2026-11-19T01:00:21.534Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985797656743936",
+      "timestamp": "2026-11-19T01:01:36.105Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -648,11 +984,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528985687522463745",
-      "text": "hrglobalpetindo@gmail.com",
+      "id": "urn:li:activity:7528980351482961920",
+      "text": "https://lnkd.in/gFXqwssj",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985686801272832",
-      "timestamp": "2026-11-19T01:01:09.695Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528980350866272256",
+      "timestamp": "2026-11-19T00:39:57.484Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -662,11 +998,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528980351482961920",
-      "text": "https://lnkd.in/gFXqwssj",
+      "id": "urn:li:activity:7528985485520773120",
+      "text": "m.hidayatullah@sumbersolusihebat.com",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528980350866272256",
-      "timestamp": "2026-11-19T00:39:57.484Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528985484547579904",
+      "timestamp": "2026-11-19T01:00:21.534Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -774,71 +1110,85 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528956758623473664",
-      "text": "WE ARE HIRING | SENIOR REAL ESTATE BROKER / BROKER TEAM LEADER\n📍 Sanur – Renon – Denpasar, Bali\nPT Mata Angin Bali is looking for an experienced Senior Real Estate Broker or Broker Team Leader to join our growing business in Bali.\nRequirements:\n- Strong experience in Bali's real estate market.\n- Proven track record in property sales and negotiations.\n- Established network of clients, investors and property owners.\n- Ability to manage and develop a team of brokers.\n- Good command of English.\n- Must reside in Sanur, Renon, Denpasar or nearby areas.\nHOW TO APPLY\nInterested candidates are invited to send their updated CV and professional experience to:\ninfo@mataanginbali.com\nPlease apply exclusively by email. No WhatsApp, phone calls or LinkedIn messages.\nPT MATA ANGIN BALI\nBali, Indonesia",
+      "id": "urn:li:activity:7528992375088578560",
+      "text": "We’re hiring! 🔧🚀\n\nLooking for a driven Sales Engineer (Canvassing) to joinPT RUKUN SEJAHTERA TEKNIK in Jakarta Barat, and help grow our client base across workshops, hardware/tool stores, and industrial accounts.\n\nWhat You Bring:\n• Minimum vocational high school (SMK or equivalent), preferably in an Engineering major.\n• At least 2 years as a Sales / Sales Engineer—ideally in industrial supplies, tools, machinery, or safety equipment.\n• Proven canvassing & new-client acquisition, strong negotiation & communication, and a target-driven mindset.\n• Valid SIM A & SIM C, plus readiness for regular field visits.\n• Existing Wholesale customer network/database in Jabodetabek area and solid product knowledge in industrial (tools and machinery) supplies.\n\nIf you love being on the move, building real client relationships, and closing deals, we’d love to hear from you! \nDrop your CV to 📧recruitment@rsttools.com\nSubject: Name - Position\n\n#SalesEngineer #Canvassing #TechnicalSales #IndustrialSupplies #Tools #LokerJakarta #SalesTeknik #SalesCanvasing #JakartaJobs #CareerOpportunity",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528956757877014528",
-      "timestamp": "2026-11-18T23:06:12.508Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528992374451056640",
+      "timestamp": "2026-11-19T01:27:44.135Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528955647879614464",
-      "text": "Hello Warga CiSA!\n\nWe Are Hiring! \nAre you ready to drive growth in Indonesia's industrial sector? We are looking for driven and highly motivated Sales Engineers to join our team and expand our market presence.\n\n📍 Available Placements\nEAST JAVA AREA\n\nIf you are passionate about engineering, B2B sales, and building strong customer relationships, and you're ready to explore exciting opportunities across these rapidly growing regions, we'd love to hear from you!\n\n📩 How to Apply\nApply directly through this link: https://bit.ly/cisarekrut\nOr simply scan the barcode/QR code on the image!\n\n-YourReliableFlowSolution-\n\n#Hiring #Loker #Sales #Engineer #JawaTimur",
+      "id": "urn:li:activity:7528989077636001792",
+      "text": "🚨 WE ARE HIRING! | NEW PROJECT – BALI \nPT China State Construction Overseas Development Shanghai is currently seeking qualified and experienced professionals to join our team for a new project in Bali.\nOpen Positions:\n\n1.\tQS MEP – 1 Person\n2.\tStore Man – 1 Person\n3.\tFinance – 1 Person\n4.\tStructure Engineer (Civil Engineering) – 2 Persons\n5.\tStructure Drafter (Civil Engineering) – 2 Persons\n6.\tChief Surveyor – 1 Person\n7.\tSurveyor – 2 Persons\n8.\tSurveyor Assistant – 3 Persons\n9.\tQC Inspector – 2 Persons\n10.\tQC Inspector MEP – 1 Person\n11.\tSPV Structure (Civil Engineering) – 2 Persons\n12.\tSPV Plumbing – 2 Persons\n13.\tSafety Officer – 1 Person\n\nGeneral Requirements:\n1.\tMinimum Bachelor's Degree in a relevant major.\n2.\tProven experience in a related field or position.\n3.\tGood command of English, both written and spoken, is mandatory.\n4.\tFor Structure Engineer, Structure Drafter, and SPV Structure positions, a Bachelor's Degree in Civil Engineering (Teknik Sipil) is required.\n\n📍 Project Location: Bali, Indonesia\n📩 How to Apply:\n\nInterested candidates are invited to submit their updated CV to:\nmaukuta5@gmail.com\n\nEmail Subject Format: POSITION – DOMICILE\nExample: QS MEP – JAKARTA\nWe look forward to welcoming talented and dedicated professionals to our team!\nFeel free to share this opportunity with anyone who may be interested.\n\nSource: Sadaqa Maukuta",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528739651843522560",
-      "timestamp": "2026-11-18T23:01:47.686Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528989076436332544",
+      "timestamp": "2026-11-19T01:14:37.961Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528952356953239552",
-      "text": "🌿 English Teacher — Southwest Sumba, Indonesia\nThe Sumba Hospitality Foundation is seeking an English Teacher for its boarding hospitality and permaculture school, which supports local youth through vocational education and practical skills. You’ll teach English to students aged 17–23, develop teaching and assessment materials, mark assignments, and monitor and report on student progress.\nApplicants need an undergraduate degree, a recognized teaching qualification such as CELTA, CertTESOL, TEFL, TESOL, IELTS, or TOEFL, and at least three years of relevant experience with strong references. Creativity, adaptability, and a collaborative approach are valued.\nLocation: Southwest Sumba\nSalary shown in the listing: $$400 USD; the pay period is not specified.\nApply here:https://lnkd.in/g43az_sE\n#Indonesia #Sumba #SouthwestSumba #IndonesiaJobs #SumbaJobs #EnglishTeacher #EnglishTeaching #ESL #EFL #ESLTeacher #EFLTeacher #EnglishLanguage #LanguageEducation #TeachingJobs #TeacherJobs #EducationJobs #InternationalTeaching #TeachAbroad #WorkAbroad #JobsAbroad #TourismEducation #HospitalityEducation #VocationalEducation #HospitalitySchool #VocationalTraining #YouthEducation #YoungAdultLearning #EducationForAll #CommunityEducation #CommunityEmpowerment #SustainableTourism #ResponsibleTourism #SustainableDevelopment #Permaculture #EnvironmentalAwareness #CulturalIdentity #LocalCommunities #SocialImpact #EducationForChange #EnglishForWork #EnglishForHospitality #EnglishForTourism #ESP #EnglishCommunication #LanguageSkills #LessonPlanning #TeachingMaterials #Assessment #StudentAssessment #StudentProgress #AssignmentDesign #ClassroomTeaching #StudentCenteredLearning #DifferentiatedLearning #DiverseLearners #ProfessionalDevelopment #TeacherCollaboration #Teamwork #SchoolCommunity #BoardingSchool #ResidentialEducation #VocationalSchool #HigherEducation #UniversityDegree #UndergraduateDegree #CELTA #CertTESOL #TEFL #TESOL #IELTS #TOEFL #TeachingCertificate #TeachingExperience #ExperiencedTeacher #EducationCareers #CareerOpportunity #TeachingCareer #GlobalEducation #InternationalEducation #IndonesianEducation #SumbaEducation #LifeInIndonesia #TeachInIndonesia #WorkInIndonesia #IndonesianCulture #IslandLife #CulturalExchange #ApplyNow #SeriousTeachers #JobSearch #travel #abroad #hiring",
+      "id": "urn:li:activity:7528989194023682048",
+      "text": "MSBU Konsultan is #hiring position:\n\nCL238-R002 Network Engineer\n📍 Placement: WFO Jakarta | 🏦 Industry: Consultant IT |⏳ Duration: Kontrak 12 Bulan\n\nJob Descriptions :\n1. Perform implementation, maintenance, and troubleshooting of customer devices\n2. Provide technical support and handle customer issues within SLA\n3. Monitor and ensure devices are operating properly\n4. Prepare technical reports and documentation\n\nRequirements:\n1. Bachelor's Degree in Informatics Engineering, Telecommunication Engineering, Computer Science, Electrical Engineering, or related Engineering discipline\n2. Good understanding of networking fundamentals, including TCP/IP, OSI Layer, LAN/WAN, and Internet networking\n3. Have knowledge and familiar with Cisco Products\n4. Have good knowledge in various IT technologies (network, cloud, server, external storage, various operating system and application, collaboration, etcetera) is an advantage\n5. Have good communication skill & good attitude\n6. Cisco / Huawei/Aruba/Fortinet certification is an advantage\n\nShortlisted candidates will be shared directly with the MSBU hiring team.\n👉 Apply here:https://lnkd.in/gpNrqzQ7",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528952355367649280",
-      "timestamp": "2026-11-18T22:48:43.068Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528869732360368128",
+      "timestamp": "2026-11-19T01:15:05.710Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528952427279069184",
-      "text": "🌿 English Teacher — Southwest Sumba, Indonesia\nThe Sumba Hospitality Foundation is seeking an English Teacher for its boarding hospitality and permaculture school, which supports local youth through vocational education and practical skills. You’ll teach English to students aged 17–23, develop teaching and assessment materials, mark assignments, and monitor and report on student progress.\nApplicants need an undergraduate degree, a recognized teaching qualification such as CELTA, CertTESOL, TEFL, TESOL, IELTS, or TOEFL, and at least three years of relevant experience with strong references. Creativity, adaptability, and a collaborative approach are valued.\nLocation: Southwest Sumba\nSalary shown in the listing: $$400 USD; the pay period is not specified.\nApply here:https://lnkd.in/gEJb8bHV\n#Indonesia #Sumba #SouthwestSumba #IndonesiaJobs #SumbaJobs #EnglishTeacher #EnglishTeaching #ESL #EFL #ESLTeacher #EFLTeacher #EnglishLanguage #LanguageEducation #TeachingJobs #TeacherJobs #EducationJobs #InternationalTeaching #TeachAbroad #WorkAbroad #JobsAbroad #TourismEducation #HospitalityEducation #VocationalEducation #HospitalitySchool #VocationalTraining #YouthEducation #YoungAdultLearning #EducationForAll #CommunityEducation #CommunityEmpowerment #SustainableTourism #ResponsibleTourism #SustainableDevelopment #Permaculture #EnvironmentalAwareness #CulturalIdentity #LocalCommunities #SocialImpact #EducationForChange #EnglishForWork #EnglishForHospitality #EnglishForTourism #ESP #EnglishCommunication #LanguageSkills #LessonPlanning #TeachingMaterials #Assessment #StudentAssessment #StudentProgress #AssignmentDesign #ClassroomTeaching #StudentCenteredLearning #DifferentiatedLearning #DiverseLearners #ProfessionalDevelopment #TeacherCollaboration #Teamwork #SchoolCommunity #BoardingSchool #ResidentialEducation #VocationalSchool #HigherEducation #UniversityDegree #UndergraduateDegree #CELTA #CertTESOL #TEFL #TESOL #IELTS #TOEFL #TeachingCertificate #TeachingExperience #ExperiencedTeacher #EducationCareers #CareerOpportunity #TeachingCareer #GlobalEducation #InternationalEducation #IndonesianEducation #SumbaEducation #LifeInIndonesia #TeachInIndonesia #WorkInIndonesia #IndonesianCulture #IslandLife #CulturalExchange #ApplyNow #SeriousTeachers #JobSearch #travel #abroad #hiring",
+      "id": "urn:li:activity:7528987338337697792",
+      "text": "𝐇𝐢𝐫𝐢𝐧𝐠: SOFTWARE ENGINEER (GOLANG)\nNationality: Indonesians\nLocation: Jakarta, Indonesia (Onsite)\nIndustry: Banking\nEmployment Type: 6 months Contract (Renewable)\nNotice Period: Immediate joiner or 1 month notice period\nExperience: 2+ Years (Mid-Level)\n\n𝐉𝐨𝐛 𝐒𝐮𝐦𝐦𝐚𝐫𝐲\nWe are looking for a Golang Software Engineer with at least 2 years of experience in backend development. The ideal candidate should have strong knowledge of Go programming, API development, and relational databases, with exposure to modern distributed systems and containerization.\n\n𝐊𝐞𝐲 𝐑𝐞𝐬𝐩𝐨𝐧𝐬𝐢𝐛𝐢𝐥𝐢𝐭𝐢𝐞𝐬\n• Design, develop, and maintain backend applications using Go (Golang).\n• Build and integrate APIs using HTTP REST and/or gRPC.\n• Implement efficient concurrent processes using goroutines and channels.\n• Develop and maintain database operations using SQL and relational databases.\n• Work with NoSQL databases where required.\n• Support application development using microservices and distributed architecture.\n• Collaborate with team members to troubleshoot issues and deliver reliable software solutions.\n\n𝐑𝐞𝐪𝐮𝐢𝐫𝐞𝐝 𝐒𝐤𝐢𝐥𝐥𝐬\n• Minimum 2 years of relevant Software Engineering / Backend Development experience.\n• Strong knowledge of Go programming language, including its paradigms, constructs, and idioms.\n• Good understanding of goroutines and channel patterns.\n• Hands-on experience building APIs using HTTP REST and/or gRPC.\n• Strong knowledge of SQL and relational databases, such as MySQL/MariaDB and PostgreSQL.\n• Experience with NoSQL databases such as Redis or MongoDB is preferred.\n• Experience with containerization technologies such as Docker and Kubernetes is preferred.\n• Exposure to microservices and distributed architecture is preferred.\n• Strong problem-solving and analytical skills.\n\n📲 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐜𝐚𝐧𝐝𝐢𝐝𝐚𝐭𝐞𝐬:\nSend your Resume via email: 𝐒𝐡𝐞𝐚𝐬𝐭𝐢𝐤𝐚@𝐚𝐦𝐤𝐭𝐞𝐜𝐡𝐧𝐨𝐥𝐨𝐠𝐲.𝐜𝐨𝐦\nor whatsapp +6012-984 6785\n\n#Hiring #GolangDeveloper #GoDeveloper #SoftwareEngineer #BackendDeveloper #Golang #JakartaJobs #IndonesiaJobs #ITJobs",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528952424393461760",
-      "timestamp": "2026-11-18T22:48:59.835Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528987337222037504",
+      "timestamp": "2026-11-19T01:07:43.280Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528932306355625984",
-      "text": "🌴 WE ARE HIRING | THE WESTIN RESORT NUSA DUA, BALI – MARRIOTT INTERNATIONAL\n\nBuild your career with an iconic luxury resort and conference centre in Bali, Indonesia!\n\nThe Westin Resort Nusa Dua, Bali, part of Marriott International, is inviting passionate hospitality professionals to join its team.\n\n📌 Current Job Openings\n\n1. Director of Sales & Marketing – Ref: 26150583\n2. Financial Controller – Ref: 26150400\n3. Executive Chef – Ref: 26150587\n4. Head Chef – Indonesian Cuisine – Ref: 26123473\n5. Chef de Cuisine – Japanese – Ref: 26147702\n6. Chef de Partie – Indian Cuisine – Ref: 26147690\n7. Chef de Partie – Bakery – Ref: 26147709\n8. Commis Chef – Ref: 26147710\n\n📍 Location: The Westin Resort Nusa Dua, Bali, Indonesia\n\nHow to Apply:\n\n- Scan the QR code on the original recruitment poster.\n- Visit the official Marriott Careers website: https://lnkd.in/gkJ94qB\n- Search using the respective job reference number.\n\n✨ Begin. Belong. Become. Take the next step in your hospitality career with Marriott International!\n\n📢 Share this opportunity with friends and hospitality professionals looking for international career opportunities.\n\n#MarriottInternational #TheWestinBali #HotelJobs #HospitalityJobs #ChefJobs #ExecutiveChef #IndianChefJobs #BakeryJobs #CulinaryCareers #BaliJobs #IndonesiaJobs #HotelCareers #Khabresh",
+      "id": "urn:li:activity:7528986799508148225",
+      "text": "WE ARE HIRING Asian Technology Solutions\n\n📍 Jakarta \n\n- IT PMO – Project Monitoring & Control (2 Years)\n- Product Manager Banking (3 Years)\n- Fullstack Engineer (3 Years) \n- Software Quality Assurance - QA (3 Years) \n\nSend your latest CV to : \n📩 G-Form: https://bit.ly/3VG0TU4\n📱WhatsApp: +6281218609658\n\nDhea Ulantari Sandra Evlin Sagala Wahyu Maulana Prasetia Bernadetta Putri Aprilia Wijaya\n#Hiring #ITJobs #JakartaJobs #CareerOpportunity #WeAreHiring",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528932304652726273",
-      "timestamp": "2026-11-18T21:29:02.633Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528986798572621824",
+      "timestamp": "2026-11-19T01:05:34.813Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528986891795222528",
+      "text": "#DigitalSkola",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7528986890566500352",
+      "timestamp": "2026-11-19T01:05:56.816Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
         }
       ]
     },
@@ -914,11 +1264,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528880252375334914",
+      "id": "urn:li:activity:7528880338304053250",
       "text": "🌍 VIP GLOBAL IT FIELD ENGINEER & RECRUITER NETWORK\n\nOutsourceforge Solutions LLC is expanding its Global IT Field Engineer & Recruiter Network for ongoing DISPATCH, Smart Hands, Remote Hands, Installation, Turn-Up, Break/Fix & Data Center projects.\n\n🔹 WE NEED:\n• L1/L2 Field Engineers\n• Network & Data Center Engineers\n• Cisco / Fortinet / Aruba / Juniper Engineers\n• Smart Hands / Remote Hands Technicians\n• Local Recruiters & IT Partners with verified engineer networks\n\n🌎 GLOBAL COVERAGE\n\n🇬🇧 UK — London, Manchester, Birmingham, Bristol\n🇩🇪 Germany — Berlin, Frankfurt, Munich, Hamburg\n🇫🇷 France — Paris, Lyon, Marseille, Toulouse\n🇮🇹 Italy — Rome, Milan, Naples, Turin\n🇪🇸 Spain — Madrid, Barcelona, Valencia, Málaga\n🇳🇱 Netherlands — Amsterdam, Rotterdam, Eindhoven, Arnhem\n🇧🇪 Belgium — Brussels, Antwerp, Ghent\n🇨🇭 Switzerland — Zürich, Geneva, Basel\n🇦🇹 Austria — Vienna, Graz, Linz\n🇩🇰 Denmark — Copenhagen, Aarhus, Odense, Slagelse\n🇸🇪 Sweden — Stockholm, Gothenburg, Malmö, Luleå\n🇳🇴 Norway — Oslo, Bergen, Trondheim, Alta, Tromsø\n🇫🇮 Finland — Helsinki, Tampere, Oulu\n🇵🇱 Poland — Warsaw, Kraków, Gdańsk, Wrocław\n🇨🇿 Czechia — Prague, Brno, Ostrava\n🇭🇺 Hungary — Budapest, Debrecen\n🇷🇴 Romania — Bucharest, Cluj, Craiova\n🇵🇹 Portugal — Lisbon, Porto, Braga\n🇮🇪 Ireland — Dublin, Cork, Galway, Waterford\n🇹🇷 Türkiye — Istanbul, Ankara, Izmir\n🇦🇪 UAE — Dubai, Abu Dhabi\n🇸🇦 Saudi Arabia — Riyadh, Jeddah, Dammam\n🇸🇬 Singapore — Singapore\n🇲🇾 Malaysia — Kuala Lumpur, Penang, Johor Bahru\n🇮🇩 Indonesia — Jakarta, Surabaya, Bandung\n🇹🇭 Thailand — Bangkok, Chiang Mai\n🇻🇳 Vietnam — Ho Chi Minh City, Hanoi\n🇵🇭 Philippines — Manila, Cebu\n🇯🇵 Japan — Tokyo, Osaka, Fukuoka\n🇰🇷 South Korea — Seoul, Busan\n🇦🇺 Australia — Sydney, Melbourne, Brisbane, Perth\n🇳🇿 New Zealand — Auckland, Wellington\n🇨🇦 Canada — Toronto, Vancouver, Montreal\n🇲🇽 Mexico — Mexico City, Guadalajara, Monterrey\n\n🌐 Plus additional global locations.\n\n🤝 RECRUITERS & PARTNERS:\nIf you have reliable local IT engineers in your network, let's build a long-term global dispatch partnership.\n\n⚡ Urgent + Scheduled Dispatch | 24/7 Support | Global Engineer Coverage\n\n📩 Recruiters | Engineers | Clients\n📱 WhatsApp: +92 335 1853292 | +92 316 8552042\n📧 noman18533@gmail.com\n\nOutsourceforge Solutions LLC\n🌍 Global Projects. Local Engineers. Reliable Support.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528880251662200832",
-      "timestamp": "2026-11-18T18:02:11.997Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528880337561739264",
+      "timestamp": "2026-11-18T18:02:32.484Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -928,11 +1278,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7528880338304053250",
+      "id": "urn:li:activity:7528880252375334914",
       "text": "🌍 VIP GLOBAL IT FIELD ENGINEER & RECRUITER NETWORK\n\nOutsourceforge Solutions LLC is expanding its Global IT Field Engineer & Recruiter Network for ongoing DISPATCH, Smart Hands, Remote Hands, Installation, Turn-Up, Break/Fix & Data Center projects.\n\n🔹 WE NEED:\n• L1/L2 Field Engineers\n• Network & Data Center Engineers\n• Cisco / Fortinet / Aruba / Juniper Engineers\n• Smart Hands / Remote Hands Technicians\n• Local Recruiters & IT Partners with verified engineer networks\n\n🌎 GLOBAL COVERAGE\n\n🇬🇧 UK — London, Manchester, Birmingham, Bristol\n🇩🇪 Germany — Berlin, Frankfurt, Munich, Hamburg\n🇫🇷 France — Paris, Lyon, Marseille, Toulouse\n🇮🇹 Italy — Rome, Milan, Naples, Turin\n🇪🇸 Spain — Madrid, Barcelona, Valencia, Málaga\n🇳🇱 Netherlands — Amsterdam, Rotterdam, Eindhoven, Arnhem\n🇧🇪 Belgium — Brussels, Antwerp, Ghent\n🇨🇭 Switzerland — Zürich, Geneva, Basel\n🇦🇹 Austria — Vienna, Graz, Linz\n🇩🇰 Denmark — Copenhagen, Aarhus, Odense, Slagelse\n🇸🇪 Sweden — Stockholm, Gothenburg, Malmö, Luleå\n🇳🇴 Norway — Oslo, Bergen, Trondheim, Alta, Tromsø\n🇫🇮 Finland — Helsinki, Tampere, Oulu\n🇵🇱 Poland — Warsaw, Kraków, Gdańsk, Wrocław\n🇨🇿 Czechia — Prague, Brno, Ostrava\n🇭🇺 Hungary — Budapest, Debrecen\n🇷🇴 Romania — Bucharest, Cluj, Craiova\n🇵🇹 Portugal — Lisbon, Porto, Braga\n🇮🇪 Ireland — Dublin, Cork, Galway, Waterford\n🇹🇷 Türkiye — Istanbul, Ankara, Izmir\n🇦🇪 UAE — Dubai, Abu Dhabi\n🇸🇦 Saudi Arabia — Riyadh, Jeddah, Dammam\n🇸🇬 Singapore — Singapore\n🇲🇾 Malaysia — Kuala Lumpur, Penang, Johor Bahru\n🇮🇩 Indonesia — Jakarta, Surabaya, Bandung\n🇹🇭 Thailand — Bangkok, Chiang Mai\n🇻🇳 Vietnam — Ho Chi Minh City, Hanoi\n🇵🇭 Philippines — Manila, Cebu\n🇯🇵 Japan — Tokyo, Osaka, Fukuoka\n🇰🇷 South Korea — Seoul, Busan\n🇦🇺 Australia — Sydney, Melbourne, Brisbane, Perth\n🇳🇿 New Zealand — Auckland, Wellington\n🇨🇦 Canada — Toronto, Vancouver, Montreal\n🇲🇽 Mexico — Mexico City, Guadalajara, Monterrey\n\n🌐 Plus additional global locations.\n\n🤝 RECRUITERS & PARTNERS:\nIf you have reliable local IT engineers in your network, let's build a long-term global dispatch partnership.\n\n⚡ Urgent + Scheduled Dispatch | 24/7 Support | Global Engineer Coverage\n\n📩 Recruiters | Engineers | Clients\n📱 WhatsApp: +92 335 1853292 | +92 316 8552042\n📧 noman18533@gmail.com\n\nOutsourceforge Solutions LLC\n🌍 Global Projects. Local Engineers. Reliable Support.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528880337561739264",
-      "timestamp": "2026-11-18T18:02:32.484Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528880251662200832",
+      "timestamp": "2026-11-18T18:02:11.997Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -965,6 +1315,34 @@
         {
           "type": "linkedin",
           "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528957671006240769",
+      "text": "The calendar said 17:30. That's 23:30 where I sit.\n\nI run Kogentic from Jakarta, with a small remote team and developers we're learning from across Europe and the US. A developer just booked a user interview on our European calendar. The slot looked civilised: 17:30. Then I did the conversion. 11:30 for the person joining from the US. 23:30 for me. Nobody did anything wrong. The time was right for them. It just wasn't evening for all three of us.\n\nI said yes anyway. I'll be on the call, and I asked an AI notetaker to join as backup. Not to run it. Just so the notes don't depend on how sharp I am at 23:30. We're building software for developers who work like this — across time zones, with AI in the loop — and it would be a bit rich to preach that and then dodge the late one.\n\nThe lesson I keep relearning: a calendar time is always someone's local time, and rarely everyone's. The work is deciding whose clock you're willing to honour, and how you still show up when it's yours that loses. What's the latest call you've taken because the other person's 17:30 wasn't yours?\n\n#startups #AI",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528957669852876801",
+      "timestamp": "2026-11-18T23:09:50.037Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7528907757882839040",
+      "text": "Hiring for W2 Position\n\nRole: Java Back End Developer\nLocation: Remote\n \nRequired Qualifications:\n \nBachelor’s degree or equivalent professional experience.\n8+ years of experience with Java enterprise application development and architecture, including hands-on experience with Java 21+.\n7+ years of experience with transactional databases and SQL, such as DB2, Oracle, or SQL Server.\n7+ years of software development experience with Spring Framework, Spring Integration, Spring Boot, and Spring Batch.\nExperience developing RESTful web services and APIs using Spring.\nExperience with MyBatis, Hibernate, or JPA.\nStrong object-oriented programming skills and knowledge of SOA, web services, and n-tier architecture.\nProficiency with Eclipse or a similar IDE and Git or Bitbucket.\nPractical experience using AI-assisted development tools, with the ability to assess generated code for correctness and quality.\nStrong understanding of software implementation best practices.\n \nPreferred Qualifications:\n \nExperience modernizing enterprise Java applications.\nFamiliarity with Unix utilities, Bash, or Python.\nAbility to adapt quickly to complex environments and learn new concepts and tools.\nStrong communication, collaboration, and relationship management skills.\nExperience mentoring developers and delivering high-quality enterprise systems.\nExperience in Health and Human Services, particularly Title IV-A Eligibility Systems.\nPrior Deloitte experience.\n \nTechnology Stack: Java 21+, J2EE/Jakarta EE, Spring Framework, Spring Integration, Spring Boot, Spring Batch, REST APIs, DB2, Oracle, SQL Server, MyBatis, Hibernate, JPA, SOA, Eclipse, Git/Bitbucket, AI-assisted development.\n\nSrinivas Tholem",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528907757035413505",
+      "timestamp": "2026-11-18T19:51:29.821Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
         }
       ]
     },
@@ -1017,34 +1395,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528836437241200641",
       "timestamp": "2026-11-18T15:08:05.840Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528834648915755009",
-      "text": "𝗧𝗵𝗲 𝗖𝗹𝗼𝘂𝗱 𝗚𝗲𝘁𝘀 𝗮 𝗖𝘂𝘀𝘁𝗼𝗺𝘀 𝗗𝗲𝘀𝗸 ☁️\n\nWashington no longer treats AI chips only as goods that cross borders. Rented computing power now crosses them too.\n\nA new US export rule, released this week and effective on Federal Register publication, does two things. First, it requires a licence to supply advanced chips to any data centre, anywhere, giving companies parented in China or other countries of concern more than 12 million TPP of processing performance. Our arithmetic: roughly 760 H100-class chips, counted across linked sites. Second, it requires a licence for advanced chips to Brazil, Indonesia, Malaysia, Singapore and Thailand, flagged as higher-than-normal diversion risks.\n\n📌 𝗧𝗵𝗲 𝗿𝗲𝗮𝗹 𝗱𝗲𝘁𝗮𝗶𝗹\nRecipients with a US headquarters or US ultimate parent skip the licence if the exporter files monthly reports. Everyone else applies case by case. In five fast-growing data-centre markets, the cost of adding capacity now depends on the nationality of the operator's parent.\n\n⚙️ 𝗧𝗵𝗲 𝗺𝗲𝗰𝗵𝗮𝗻𝗶𝘀𝗺\n1️⃣ The data centre becomes the checkpoint. Operators must run ownership and control checks on tenants. A provider that will not share them is presumed to give the supplier knowledge of a problem.\n2️⃣ Compute capacity becomes licensable. Facilities already serving covered tenants have 90 days to obtain a licence.\n3️⃣ Competitive asymmetry is built in. US-parented buyers get a reporting route; local, Gulf, European and Asian operators get licence queues.\n4️⃣ Host governments are on notice. Commerce may answer tolerated evasion with downgrades, Entity List additions or wider restrictions.\n\n🎯 𝗪𝗵𝗮𝘁 𝘁𝗼 𝗱𝗼 𝗻𝗼𝘄\n▪️ Renting GPU capacity in these markets? Ask your provider how it will source new chips and what ownership data it will need from you.\n▪️ If your group has a Chinese shareholder or ultimate parent, audit every compute contract for change-of-use and termination triggers.\n▪️ Developers and lenders: stress-test build-outs for licence delays and tenant mix.\n▪️ Governments courting AI investment: enforcement capacity is now part of the pitch.\n\n🔭 𝗢𝘂𝗿 𝘃𝗶𝗲𝘄\nThis rule converts chip leverage into leverage over who may rent compute, and where. Johor, Singapore, Jakarta and São Paulo have sold power, land and neutrality. Now compliance credibility with Washington sets their growth ceiling. Expect US clouds to gain share there, and a parallel non-US compute stack to deepen elsewhere.\n\n💬 Does your AI strategy rely on compute in a market Washington now treats as a diversion risk? Tell us below.\n\n#AI #DataCentres #Semiconductors #CloudComputing #SoutheastAsia #TechPolicy #DigitalSovereignty",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528497775005786112",
-      "timestamp": "2026-11-18T15:00:59.285Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7528856911363047425",
-      "text": "Point-to-point delivers each queue message to one consumer, but that doesn't mean every consumer sees every message. When several consumers share a queue, or a consumer uses a selector, any single consumer may only get a slice of what's on the queue.\n\n#PointToPoint #Messaging #DistributedSystems #Reliability #SystemDesign #SoftwareEngineering #BackendDevelopment #FaultTolerance #Architecture #Developers #TechCommunity #Java\n\nMore info\n• In Jakarta Messaging, how messages are spread across multiple consumers on one queue isn't defined. A QueueBrowser lets you peek at queue messages without removing them, but its scan isn't required to be a static snapshot, since messages can arrive and expire while you look.\n\n• Messages can also be delivered more than once. When a provider redelivers a message, it sets the JMSRedelivered flag to signal that it may have been delivered before, so your application should take extra care to avoid processing duplicates. The delivery count starts at 1 on first receipt and isn't guaranteed to be exact. #Idempotency #JakartaMessaging",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7528856910477955074",
-      "timestamp": "2026-11-18T16:29:27.066Z",
       "surfaces": [
         {
           "type": "linkedin",
