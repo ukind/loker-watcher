@@ -1,3 +1,4 @@
+import type { LinkedinSurface } from "./config-file.js";
 /**
  * The LinkedIn surface walk (N042b): one paced navigation plus up to
  * scrollRounds "Load more" clicks, parsing every intercepted flagship-web
@@ -9,7 +10,9 @@
  * and the walk's signature has no gate parameter. The gate, defaultSleep,
  * PACE_MIN_MS, PACE_MAX_MS, LINKEDIN_FETCH_CONCURRENCY, and
  * LINKEDIN_DEFAULT_SCROLL_ROUNDS stay orchestration-side in
- * linkedin-fetch.ts.
+ * linkedin-fetch.ts. The walk's trailing options live in WalkLinkedInDeps
+ * (N069); scrollRounds stays a REQUIRED deps field — the caller passes its
+ * resolved value, so the default constant never moves here.
  */
 import type { ContextLike } from "./fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "./linkedin-behavior.js";
@@ -20,11 +23,6 @@ import {
   captureOnce,
 } from "./linkedin-capture.js";
 import { halt, legDead } from "./linkedin-context.js";
-// Type-only back-edge (the judge-rotation.ts:38-40 idiom): verbatimModuleSyntax
-// erases it, so linkedin-fetch.ts can import this module's runtime symbol with
-// no runtime cycle. Moving LinkedinSurface to linkedin-context.ts would put a
-// surface type in a browser-context module for no gain.
-import type { LinkedinSurface } from "./linkedin-fetch.js";
 import {
   LINKEDIN_RESPONSE_RE,
   buildContentSearchUrl,
@@ -44,18 +42,11 @@ import {
   LINKEDIN_SETTLE_MS,
   LINKEDIN_XHR_DRAIN_MS,
   LOAD_MORE_SELECTOR,
-  PAGE_CLOSE_RACE_MESSAGES,
   SCROLL_JS,
   SEEN_STOP_CONSECUTIVE,
+  isPageCloseRace,
 } from "./linkedin-walk-static.js";
 import type { Post } from "./types.js";
-function isPageCloseRace(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
-  if ((error as { name?: unknown }).name === "TargetClosedError") return true;
-  const message = (error as { message?: unknown }).message;
-  if (typeof message !== "string") return false;
-  return PAGE_CLOSE_RACE_MESSAGES.some((fragment) => message.includes(fragment));
-}
 /**
  * Walk one LinkedIn surface in the shared browser context: navigate the
  * content-search URL, wait for the first flagship-web response, then
@@ -92,17 +83,51 @@ function isPageCloseRace(error: unknown): boolean {
  * rejects the walk and warns once per surface walk (D4). A sink-less walk
  * captures nothing.
  */
+/**
+ * The walk's options (N069): the seven trailing positional parameters of
+ * walkLinkedInSurface collapsed into one object — the FetchLinkedInDeps
+ * idiom (optional fields with "Default: ..." JSDoc, defaults resolved at
+ * the top of the function). `context` and `surface` stay positional (the
+ * required lead pair, the "`surfaces` stays first positional" doctrine).
+ * `scrollRounds` and `captureOrdinal` are REQUIRED deps fields: the walk
+ * header keeps the scroll-rounds default orchestration-side (the caller
+ * always passes its resolved value) and the ordinal is the shared
+ * per-tick counter minted by fetchLinkedInPosts (D7 — a walk-minted
+ * default would break cross-surface filename uniqueness). `captureSink`
+ * is the one `| undefined` field: exactOptionalPropertyTypes forbids
+ * assigning undefined to a plain optional field (the contextFactory
+ * rule, src/linkedin-fetch.ts:124-127).
+ */
+interface WalkLinkedInDeps {
+  /** Load-more click ceiling (the config knob). Required: the caller resolves it. */
+  scrollRounds: number;
+  /** The probe's Load-more click floor. Default: 0 (no floor — the tick's shape). */
+  minClicks?: number;
+  /** Seen ids feeding the consecutive-seen stop. Default: a FRESH empty set per call. */
+  seenIds?: ReadonlySet<string>;
+  /** Capture sink. Default: undefined — capture DISABLED. */
+  captureSink?: CaptureSink | undefined;
+  /** Shared per-tick capture ordinal minted by fetchLinkedInPosts (D7). Required. */
+  captureOrdinal: { value: number };
+  /** Clock for the capture stamps. Default: Date.now. */
+  nowFn?: () => number;
+  /** Log label. Default: `linkedin/${surface.value}`. */
+  label?: string;
+}
+
 export async function walkLinkedInSurface(
   context: ContextLike,
   surface: LinkedinSurface,
-  label: string,
-  scrollRounds: number,
-  minClicks: number,
-  seenIds: ReadonlySet<string>,
-  captureSink: CaptureSink | undefined,
-  captureOrdinal: { value: number },
-  nowFn: () => number,
+  deps: WalkLinkedInDeps,
 ): Promise<Post[]> {
+  // Defaults resolved once, at the top (the FetchLinkedInDeps idiom).
+  const label = deps.label ?? `linkedin/${surface.value}`;
+  const scrollRounds = deps.scrollRounds;
+  const minClicks = deps.minClicks ?? 0;
+  const seenIds = deps.seenIds ?? new Set<string>();
+  const captureSink = deps.captureSink;
+  const captureOrdinal = deps.captureOrdinal;
+  const nowFn = deps.nowFn ?? Date.now;
   const page = await context.newPage();
   const posts = new Map<string, Post>();
   let received = 0; // matched flagship-web bodies fully read — the liveness signal

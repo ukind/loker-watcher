@@ -17,12 +17,14 @@
  * same account with bounded backoff before the batch is deferred; a
  * transport error defers immediately without cooling anything.
  *
- * Cycle doctrine (the judge-rotation.ts:38-40 idiom): the ONE import from
- * ./judge.js is type-only, erased by verbatimModuleSyntax. judge.ts imports
- * this module's runtime symbols, so a runtime edge back would close a real
- * cycle. judgePost defaults sleepFn to sleep from ./sleep.js (N060).
+ * Cycle doctrine (N092): no ./judge.js import remains — LlmAccount lives
+ * in the judge-account.ts leaf, so this module's judge-side edges point
+ * INTO the leaf or DOWNWARD. judge.ts imports this module's runtime
+ * symbols; a runtime edge back would close a real cycle. judgePost
+ * defaults sleepFn to sleep from ./sleep.js (N060).
  */
 import type { ReasoningEffort } from "./config-file.js";
+import type { LlmAccount } from "./judge-account.js";
 import { resolveBlockedPick } from "./judge-exhaustion.js";
 import { stampFailure, stampSuccess } from "./judge-health.js";
 import { parseBulkVerdicts, parseVerdict } from "./judge-parse.js";
@@ -46,11 +48,6 @@ import {
   normalizeEndpoint,
   terminalFailureReason,
 } from "./judge-shared.js";
-// Type-only back-edge (the judge-rotation.ts:38-40 idiom): verbatimModuleSyntax
-// erases it, so judge.ts can import this module's runtime symbols with no
-// runtime cycle. LlmAccount stays in judge.ts — moving it would create
-// type-only back-edges from three LEAF modules into the FUNNEL group.
-import type { LlmAccount } from "./judge.js";
 import { type SleepFn, sleep } from "./sleep.js";
 import type { JudgeVerdict, Post } from "./types.js";
 /**

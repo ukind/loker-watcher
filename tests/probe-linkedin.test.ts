@@ -29,12 +29,12 @@ import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fe
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
 import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
-  LINKEDIN_PROFILE_DIR,
   type LinkedInContextFactory,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
-} from "../src/linkedin-fetch.js";
+} from "../src/linkedin-context.js";
+import { LINKEDIN_PROFILE_DIR } from "../src/linkedin-fetch.js";
 
 const T0 = Date.UTC(2026, 11, 12, 9, 14, 0);
 
@@ -283,7 +283,7 @@ describe("entry guard", () => {
 });
 
 describe("runProbe pass path", () => {
-  it("walks the first configured surface on the persistent profile and resolves the post count", async (t) => {
+  it("walks the configured linkedin keywords in config order (first to clear the floor) on the persistent profile and resolves the post count", async (t) => {
     const log = t.mock.method(console, "log", console.log.bind(console));
     const built = { value: 0 };
     const profileDirs: unknown[] = [];

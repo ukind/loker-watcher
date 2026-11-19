@@ -25,7 +25,7 @@
  * (linkedin-context.ts) — and the offline suite injects structural
  * ContextLike doubles.
  */
-import type { Surface } from "./config-file.js";
+import type { LinkedinSurface } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
 import type { RandomFn } from "./linkedin-behavior.js";
 import type { CaptureSink } from "./linkedin-capture.js";
@@ -42,32 +42,6 @@ import {
 import { walkLinkedInSurface } from "./linkedin-walk.js";
 import { runPool } from "./pool.js";
 import type { Post } from "./types.js";
-
-// The re-export facade (N042b). Eight symbols keep their old import path so
-// three scripts and four test files stay unedited:
-//   scripts/fetch-linkedin.ts, scripts/probe-linkedin.ts,
-//   scripts/watch-linkedin.ts, src/index.ts,
-//   tests/linkedin-fetch.test.ts, tests/fetch-linkedin.test.ts,
-//   tests/probe-linkedin.test.ts, tests/watch-linkedin.test.ts.
-//
-// REMOVAL NOTE (run #7): re-point those imports at ./linkedin-context.js and
-// ./linkedin-walk.js, then delete this block. The N012 class is "export with
-// no cross-module importer" — every symbol below has one, so the facade is
-// knip-safe. It must NOT grow: makeLinkedInContextFactory, the two UA
-// constants, and the production factory have no importer from this
-// specifier.
-export {
-  type LinkedInContextFactory,
-  allSurfacesFaulted,
-  halt,
-  isAllSurfacesFaulted,
-  isHalt,
-  isLegDead,
-  legDead,
-};
-export { SCROLL_JS } from "./linkedin-walk-static.js";
-/** One configured linkedin surface (raw keyword string, never a URL). */
-export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
 
 /** Injectable sleep for the pacing gate (judge.ts trailing-param idiom). */
 export type SleepFn = (ms: number) => Promise<void>;
@@ -283,17 +257,14 @@ export async function fetchLinkedInPosts(
         if (deadReason !== undefined || haltReason !== undefined) return;
         await gate.wait();
         if (deadReason !== undefined || haltReason !== undefined) return;
-        const posts = await walkLinkedInSurface(
-          context,
-          surface,
-          label,
+        const posts = await walkLinkedInSurface(context, surface, {
           scrollRounds,
           minClicks,
           seenIds,
           captureSink,
           captureOrdinal,
-          now,
-        );
+          nowFn: now,
+        });
         // Stamp at the slot write (email-per-surface): the surface is a
         // LinkedinSurface, so type is always "linkedin" here. Fresh post
         // objects — the walk's parsed array is never mutated.

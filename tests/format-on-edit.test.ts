@@ -8,10 +8,11 @@ import { fileURLToPath } from "node:url";
 
 // Black-box pins for the format-on-edit hook (registered PostToolUse
 // "Edit|Write" in .claude/settings.json). Gate order: JSON parse (fail-open)
-// → extension + existsSync → charset allowlist → spawn. The hook sets
-// stdio:"ignore" and ignores biome's exit status (it checks only
-// result.error), so file-content mutation is the only honest observable for
-// the format path; the hostile pin asserts the warn + no-mutation instead.
+// → extension + existsSync → charset allowlist → spawn. The hook runs via
+// process.execPath with the event on stdin; run.status + run.stderr + file
+// mutation are the only observables (stdio: "ignore" inside the hook). N072:
+// the spawn is node + Biome's JS launcher (no shell), a nonzero child status
+// warns on stderr, and the hook still always exits 0.
 const HOOK = fileURLToPath(new URL("../scripts/hooks/format-on-edit.js", import.meta.url));
 
 function runHook(input: string) {
@@ -51,6 +52,20 @@ describe("format-on-edit hook", () => {
 
   it("fails open on unreadable stdin", () => {
     assert.equal(runHook("not json").status, 0);
+  });
+
+  it("warns on stderr when Biome exits nonzero and leaves the file unchanged (N072)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "lw-format-on-edit-"));
+    try {
+      const target = join(dir, "broken.ts");
+      await writeFile(target, "const x = (", "utf8"); // biome cannot parse this
+      const run = runHook(JSON.stringify({ tool_input: { file_path: target } }));
+      assert.equal(run.status, 0); // the hook never vetoes an edit
+      assert.match(run.stderr, /Biome exited/);
+      assert.equal(await readFile(target, "utf8"), "const x = (");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 
   it("exits silently when the file does not exist (existsSync gate)", () => {

@@ -17,7 +17,7 @@
  * local day; wake-ups per local day = 1440 / linkedinWakeMinMinutes (the
  * configured floor — 24 at the 60-minute default; the historic 28-minute
  * floor gave 52, the number older docs quote). Each wake walks at most
- * 5 surfaces x (1 navigation + scrollRounds Load-more clicks). The click
+ * 7 configured surfaces x (1 navigation + scrollRounds Load-more clicks). The click
  * cap rides the walk (src/linkedin-fetch.ts).
  */
 

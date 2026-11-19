@@ -1,3 +1,4 @@
+import type { LlmAccount } from "./judge-account.js";
 /**
  * Account availability pre-check (FR1/FR2): one tiny chat-completions
  * call per LLM_ACCOUNTS account, all in parallel, before any judge
@@ -25,7 +26,6 @@
  * functions. Everything else is type-only.
  */
 import { normalizeEndpoint, terminalFailureReason } from "./judge-shared.js";
-import type { LlmAccount } from "./judge.js";
 import type { AccountFailure } from "./types.js";
 
 /**

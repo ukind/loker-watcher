@@ -2,8 +2,8 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Transporter } from "nodemailer";
 import {
+  type LinkedinSurface,
   type ResolvedSurface,
-  type Surface,
   type WatcherConfig,
   loadWatcherConfig,
   resolveSurfaces,
@@ -36,6 +36,7 @@ import {
 import { extractPosts } from "./extract.js";
 import { type ContextFactory, fetchSurfaces, fetchSurfacesAuthenticated } from "./fetch-threads.js";
 import { type HeartbeatStats, selectCandidates, sendHeartbeat } from "./heartbeat.js";
+import type { LlmAccount } from "./judge-account.js";
 import { type AvailabilityResult, checkJudgeAvailability } from "./judge-availability.js";
 import { loadAccountCeilings } from "./judge-ceilings.js";
 import {
@@ -48,9 +49,9 @@ import {
   loadAccountHealth,
 } from "./judge-health.js";
 import { isRotationExhausted } from "./judge-rotation.js";
-import { type JudgedPost, type LlmAccount, judgePosts, resolveJudgeConfig } from "./judge.js";
-import type { LinkedinSurface } from "./linkedin-fetch.js";
+import { type JudgedPost, judgePosts, resolveJudgeConfig } from "./judge.js";
 import { type LegLine, type PayloadRead, readPayloadPosts } from "./linkedin-payload.js";
+import { dedupePosts, surfaceLabel } from "./pipeline-helpers.js";
 import { filterRecent } from "./recency.js";
 import { sleep } from "./sleep.js";
 import { type AppState, diffNew, loadState, saveState } from "./state.js";
@@ -582,48 +583,6 @@ async function fetchLoggedOutPosts(
     posts.push(...extracted);
   }
   return posts;
-}
-
-/** D14 log label for one raw config surface. */
-function surfaceLabel(surface: Surface): string {
-  if (surface.type === "linkedin") return `linkedin/${surface.value}`;
-  if (surface.type === "tag") return `tag/${surface.value}`;
-  return surface.value; // url surfaces log verbatim
-}
-
-/**
- * Dedupe posts by id, keeping first-seen order (D5). Surface stamps on a
- * later duplicate merge into the kept post — a post collected by N
- * surfaces rides every matching surface email (FR2). Map re-sets keep the
- * first-seen position; the inputs and their stamp arrays are never
- * mutated.
- */
-export function dedupePosts(posts: readonly Post[]): Post[] {
-  const byId = new Map<string, Post>();
-  for (const post of posts) {
-    const kept = byId.get(post.id);
-    byId.set(post.id, kept === undefined ? post : mergeSurfaceStamps(kept, post));
-  }
-  return [...byId.values()];
-}
-
-/**
- * Union of the stamps on two duplicate posts (D5): kept stamps first, then
- * the unseen ones from the duplicate, into a FRESH array. Under
- * exactOptionalPropertyTypes the field stays off the post entirely when
- * no stamps exist (legacy payload rows predate the stamp).
- */
-function mergeSurfaceStamps(kept: Post, duplicate: Post): Post {
-  const merged = [...(kept.surfaces ?? [])];
-  for (const stamp of duplicate.surfaces ?? []) {
-    const key = `${stamp.type}|${stamp.value}`;
-    if (merged.some((existing) => `${existing.type}|${existing.value}` === key)) continue;
-    merged.push(stamp);
-  }
-  return {
-    ...kept,
-    ...(merged.length > 0 ? { surfaces: merged } : {}),
-  };
 }
 
 // Pipeline entry: the run starts only when this file IS the entry module

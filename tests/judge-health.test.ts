@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
+import type { LlmAccount } from "../src/judge-account.js";
 import {
   type AccountTickOutcome,
   type HealthFile,
@@ -21,7 +22,6 @@ import {
   stampSuccess,
   writeHealthAtomic,
 } from "../src/judge-health.js";
-import type { LlmAccount } from "../src/judge.js";
 
 /** Two accounts with distinct hosts — the capped/streak cases need both. */
 const ACCOUNTS: LlmAccount[] = [

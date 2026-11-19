@@ -26,7 +26,9 @@ import {
   resolveLinkedInWakeBand,
   sampleTickDelayMs,
 } from "../src/linkedin-behavior.js";
-import { type SleepFn, isLegDead } from "../src/linkedin-fetch.js";
+import { isLegDead } from "../src/linkedin-context.js";
+import type { SleepFn } from "../src/linkedin-fetch.js";
+import { PAYLOAD_MAX_AGE_MS } from "../src/linkedin-payload.js";
 import { fetchTick, handleLegDeadEpisode } from "./fetch-linkedin.js";
 
 /** Injectables for the offline suite; production defaults run the real tick. */
@@ -138,6 +140,16 @@ export async function startLoop(deps: StartLoopDeps = {}): Promise<void> {
     resolved.linkedinWakeMaxMinutes,
     CONFIG_PATH,
   );
+  // N091: warn once per loop start when the band floor reaches the pushed
+  // payload's freshness bound — wakes in the tail can read the leg DARK and
+  // degrade the hosted run to threads-only. Warning only: the 40-minute
+  // bound is operator-frozen (src/linkedin-payload.ts) and the band is
+  // deliberate pacing (FRD D8) — the crossing is documented, not fixed.
+  if (resolved.linkedinWakeMinMinutes * 60_000 >= PAYLOAD_MAX_AGE_MS) {
+    console.warn(
+      `watch-linkedin: wake band floor ${resolved.linkedinWakeMinMinutes} min reaches PAYLOAD_MAX_AGE_MS (${Math.round(PAYLOAD_MAX_AGE_MS / 60_000)} min) — wakes in the ${resolved.linkedinWakeMinMinutes}-${resolved.linkedinWakeMaxMinutes} min band can read the pushed payload stale (freshness rule: the payload must be younger than PAYLOAD_MAX_AGE_MS to count ok)`,
+    );
+  }
   await runLoop({
     ...loopDeps,
     linkedinWakeMinMs: band.minMs,

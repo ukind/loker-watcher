@@ -65,10 +65,15 @@ const graphqlBodyMany = (ids: readonly string[]): string =>
   });
 
 /** Response double the walk's graphql filter accepts (url + status + body). */
-const graphqlResponse = (body: string): ResponseLike => ({
+const graphqlResponse = (body: string, noise?: string): ResponseLike => ({
   url: () => "https://www.threads.com/api/graphql",
   status: () => 200,
-  text: async () => body,
+  text:
+    noise !== undefined
+      ? (): Promise<string> => {
+          throw new Error(noise);
+        }
+      : async () => body,
 });
 
 /**
@@ -102,6 +107,10 @@ function fakeContextFactory(options: {
   recentTabClicks?: number[];
   /** waitForTimeout durations in call order (the settle-window oracle). */
   settleWaits?: number[];
+  /** When true the Recent-tab locator faults with a plain Error (N071). */
+  recentTabFault?: boolean;
+  /** When set, every fired graphql response's text() throws this message (N071). */
+  noiseOnXhr?: string;
 }): ContextFactory {
   const failUrls = options.failUrls ?? new Set<string>();
   const xhrBySubstring = options.xhrBySubstring ?? new Map<string, string>();
@@ -125,7 +134,7 @@ function fakeContextFactory(options: {
             const entry = [...xhrBySubstring.entries()].find(([fragment]) =>
               url.includes(fragment),
             );
-            if (entry !== undefined) fire(graphqlResponse(entry[1]));
+            if (entry !== undefined) fire(graphqlResponse(entry[1], options.noiseOnXhr));
             return undefined;
           },
           waitForFunction: async () => undefined,
@@ -148,7 +157,12 @@ function fakeContextFactory(options: {
             const missingTab: LocatorLike = {
               first: () => missingTab,
               waitFor: async () => {
-                throw new Error("locator not found"); // recentVisible = false path
+                if (options.recentTabFault === true) {
+                  throw new Error("locator wiring broke"); // a genuine fault (N071)
+                }
+                const timeoutError = new Error("locator not found"); // the designed absence
+                timeoutError.name = "TimeoutError";
+                throw timeoutError;
               },
               click: async () => undefined,
             };
@@ -479,6 +493,78 @@ describe("fetchSurfacesAuthenticated", () => {
     assert.ok(
       lines.some((line) => /tag\/noTab has no Recent tab — using the default view/.test(line)),
     );
+  });
+
+  it("stays silent on the designed Recent-tab timeout — no body-fault warn (N071)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    await fetchSurfacesAuthenticated(
+      [surface("tag/noTab")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        xhrBySubstring: new Map([["tag/noTab", graphqlBody(id19(1))]]),
+      }),
+    );
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.every((line) => !line.includes("body fault")));
+    assert.ok(lines.some((line) => /tag\/noTab has no Recent tab/.test(line)));
+  });
+
+  it("warns once when the Recent-tab locator genuinely faults (N071)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    await fetchSurfacesAuthenticated(
+      [surface("tag/faulty")],
+      "session-state.json",
+      fakeContextFactory({
+        concurrency: { inFlight: 0, peak: 0 },
+        recentTabFault: true,
+        xhrBySubstring: new Map([["tag/faulty", graphqlBody(id19(1))]]),
+      }),
+    );
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    const faults = lines.filter((line) => /recent-tab body fault/.test(line));
+    assert.equal(faults.length, 1);
+    assert.match(faults[0] ?? "", /locator wiring broke/);
+  });
+
+  it("warns once per walk on graphql body faults — later faults stay quiet (N071)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    await assert.rejects(
+      () =>
+        fetchSurfacesAuthenticated(
+          [surface("tag/noisy")],
+          "session-state.json",
+          fakeContextFactory({
+            concurrency: { inFlight: 0, peak: 0 },
+            scrollBodies: ["thread_items noise one {{", "thread_items noise two ["],
+            xhrBySubstring: new Map([["tag/noisy", "thread_items <<< not json"]]),
+          }),
+        ),
+      /all 1 authenticated surface\(s\) failed/,
+    );
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    const faults = lines.filter((line) => /graphql body fault/.test(line));
+    assert.equal(faults.length, 1);
+    assert.match(faults[0] ?? "", /first this walk/);
+  });
+
+  it("a page-close race in the graphql arm stays silent (N071)", async (t) => {
+    const warns = t.mock.method(console, "warn", console.warn.bind(console));
+    await assert.rejects(
+      () =>
+        fetchSurfacesAuthenticated(
+          [surface("tag/closed")],
+          "session-state.json",
+          fakeContextFactory({
+            concurrency: { inFlight: 0, peak: 0 },
+            noiseOnXhr: "Response body is unavailable",
+            xhrBySubstring: new Map([["tag/closed", "whatever"]]),
+          }),
+        ),
+      /all 1 authenticated surface\(s\) failed/,
+    );
+    const lines = warns.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.every((line) => !line.includes("body fault")));
   });
 
   it("logs the URL-selected view for a profile surface and never warns about the tab", async (t) => {

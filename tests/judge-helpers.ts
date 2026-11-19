@@ -1,11 +1,16 @@
 /**
- * Shared pure helpers for the judge suites (D3, F015): the six fixture
- * helpers every judge suite file would otherwise duplicate, moved verbatim
- * from tests/judge.test.ts. Doubles and mock-fetch factories stay per-suite
- * on purpose — only these pure values are shared. Type-only imports (D5):
- * erased at runtime, and the tests/*.test.ts glob never executes this file.
+ * Shared pure helpers for the judge suites (D3, F015; REVISED D7 2026-11-19):
+ * the pure fixtures every judge suite would otherwise duplicate, the
+ * canonical freshState (N079 — the rotation suite's copy moved here, the
+ * judge.test.ts mirror deleted), and the ONE shared typed fetch-double
+ * factory + sleep recorder (N078 — the former per-suite doctrine was
+ * overridden by the full-ledger pass; 64 as-unknown-as casts consolidated;
+ * this factory holds the repo's single fetch double-cast). Type-only
+ * imports (D5): erased at runtime, and the tests/*.test.ts glob never
+ * executes this file.
  */
-import type { LlmAccount } from "../src/judge.js";
+import type { LlmAccount } from "../src/judge-account.js";
+import type { RotationState } from "../src/judge-rotation.js";
 import type { Post } from "../src/types.js";
 
 // The keyword list is a required judge parameter (D3): every case below passes
@@ -54,4 +59,88 @@ export function bulkContent(ids: readonly string[]): string {
   return JSON.stringify(
     Object.fromEntries(ids.map((id) => [id, { relevant: true, locationOk: true }])),
   );
+}
+
+/**
+ * Canonical freshState (N079): the richer three-param signature moved
+ * byte-verbatim from tests/judge-rotation.test.ts:56-74 (its mirror in
+ * tests/judge.test.ts:18-39 is deleted this phase). The
+ * waitBudgetRemainingMs literal mirrors the module-private WAIT_BUDGET_MS.
+ * ceilings default: an empty map reads as ceiling 1 per account (the
+ * pick's ?? 1 floor) — the same degrade as an absent ceilings file.
+ */
+export function freshState(
+  accounts: LlmAccount[],
+  ceilings: ReadonlyMap<number, number> = new Map(),
+  blocked: ReadonlyMap<number, string> = new Map(),
+): RotationState {
+  return {
+    accounts,
+    cooldownUntil: new Map(),
+    ceilings,
+    blocked,
+    inFlight: new Map(),
+    dispatchCounter: 0,
+    ceilingWaiters: [],
+    waitBudgetRemainingMs: 180_000,
+    healthMarks: new Map(),
+    probedThisTick: new Set(),
+    outcomeLedger: new Map(),
+  };
+}
+
+/**
+ * One normalized fetch call the handler inspects (N078). Module-private:
+ * handlers receive it structurally; naming it is the factory's job.
+ */
+interface FetchCall {
+  url: string;
+  headers: Record<string, string>;
+  bodyText: string;
+  /** Parsed request body; undefined when the body is not JSON. */
+  json: unknown;
+}
+
+/**
+ * The shared typed fetch double (N078): the repo's ONE fetch double-cast
+ * lives here (guidance Idiom A — exactly one double-cast, at construction).
+ * The handler receives the normalized call and returns a Response, a
+ * still-pending Promise<Response> (the parked-gate doubles), or throws (the
+ * transport-error doubles — the judge's catch sees the throw).
+ */
+export function fakeFetch(
+  respond: (call: FetchCall) => Response | Promise<Response>,
+): typeof fetch {
+  const handler = async (_url: unknown, init?: RequestInit): Promise<Response> => {
+    const headers: Record<string, string> = {};
+    const raw = (init?.headers ?? {}) as Record<string, unknown>;
+    for (const [key, value] of Object.entries(raw)) headers[key] = String(value);
+    const bodyText = typeof init?.body === "string" ? init.body : "";
+    let json: unknown;
+    try {
+      json = JSON.parse(bodyText);
+    } catch {
+      json = undefined;
+    }
+    return await respond({ url: String(_url), headers, bodyText, json });
+  };
+  return handler as unknown as typeof fetch;
+}
+
+/**
+ * The shared recording sleep (N077/N078): returns the no-op seam AND the
+ * recorded durations, so a test asserts the transcript instead of a
+ * wall-clock proxy.
+ */
+export function recordingSleep(): {
+  sleeps: number[];
+  sleep: (ms: number) => Promise<void>;
+} {
+  const sleeps: number[] = [];
+  return {
+    sleeps,
+    sleep: async (ms: number) => {
+      sleeps.push(ms);
+    },
+  };
 }

@@ -14,7 +14,7 @@ import { describe, it } from "node:test";
 import { runLoop, startLoop } from "../scripts/watch-linkedin.js";
 import type { WatcherConfig } from "../src/config-file.js";
 import { DEFAULT_WAKE_MIN_MS, sampleTickDelayMs } from "../src/linkedin-behavior.js";
-import { legDead } from "../src/linkedin-fetch.js";
+import { legDead } from "../src/linkedin-context.js";
 
 /** Deterministic LCG (Numerical Recipes constants) — no ambient Math.random. */
 function seededRng(seed: number): () => number {
@@ -229,6 +229,42 @@ describe("startLoop", () => {
     for (const ms of sleeps) {
       assert.equal(ms, DEFAULT_WAKE_MIN_MS);
     }
+  });
+
+  it("warns once naming PAYLOAD_MAX_AGE_MS when the band floor reaches it (N091)", async (t) => {
+    const warn = t.mock.method(console, "warn", console.warn.bind(console));
+    await startLoop({
+      config: {
+        ...BASE_CONFIG,
+        linkedinWakeMinMinutes: 45,
+        linkedinWakeMaxMinutes: 60,
+      },
+      tick: async () => {},
+      sleepFn: async () => {},
+      rng: seededRng(2026_11_09),
+      maxIterations: 1,
+    });
+    const lines = warn.mock.calls.map((call) => call.arguments.join(" "));
+    const fresh = lines.filter((line) => /PAYLOAD_MAX_AGE_MS/.test(line));
+    assert.equal(fresh.length, 1);
+    assert.match(fresh[0] ?? "", /freshness rule/);
+  });
+
+  it("stays quiet when the band floor is below the freshness bound (N091)", async (t) => {
+    const warn = t.mock.method(console, "warn", console.warn.bind(console));
+    await startLoop({
+      config: {
+        ...BASE_CONFIG,
+        linkedinWakeMinMinutes: 15,
+        linkedinWakeMaxMinutes: 45,
+      },
+      tick: async () => {},
+      sleepFn: async () => {},
+      rng: seededRng(2026_11_09),
+      maxIterations: 1,
+    });
+    const lines = warn.mock.calls.map((call) => call.arguments.join(" "));
+    assert.equal(lines.filter((line) => /PAYLOAD_MAX_AGE_MS/.test(line)).length, 0);
   });
 
   it("rejects a broken band naming both keys and values", async () => {

@@ -6,9 +6,10 @@
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { LlmAccount } from "../src/judge-account.js";
+import { judgePost } from "../src/judge-dispatch.js";
 import {
   type RotationExhausted,
-  type RotationState,
   claimAccount,
   coolAccount,
   earliestCooldown,
@@ -19,15 +20,18 @@ import {
   rotationExhausted,
   waitCeilingSlot,
 } from "../src/judge-rotation.js";
-import { type LlmAccount, judgePost, judgePosts } from "../src/judge.js";
+import { judgePosts } from "../src/judge.js";
 import type { AccountFailure, Post } from "../src/types.js";
 import {
   KEYWORDS,
   bulkContent,
   bulkPost,
+  fakeFetch,
   fiveAccounts,
+  freshState,
   id19,
   ok,
+  recordingSleep,
   singleAccount,
 } from "./judge-helpers.js";
 
@@ -49,50 +53,22 @@ function threeAccounts(): LlmAccount[] {
   ];
 }
 
-/** Fresh run-level state for direct judgePost calls. Canonical copy — the
- *  waitBudgetRemainingMs literal mirrors the module-private WAIT_BUDGET_MS.
- *  ceilings default: an empty map reads as ceiling 1 per account (the
- *  pick's ?? 1 floor) — the same degrade as an absent ceilings file. */
-function freshState(
-  accounts: LlmAccount[],
-  ceilings: ReadonlyMap<number, number> = new Map(),
-  blocked: ReadonlyMap<number, string> = new Map(),
-): RotationState {
-  return {
-    accounts,
-    cooldownUntil: new Map(),
-    ceilings,
-    blocked,
-    inFlight: new Map(),
-    dispatchCounter: 0,
-    ceilingWaiters: [],
-    waitBudgetRemainingMs: 180_000,
-    healthMarks: new Map(),
-    probedThisTick: new Set(),
-    outcomeLedger: new Map(),
-  };
-}
-
 /**
  * Fetch that records "host Authorization" per call, always 429s account-one
  * and bulk-answers account-two by echoing the ids in the prompt. Tests
  * branch on the URL (distinct host per account), never on call order.
  */
 function accountTwoAnswering(auths: string[]): typeof fetch {
-  return (async (url: unknown, options?: unknown): Promise<Response> => {
-    const headers = (options as { headers: Record<string, string> }).headers;
-    auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-    if (String(url).includes("account-one")) {
+  return fakeFetch((call) => {
+    // The recorded host + Authorization pair — lifted verbatim from the
+    // live double ("<host> <authorization>"):
+    auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
+    if (call.url.includes("account-one")) {
       return new Response("Too Many Requests", { status: 429 });
     }
-    const body = JSON.parse((options as { body: string }).body) as {
-      messages: Array<{ content: string }>;
-    };
-    const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
-      (match) => match[1] ?? "",
-    );
+    const ids = [...call.bodyText.matchAll(/id (\d+) by @/g)].map((m) => m[1] ?? "");
     return ok(bulkContent(ids));
-  }) as unknown as typeof fetch;
+  });
 }
 
 describe("judgePost", () => {
@@ -106,26 +82,23 @@ describe("judgePost", () => {
   };
 
   it("returns parsed verdict on successful API response", async () => {
-    const mockFetch = async () =>
-      new Response(
-        JSON.stringify({
-          choices: [{ message: { content: '{"relevant": true, "locationOk": true}' } }],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      );
-
-    const verdict = await judgePost(
-      samplePost,
-      freshState(singleAccount),
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+    const mockFetch = fakeFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: '{"relevant": true, "locationOk": true}' } }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
+
+    const verdict = await judgePost(samplePost, freshState(singleAccount), KEYWORDS, mockFetch);
     assert.deepEqual(verdict, { relevant: true, locationOk: true });
   });
 
   it("retries on first failure and succeeds on second attempt", async () => {
     let callCount = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(() => {
       callCount += 1;
       if (callCount === 1) {
         return new Response("Bad Gateway", { status: 502 });
@@ -136,31 +109,21 @@ describe("judgePost", () => {
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       );
-    };
+    });
 
-    const verdict = await judgePost(
-      samplePost,
-      freshState(singleAccount),
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const verdict = await judgePost(samplePost, freshState(singleAccount), KEYWORDS, mockFetch);
     assert.equal(callCount, 2);
     assert.deepEqual(verdict, { relevant: false, locationOk: true });
   });
 
   it("returns null after two failed attempts", async () => {
     let callCount = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(() => {
       callCount += 1;
       return new Response("Server Error", { status: 500 });
-    };
+    });
 
-    const verdict = await judgePost(
-      samplePost,
-      freshState(singleAccount),
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const verdict = await judgePost(samplePost, freshState(singleAccount), KEYWORDS, mockFetch);
     assert.equal(callCount, 2);
     assert.equal(verdict, null);
   });
@@ -170,15 +133,14 @@ describe("judgePost", () => {
     const auths: string[] = [];
     let tick = 0;
     const now = (): number => tick;
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-      if (String(url).includes("account-one")) {
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
+      if (call.url.includes("account-one")) {
         tick = 1_000; // the 429 lands at t=1s; account 1 cools until t=61s
         return new Response("Too Many Requests", { status: 429 });
       }
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const verdict = await judgePost(samplePost, state, KEYWORDS, mockFetch, "medium", now);
     assert.deepEqual(verdict, { relevant: true, locationOk: true });
     assert.equal(auths.length, 2); // the cooling account is skipped, never retried
@@ -189,8 +151,7 @@ describe("judgePost", () => {
 
   it("judgePost throws the tagged error with a pool-ordered record when every account is cooling", async () => {
     const state = freshState(twoAccounts());
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Too Many Requests", { status: 429 }));
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
@@ -209,8 +170,7 @@ describe("judgePost", () => {
 
   it("re-stamps an expired cooldown so a cooled account becomes dispatchable again", async () => {
     const state = freshState(singleAccount);
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Too Many Requests", { status: 429 }));
     // An expired entry is dispatchable again; the fresh 429 re-stamps it.
     state.cooldownUntil.set(0, Date.now() - 1_000);
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
@@ -227,8 +187,7 @@ describe("judgePost", () => {
 
   it("charges the shared wait budget per park and dies when the budget is spent", async () => {
     const state = freshState(singleAccount);
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Too Many Requests", { status: 429 }));
     // Hand-stepped clock; each wake re-dispatches, the fresh 429 re-stamps,
     // and the next park charges again. Each park sleeps earliest expiry +
     // the 500ms wake jitter: three parks drain 180_000 (60_500 + 60_500 +
@@ -259,8 +218,7 @@ describe("judgePost", () => {
 
   it("re-charges the actual elapsed after a slow wake, draining the budget faster", async () => {
     const state = freshState(singleAccount);
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Too Many Requests", { status: 429 }));
     let tick = 0;
     const now = (): number => tick;
     const sleeps: number[] = [];
@@ -285,8 +243,7 @@ describe("judgePost", () => {
 
   it("keeps the wait budget shared across calls — a spent budget parks nowhere", async () => {
     const state = freshState(singleAccount);
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Too Many Requests", { status: 429 }));
     let tick = 0;
     const now = (): number => tick;
     const inertSleep = (ms: number): Promise<void> => {
@@ -321,14 +278,13 @@ describe("judgePost", () => {
   it("never parks while an account is eligible — zero sleeps, zero budget drawn", async () => {
     const state = freshState(twoAccounts());
     const auths: string[] = [];
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-      if (String(url).includes("account-one")) {
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
+      if (call.url.includes("account-one")) {
         return new Response("Too Many Requests", { status: 429 });
       }
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const sleeps: number[] = [];
     const inertSleep = (ms: number): Promise<void> => {
       sleeps.push(ms);
@@ -354,8 +310,8 @@ describe("judgePost", () => {
 describe("judgePosts rotation: cooling, parking, exhaustion", () => {
   it("drain-then-throw: every account cooling rejects judgePosts with the complete pool-ordered record", async () => {
     const posts = Array.from({ length: 3 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -363,7 +319,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         return ok("{}"); // answered, zero verdicts — every post falls back
       }
       return new Response("Too Many Requests", { status: 429 }); // both accounts cool
-    }) as unknown as typeof fetch;
+    });
 
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
@@ -392,15 +348,23 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
     );
   });
   it("cools to account 2 on the first 429 with no backoff wait", async () => {
-    const posts = [bulkPost(id19(1))];
+    const NOW = Date.UTC(2026, 10, 19, 5, 0, 0); // pinned — never ambient
     const auths: string[] = [];
-    const started = Date.now();
-    const result = await judgePosts(posts, twoAccounts(), KEYWORDS, accountTwoAnswering(auths));
-    const elapsed = Date.now() - started;
-    assert.equal(result.judged.length, 1);
-    assert.match(auths[0] ?? "", /account-one\.api .*key-1$/);
-    assert.match(auths[1] ?? "", /account-two\.api .*key-2$/);
-    assert.ok(elapsed < 500, `rotation must not sleep — took ${elapsed}ms`);
+    const { sleeps, sleep } = recordingSleep();
+    const result = await judgePosts(
+      [bulkPost(id19(1))],
+      twoAccounts(),
+      KEYWORDS,
+      accountTwoAnswering(auths),
+      "medium",
+      new Map(),
+      () => NOW,
+      sleep,
+    );
+    assert.equal(result.judged.length, 1); // the retry landed on account 2
+    assert.match(auths[0] ?? "", /account-one\.api/); // the pins this case always carried
+    assert.match(auths[1] ?? "", /account-two\.api/);
+    assert.deepEqual(sleeps, [], "rotation must not sleep"); // zero-charge path
   });
   it("skips a still-cooling account when the fallback scan restarts at account 1", async () => {
     // The bulk call 429s account 1, lands on account 2, and answers the
@@ -411,13 +375,12 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
     const a = bulkPost(id19(1));
     const b = { ...bulkPost(id19(2)), text: "Second post text" };
     const auths: string[] = [];
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-      if (String(url).includes("account-one")) {
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
+      if (call.url.includes("account-one")) {
         return new Response("Too Many Requests", { status: 429 });
       }
-      const body = JSON.parse((options as { body: string }).body) as {
+      const body = call.json as {
         messages: Array<{ content: string }>;
         response_format?: unknown;
       };
@@ -430,7 +393,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         (match) => match[1] ?? "",
       );
       return ok(bulkContent(ids.slice(0, 1)));
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts([a, b], twoAccounts(), KEYWORDS, mockFetch);
     assert.equal(result.judged.length, 2);
     assert.equal(auths.length, 3); // 429 call, bulk call, fallback call
@@ -446,15 +409,14 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       return Promise.resolve();
     };
     let calls = 0;
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
+    const mockFetch = fakeFetch((call) => {
       calls += 1;
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
       if (calls === 1) {
         return new Response("Bad Gateway", { status: 502 });
       }
       return ok(bulkContent(posts.map((p) => p.id)));
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(
       posts,
       twoAccounts(),
@@ -476,11 +438,10 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
   it("defers a batch on a transport error without cooling any account", async () => {
     const posts = [bulkPost(id19(1))];
     const auths: string[] = [];
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
       throw new Error("socket hang up");
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(posts, twoAccounts(), KEYWORDS, mockFetch);
     assert.equal(result.judged.length, 0);
     assert.deepEqual(
@@ -493,11 +454,10 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
   it("caps the burst: one dispatch per account at ceiling 1, record stays pool-ordered", async () => {
     const posts = Array.from({ length: 40 }, (_, i) => bulkPost(id19(i + 1))); // 4 batches
     const auths: string[] = [];
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
       return new Response("Too Many Requests", { status: 429 });
-    }) as unknown as typeof fetch;
+    });
 
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
@@ -538,11 +498,10 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
   it("cycles the dispatch dial back to account 1 after a full lap — consecutive dispatches land on consecutive accounts", async () => {
     const state = freshState(twoAccounts());
     const auths: string[] = [];
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch, "medium", Date.now);
     await judgePost(bulkPost(id19(2)), state, KEYWORDS, mockFetch, "medium", Date.now);
     await judgePost(bulkPost(id19(3)), state, KEYWORDS, mockFetch, "medium", Date.now);
@@ -562,10 +521,9 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
       tick += ms; // the park wakes exactly at expiry — zero real delay
       return Promise.resolve();
     };
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -575,7 +533,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         return new Response("Too Many Requests", { status: 429 });
       }
       return ok(bulkContent(ids)); // everything after the park answers
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(
       posts,
       twoAccounts(),
@@ -600,8 +558,8 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
   });
   it("rejects judgePosts when the fallback phase dies on a spent budget", async () => {
     const posts = Array.from({ length: 3 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -609,7 +567,7 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
         return ok("{}"); // answered, zero verdicts — every post falls back
       }
       return new Response("Too Many Requests", { status: 429 });
-    }) as unknown as typeof fetch;
+    });
     let tick = 0;
     const now = (): number => tick;
     const inertSleep = (ms: number): Promise<void> => {
@@ -644,17 +602,16 @@ describe("judgePosts rotation: cooling, parking, exhaustion", () => {
 describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait", () => {
   /** Recording fetch: pushes "host key", answers bulk by echoing listed ids. */
   function spreadAnswering(auths: string[]): typeof fetch {
-    return (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
-      const body = JSON.parse((options as { body: string }).body) as {
+    return fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
         (match) => match[1] ?? "",
       );
       return ok(bulkContent(ids));
-    }) as unknown as typeof fetch;
+    });
   }
 
   it("first 5 judge calls of a 50-post run hit 5 distinct accounts (FRD acceptance)", async () => {
@@ -683,14 +640,14 @@ describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait"
       [0, 0],
       [1, 0],
     ]);
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const index = String(url).includes("account-one") ? 0 : 1;
+    const mockFetch = fakeFetch(async (call) => {
+      const index = call.url.includes("account-one") ? 0 : 1;
       const current = (inFlight.get(index) ?? 0) + 1;
       inFlight.set(index, current);
       peaks.set(index, Math.max(peaks.get(index) ?? 0, current));
       await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
       inFlight.set(index, (inFlight.get(index) ?? 1) - 1);
-      const body = JSON.parse((options as { body: string }).body) as {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -698,7 +655,7 @@ describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait"
         return ok("{}"); // bulk answers empty — every post falls back
       }
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(
       posts,
       twoAccounts(),
@@ -726,11 +683,11 @@ describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait"
       releaseFirst = resolve;
     });
     let calls = 0;
-    const mockFetch = (async (): Promise<Response> => {
+    const mockFetch = fakeFetch(() => {
       calls += 1;
       if (calls === 1) return gate;
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const sleeps: number[] = [];
     const inertSleep = (ms: number): Promise<void> => {
       sleeps.push(ms);
@@ -771,11 +728,10 @@ describe("dispatch spread: the dial, the caps, and the zero-charge ceiling wait"
   it("skips the designated account when the dial lands on the cooling one", async () => {
     const state = freshState(twoAccounts());
     const auths: string[] = [];
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const headers = (options as { headers: Record<string, string> }).headers;
-      auths.push(`${new URL(String(url)).host} ${String(headers.Authorization)}`);
+    const mockFetch = fakeFetch((call) => {
+      auths.push(`${new URL(call.url).host} ${call.headers.Authorization ?? ""}`);
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     state.cooldownUntil.set(0, Date.now() + 60_000); // the DESIGNATED seat (dial 0) is cooling
     const verdict = await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch, "medium");
     assert.deepEqual(verdict, { relevant: true, locationOk: true });
@@ -981,8 +937,8 @@ describe("pool-truthful exhaustion wording (D9)", () => {
 
   it("the judgePosts throw site passes the pool size — the caught error reads 2 of 2", async () => {
     const posts = Array.from({ length: 3 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -990,7 +946,7 @@ describe("pool-truthful exhaustion wording (D9)", () => {
         return ok("{}"); // answered, zero verdicts — every post falls back
       }
       return new Response("Too Many Requests", { status: 429 }); // both accounts cool
-    }) as unknown as typeof fetch;
+    });
     const inertSleep = (ms: number): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
@@ -1040,13 +996,13 @@ describe("pool-truthful exhaustion wording (D9)", () => {
     let accountOneCalls = 0;
     let accountTwoCalls = 0;
     let survivorReleased = false;
-    const mockFetch = (async (url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
       const requestedIds = [...new Set(content.match(/\d{19}/g) ?? [])];
-      if (String(url).includes("account-one")) {
+      if (call.url.includes("account-one")) {
         accountOneCalls += 1;
         return new Response("Too Many Requests", { status: 429 });
       }
@@ -1056,7 +1012,7 @@ describe("pool-truthful exhaustion wording (D9)", () => {
         return survivorGate; // the healthy seat saturates: held until the test releases it
       }
       return ok(bulkContent(requestedIds));
-    }) as unknown as typeof fetch;
+    });
 
     // Release the held dispatch once the rewound dispatcher has parked on
     // the release queue — a real tick, offline-safe.

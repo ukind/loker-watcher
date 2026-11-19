@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts scripts/hooks",
     "knip": "knip",
-    "format": "biome format --write src tests scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts",
+    "format": "biome format --write src tests scripts/probe-judge.ts scripts/fetch-linkedin.ts scripts/watch-linkedin.ts scripts/probe-linkedin.ts scripts/login-linkedin.ts scripts/reset-linkedin.ts scripts/linkedin-chain.ts scripts/replay-linkedin.ts",
     "fetch-linkedin": "tsx scripts/fetch-linkedin.ts",
     "watch-linkedin": "tsx scripts/watch-linkedin.ts",
     "probe-linkedin": "tsx scripts/probe-linkedin.ts",

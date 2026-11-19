@@ -221,7 +221,7 @@ export async function runLoginHelper(deps: LoginHelperDeps = {}): Promise<LoginH
       pair = findSessionCookies(await context.cookies("https://www.linkedin.com"));
     }
     await writeCookieFile(pair, cookiePath, new Date(now()).toISOString());
-    console.log(`login-linkedin: session captured — ${cookiePath}`);
+    console.log(`login-linkedin: pair captured — ${cookiePath}`);
     const dotEnvUpdated = await upsertDotEnvLine(
       dotEnvPath,
       ENV_NAMES.linkedinCookiesFile,

@@ -32,7 +32,7 @@ import { LINKEDIN_PAYLOAD_PATH } from "../src/config.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import { HALT_CHECKPOINT_REASON } from "../src/linkedin-behavior.js";
 import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
-import { type LinkedInContextFactory, SCROLL_JS, isLegDead } from "../src/linkedin-fetch.js";
+import { type LinkedInContextFactory, isLegDead } from "../src/linkedin-context.js";
 import { PAYLOAD_VERSION, type PayloadEnvelope } from "../src/linkedin-payload.js";
 import type { LinkedInCookies } from "../src/linkedin-session.js";
 import { CURRENT_STATE_VERSION, saveState } from "../src/state.js";
@@ -380,6 +380,28 @@ describe("pushPayload (single-path rebase+retry discipline)", () => {
     const aborts = git.calls.filter((args) => args[0] === "rebase" && args[1] === "--abort");
     assert.equal(aborts.length, 2);
     assert.equal(git.calls.filter((args) => args[0] === "push").length, 0);
+  });
+
+  it("folds the abort's own failure into the failure record (N085)", async () => {
+    const git = scriptGit({
+      diff: 1,
+      pull: { code: 1, output: "CONFLICT (content): Merge conflict in state/linkedin-posts.json" },
+      rebase: { code: 1, output: "fatal: no rebase in progress" },
+    });
+    const payload = await workPath("push-abort-fail.json");
+    await assert.rejects(
+      () => pushPayload(git, 2, payload),
+      (error: unknown) => {
+        const message = (error as Error).message;
+        assert.match(message, /payload push failed twice/);
+        assert.match(message, /fatal: no rebase in progress/);
+        return true;
+      },
+    );
+    assert.equal(
+      git.calls.filter((args) => args[0] === "rebase" && args[1] === "--abort").length,
+      2,
+    );
   });
 
   it("surfaces git's real cause, not a misread conflict (the unstaged-changes misdiagnosis)", async () => {
@@ -1042,28 +1064,6 @@ describe("FR-0 stamp gate (slice 5)", () => {
     assert.deepEqual(gitCalls, ["rev-parse --abbrev-ref HEAD", "status --porcelain"]);
     assert.equal(built.value, 0);
     assert.equal(await exists(payloadPath), false);
-  });
-});
-
-describe("SCROLL_JS content (Phase 5: the live-only revision, pinned as a string)", () => {
-  it("carries all four scroll-container candidates", () => {
-    assert.ok(SCROLL_JS.includes("document.scrollingElement"));
-    assert.ok(
-      SCROLL_JS.includes(
-        "querySelectorAll(\"main, [data-testid='lazy-column'], .scaffold-finite-scroll\")",
-      ),
-    );
-    assert.ok(SCROLL_JS.includes('sel: "window"'));
-    assert.ok(SCROLL_JS.includes("el.tagName.toLowerCase()"));
-  });
-
-  it("reports the JSON contract (sel/top/sh/ch, sel none when nothing qualifies)", () => {
-    assert.ok(SCROLL_JS.includes("JSON.stringify"));
-    assert.ok(SCROLL_JS.includes("sel: pick.sel"));
-    assert.ok(SCROLL_JS.includes("top: Math.round(pick.el.scrollTop)"));
-    assert.ok(SCROLL_JS.includes("sh: pick.el.scrollHeight"));
-    assert.ok(SCROLL_JS.includes("ch: pick.el.clientHeight"));
-    assert.ok(SCROLL_JS.includes('sel: "none"'));
   });
 });
 

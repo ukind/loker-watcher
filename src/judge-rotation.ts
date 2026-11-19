@@ -37,9 +37,11 @@
 // Type-only imports (D5): verbatimModuleSyntax erases them, so judge.ts and
 // judge-dispatch.ts can import this module's runtime symbols with no runtime
 // cycle. SleepFn moved to judge-dispatch.ts with judgePost (N042a) — the
-// default `sleepFn: SleepFn = sleep` lives there now.
+// default `sleepFn: SleepFn = sleep` lives there now. N092: LlmAccount
+// comes from the judge-account.ts leaf — this module's ZERO-RUNTIME-IMPORT
+// identity is now total: no ./judge.js edge remains, type or runtime.
+import type { LlmAccount } from "./judge-account.js";
 import type { TickOutcomes } from "./judge-health.js";
-import type { LlmAccount } from "./judge.js";
 import type { SleepFn } from "./sleep.js";
 import type { AccountFailure } from "./types.js";
 

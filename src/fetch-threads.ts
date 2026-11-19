@@ -29,6 +29,8 @@
 import { BROWSER_USER_AGENT, WEBDRIVER_PATCH } from "./browser-constants.js";
 import type { ResolvedSurface } from "./config-file.js";
 import { collectThreadItems, normalizeThreadItem } from "./extract.js";
+import type { CaptureWarnState } from "./linkedin-capture.js";
+import { isPageCloseRace } from "./linkedin-walk-static.js";
 import { runPool } from "./pool.js";
 import { sleep } from "./sleep.js";
 import type { Post } from "./types.js";
@@ -57,6 +59,20 @@ const XHR_DRAIN_MS = 1500;
  */
 const RECENT_TAB_TIMEOUT_MS = 15_000;
 const MAX_DRY_SCROLL_ROUNDS = 3;
+
+/**
+ * The Recent-tab waitFor timeout IS the designed absence signal (N071):
+ * Playwright timeouts carry the TimeoutError name, and the absence is
+ * logged by the branch that consumes recentVisible. A genuine locator
+ * fault (a plain Error) warns once per walk instead.
+ */
+function isTimeoutAbsence(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { name?: unknown }).name === "TimeoutError"
+  );
+}
 
 /**
  * Browser-side hydration probe for waitForFunction, kept as a string so the
@@ -370,6 +386,21 @@ async function fetchOneAuthenticated(
   const posts = new Map<string, Post>();
   let xhrBodies = 0;
 
+  // N071 warn-once latch (the linkedin-walk warnBodyFault idiom): the two
+  // swallows below keep their DESIGNED silences (the page-close race; the
+  // Recent tab's timeout-as-absence), but a parser RangeError or a genuine
+  // locator fault must not vanish next to them. First real fault per
+  // surface walk warns; later ones stay quiet.
+  const bodyFaultWarn: CaptureWarnState = { warned: false };
+  const warnBodyFault = (arm: string, error: unknown): void => {
+    if (bodyFaultWarn.warned) return;
+    bodyFaultWarn.warned = true;
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `fetch: ${surface.label} ${arm} body fault (first this walk; further faults stay quiet) — ${message}`,
+    );
+  };
+
   // Attach before navigation: the logged-in feed streams post data through
   // graphql XHR responses, not the initial data-sjs blobs.
   page.on("response", (response) => {
@@ -386,8 +417,10 @@ async function fetchOneAuthenticated(
           const post = normalizeThreadItem(item);
           if (post !== null) posts.set(post.id, post);
         }
-      } catch {
-        // not every graphql response is JSON we care about; skip it
+      } catch (error) {
+        // The page-close race stays silent; a real body fault warns once
+        // per walk (N071) instead of vanishing next to the designed swallow.
+        if (!isPageCloseRace(error)) warnBodyFault("graphql", error);
       }
     })();
   });
@@ -414,7 +447,12 @@ async function fetchOneAuthenticated(
         state: "visible",
         timeout: RECENT_TAB_TIMEOUT_MS,
       });
-    } catch {
+    } catch (error) {
+      // N071: the timeout is the DESIGNED absence (logged below); a
+      // genuine fault warns once per walk; the page-close race stays silent.
+      if (!isTimeoutAbsence(error) && !isPageCloseRace(error)) {
+        warnBodyFault("recent-tab", error);
+      }
       recentVisible = false;
     }
     if (recentVisible) {

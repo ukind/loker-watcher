@@ -10,7 +10,7 @@
  * naming its baseUrl; the judged output is unchanged. Pool entries that
  * share one baseUrl share one ceiling silently — warnings are for missing
  * data, not for endpoint identity. File keys are trimmed before matching
- * because parseLlmAccounts trims baseUrl (src/judge.ts:163-172) and a
+ * because parseLlmAccounts trims baseUrl and a
  * stray-space key must not silently miss into the default.
  *
  * The committed file carries one non-ceiling key: probedAt (epoch seconds
@@ -25,7 +25,7 @@
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { JUDGE_CEILINGS_PATH } from "./config.js";
-import type { LlmAccount } from "./judge.js";
+import type { LlmAccount } from "./judge-account.js";
 import { stateTempPath } from "./state.js";
 
 /** The committed file shape: trimmed baseUrl -> positive integer ceiling.
