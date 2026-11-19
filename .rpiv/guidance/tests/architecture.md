@@ -10,7 +10,8 @@ Full-pipeline offline verification of src/ (plus the commit-state-rebase shell s
 
 ## Coverage map (the 1:1 mirror rule, today)
 ```
-config.ts, types.ts   — no test (names/paths/kill switch — the "false" branch rides index.test.ts; pure types)
+config.ts, types.ts   — config.test.ts covers the two pure resolvers (heartbeat kill switch, run URL);
+#                       types.ts stays pure-types (no test)
 config-file.ts     → config-file.test.ts
 email.ts, heartbeat.ts → email.test.ts, heartbeat.test.ts
 extract.ts         → extract.test.ts         # fixture-driven: tests/fixture/tag-page.html, graphql-response.json
@@ -42,7 +43,13 @@ judge-ceilings.ts  → judge-ceilings.test.ts  # committed ceilings: resolver ma
 #                                              #   degrade lattice, atomic writer round-trip
 judge-health.ts    → judge-health.test.ts    # committed health: reader degrade matrix, tick-merge matrix,
 #                                              #   byte-stability gate, episode lifecycle, one-alarm gate
-judge-helpers.ts, pool.ts — no test (shared pure fixtures, not *.test.ts, never executed | exercised transitively)
+judge-helpers.ts   — shared fixtures + canonical freshState + the fakeFetch/recordingSleep factories (not
+#                      *.test.ts, never executed directly; consumed by the judge suites)
+pool.ts            → pool.test.ts             # claim order, width clamp, empty/zero-width no-ops, rejecting worker
+judge-exhaustion.ts → judge-exhaustion.test.ts # resolveBlockedPick flavor split over fake RotationState fixtures
+judge-ramp.ts      → judge-ramp.test.ts       # classifyResponse N065 gate, rampLevel tallies, ceiling verdicts
+pipeline-helpers.ts → index.test.ts covers dedupePosts (surfaceLabel rides the funnel logs; mergeSurfaceStamps
+#                                              #   stays module-private)
 recency.ts         → recency.test.ts
 state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
 threads-session.ts → session.test.ts         # GRANDFATHERED name drift — new files mirror <module>.test.ts
@@ -93,8 +100,9 @@ const mockTransport = { sendMail: async (o: unknown) => { captured = o; return {
 const NOW = Date.UTC(2026, 9, 26, 9, 14, 0);        // month is 0-based; never Date.now()
 await runWatcher({ env: BASE_ENV, now: () => NOW, /* ... */ });   // env literal, not process.env
 // Structured env values inline (LLM_ACCOUNTS: JSON.stringify([...])); a real Date.now passed AS the
-// injected now is the sanctioned variant; ambient reads are the forbidden thing. One wall-clock
-// assertion exists: the 429 "no backoff" elapsed < 500ms test (judge-rotation).
+// injected now is the sanctioned variant; ambient reads are the forbidden thing. Clock and env are
+// parameters — pinned, never ambient. N077 removed the suite's last wall-clock assertion: the 429
+// "no backoff" case now injects recordingSleep() and asserts the zero-sleep transcript directly.
 ```
 
 ## Temp files: lazy mkdtemp + one after(); hook suites use per-test mkdtemp + try/finally
@@ -136,7 +144,7 @@ No keyword-agreement rule: fixture text stays verbatim-realistic to the capture 
 ## Architectural Boundaries
 - **Offline only**: browser/SMTP/LLM faked via injection; importing src never loads Playwright (dynamic import)
 - **Never touch `process.env` or repo files** — writes go to OS temp only; console access is call-through spies only (`t.mock.method(console, "log"/"warn", console.log.bind(console))` — F014 walk-log discrimination), never a silencing stub
-- **No mock libraries**; the ONE shared-helpers exception is `tests/judge-helpers.ts` (six pure fixtures — KEYWORDS, singleAccount, ok, id19, bulkPost, bulkContent); doubles and mock-fetch factories stay per-suite
+- **No mock libraries**; the ONE shared-helpers exception is `tests/judge-helpers.ts` (the pure fixtures + the canonical `freshState` (N079) + the shared typed `fakeFetch` factory and `recordingSleep` (N078) — the repo's single fetch double-cast lives in the factory)
 - **Hooks are black-box subprocesses** (`spawnSync(process.execPath, [hook], { input })` — no import, no mocking; `process.execPath` because the shebang is inert on Windows); full-pipeline oracles are layered: `WatcherRun` → disk state → captured subjects
 
 <important if="you are adding a test for a new src module">

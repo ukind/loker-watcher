@@ -139,6 +139,7 @@ No code change and no Actions variable is involved.
 | `platforms` | Which platforms this run watches: `{ "linkedin": true, "threads": true }`. Required: an absent block, a missing member, or a non-boolean member fails the run naming the key. `false` skips that platform's fetch, judge, and digest rows; both `false` parks the run (exit 0, no email, no state read or write). The PC LinkedIn leg keeps fetching; this gates the hosted run only. |
 | `keywords` | The LLM judge's relevance criterion. A post matches only when it is a genuine job opening related to at least one of these. |
 | `candidateTerms` | The wider net that picks the "closest candidates" listed in the zero-match status email. |
+| `negativeKeywords` | Terms that veto a post the judge would otherwise accept. Absent or `[]` means no veto. |
 | `recencyHours` | How far back a post can be and still count. Required: a missing or non-positive value fails the run. |
 | `reasoningEffort` | The LLM judge's reasoning effort level: `"low"`, `"medium"`, or `"high"`. Absent defaults to `"medium"`. |
 | `scrollRounds` | Upper bound on scroll rounds per Threads surface walk, and on "Load more" clicks per LinkedIn surface walk. Must be a whole number >= 1; absent defaults to `8`. |
@@ -313,7 +314,7 @@ exactly one fetch tick. Run `npm run linkedin-chain` (needs a real terminal;
 the login hold waits for Enter). The login and probe steps it sequences, for
 running them individually:
 
-1. `npm run login-linkedin`: opens a real Chrome window; log in by hand
+1. `npm run login-linkedin`: opens a headed browser window on the persistent msedge-channel profile; log in by hand
    (2FA included). The helper waits for the session, writes the cookie
    file, and adds the LINKEDIN_COOKIES_FILE line to .env automatically.
    The browser then STAYS OPEN: the mandatory feed warm-down rests the
@@ -327,7 +328,7 @@ running them individually:
    No headless re-login exists (2FA dead-ends automated login); the
    headed helper keeps the operator in the loop.
 2. `npm run probe-linkedin`: twice, ≥6h apart, stored cookies only; walks
-   the first configured surface read-only and exits 1 on a checkpoint
+   the configured linkedin keywords in config order (first to clear the floor) read-only and exits 1 on a checkpoint
    wall (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted
    walk (`probe: FAILED`), or fewer than 10 posts. Re-run after every
    `npm run login-linkedin` re-harvest.
@@ -383,7 +384,7 @@ export GMAIL_USER=... GMAIL_APP_PASSWORD=...
 npm start
 ```
 
-The five LinkedIn leg entries (PC only; no LLM_* or GMAIL_* needed for
+The seven LinkedIn leg entries (PC only; no LLM_* or GMAIL_* needed for
 them, and the cookie file must exist):
 
 ```bash
@@ -392,6 +393,8 @@ npm run login-linkedin   # headed login: writes the cookie file + the .env line
 npm run probe-linkedin   # browser-walk gate: exit 1 on a wall/dead/short walk
 npm run fetch-linkedin   # one tick: walk → payload → push
 npm run watch-linkedin   # the always-on loop: tick + configurable wake band
+npm run replay-linkedin  # re-run the parser over a captures/ session, offline
+npm run reset-linkedin   # delete the cookie file, the browser profile, and the halt latch
 ```
 
 ## Maintenance
