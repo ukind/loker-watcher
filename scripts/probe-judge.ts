@@ -40,14 +40,15 @@
  * refused leg is data (the account is busy), not a gate failure — the
  * watch job itself is the real gate for throttling.
  */
-import { loadWatcherConfig } from "../src/config-file.js";
+import { pathToFileURL } from "node:url";
+import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { JUDGE_CEILINGS_PATH } from "../src/config.js";
+import type { LlmAccount } from "../src/judge-account.js";
 import { writeCeilingsAtomic } from "../src/judge-ceilings.js";
-import { type LlmAccount, buildBulkMessages, resolveJudgeConfig } from "../src/judge.js";
+import { buildBulkMessages } from "../src/judge-prompts.js";
+import { type ProbeOutcome, findConcurrencyCeiling, probeFetch } from "../src/judge-ramp.js";
+import { resolveJudgeConfig } from "../src/judge.js";
 import type { Post } from "../src/types.js";
-
-// Read once at startup; a missing or malformed file fails the probe loudly.
-const CONFIG = await loadWatcherConfig();
 
 /**
  * Real captured Threads captions, kept verbatim so token counts match
@@ -79,12 +80,6 @@ function syntheticPost(index: number): Post {
   };
 }
 
-/** One probe call's classified outcome. */
-type ProbeOutcome =
-  | { kind: "ok" }
-  | { kind: "refused"; status: number }
-  | { kind: "failed"; message: string };
-
 /** One account's full probe record. */
 interface AccountProbe {
   position: number; // 1-based, matches the alarm record's account numbering
@@ -93,104 +88,6 @@ interface AccountProbe {
   bulk: ProbeOutcome;
   bulkAgain: ProbeOutcome;
   ceiling: number;
-}
-
-/**
- * Time one call and classify the outcome. A refused call (non-2xx) is a
- * concurrency signal; a failed call (network error, or a 2xx without JSON)
- * is a broken endpoint. The ramp needs the difference: a level where every
- * call is refused is a ceiling, a level with failed calls fails the probe.
- */
-async function timed(label: string, payload: unknown, account: LlmAccount): Promise<ProbeOutcome> {
-  const started = Date.now();
-  try {
-    const response = await fetch(`${account.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${account.apiKey}`,
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120_000),
-    });
-    const body = await response.text();
-    const elapsed = Date.now() - started;
-    if (!response.ok) {
-      console.log(`probe: ${label} — ${elapsed}ms — HTTP ${response.status} REFUSED`);
-      return { kind: "refused", status: response.status };
-    }
-    const ok = body.includes("{");
-    console.log(
-      `probe: ${label} — ${elapsed}ms — HTTP ${response.status} ${ok ? "OK" : "NO JSON"}`,
-    );
-    return ok ? { kind: "ok" } : { kind: "failed", message: "response carried no JSON" };
-  } catch (error) {
-    const elapsed = Date.now() - started;
-    const message = error instanceof Error ? error.message : String(error);
-    console.log(`probe: ${label} — ${elapsed}ms — FAILED: ${message}`);
-    return { kind: "failed", message };
-  }
-}
-
-/** Fire `count` bulk calls at once and classify each outcome; each call's
- *  label names the account ("<account label> ramp L<count>") so interleaved
- *  peer output stays attributable. */
-async function rampLevel(
-  count: number,
-  payload: unknown,
-  account: LlmAccount,
-  label: string,
-): Promise<{ ok: number; refused: number; failed: number; ms: number }> {
-  const started = Date.now();
-  const results = await Promise.all(
-    Array.from({ length: count }, () => timed(`${label} ramp L${count}`, payload, account)),
-  );
-  return {
-    ok: results.filter((result) => result.kind === "ok").length,
-    refused: results.filter((result) => result.kind === "refused").length,
-    failed: results.filter((result) => result.kind === "failed").length,
-    ms: Date.now() - started,
-  };
-}
-
-/** Safety cap for the doubling ramp: the probe never fires more than 32
- *  concurrent calls per account, even against an endpoint that never
- *  refuses. Overrides the earlier stop-at-4 quota economy (2026-11-07
- *  operator decision: maximal per-account concurrency requested). Worst
- *  case is 2+4+8+16+32 = 62 verified calls per account per probe. */
-const RAMP_MAX = 32;
-
-/**
- * Doubling ramp 2 -> 4 -> 8 -> 16 -> 32 (RAMP_MAX): each level fires
- * `level` concurrent verified bulk calls and the walk stops at the first
- * level that is not fully clean, so the ceiling reads as high as the
- * endpoint actually allows.
- * A refused level reads the ceiling below it; a failed call means a
- * broken endpoint, not a ceiling (return 0). The walk never fires a
- * level the previous one ruled out.
- */
-async function findConcurrencyCeiling(
-  payload: unknown,
-  account: LlmAccount,
-  label: string,
-): Promise<number> {
-  for (let level = 2; level <= RAMP_MAX; level *= 2) {
-    const result = await rampLevel(level, payload, account, label);
-    console.log(
-      `probe: ${label} — concurrency ${level} — ${result.ok}/${level} ok, ${result.refused} refused, ${result.failed} failed in ${result.ms}ms`,
-    );
-    if (result.failed > 0) {
-      console.log(
-        `probe: ${label} — a ramp call failed — broken endpoint, not a concurrency ceiling`,
-      );
-      return 0;
-    }
-    if (result.ok < level) {
-      console.log(`probe: ${label} — concurrency ceiling is below ${level}`);
-      return level / 2;
-    }
-  }
-  return RAMP_MAX;
 }
 
 /**
@@ -227,11 +124,12 @@ function classifyDead(probe: AccountProbe): string | null {
 async function probeAccount(
   index: number,
   account: LlmAccount,
+  config: WatcherConfig,
 ): Promise<{ probe: AccountProbe; ceiling: number }> {
   const label = `account ${index + 1} (${account.baseUrl})`;
   console.log(`probe: === ${label} ===`);
 
-  const minimal = await timed(
+  const minimal = await probeFetch(
     `${label} minimal call`,
     {
       model: account.model,
@@ -244,17 +142,17 @@ async function probeAccount(
   const ten = Array.from({ length: 10 }, (_, i) => syntheticPost(i + 1));
   const bulkPayload = {
     model: account.model,
-    messages: buildBulkMessages(ten, CONFIG.keywords),
+    messages: buildBulkMessages(ten, config.keywords),
     temperature: 0,
-    reasoning_effort: CONFIG.reasoningEffort,
+    reasoning_effort: config.reasoningEffort,
     response_format: { type: "json_object" },
   };
-  const bulk = await timed(
+  const bulk = await probeFetch(
     `${label} bulk call (10 posts, production prompt shape)`,
     bulkPayload,
     account,
   );
-  const again = await timed(`${label} bulk call again (variance check)`, bulkPayload, account);
+  const again = await probeFetch(`${label} bulk call again (variance check)`, bulkPayload, account);
 
   const ceiling = await findConcurrencyCeiling(bulkPayload, account, label);
   const probe: AccountProbe = {
@@ -272,6 +170,8 @@ async function probeAccount(
 }
 
 async function main(): Promise<void> {
+  // Read once at startup; a missing or malformed file fails the probe loudly.
+  const config = await loadWatcherConfig();
   let accounts: LlmAccount[];
   try {
     accounts = [...resolveJudgeConfig(process.env)];
@@ -284,11 +184,11 @@ async function main(): Promise<void> {
   // All accounts probe CONCURRENTLY (2026-11-07, Actions run 42354544399):
   // wall time is the slowest single account, not the sum. Ramping levels
   // stay sequential within an account (probeAccount); only the accounts
-  // interleave. `timed` converts network failures to failed outcomes, so a
+  // interleave. probeFetch converts network failures to failed outcomes, so a
   // rejection here is an unexpected bug — containment keeps the other
   // accounts' readings alive.
   const settled = await Promise.allSettled(
-    accounts.map((account, index) => probeAccount(index, account)),
+    accounts.map((account, index) => probeAccount(index, account, config)),
   );
   const ceilings: Record<string, number> = {};
   const dead: string[] = [];
@@ -337,4 +237,6 @@ async function main(): Promise<void> {
   console.log("probe: all accounts verified — gating probe passed");
 }
 
-await main();
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

@@ -14,6 +14,7 @@
  */
 import type { ReasoningEffort } from "./config-file.js";
 import { ENV_NAMES } from "./config.js";
+import type { LlmAccount } from "./judge-account.js";
 import { judgeBatch, judgePost } from "./judge-dispatch.js";
 import { HARD_FAIL_TICKS_TO_CAP, type TickOutcomes, readTickOutcomes } from "./judge-health.js";
 import { type RotationState, isRotationExhausted, rotationExhausted } from "./judge-rotation.js";
@@ -22,18 +23,6 @@ import { runPool } from "./pool.js";
 import { type SleepFn, sleep } from "./sleep.js";
 import type { JudgeVerdict, Post } from "./types.js";
 
-// The re-export facade (N042a). Two symbols keep their old import path so
-// the offline suite stays unedited: tests/judge.test.ts:9-15 and
-// tests/judge-rotation.test.ts:22 import buildBulkMessages and judgePost
-// from ../src/judge.js, and scripts/probe-judge.ts:46 imports
-// buildBulkMessages from judge.js.
-//
-// REMOVAL NOTE (run #7): re-point those three imports at ./judge-prompts.js
-// and ./judge-dispatch.js, then delete this block. The run-5 plan's D3
-// forbade exactly this as a "second import path" drift class; the run-6
-// "tests unedited" criterion wins for this pass.
-export { buildBulkMessages } from "./judge-prompts.js";
-export { judgePost };
 /** Posts per bulk judge call. Module constant by design — no config key. */
 const BATCH_SIZE = 10;
 /**
@@ -66,12 +55,6 @@ const FALLBACK_CALL_BUDGET = 40;
  * still dies before the next 10-minute tick queues.
  */
 const WAIT_BUDGET_MS = 180_000;
-/** One LLM account from the LLM_ACCOUNTS pool (ordered; index 0 is tried first). */
-export interface LlmAccount {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-}
 /**
  * Parse the LLM_ACCOUNTS pool from an environment record. The value is a
  * JSON array of {baseUrl, apiKey, model} objects, tried in order. Throws

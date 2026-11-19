@@ -31,7 +31,7 @@
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { JUDGE_HEALTH_PATH } from "./config.js";
-import type { LlmAccount } from "./judge.js";
+import type { LlmAccount } from "./judge-account.js";
 import { stateTempPath } from "./state.js";
 import type { AccountFailure } from "./types.js";
 
@@ -99,7 +99,7 @@ export interface OutcomeLedgerState {
  * missing data IS the good state, so there are no per-account floor
  * warnings (the ceilings doctrine inverted: per-account degradation is
  * communicated through the email line). Keys are trimmed before matching
- * because parseLlmAccounts trims baseUrl (src/judge.ts:163-172). Pure.
+ * because parseLlmAccounts trims baseUrl. Pure.
  */
 export function resolveAccountHealth(
   accounts: readonly LlmAccount[],

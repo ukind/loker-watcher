@@ -32,20 +32,18 @@ import { mkdir, readFile, rename, rm, unlink, writeFile } from "node:fs/promises
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
+import { type LinkedinSurface, type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { LINKEDIN_PAYLOAD_PATH, STATE_PATH } from "../src/config.js";
 import { resolveEmailConfig, sendHaltAlarm, sendLegDeadAlarm } from "../src/email.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
   type LinkedInContextFactory,
-  type LinkedinSurface,
-  fetchLinkedInPosts,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
-  resolveLinkedInProfileDir,
-} from "../src/linkedin-fetch.js";
+} from "../src/linkedin-context.js";
+import { fetchLinkedInPosts, resolveLinkedInProfileDir } from "../src/linkedin-fetch.js";
 import { writePayloadAtomic } from "../src/linkedin-payload.js";
 import { type LinkedInCookies, resolveLinkedInCookies } from "../src/linkedin-session.js";
 import { readSeenIdSet, stateTempPath } from "../src/state.js";
@@ -356,7 +354,13 @@ export async function pushPayload(
     if (rebase.code !== 0) {
       lastFailure = rebase.output;
       console.error(`git: rebase failed — aborting — git said: ${rebase.output || "(no output)"}`);
-      await git(["rebase", "--abort"]);
+      // N085: the abort itself can fail (e.g. no rebase in progress); its
+      // exit code and output join lastFailure like every other git read —
+      // the real cause is never silently discarded.
+      const abort = await git(["rebase", "--abort"]);
+      if (abort.code !== 0) {
+        lastFailure = `${lastFailure}\nrebase --abort also failed (code ${abort.code}): ${abort.output}`;
+      }
       return false;
     }
     const push = await git(["push"]);

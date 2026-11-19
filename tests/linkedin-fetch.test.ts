@@ -27,20 +27,22 @@ import { access } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { after, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import type { LinkedinSurface } from "../src/config-file.js";
 import type { ContextLike, LocatorLike, PageLike, ResponseLike } from "../src/fetch-threads.js";
 import type { CaptureRecord, CaptureSink } from "../src/linkedin-capture.js";
 import {
-  LINKEDIN_PROFILE_DIR,
-  type LinkedinSurface,
-  PACE_MAX_MS,
-  PACE_MIN_MS,
   allSurfacesFaulted,
-  fetchLinkedInPosts,
   halt,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
   legDead,
+} from "../src/linkedin-context.js";
+import {
+  LINKEDIN_PROFILE_DIR,
+  PACE_MAX_MS,
+  PACE_MIN_MS,
+  fetchLinkedInPosts,
   resolveLinkedInProfileDir,
 } from "../src/linkedin-fetch.js";
 import type { Post } from "../src/types.js";

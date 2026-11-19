@@ -18,6 +18,9 @@ export type Surface =
   | { type: "url"; value: string }
   | { type: "linkedin"; value: string };
 
+/** One configured linkedin surface (raw keyword string, never a URL). */
+export type LinkedinSurface = Extract<Surface, { type: "linkedin" }>;
+
 /** A surface resolved to the URL Playwright loads, plus its log label. */
 export interface ResolvedSurface {
   /** Always "threads": LinkedIn rides the PC fetch leg and never resolves here. */

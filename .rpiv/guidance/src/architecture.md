@@ -10,7 +10,7 @@ The entire application: a single-shot CLI pipeline that fetches job posts from T
 
 ## Module Structure (role groups; imports point downward only)
 ```
-index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap
+index.ts                                 # ENTRY: runWatcher(deps) / WatcherDeps / timeStage; guarded CLI bootstrap | pipeline-helpers.ts (N075 pure helpers), judge-ramp.ts (N080 ramp)
 types.ts, config.ts, config-file.ts,     # LEAVES + CONFIG: contracts | ENV_NAMES, paths | watcher.config.json |
 sleep.ts                                 #   the sleep seam (N060)
 judge-ceilings.ts, judge-health.ts       #   validation (closed ALLOWED_KEYS incl. candidateTerms, scrollRounds,
@@ -21,7 +21,7 @@ env-file.ts                              # PC-script support: <cwd>/.env auto-lo
 threads-session.ts, fetch-threads.ts,    # ACQUISITION: session secret → storageState | Threads walker + *Like seam +
 linkedin-*.ts, extract.ts                #   contextFactory | the PC-leg linkedin family (parser/session/fetch/context/
                                          #   walk/behavior/capture/payload) | data-sjs walk
-recency.ts, judge.ts, judge-prompts.ts,  # FUNNEL: window filter | judge orchestration + prompts + dispatch core |
+recency.ts, judge-account.ts, judge.ts, judge-prompts.ts,  # FUNNEL: window filter | judge orchestration + prompts + dispatch core |
 judge-dispatch.ts, judge-availability.ts,#   the pre-dispatch availability check | rotation | parsers |
 judge-rotation.ts, judge-parse.ts,       #   bounded shared runPool (zero imports) |
 judge-shared.ts, judge-exhaustion.ts     #   the shared wire vocabulary + the blocked-pick policy (N060)
@@ -115,9 +115,10 @@ RotationExhausted carries .health (TickOutcomes) to the catch for that flush.
 // splitter, the $-ref commentary_text walker (longest text per row — the hashtag chip is a
 // second commentary component), buildContentSearchUrl (keywords → the content-search URL),
 // and the guarded mintPost (drop+count, never throws). Timestamp = BigInt(id)>>22n,
-// ms<=0n rejected. Pairing: the timestamp-ordered zip — the i-th distinct commentary text
-// (stream order) pairs with the i-th distinct id sorted by derived timestamp ascending; a
-// count mismatch warns naming the counts and mints the paired prefix. Every call logs ONE
+// ms<=0n rejected. Pairing: the card join — each commentary marker row seeds a card and
+// climbs $-reference parents to the outermost ancestor holding exactly one card seed; the
+// card's text is the longest commentary in the closure, its single forward urn is Post.id,
+// and a zero/many/rejected-urn or empty-text card drops with a count. Every call logs ONE
 // pairing-oracle line naming each minted id ↔ text head — the stream carries no id↔text
 // link, so that line is the only mis-pair detector that exists.
 // linkedin-session.ts: LINKEDIN_COOKIES_FILE resolver (fail-visible D4 — the stricter contrast to
@@ -175,7 +176,7 @@ function stateTempPath(dir: string, nowMs = Date.now()): string {
 
 ## Architectural Boundaries
 - **No silent fallbacks**: config/state/optional-env faults exit non-zero naming the problem; the only sanctioned best-effort calls are heartbeat, the exhaustion alarm, and temp cleanup
-- **Pipeline shape lives only in `index.ts`** (stages never import each other); **every `state/` write goes through ONE atomic idiom — `stateTempPath` + temp/rename from state.ts — via SIX writers, one file each** (state.ts seen-posts, judge-ceilings.ts ceilings, judge-health.ts health, linkedin-payload.ts payload, and fetch-linkedin.ts's two flag writers: the episode marker and the halt latch); the workflow is the git committer
+- **Pipeline shape lives only in `index.ts`** (the pure dedupe/label helpers live in `pipeline-helpers.ts` (N075); the probe's ramp decision machinery lives in `judge-ramp.ts` (N080); stages never import each other); **every `state/` write goes through ONE atomic idiom — `stateTempPath` + temp/rename from state.ts — via SIX writers, one file each** (state.ts seen-posts, judge-ceilings.ts ceilings, judge-health.ts health, linkedin-payload.ts payload, and fetch-linkedin.ts's two flag writers: the episode marker and the halt latch); the workflow is the git committer
 - **Secrets are env-only** (names in `ENV_NAMES`); **no classes** — tagged errors = name constant + factory + type guard (`rotationExhausted` / `isRotationExhausted`)
 
 <important if="you are adding a new pipeline stage">

@@ -2,8 +2,7 @@
  * The LinkedIn surface walk statics (N060): the 11 tuning constants, the
  * DOM_PROBE_JS and SCROLL_JS snippets, the checkpoint/Activity regexes, and
  * the page-close vocabulary — moved verbatim out of linkedin-walk.ts so the
- * walk drops under the 500-line bar. Byte-identical strings: the pinned
- * SCROLL_JS content test (tests/fetch-linkedin.test.ts:986) must stay green.
+ * walk drops under the 500-line bar. Byte-identical strings.
  */
 import { ACTIVITY_ID_PATTERN } from "./linkedin-parser.js";
 // --- browser-walk tuning (the deleted walk's constants that carry over,
@@ -137,9 +136,28 @@ export const ACTIVITY_ID_RE = new RegExp(`urn:li:activity:(${ACTIVITY_ID_PATTERN
  * page. Anything else reaching a listener catch is a real fault (N048): the
  * parser is documented never-throws, so a RangeError from it — or from the
  * capture path's Date conversion — is a defect worth one warn.
+ * Module-private since N092/N071: the shared predicate below is the only
+ * consumer (the walk imports isPageCloseRace, not this list).
  */
-export const PAGE_CLOSE_RACE_MESSAGES = [
+const PAGE_CLOSE_RACE_MESSAGES = [
   "Response body is unavailable",
   "Target page, context or browser has been closed",
   "Execution context was destroyed",
 ] as const;
+
+/**
+ * The page-close-race predicate the two walkers share (N071): a body read
+ * or a settle step losing to the page closing is EXPECTED churn, not a
+ * fault — name check plus a message-fragment scan over
+ * PAGE_CLOSE_RACE_MESSAGES. This leaf is the shared home (its only import
+ * is linkedin-parser) so fetch-threads.ts can import it without a
+ * fetch-threads -> linkedin-walk runtime edge, which would close a type
+ * cycle: linkedin-walk type-imports ContextLike from fetch-threads.
+ */
+export function isPageCloseRace(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  if ((error as { name?: unknown }).name === "TargetClosedError") return true;
+  const message = (error as { message?: unknown }).message;
+  if (typeof message !== "string") return false;
+  return PAGE_CLOSE_RACE_MESSAGES.some((fragment) => message.includes(fragment));
+}

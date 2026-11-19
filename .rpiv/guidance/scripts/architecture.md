@@ -40,7 +40,7 @@ watch-linkedin.ts            # .ts, always-on loop: one tick + a sleep from the 
 probe-linkedin.ts            # .ts, entry-guarded (importing stays side-effect free — the import IS the pin);
                              #   exports runProbe / ProbeDeps / ProbeResult + the two TAGGED local gates
                              #   (probeFloor / probeNoSurfaces + isProbe* guards): resolve config, pick the
-                             #   FIRST configured surface, preflight the cookie file (resolveLinkedInCookies
+                             #   configured linkedin keywords in CONFIG ORDER (first to clear the floor), preflight the cookie file (resolveLinkedInCookies
                              #   — presence/parse only; the browser rides the PROFILE), then the HEADED
                              #   persistent-profile production walk READ-ONLY — config.scrollRounds as the
                              #   click bound, PROBE_MIN_CLICKS=5 as the click floor, PROBE_MIN_POSTS=10 as

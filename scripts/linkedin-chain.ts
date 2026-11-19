@@ -7,7 +7,7 @@
  * Stage 1 opens the headed browser; the OPERATOR logs in by hand (2FA
  * included); the helper harvests the cookie file + the .env line, warms up
  * the feed, and holds until Enter — Enter closes the browser and releases
- * the profile lock. Stage 2 walks the first configured surface read-only
+ * the profile lock. Stage 2 walks the configured linkedin keywords in config order (first to clear the floor) read-only
  * (the gate). Stage 3 runs exactly ONE fetch tick and stops — no loop; the
  * watch loop stays a separate manual start.
  *
@@ -103,7 +103,9 @@ export async function runLinkedInChain(deps: ChainDeps = {}): Promise<ChainResul
       ? { ...env, [ENV_NAMES.linkedinCookiesFile]: cookiePath }
       : env;
 
-  console.log("linkedin-chain: stage 2/3 probe — read-only walk of the first configured surface");
+  console.log(
+    "linkedin-chain: stage 2/3 probe — read-only walk over the configured linkedin keywords (first to clear the floor)",
+  );
   const probeResult = await probe(legEnv);
 
   console.log("linkedin-chain: stage 3/3 tick — exactly one fetch tick, then stop");

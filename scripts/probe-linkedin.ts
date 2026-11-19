@@ -34,18 +34,16 @@
  * runs from the repo root — it loads watcher.config.json at startup)
  */
 import { pathToFileURL } from "node:url";
-import { type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
+import { type LinkedinSurface, type WatcherConfig, loadWatcherConfig } from "../src/config-file.js";
 import { envWithDotEnv } from "../src/env-file.js";
 import { type CaptureSink, makeFsCaptureSink } from "../src/linkedin-capture.js";
 import {
   type LinkedInContextFactory,
-  type LinkedinSurface,
-  fetchLinkedInPosts,
   isAllSurfacesFaulted,
   isHalt,
   isLegDead,
-  resolveLinkedInProfileDir,
-} from "../src/linkedin-fetch.js";
+} from "../src/linkedin-context.js";
+import { fetchLinkedInPosts, resolveLinkedInProfileDir } from "../src/linkedin-fetch.js";
 import { resolveLinkedInCookies } from "../src/linkedin-session.js";
 import type { Post } from "../src/types.js";
 

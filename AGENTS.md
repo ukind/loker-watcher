@@ -33,7 +33,7 @@ failure path).
   an absent or stale `state/linkedin-posts.json` degrades to a
   threads-only run with one log line)
 - `npm run probe-linkedin` - gate the LinkedIn browser walk: a read-only
-  walk of the first configured surface; exit 1 on a checkpoint wall
+  walk-each-until-floor over the configured linkedin keywords in config order; exit 1 on a checkpoint wall
   (`probe: HALT`), a dead session (`probe: LEG DEAD`), a faulted walk
   (`probe: FAILED`), or fewer than 10 posts; run twice >=6h apart with
   stored cookies before trusting the loop (needs `LINKEDIN_COOKIES_FILE`)
@@ -51,6 +51,8 @@ failure path).
   without a new login). Afterward the browser STAYS OPEN — press Enter in
   the terminal to close it, or pass `--auto-close` for fire-and-close
   (the feed-first rest keeps the session alive)
+- `npm run reset-linkedin` - the operator reset: deletes the cookie file,
+  the browser profile, and the halt latch, in that order
 - `npm run linkedin-chain` - the one-command operator chain from a
   dedicated clone of main: login hold -> probe gate -> exactly one fetch
   tick, in that order; the login's harvested cookie file carries the
@@ -73,9 +75,11 @@ against the configured keywords, email digest, commit state.
   filter, the row splitter, the $-ref commentary-text walker, the
   canonical content-search-URL builder, and the guarded `mintPost`
   (drop+count, never throws); timestamp derives from `BigInt(id) >> 22n`,
-  and the timestamp-ordered zip pairs the i-th distinct text with the
-  i-th distinct id by timestamp (a count mismatch warns and mints the
-  paired prefix)
+  and the card join pairs each commentary marker row with its outermost
+  card ancestor: the card's text is the longest commentary in the marker
+  closure, its single forward-collected urn is Post.id, and a card with
+  zero/multiple/rejected urns or empty text drops with a count (a
+  linked+dropped line per body)
 - `src/linkedin-session.ts` - the `LINKEDIN_COOKIES_FILE` resolver
   (fail-visible; the cookie file lives OUTSIDE the repo), the Cookie
   header (JSESSIONID quoted, last), and the csrf token; the walk's
@@ -120,7 +124,7 @@ against the configured keywords, email digest, commit state.
 - `scripts/watch-linkedin.ts` - the always-on PC loop (tick + a configurable wake band)
 - `scripts/probe-linkedin.ts` - the browser-walk gate probe (exit
   contracts: tick = leg-dead exits 1; loop = never exits on leg-dead;
-  probe = a read-only walk of the first configured surface, gate exit 1)
+  probe = a read-only walk over the configured linkedin keywords in config order until one clears the floor, gate exit 1)
 - `scripts/login-linkedin.ts` - headed cookie harvest: the operator logs
   in by hand; the script polls the jar, writes the cookie file atomically,
   and upserts the `.env` line (exit 1 on timeout/no session; entry-guarded,
@@ -182,7 +186,7 @@ against the configured keywords, email digest, commit state.
 - `src/email.ts` - nodemailer transport for the digest and the leg-dead/halt
   alarms
 - `src/heartbeat.ts` - zero-match status email so quiet runs stay legible
-- `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation
+- `src/config.ts`, `src/config-file.ts` - `watcher.config.json` validation (negativeKeywords is the judge's veto list: absent or [] means no veto)
 
 ## Conventions and non-negotiables
 

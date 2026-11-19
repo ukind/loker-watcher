@@ -1,42 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { LlmAccount } from "../src/judge-account.js";
+import { judgePost } from "../src/judge-dispatch.js";
+import { buildBulkMessages } from "../src/judge-prompts.js";
+import { type RotationExhausted, isRotationExhausted } from "../src/judge-rotation.js";
+import { judgePosts, parseLlmAccounts, resolveJudgeConfig } from "../src/judge.js";
 import {
-  type RotationExhausted,
-  type RotationState,
-  isRotationExhausted,
-} from "../src/judge-rotation.js";
-import {
-  type LlmAccount,
-  buildBulkMessages,
-  judgePost,
-  judgePosts,
-  parseLlmAccounts,
-  resolveJudgeConfig,
-} from "../src/judge.js";
-import { KEYWORDS, bulkContent, bulkPost, id19, ok, singleAccount } from "./judge-helpers.js";
-
-/** Mirror of tests/judge-rotation.test.ts's freshState (the canonical copy)
- * — kept for the residual its that call it directly
- * (the two reasoning_effort cases and the F022 single-post case); a .test.ts
- * file cannot be imported. */
-function freshState(accounts: LlmAccount[]): RotationState {
-  // waitBudgetRemainingMs mirrors the module-private 3-minute WAIT_BUDGET_MS.
-  // ceilings default: an empty map reads as ceiling 1 per account (the
-  // pick's floor) — the same degrade as an absent ceilings file.
-  return {
-    accounts,
-    cooldownUntil: new Map(),
-    ceilings: new Map(),
-    blocked: new Map(),
-    inFlight: new Map(),
-    dispatchCounter: 0,
-    ceilingWaiters: [],
-    waitBudgetRemainingMs: 180_000,
-    healthMarks: new Map(),
-    probedThisTick: new Set(),
-    outcomeLedger: new Map(),
-  };
-}
+  KEYWORDS,
+  bulkContent,
+  bulkPost,
+  fakeFetch,
+  freshState,
+  id19,
+  ok,
+  singleAccount,
+} from "./judge-helpers.js";
 
 describe("resolveJudgeConfig", () => {
   it("returns the parsed account pool from LLM_ACCOUNTS", () => {
@@ -112,19 +90,19 @@ describe("judgePosts", () => {
    * so no post falls back and the call count stays at one per batch.
    */
   function measuredFetch(state: { inFlight: number; peak: number }) {
-    return async (_url: unknown, options?: unknown): Promise<Response> => {
+    return fakeFetch(async (call) => {
       state.inFlight += 1;
       state.peak = Math.max(state.peak, state.inFlight);
       await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
       state.inFlight -= 1;
-      const body = JSON.parse((options as { body: string }).body) as {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
         (match) => match[1] ?? "",
       );
       return ok(bulkContent(ids));
-    };
+    });
   }
 
   /**
@@ -135,13 +113,13 @@ describe("judgePosts", () => {
    * rotation never fires and every call carries key "test-key".
    */
   function bulkMissThenAnswer(state: { inFlight: number; peak: number; calls: number }) {
-    return async (_url: unknown, options?: unknown): Promise<Response> => {
+    return fakeFetch(async (call) => {
       state.calls += 1;
       state.inFlight += 1;
       state.peak = Math.max(state.peak, state.inFlight);
       await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
       state.inFlight -= 1;
-      const body = JSON.parse((options as { body: string }).body) as {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -149,23 +127,18 @@ describe("judgePosts", () => {
         return ok("I cannot judge these posts."); // answered-but-unparseable: every post falls back
       }
       return ok('{"relevant": true, "locationOk": false}');
-    };
+    });
   }
 
   it("judges ten posts with a single bulk call", async () => {
     const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1)));
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       return ok(bulkContent(posts.map((p) => p.id)));
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 1);
     assert.equal(result.skippedPostIds.length, 0);
     assert.deepEqual(
@@ -178,17 +151,12 @@ describe("judgePosts", () => {
   it("chunks fifteen posts into two bulk calls", async () => {
     const posts = Array.from({ length: 15 }, (_, i) => bulkPost(id19(i + 1)));
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       return ok(bulkContent(posts.map((p) => p.id)));
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 2);
     assert.equal(result.judged.length, 15);
     assert.equal(result.skippedPostIds.length, 0);
@@ -198,20 +166,15 @@ describe("judgePosts", () => {
     const a = bulkPost(id19(1));
     const b = { ...bulkPost(id19(2)), text: "Second post text" };
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       if (calls === 1) {
         return ok(bulkContent([a.id])); // bulk covers a only — b is missing
       }
       return ok('{"relevant": false, "locationOk": true}');
-    };
+    });
 
-    const result = await judgePosts(
-      [a, b],
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts([a, b], singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 2); // one bulk + one fallback — a is never re-judged
     assert.equal(result.judged.length, 2);
     assert.deepEqual(result.skippedPostIds, []);
@@ -225,20 +188,15 @@ describe("judgePosts", () => {
     const good = bulkPost(id19(1));
     const bad = { ...bulkPost(id19(2)), text: "Failing post" };
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       if (calls === 1) {
         return ok(bulkContent([good.id])); // bulk misses the bad post
       }
       return new Response("Internal Server Error", { status: 500 }); // fallback 500s twice
-    };
+    });
 
-    const result = await judgePosts(
-      [good, bad],
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts([good, bad], singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 3); // 1 bulk (no batch retry) + 2 fallback attempts
     assert.equal(result.judged.length, 1);
     assert.equal(result.judged[0]?.post.id, good.id);
@@ -248,20 +206,15 @@ describe("judgePosts", () => {
   it("defers a wholly unanswered batch without firing fallback calls", async () => {
     const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       // A non-retryable status defers on the first attempt — a bad request
       // will not fix itself. The retryable 429/5xx paths have their own
       // tests below.
       return new Response("Forbidden", { status: 403 });
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 1); // one batch attempt, zero retries, zero fallback calls
     assert.equal(result.judged.length, 0);
     assert.deepEqual(
@@ -273,17 +226,12 @@ describe("judgePosts", () => {
   it("defers a batch whose request times out", async () => {
     const posts = [bulkPost(id19(1)), bulkPost(id19(2))];
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       throw new Error("The operation was aborted due to timeout");
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 1); // a transport error defers with zero retries
     assert.equal(result.judged.length, 0);
     assert.deepEqual(
@@ -295,20 +243,15 @@ describe("judgePosts", () => {
   it("still falls back per item when the batch answers with unparseable text", async () => {
     const a = bulkPost(id19(1));
     let calls = 0;
-    const mockFetch = async () => {
+    const mockFetch = fakeFetch(async () => {
       calls += 1;
       if (calls === 1) {
         return ok("I cannot judge these posts."); // answered, but not JSON
       }
       return ok('{"relevant": true, "locationOk": true}');
-    };
+    });
 
-    const result = await judgePosts(
-      [a],
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts([a], singleAccount, KEYWORDS, mockFetch);
     assert.equal(calls, 2); // one batch + one fallback — a parse miss is not a transport failure
     assert.equal(result.judged.length, 1);
     assert.deepEqual(result.skippedPostIds, []);
@@ -318,15 +261,15 @@ describe("judgePosts", () => {
     const a = bulkPost(id19(1));
     const b = bulkPost(id19(2));
     const bodies: string[] = [];
-    const mockFetch = async (_url: unknown, options?: unknown) => {
-      bodies.push((options as { body: string }).body);
+    const mockFetch = fakeFetch((call) => {
+      bodies.push(call.bodyText);
       if (bodies.length === 1) {
         return ok(bulkContent([a.id])); // b falls back
       }
       return ok('{"relevant": true, "locationOk": true}');
-    };
+    });
 
-    await judgePosts([a, b], singleAccount, KEYWORDS, mockFetch as unknown as typeof fetch);
+    await judgePosts([a, b], singleAccount, KEYWORDS, mockFetch);
     assert.equal(bodies.length, 2);
     assert.ok(bodies[0]?.includes('"response_format":{"type":"json_object"}'));
     // "next.js" occurs only in the serialized keyword list — a discriminating token.
@@ -344,7 +287,7 @@ describe("judgePosts", () => {
       posts,
       singleAccount,
       KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+      mockFetch,
       "medium",
       new Map([[0, 4]]),
     );
@@ -363,7 +306,7 @@ describe("judgePosts", () => {
       posts,
       singleAccount,
       KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+      mockFetch,
       "medium",
       new Map([[0, 2]]),
     );
@@ -380,7 +323,7 @@ describe("judgePosts", () => {
       posts,
       singleAccount,
       KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+      mockFetch,
       "medium",
       new Map([[0, 3]]),
     );
@@ -404,12 +347,7 @@ describe("judgePosts", () => {
     const state = { inFlight: 0, peak: 0, calls: 0 };
     const mockFetch = bulkMissThenAnswer(state);
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
 
     assert.equal(state.calls, 5 + 40); // 5 bulk + the 40-call budget, never more
     assert.equal(result.judged.length, 40); // FALLBACK_CALL_BUDGET posts judged
@@ -429,8 +367,8 @@ describe("judgePosts", () => {
 
   it("keeps input order when one parallel fallback fails among successes", async () => {
     const posts = Array.from({ length: 10 }, (_, i) => bulkPost(id19(i + 1))); // 1 batch, all fall back
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -441,13 +379,13 @@ describe("judgePosts", () => {
         return new Response("Internal Server Error", { status: 500 }); // both attempts fail
       }
       return ok('{"relevant": true, "locationOk": false}');
-    };
+    });
 
     const result = await judgePosts(
       posts,
       singleAccount,
       KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+      mockFetch,
       "medium",
       new Map([[0, 4]]),
     );
@@ -468,8 +406,8 @@ describe("judgePosts", () => {
     // backoff and defer whole at the same time; the third batch answers
     // on its first try.
     const burstIds = new Set([id19(1), id19(11)]); // one id per demoted batch
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch(async (call) => {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const content = body.messages[1]?.content ?? "";
@@ -490,13 +428,13 @@ describe("judgePosts", () => {
         answer[id] = { relevant: true, locationOk: false };
       }
       return ok(JSON.stringify(answer));
-    };
+    });
 
     const result = await judgePosts(
       posts,
       singleAccount,
       KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+      mockFetch,
       "medium",
       new Map([[0, 2]]),
     );
@@ -519,15 +457,17 @@ describe("judgePosts", () => {
   it("keeps candidate order when batches resolve out of order", async () => {
     const posts = Array.from({ length: 40 }, (_, i) => bulkPost(id19(i + 1))); // 4 batches
     const resolvers: Array<(response: Response) => void> = [];
-    const mockFetch = async (): Promise<Response> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+    const mockFetch = fakeFetch(
+      () =>
+        new Promise((resolve) => {
+          resolvers.push(resolve);
+        }),
+    );
     const pending = judgePosts(
       posts,
       singleAccount,
       KEYWORDS,
-      mockFetch as unknown as typeof fetch,
+      mockFetch,
       "medium",
       new Map([[0, 4]]),
     );
@@ -565,34 +505,23 @@ describe("judgePosts", () => {
 describe("judgePost payload carries reasoning_effort", () => {
   it('defaults to "medium" in the single-post payload', async () => {
     let sentBody: unknown;
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      sentBody = JSON.parse((options as { body: string }).body);
+    const mockFetch = fakeFetch((call) => {
+      sentBody = call.json;
       return ok('{"relevant": true, "locationOk": true}');
-    };
+    });
 
-    await judgePost(
-      bulkPost(id19(1)),
-      freshState(singleAccount),
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    await judgePost(bulkPost(id19(1)), freshState(singleAccount), KEYWORDS, mockFetch);
     assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "medium");
   });
 
   it("sends an explicit reasoning_effort in the single-post payload", async () => {
     let sentBody: unknown;
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      sentBody = JSON.parse((options as { body: string }).body);
+    const mockFetch = fakeFetch((call) => {
+      sentBody = call.json;
       return ok('{"relevant": true, "locationOk": true}');
-    };
+    });
 
-    await judgePost(
-      bulkPost(id19(1)),
-      freshState(singleAccount),
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-      "high",
-    );
+    await judgePost(bulkPost(id19(1)), freshState(singleAccount), KEYWORDS, mockFetch, "high");
     assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "high");
   });
 });
@@ -602,17 +531,12 @@ describe("judgePosts payload carries reasoning_effort", () => {
     const id = id19(1);
     const posts = [bulkPost(id)];
     let sentBody: unknown;
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      sentBody = JSON.parse((options as { body: string }).body);
+    const mockFetch = fakeFetch((call) => {
+      sentBody = call.json;
       return ok(bulkContent([id]));
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
     assert.equal(result.judged.length, 1);
     assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "medium");
   });
@@ -621,18 +545,12 @@ describe("judgePosts payload carries reasoning_effort", () => {
     const id = id19(1);
     const posts = [bulkPost(id)];
     let sentBody: unknown;
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      sentBody = JSON.parse((options as { body: string }).body);
+    const mockFetch = fakeFetch((call) => {
+      sentBody = call.json;
       return ok(bulkContent([id]));
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-      "low",
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch, "low");
     assert.equal(result.judged.length, 1);
     assert.equal((sentBody as { reasoning_effort?: string }).reasoning_effort, "low");
   });
@@ -647,24 +565,18 @@ describe("judgePosts forwards reasoning_effort through the single-post fallback"
     // falls through to judgePost. Only the bulk payload carries
     // response_format (design scope boundary) — that is how the mock tells
     // the two paths apart.
-    const mockFetch = async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         response_format?: unknown;
       };
       if (body.response_format !== undefined) {
         return ok("{}");
       }
-      fallbackBodies.push((options as { body: string }).body);
+      fallbackBodies.push(call.bodyText);
       return ok('{"relevant": true, "locationOk": true}');
-    };
+    });
 
-    const result = await judgePosts(
-      posts,
-      singleAccount,
-      KEYWORDS,
-      mockFetch as unknown as typeof fetch,
-      "high",
-    );
+    const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch, "high");
     assert.equal(result.judged.length, 1);
     assert.equal(fallbackBodies.length, 1);
     const fallback = JSON.parse(fallbackBodies[0] as string) as {
@@ -685,13 +597,13 @@ describe("judge prompts mark post content as untrusted data", () => {
 
   it("carries the injection line in the single-post system prompt", async () => {
     let systemContent = "";
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systemContent = body.messages[0]?.content ?? "";
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     await judgePost(bulkPost(id19(1)), freshState(singleAccount), KEYWORDS, mockFetch);
     assert.match(
       systemContent,
@@ -734,13 +646,13 @@ describe("negative keywords ride the judge system prompt", () => {
 
   it("single-post: no negatives keeps the exact current system text (byte-identity)", async () => {
     let systemContent = "";
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systemContent = body.messages[0]?.content ?? "";
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     await judgePost(bulkPost(id19(1)), freshState(singleAccount), KEYWORDS, mockFetch);
     assert.equal(systemContent, NO_VETO_LITERAL);
   });
@@ -748,13 +660,13 @@ describe("negative keywords ride the judge system prompt", () => {
   it("both builders emit the identical system text for the same inputs", async () => {
     const [bulkSystem] = buildBulkMessages([bulkPost(id19(1))], KEYWORDS);
     let systemContent = "";
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systemContent = body.messages[0]?.content ?? "";
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     await judgePost(bulkPost(id19(1)), freshState(singleAccount), KEYWORDS, mockFetch);
     assert.equal(systemContent, bulkSystem?.content);
   });
@@ -765,13 +677,13 @@ describe("negative keywords ride the judge system prompt", () => {
     // term). bulkPost's text matches neither negative, so the subject spreads
     // the shared fixture (tests/judge-helpers.ts:41-49) and swaps only text.
     let systemContent = "";
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systemContent = body.messages[0]?.content ?? "";
       return ok('{"relevant": false, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const verdict = await judgePost(
       { ...bulkPost(id19(1)), text: "Hiring a frontend developer — internship program included" },
       freshState(singleAccount),
@@ -790,13 +702,13 @@ describe("negative keywords ride the judge system prompt", () => {
   it("judgePosts forwards negatives to the bulk prompt (11th positional argument)", async () => {
     const post = bulkPost(id19(1));
     const systems: string[] = [];
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systems.push(body.messages[0]?.content ?? "");
       return ok(JSON.stringify({ [post.id]: { relevant: false, locationOk: true } }));
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(
       [post],
       singleAccount,
@@ -818,14 +730,14 @@ describe("negative keywords ride the judge system prompt", () => {
   it("judgePosts forwards negatives to the fallback prompt after a bulk parse miss", async () => {
     const post = bulkPost(id19(1));
     const systems: string[] = [];
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systems.push(body.messages[0]?.content ?? "");
       const isBulk = (body.messages[1]?.content ?? "").includes("Judge each post below");
       return ok(isBulk ? "no verdicts here" : '{"relevant": false, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(
       [post],
       singleAccount,
@@ -846,13 +758,13 @@ describe("negative keywords ride the judge system prompt", () => {
 
   it("judgePosts without the 11th argument sends no veto sentence (the 41 judgePosts call sites across the suites)", async () => {
     const systems: string[] = [];
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         messages: Array<{ role: string; content: string }>;
       };
       systems.push(body.messages[0]?.content ?? "");
       return ok(bulkContent([bulkPost(id19(1)).id]));
-    }) as unknown as typeof fetch;
+    });
     await judgePosts([bulkPost(id19(1))], singleAccount, KEYWORDS, mockFetch);
     assert.equal(systems.length, 1);
     assert.equal(systems[0], NO_VETO_LITERAL);
@@ -869,8 +781,7 @@ describe("health ledger stamps (the four branch sites)", () => {
 
   it("a 401 terminal stamps the ledger with the key-dead reason", async () => {
     const state = freshState(singleAccount);
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Unauthorized", { status: 401 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Unauthorized", { status: 401 }));
     const verdict = await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch);
     assert.equal(verdict, null); // both attempts spent
     assert.deepEqual(state.outcomeLedger.get(0), {
@@ -882,11 +793,11 @@ describe("health ledger stamps (the four branch sites)", () => {
   it("a success stamps ok and overwrites a prior hard failure (last outcome wins)", async () => {
     const state = freshState(singleAccount);
     let calls = 0;
-    const mockFetch = (async (): Promise<Response> => {
+    const mockFetch = fakeFetch(() => {
       calls += 1;
       if (calls === 1) return new Response("Service Unavailable", { status: 503 });
       return ok('{"relevant": true, "locationOk": true}');
-    }) as unknown as typeof fetch;
+    });
     const verdict = await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch);
     assert.deepEqual(verdict, { relevant: true, locationOk: true });
     assert.deepEqual(state.outcomeLedger.get(0), { kind: "ok" });
@@ -894,9 +805,9 @@ describe("health ledger stamps (the four branch sites)", () => {
 
   it("a transport error stamps the network-error reason", async () => {
     const state = freshState(singleAccount);
-    const mockFetch = (async (): Promise<Response> => {
+    const mockFetch = fakeFetch(async () => {
       throw new Error("socket hang up");
-    }) as unknown as typeof fetch;
+    });
     const verdict = await judgePost(bulkPost(id19(1)), state, KEYWORDS, mockFetch);
     assert.equal(verdict, null);
     assert.deepEqual(state.outcomeLedger.get(0), {
@@ -907,8 +818,7 @@ describe("health ledger stamps (the four branch sites)", () => {
 
   it("a 429 never stamps the ledger and the standalone throw carries no health payload", async () => {
     const state = freshState(twoAccounts());
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Too Many Requests", { status: 429 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Too Many Requests", { status: 429 }));
     const inertSleep = (): Promise<void> => Promise.resolve();
     let caught: unknown;
     try {
@@ -936,8 +846,7 @@ describe("health ledger stamps (the four branch sites)", () => {
       delays.push(ms);
       return Promise.resolve();
     };
-    const mockFetch = (async (): Promise<Response> =>
-      new Response("Service Unavailable", { status: 503 })) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => new Response("Service Unavailable", { status: 503 }));
     const result = await judgePosts(
       posts,
       singleAccount,
@@ -959,8 +868,7 @@ describe("health ledger stamps (the four branch sites)", () => {
 
   it("a parse miss on both ladders stamps nothing (a model failure is not an account outcome)", async () => {
     const posts = [bulkPost(id19(1))];
-    const mockFetch = (async (): Promise<Response> =>
-      ok("I am not JSON at all")) as unknown as typeof fetch;
+    const mockFetch = fakeFetch(() => ok("I am not JSON at all"));
     const result = await judgePosts(posts, singleAccount, KEYWORDS, mockFetch);
     assert.deepEqual(
       result.skippedPostIds,
@@ -977,15 +885,15 @@ describe("health ledger stamps (the four branch sites)", () => {
       delays.push(ms);
       return Promise.resolve();
     };
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
-      const body = JSON.parse((options as { body: string }).body) as {
+    const mockFetch = fakeFetch((call) => {
+      const body = call.json as {
         response_format?: unknown;
       };
       if (body.response_format !== undefined) {
         return ok("I am not JSON at all"); // bulk parse-miss: answered-empty, NO health stamp
       }
       return new Response("Service Unavailable", { status: 503 }); // the single-post probes hard-fail
-    }) as unknown as typeof fetch;
+    });
     let caught: unknown;
     try {
       await judgePosts(
@@ -1043,16 +951,16 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
   /** Records every host the judge dispatched to — the mask's observable. */
   function hostRecorder(): { hosts: string[]; fetchFn: typeof fetch } {
     const hosts: string[] = [];
-    const fetchFn = (async (url: unknown, options?: unknown): Promise<Response> => {
-      hosts.push(new URL(String(url)).host);
-      const body = JSON.parse((options as { body: string }).body) as {
+    const fetchFn = fakeFetch((call) => {
+      hosts.push(new URL(call.url).host);
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
         (match) => match[1] ?? "",
       );
       return ok(bulkContent(ids));
-    }) as unknown as typeof fetch;
+    });
     return { hosts, fetchFn };
   }
 
@@ -1086,10 +994,10 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
     const posts = [bulkPost(id19(1))];
     const delays: number[] = [];
     let calls = 0;
-    const mockFetch = (async (): Promise<Response> => {
+    const mockFetch = fakeFetch(() => {
       calls += 1;
       return ok(bulkContent([id19(1)]));
-    }) as unknown as typeof fetch;
+    });
 
     let caught: unknown;
     try {
@@ -1138,10 +1046,10 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
     const posts = [bulkPost(id19(1))];
     const delays: number[] = [];
     let calls = 0;
-    const mockFetch = (async (): Promise<Response> => {
+    const mockFetch = fakeFetch(() => {
       calls += 1;
       return new Response("Service Unavailable", { status: 503 });
-    }) as unknown as typeof fetch;
+    });
 
     let caught: unknown;
     try {
@@ -1183,19 +1091,19 @@ describe("judgePosts blocked mask (availability pre-check refusals)", () => {
   it("blocked seats shrink the width — the survivor pool still peaks at its own Σ ceilings", async () => {
     const posts = Array.from({ length: 20 }, (_, i) => bulkPost(id19(i + 1))); // 2 batches
     const state = { inFlight: 0, peak: 0 };
-    const mockFetch = (async (_url: unknown, options?: unknown): Promise<Response> => {
+    const mockFetch = fakeFetch(async (call) => {
       state.inFlight += 1;
       state.peak = Math.max(state.peak, state.inFlight);
       await new Promise<void>((resolve) => setTimeout(resolve, 1)); // let peers enter
       state.inFlight -= 1;
-      const body = JSON.parse((options as { body: string }).body) as {
+      const body = call.json as {
         messages: Array<{ content: string }>;
       };
       const ids = [...(body.messages[1]?.content ?? "").matchAll(/id (\d+) by @/g)].map(
         (match) => match[1] ?? "",
       );
       return ok(bulkContent(ids));
-    }) as unknown as typeof fetch;
+    });
 
     const result = await judgePosts(
       posts,
@@ -1249,13 +1157,13 @@ describe("judgePosts release-outstanding park (the paid-park regression)", () =>
       new Promise((resolve) => {
         setTimeout(() => resolve(ok(content)), 25);
       });
-    const mockFetch = (async (url: unknown): Promise<Response> => {
-      if (String(url).includes("rate-limited")) {
+    const mockFetch = fakeFetch((call) => {
+      if (call.url.includes("rate-limited")) {
         rateLimitedCalls += 1;
         return new Response("Too Many Requests", { status: 429 });
       }
       return laterOk(bulkContent(allIds));
-    }) as unknown as typeof fetch;
+    });
     const result = await judgePosts(
       allIds.map((id) => bulkPost(id)),
       accounts,

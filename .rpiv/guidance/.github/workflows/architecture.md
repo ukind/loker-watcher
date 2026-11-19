@@ -4,7 +4,7 @@
 Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, no secrets); `watch.yml` runs the pipeline every 10 minutes with secrets, then commits `state/seen-posts.json` (+ the health file) back as `github-actions[bot]`. A dispatch-only `probe` job inside watch.yml measures the LLM endpoint and commits `state/judge-ceilings.json`.
 
 ## Sync points (break these and the workflow silently misbehaves)
-- Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — watch.yml maps 5 of the 6 ENV_NAMES (`HEARTBEAT_ENABLED` via `vars.` — the one non-secret knob); the LinkedIn name (`LINKEDIN_COOKIES_FILE`) is deliberately NOT mapped — PC-only, never enters Actions; unset means enabled
+- Step `env:` keys ↔ `ENV_NAMES` in `src/config.ts` — watch.yml maps 5 of the 7 ENV_NAMES (`HEARTBEAT_ENABLED` via `vars.` — the one non-secret knob); the LinkedIn names (`LINKEDIN_COOKIES_FILE`, `LINKEDIN_PROFILE_DIR`) are deliberately NOT mapped — PC-only, never enter Actions; unset means enabled
 - `jq '.seenPostIds | length'` ↔ `AppState.seenPostIds` in `src/state.ts` — renaming the field would silently read as "0 new"; jq `length` counts KEYS, so it is shape-agnostic across the v2 map (and v1 arrays)
 - `node-version: 22` ↔ `engines.node` in package.json
 - `state/judge-ceilings.json` keys ↔ the pool's trimmed `baseUrl`s (`resolveCeilings` trims both sides; twin accounts sharing one baseUrl share one reading)
@@ -15,7 +15,7 @@ Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, n
 ## Structure
 ```
 ci.yml      # push(main)+PRs+dispatch | permissions: contents: read | timeout 10
-            # checkout@v4 → setup-node@v4 (node 22, npm cache) → npm ci → typecheck → lint → test
+            # checkout@v4 → setup-node@v4 (node 22, npm cache) → npm ci → typecheck → lint → test → knip
 watch.yml   # cron */10 + dispatch (typed input: force — re-probe ignoring the freshness window)
             # | permissions: contents: write | concurrency: watch (cancel)
             # job probe: dispatch-only GATE, timeout 10, behind the Freshness gate (8h)
@@ -135,7 +135,7 @@ The skip-set grows to the three committed state files
 The script re-establishes errexit itself and exits 0 on push, 1 on a conflict outside the committed state set (`state/seen-posts.json`, `state/judge-ceilings.json`, `state/judge-health.json`) or a second push failure. Each invoker calls it once; the single retry lives inside it. The rebase target is the CHECKOUT BRANCH's own remote head (`git branch --show-current`), not origin/main — a dispatch of a non-main branch must land its commit-back on its own remote head, or its push fights the sibling job's push (run 885). Any conflicted path outside that set aborts the run loudly.
 Accepted cost (F021): a skipped state conflict means the next run re-judges — or the next green probe overwrites the ceilings; the audit tolerates one duplicate digest or one stale-ceiling stretch. The commit-back steps are the only production writers to `state/`: the watch job owns `state/seen-posts.json` AND `state/judge-health.json` (success path + the guarded failure-path step), the probe job owns `state/judge-ceilings.json`.
 
-State history growth (N017): accepted and documented (2026-11-03). Every match run rewrites the ~1.6 MB seen-state file; prune keeps the file bounded to the 72h window, but git history accumulates one near-full-file rewrite per run, so clone size and CI checkout cost grow without bound. The policy is (a) accept and document. Revisit when clone size or checkout time becomes a visible cost: (b) periodic squash of state/ commits via git-filter-repo, or (c) move seen-state out of git (cache/artifact; a redesign).
+State history growth (N017): accepted and documented (2026-11-03). Every match run rewrites the ~1.6 MB seen-state file; prune keeps the file bounded to the 72h window, but git history accumulates one near-full-file rewrite per run, so clone size and CI checkout cost grow without bound. The policy is (a) accept and document. Revisit at 150 MiB loose objects or a 30 s checkout (the N043 threshold): (b) periodic squash of state/ commits via git-filter-repo, or (c) move seen-state out of git (cache/artifact; a redesign).
 
 ## The probe job: a freshness-gated walk of every account
 ```yaml

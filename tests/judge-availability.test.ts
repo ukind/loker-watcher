@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { LlmAccount } from "../src/judge-account.js";
 import { checkJudgeAvailability } from "../src/judge-availability.js";
-import type { LlmAccount } from "../src/judge.js";
 import { fiveAccounts, ok, singleAccount } from "./judge-helpers.js";
 
 /** HTTP status with an empty body — the non-ok responses the probe must classify. */

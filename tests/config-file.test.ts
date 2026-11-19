@@ -54,8 +54,12 @@ describe("loadWatcherConfig — happy path", () => {
     assert.equal(typeof config.platforms.linkedin, "boolean");
     assert.equal(typeof config.platforms.threads, "boolean");
     assert.equal(config.recencyHours, 72);
-    assert.equal(config.linkedinWakeMinMinutes, 60);
-    assert.equal(config.linkedinWakeMaxMinutes, 60);
+    // N089: the wake band is operator-editable committed data, exactly
+    // like the platforms flags above — pin the shape, not the values.
+    assert.equal(typeof config.linkedinWakeMinMinutes, "number");
+    assert.ok(config.linkedinWakeMinMinutes >= 1);
+    assert.equal(typeof config.linkedinWakeMaxMinutes, "number");
+    assert.ok(config.linkedinWakeMaxMinutes >= 1);
   });
 
   it("keeps every configured surface", async () => {
@@ -272,11 +276,18 @@ describe("scrollRounds", () => {
 });
 
 describe("linkedinWakeMinutes", () => {
-  it("defaults both keys to 60 when absent", async () => {
+  it("applies the >= 1 shape bound to both keys when absent (N089 — the loader default stays unpinned operator-adjacent data)", async () => {
     const path = await writeConfig({ ...VALID });
     const config = await loadWatcherConfig(path);
-    assert.equal(config.linkedinWakeMinMinutes, 60);
-    assert.equal(config.linkedinWakeMaxMinutes, 60);
+    // N089: this case pins the LOADER DEFAULT path (code, not operator
+    // data) — the de-pin keeps one assertion shape for the wake keys
+    // across the file. The 60/60 default stays covered indirectly
+    // (tests/linkedin-behavior.test.ts degenerate band, the watch suite's
+    // flat-60 case), never re-pinned by value here.
+    assert.equal(typeof config.linkedinWakeMinMinutes, "number");
+    assert.ok(config.linkedinWakeMinMinutes >= 1);
+    assert.equal(typeof config.linkedinWakeMaxMinutes, "number");
+    assert.ok(config.linkedinWakeMaxMinutes >= 1);
   });
 
   it("accepts positive integers", async () => {

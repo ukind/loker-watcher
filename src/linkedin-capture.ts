@@ -163,7 +163,15 @@ export function makeFsCaptureSink(
   // prove a failed prune never fails the capture that just landed — the
   // ESM namespace cannot be monkey-patched (non-configurable properties).
   readdirFn: (path: string) => Promise<string[]> = readdir,
+  // N088 kill switch: LINKEDIN_CAPTURE=off disables capture writing (the
+  // operator's disk-pressure escape). Bare opt-in env read — deliberately
+  // NOT an ENV_NAMES member (the sink is an injectable closure; the
+  // documented default is capture ON).
+  env: Record<string, string | undefined> = process.env,
 ): CaptureSink {
+  if (env.LINKEDIN_CAPTURE === "off") {
+    return async () => {};
+  }
   let session: string | undefined;
   let skippedWarned = false;
   return async (record: CaptureRecord): Promise<void> => {
@@ -190,7 +198,7 @@ export function makeFsCaptureSink(
     const tempPath = stateTempPath(dir, now());
     try {
       await mkdir(dir, { recursive: true });
-      await writeFile(tempPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+      await writeFile(tempPath, `${JSON.stringify(record)}\n`, "utf8");
       await rename(tempPath, target);
     } catch (error) {
       try {

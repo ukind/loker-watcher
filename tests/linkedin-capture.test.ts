@@ -94,6 +94,36 @@ describe("makeFsCaptureSink", () => {
     assert.ok(text.endsWith("\n"));
   });
 
+  it("writes single-line JSON — no interior newline, trailing newline kept (N088)", async () => {
+    const root = await tempRoot();
+    const sink = makeFsCaptureSink(root, () => NOW, readdir, {});
+    await sink(record({ minted: 3, fresh: 2 }));
+    const file = join(
+      root,
+      sessionStamp(() => NOW),
+      "001-hiring-indonesia.json",
+    );
+    const text = await readFile(file, "utf8");
+    assert.ok(text.endsWith("\n"));
+    assert.ok(!text.slice(0, -1).includes("\n"));
+  });
+
+  it("LINKEDIN_CAPTURE=off returns a no-op sink — no directory, no file (N088)", async () => {
+    const root = await tempRoot();
+    const sink = makeFsCaptureSink(root, () => NOW, readdir, { LINKEDIN_CAPTURE: "off" });
+    await sink(record());
+    await assert.rejects(
+      () =>
+        readdir(
+          join(
+            root,
+            sessionStamp(() => NOW),
+          ),
+        ),
+      /ENOENT/,
+    );
+  });
+
   it("mints the session stamp lazily: no directory until the first capture", async () => {
     const root = await tempRoot();
     const sink = makeFsCaptureSink(root, () => NOW);

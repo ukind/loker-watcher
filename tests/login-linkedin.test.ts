@@ -130,6 +130,33 @@ describe("runLoginHelper", () => {
     });
   });
 
+  it("logs 'pair captured' and never 'session captured' (N073)", async (t) => {
+    const cookiePath = await workPath("pair-cookies.json");
+    const dotEnvPath = await workPath("pair.env");
+    const logs = t.mock.method(console, "log", console.log.bind(console));
+    let polls = 0;
+    const context: LoginContext = {
+      cookies: async () => {
+        polls += 1;
+        return polls >= 2 ? JAR : JAR.filter((cookie) => cookie.name !== "li_at");
+      },
+      close: async () => {},
+    };
+    const result = await runLoginHelper({
+      openContext: async () => context,
+      cookiePath,
+      dotEnvPath,
+      env: {},
+      pollMs: 2_000,
+      sleepFn: async () => {},
+      now: () => Date.UTC(2026, 10, 10, 0, 0, 0),
+    });
+    assert.deepEqual(result, { cookiePath, dotEnvUpdated: true });
+    const lines = logs.mock.calls.map((call) => call.arguments.join(" "));
+    assert.ok(lines.some((line) => /login-linkedin: pair captured — /.test(line)));
+    assert.ok(lines.every((line) => !line.includes("session captured")));
+  });
+
   it("times out fail-visibly and still closes the context", async () => {
     const cookiePath = await workPath("timeout-cookies.json");
     const dotEnvPath = await workPath("timeout.env");

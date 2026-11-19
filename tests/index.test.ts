@@ -28,12 +28,13 @@ import type {
   PageLike,
   ResponseLike,
 } from "../src/fetch-threads.js";
-import { dedupePosts, flushAndSendExhaustionAlarm, runWatcher, timeStage } from "../src/index.js";
+import { flushAndSendExhaustionAlarm, runWatcher, timeStage } from "../src/index.js";
+import type { LlmAccount } from "../src/judge-account.js";
 import type { AvailabilityResult } from "../src/judge-availability.js";
 import { type HealthFile, loadAccountHealth } from "../src/judge-health.js";
 import { isRotationExhausted } from "../src/judge-rotation.js";
-import type { LlmAccount } from "../src/judge.js";
 import type { PayloadRead } from "../src/linkedin-payload.js";
+import { dedupePosts } from "../src/pipeline-helpers.js";
 import type { AppState } from "../src/state.js";
 import type { AccountFailure, JudgeVerdict, Post } from "../src/types.js";
 

@@ -35,12 +35,14 @@ Detailed guidance:
 | `npm test` | unit tests (node:test via tsx; offline and deterministic) |
 | `npm run typecheck` | `tsc --noEmit` over src, tests, and scripts/ |
 | `npm run lint` | Biome check over src, tests, and the enumerated scripts/ entries + hooks |
-| `npm run format` | `biome format --write src tests` in place (src and tests only — not repo-wide) |
+| `npm run format` | `biome format --write` in place over the enumerated lint scope (src, tests, and the scripts list — see package.json) |
 | `npx biome check --write <path>` | scoped check+fix for the given files (the lint-staged form) |
 | `npm start` | run the watcher locally (needs LLM_* and GMAIL_* env vars; an absent or stale `state/linkedin-posts.json` degrades to a threads-only run with one log line) |
 | `npx tsx scripts/probe-judge.ts` | gate every LLM_ACCOUNTS entry: latency, bulk shape, per-account `ceiling=N`; exit 1 on a dead account (needs LLM_ACCOUNTS) |
 | `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + wake band from `watcher.config.json`, 60 min default) from a dedicated clone of main |
-| `npm run probe-linkedin` | gate the LinkedIn browser walk: a read-only walk of the first configured surface; exit 1 on a checkpoint wall, a dead session, a faulted walk, or fewer than 10 posts |
+| `npm run probe-linkedin` | gate the LinkedIn browser walk: a read-only walk over the configured linkedin keywords in config order until one clears the floor; exit 1 on a checkpoint wall, a dead session, a faulted walk, or fewer than 10 posts |
+| `npm run reset-linkedin` | the operator reset: deletes the cookie file, the browser profile, and the halt latch, in that order |
+| `npm run replay-linkedin` | offline replay of a capture session: re-runs the parser over every recorded body |
 | `npm run login-linkedin` | headed cookie harvest: the operator logs in by hand; writes the cookie file + the `.env` line |
 | `npm run linkedin-chain` | one-command operator chain: login hold -> probe -> exactly one fetch tick, in order, from a dedicated clone of main; a quiet-zero tick is a reported no-op (exit 0); any stage failure exits 1 naming the gate (real TTY for the login hold) |
 | `npx playwright install chromium` | one-time browser install for local runs |
@@ -57,12 +59,12 @@ The policy is **gc once, document, no schedule**:
 
 - One `git gc --aggressive` reclaims the loose objects. Run it from a full clone, never from a shallow one.
 - No scheduled gc. A cron job that rewrites `.git` on a public repo is a new failure mode for a cost that grows slowly.
-- Revisit trigger: clone size or CI checkout time becomes a visible cost. The options then are a periodic squash of `state/` commits via `git-filter-repo`, or moving seen-state out of git (cache/artifact — a redesign).
+- Revisit trigger: re-gc at 150 MiB loose or 30 s checkout. The options then are a periodic squash of `state/` commits via `git-filter-repo`, or moving seen-state out of git (cache/artifact — a redesign).
 
 <important if="you are adding a new pipeline stage end-to-end">
 1. Stage code and funnel wiring — see `.rpiv/guidance/src/architecture.md` ("Adding a New Pipeline Stage")
 2. Tests — see `.rpiv/guidance/tests/architecture.md` ("Adding a Test for a New src Module")
-3. Gates: `npm run typecheck && npm run lint && npm test` (CI runs the same three)
+3. Gates: `npm run typecheck && npm run lint && npm test` (CI runs these three plus knip)
 </important if>
 
 <important if="you are adding a new platform surface">
