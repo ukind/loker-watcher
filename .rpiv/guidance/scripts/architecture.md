@@ -26,7 +26,7 @@ probe-judge.ts               # .ts, top-level await; imports loadWatcherConfig (
                              #   within an account; ramp lines carry the account label); writes
                              #   state/judge-ceilings.json (writeCeilingsAtomic + JUDGE_CEILINGS_PATH) with a
                              #   probedAt stamp — live-only, BEFORE the dead gate, bytes always change;
-                             #   INSIDE typecheck + lint + lint-staged
+                             #   INSIDE typecheck + lint + lint-staged + format
 fetch-linkedin.ts            # .ts, entry-guarded (imports fetchTick side-effect free); exports fetchTick /
                              #   pushPayload / handleLegDeadEpisode / guardCheckout; tick = preflight
                              #   (the checkpoint latch, then guardCheckout:
@@ -67,8 +67,9 @@ linkedin-chain.ts            # .ts, entry-guarded (imports the three legs side-e
                              #   lacks LINKEDIN_COOKIES_FILE; a quiet-zero tick is a reported no-op, exit 0
                              #   (defb8af); INTERACTIVE (the login hold reads Enter);
                              #   INSIDE typecheck + lint + lint-staged
-hooks/gate-destructive.js    # plain .js for bare node (instant start, no tsx); INSIDE lint ONLY — lint-staged's
-hooks/format-on-edit.js      #   *.ts glob never matches .js; hooks are covered by npm run lint + their own tests
+hooks/gate-destructive.js    # plain .js for bare node (instant start, no tsx); INSIDE lint ONLY — the
+hooks/format-on-edit.js      #   format list omits scripts/hooks, and lint-staged's *.ts glob never matches
+                             #   .js; hooks are covered by npm run lint + their own tests
 ```
 
 ## Probe: refused ≠ failed; the ramp reads the ceiling
@@ -80,7 +81,8 @@ type ProbeOutcome = { kind: "ok" } | { kind: "refused"; status: number } | { kin
 // so a level's parallel bulk calls ride Promise.all.
 const settled = await Promise.allSettled(accounts.map((a, i) => probeAccount(i, a)));  // pool-order collector:
 for (const [i, account] of accounts.entries()) {                                       //   settled[index] matches
-  /* per account — every line carries the label `account ${i + 1} (<baseUrl>)`; ramp lines read `${label} ramp L${level}` */
+  /* per account: a `probe: === ${label} ===` header, the ramp lines `${label} ramp L${level}`, then
+     probe: account N (<baseUrl>) — minimal=ok bulk=ok bulkAgain=ok ceiling=8     (probe-judge.ts:166) */
   /* rampLevel: `level` parallel bulk calls — the exact production prompt (buildBulkMessages), REAL captured captions */
   if (result.failed > 0) return 0;            // broken endpoint → ceiling 0 → probe exits 1
   if (result.ok < level) return level / 2;    // ceiling = last fully-clean level — no floor, no Math.max
@@ -93,7 +95,12 @@ ceilings[account.baseUrl.trim()] = ceiling;
 // on failure), so a red probe never starts a window.
 ceilings.probedAt = Math.floor(Date.now() / 1000);
 await writeCeilingsAtomic(ceilings, JUDGE_CEILINGS_PATH);   // live-only, whole file (no merge, no staleness)
-if (dead.length > 0) process.exit(1);         // a red gate skips the Commit ceilings step
+console.log(`probe: committed ${n} ceiling(s) + probedAt to ${JUDGE_CEILINGS_PATH}`);
+if (dead.length > 0) {                        // a red gate skips the Commit ceilings step
+  console.error("probe: DEAD account(s) — failing the gating probe:");   // + one indented cause per account
+  process.exit(1);
+}
+console.log("probe: all accounts verified — gating probe passed");
 ```
 
 ## Exit-code contracts are the interface
@@ -131,9 +138,13 @@ for (const [pattern, why] of RULES) {         // [regex, reason] pairs — inclu
 }
 process.exit(0);                              // allow
 // format-on-edit.js (PostToolUse, "Edit|Write"): extension + existsSync gate, then a charset-allowlist gate
-// (^[A-Za-z0-9 _.()/\\:+-]+$ — hostile path → one-line warn, exit 0, NO spawn — cmd.exe tokenizes the path
-// because the biome spawn runs shell:true), then spawnSync("npx", ["biome", "format", "--write", file],
-// { stdio: "ignore", shell: true }) → ALWAYS exit 0; only result.error is checked, never the child's status.
+// (^[A-Za-z0-9 _.()/\\:+-]+$ — hostile path → one-line warn, exit 0, NO spawn; kept as defense-in-depth
+// since N072 went shell-less, and its test pin depends on it), then a NO-SHELL spawn:
+const biomeJsBin = fileURLToPath(new URL("../../node_modules/@biomejs/biome/bin/biome", import.meta.url));
+const result = spawnSync(process.execPath, [biomeJsBin, "format", "--write", file], { stdio: "ignore" });
+// npx is npx.cmd on Windows and Node >= 22 refuses .cmd targets without a shell (EINVAL, the CVE-2024-27980
+// mitigation) — so the spawn targets process.execPath + Biome's JS launcher directly. ALWAYS exit 0;
+// result.error AND a nonzero child status each print one stderr warn, never veto the edit.
 ```
 
 **Caveats:**
@@ -146,8 +157,8 @@ process.exit(0);                              // allow
 1. Env: `LLM_ACCOUNTS` = JSON array of `{baseUrl, apiKey, model}` (every account is walked; each must pass)
 2. Run: Actions → watch → Run workflow (dispatch runs the probe job; check `force` to re-probe inside the 8-hour window), or locally `npx tsx scripts/probe-judge.ts` from the repo root (it loads `watcher.config.json` at startup)
 3. It measures per account: a minimal call, a 10-post bulk call twice (variance; production `buildBulkMessages` + real keywords + reasoningEffort), then the doubling ramp 2→32 (~6–62 calls, stopping at the first refused level) — all accounts are probed concurrently, so wall time is the slowest account, and every ramp line carries the account label
-4. Read each account's summary line `probe: account N (<baseUrl>) — minimal=… bulk=… bulkAgain=… ceiling=N` — no floor; a failed, auth-dead (401/403), or broken-ramp (ceiling 0) account exits 1; 429-refused legs are busy, not dead
-5. Apply: nothing to paste — the probe writes `state/judge-ceilings.json` (whole file + `probedAt`, before the gate) and the Commit ceilings step pushes it; a missing entry floors that account at ceiling 1 with one warning
+4. Read each account's output: a `probe: === account N (<baseUrl>) ===` header, the ramp lines, then the summary `probe: account N (<baseUrl>) — minimal=ok bulk=ok bulkAgain=ok ceiling=N` — no floor; a failed, auth-dead (401/403), or broken-ramp (ceiling 0) account exits 1 under `probe: DEAD account(s) — failing the gating probe:`; 429-refused legs are busy, not dead; exit 0 ends with `probe: all accounts verified — gating probe passed`
+5. Apply: nothing to paste — the probe writes `state/judge-ceilings.json` (whole file + `probedAt`, before the gate; it logs `probe: committed N ceiling(s) + probedAt to …`) and the Commit ceilings step pushes it; a missing entry floors that account at ceiling 1 with one warning
 6. Semantics downstream: `resolveCeilings` trims both sides when matching keys; a red-gate probe skips the commit, so the file keeps the last green reading; the file never fails a run
 </important if>
 
@@ -158,7 +169,7 @@ process.exit(0);                              // allow
 3. Entry guard at the bottom: `if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href)` — importing the module must open no browser and spawn no git
 4. Env = merged `.env`: `envWithDotEnv()` fills only unset keys, the shell wins (`fetchTick({ env: envWithDotEnv() })`)
 5. Exit contract up front: a catch-all wrapper prints `FAILED — <message>` and `process.exit(1)`; domain gates (leg-dead, halt, timeout) throw and the wrapper owns the exit
-6. Alarm policy = best-effort, never masks the exit code (`handleLegDeadEpisode` try/catches the mailer and warns); one alarm per episode via a repo-local marker beside the payload, not OS temp
+6. Alarm policy = best-effort, never masks the exit code (`handleLegDeadEpisode` try/catches the mailer and warns); one alarm per episode via a repo-local marker beside the payload, not OS temp — and the marker is written only AFTER a successful send (N063: marker-first would let one SMTP hiccup suppress the whole episode's alarm)
 7. Atomic writes: temp + rename via `stateTempPath`; every failure message names the remedy/escape hatch
 8. Wire it: add `"name": "tsx scripts/<name>.ts"` to package.json AND append the file to the explicit `lint` (and `format`) script lists — scripts are enumerated, not globbed; add a black-box `tests/<name>.test.ts` (see `.rpiv/guidance/tests/architecture.md`, "Adding a Test for a scripts/ CLI Entry Point")
 </important if>
@@ -169,7 +180,7 @@ process.exit(0);                              // allow
 2. Read ONE JSON event on stdin (`JSON.parse(readFileSync(0, "utf8"))`); on parse failure exit 0 — fail-open, never block
 3. Pull the field defensively: `String(event?.tool_input?.<field> ?? "")` — `command` for Bash events, `file_path` for Edit/Write
 4. Decide the exit-code contract up front: gating (PreToolUse) → exit 2 denies, 0 allows; feedback (PostToolUse) → always 0
-5. Side effects need a guard chain first: extension/existence gate, then a charset allowlist before any `shell: true` spawn (cmd.exe tokenizes the path on Windows)
+5. Side effects need a guard chain first: extension/existence gate, then a charset allowlist; then spawn WITHOUT a shell — `spawnSync(process.execPath, [<real js launcher>, …])` (npx is npx.cmd on Windows; Node >= 22 refuses .cmd targets without a shell — N072); a child failure warns and never changes the hook's own exit
 6. Register in `.claude/settings.json` under the right event with a matcher regex and `"command": "node scripts/hooks/<name>.js"`
 7. Add a black-box test `tests/<name>.test.ts` (spawnSync, exit-code pins — see `.rpiv/guidance/tests/architecture.md`) and keep `npm run lint` green (lint-staged never runs on hooks)
 8. Sanity-test by piping a fake event: `echo '{"tool_input":{"command":"rm -rf /"}}' | node scripts/hooks/<name>.js`

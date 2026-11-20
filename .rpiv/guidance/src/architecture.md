@@ -4,7 +4,7 @@
 The entire application: a single-shot CLI pipeline that fetches job posts from Threads and LinkedIn surfaces, filters them, judges candidates in bulk against the configured keywords through an OpenAI-compatible LLM, emails matches, and persists judged post ids. One exported unit seam — `runWatcher(deps)` — no server, no daemon.
 
 ## Dependencies and consumers
-- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, the LinkedIn-local headed persistent-profile context factory in linkedin-fetch.ts (own `await import("playwright")`), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep
+- **playwright**: THREE dynamic-import quarantine sites — the chromium ContextFactory in fetch-threads.ts, the LinkedIn-local headed persistent-profile context factory in linkedin-context.ts (own `await import("playwright")`), AND the login helper's headed `launchPersistentContext` in scripts/login-linkedin.ts; no new runtime dep
 - **nodemailer**: single creation site in email.ts (heartbeat + exhaustion + leg-dead/halt alarms ride `sendText`); **the LLM client is raw `fetch` + `AbortSignal.timeout`** — no SDK
 - **Consumers**: watch.yml runs `npx tsx src/index.ts` on the cron then commits state back; tests/ drive the seams offline; scripts/probe-judge.ts imports buildBulkMessages, resolveJudgeConfig, loadWatcherConfig
 
@@ -33,8 +33,16 @@ email.ts, heartbeat.ts, state.ts         # NOTIFY + PERSIST: digest/alarm/heartb
 ```typescript
 // The ORDER is the argument (src/index.ts runWatcher). BEFORE Gate 1 the health resolve runs — hoisted so
 // the degraded-accounts line rides EVERY email; the recorded trade: malformed LLM_ACCOUNTS now exit-1s even a Gate-1 tick.
+if (!platforms.threads && !platforms.linkedin) {   // parked run: both platform flags false — sits AFTER the
+  return { judged: 0, matches: 0, skipped: 0, saved: false };   // secret resolve, BEFORE any state read/heartbeat/write
+}
 if (newPosts.length === 0) {   // Gate 1: nothing unseen — heartbeat(stats, riders…) fires (best-effort), NO disk write
   return { judged: 0, matches: 0, skipped: 0, saved: false };   // state stays byte-identical
+}
+if (judgeAccounts.length > 0 && !availability.degraded && failures.length === judgeAccounts.length) {
+  // all-down skip: EVERY account refused the availability pre-check — ONE exhaustion alarm, still a
+  await flushAndSendExhaustionAlarm(judgeAccounts, health, []);   // GREEN exit 0, nothing persisted
+  return { judged: 0, matches: 0, skipped: newPosts.length, saved: false };
 }
 if (matches.length === 0) {                     // Gate 2: judged, zero matches — heartbeat, THEN persist
   await heartbeat(stats, recent, judged, candidateTerms, env, now, transport);
@@ -50,13 +58,14 @@ Every stage is wrapped in `timeStage` and logs one stable pair: `timing: <stage>
 
 ## Dependency injection: WatcherDeps is the unit seam
 ```typescript
-// WatcherDeps (runWatcher(deps = {})) — every field optional, production default inline:
+// WatcherDeps (runWatcher(deps = {})) — every field optional, production default inline (13 fields):
 env?: Record<string, string | undefined>;  config?: WatcherConfig;   // process.env | loadWatcherConfig()
-contextFactory?: ContextFactory;           // chromiumContextFactory — the sole Playwright import
+contextFactory?: ContextFactory;           // chromiumContextFactory — the Threads factory (Playwright rides
+                                           //   the dynamic-import quarantine, never a test-time import)
 fetchFn?: typeof fetch;  transport?: Transporter;  statePath?: string;   // fetch | nodemailer | STATE_PATH
 now?: () => number;  sleepFn?: (ms: number) => Promise<void>;          // Date.now | judge sleep
-linkedinFetch?: (payloadPath, now) => Promise<PayloadRead>;  judgeCeilings?;  judgeHealth?;
-judgeHealthPath?: string;  // PC-leg payload read | ceilings/health readers (degrade, never fail) |
+linkedinFetch?: (payloadPath, now) => Promise<PayloadRead>;  judgeCeilings?;  judgeHealth?;  judgeAvailability?;
+judgeHealthPath?: string;  // PC-leg payload read | ceilings/health/availability readers (degrade, never fail) |
                            //   the health flush target — default dirname(statePath)/judge-health.json
 ```
 Function-level idiom: I/O is an optional trailing param with the production default — judgePost, sendText, saveState, filterRecent.

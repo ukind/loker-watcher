@@ -14,7 +14,8 @@ Two workflows: `ci.yml` verifies changes (typecheck, lint, test — read-only, n
 
 ## Structure
 ```
-ci.yml      # push(main)+PRs+dispatch | permissions: contents: read | timeout 10
+ci.yml      # push(main, paths-ignore: state/** — the bot's data commits are not code and
+            #   must not re-run the gate)+PRs+dispatch | permissions: contents: read | timeout 10
             # checkout@v4 → setup-node@v4 (node 22, npm cache) → npm ci → typecheck → lint → test → knip
 watch.yml   # cron */10 + dispatch (typed input: force — re-probe ignoring the freshness window)
             # | permissions: contents: write | concurrency: watch (cancel)
@@ -24,7 +25,7 @@ watch.yml   # cron */10 + dispatch (typed input: force — re-probe ignoring the
             #   watch's if keeps them alive on the committed ceilings; timeout 8 (< the 10-min cron)
             #   → npm ci (checkout fetch-depth: 0)
             #   → ms-playwright cache (lockfile hash) → playwright install --only-shell chromium
-            #   → Run watcher (step-scoped secrets) → Commit state (script invocation)
+            #   → Run watcher (step-scoped secrets) → Commit health (failure path) → Commit state
 ```
 
 ## One lane per pipeline; the timeout dies before the next tick
@@ -65,7 +66,7 @@ README documents an external cron dispatching watch.yml by filename — a wrong-
     GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
   run: npx tsx src/index.ts  # a non-zero exit fails the step → the commit step is skipped
 ```
-Secrets exist only inside this step; the commit-back step runs secret-free. Playwright installs with `--only-shell` — headless-only, the runner image carries the chromium shared libs. The `ms-playwright` cache step (lockfile-hash key) sits ahead of the install, which stays UNCONDITIONAL: a miss self-heals, a hit is a fast no-op.
+Secrets exist only inside this step; the commit-back steps run secret-free. Playwright installs with `--only-shell` — headless-only, the runner image carries the chromium shared libs. The `ms-playwright` cache step (lockfile-hash key) sits ahead of the install, which stays UNCONDITIONAL: a miss self-heals, a hit is a fast no-op.
 
 ## Commit-back: three invokers (Commit state, Commit ceilings, Commit health); bot identity, no-op guard, deltas, state-set rebase skips, lease push
 ```yaml
@@ -180,6 +181,7 @@ probe:
 ## Architectural Boundaries
 - **No build step**: TS runs via tsx; `tsc --noEmit` is typecheck-only
 - **`npm ci`, never `npm install`**; only official `actions/*` at major tags (`@v4`)
+- **ci.yml ignores `state/**` pushes** — the bot's ~10 data commits a day never re-run the gate
 - **Measured-evidence comments** (run ids, dates, timings) defend every non-obvious constant — update them when the value changes
 
 <important if="you are adding a secret or environment variable">

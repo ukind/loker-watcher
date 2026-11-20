@@ -20,12 +20,11 @@ linkedin-parser.ts → linkedin-parser.test.ts     # response-filter matrix, $-r
 #                                              #   timestamp-zip pairing 3/3, mismatch warn + prefix
 linkedin-session.ts → linkedin-session.test.ts   # resolver reject matrix (all name LINKEDIN_COOKIES_FILE), quote asymmetry, storageState
 linkedin-fetch.ts → linkedin-fetch.test.ts        # orchestration: shuffle, pacing, drain arms, join priority
-linkedin-context.ts → linkedin-fetch.test.ts # the tagged-error guards + the factory seam, through the
-#                                              #   walk suite's imports
-linkedin-walk.ts   → linkedin-fetch.test.ts  # the walk, through fetchLinkedInPosts
-browser-constants.ts — no test (two string constants, exercised transitively by both factory suites)
-#                                              #   transcript, dry-round exit, first-wins urn dedupe,
-#                                              #   pacing spacing, teardown on every path
+linkedin-context.ts / linkedin-walk.ts            # the tagged-error guards + the factory seam + the walk,
+#                                              #   through fetchLinkedInPosts (transcript, dry-round exit,
+#                                              #   first-wins urn dedupe, pacing spacing, teardown every path)
+linkedin-behavior.ts → linkedin-behavior.test.ts  # pure wake-band math + rng sampler + halt reason vocabulary
+linkedin-capture.ts → linkedin-capture.test.ts    # the capture sink: atomic bodies, session stamps, warn-once
 linkedin-payload.ts → linkedin-payload.test.ts    # all four failure classes + atomic round trip
 env-file.ts        → env-file.test.ts            # parser pins + merge contract (fills ONLY unset keys; real env
                                                  #   wins; missing = quiet no-op) + the hoisted upsertDotEnvLine writer pins
@@ -53,6 +52,7 @@ pipeline-helpers.ts → index.test.ts covers dedupePosts (surfaceLabel rides the
 recency.ts         → recency.test.ts
 state.ts           → state.test.ts           # v2 schema, migration, prune, atomic write
 threads-session.ts → session.test.ts         # GRANDFATHERED name drift — new files mirror <module>.test.ts
+browser-constants.ts — no test (two string constants, exercised transitively by both factory suites)
 scripts/fetch-linkedin.ts → fetch-linkedin.test.ts   # CLI suite: scriptGit argv-transcript doubles (the transcript IS
 #                                              #   the oracle), contextFactory pass-through, parked deferred() flush,
 #                                              #   marker-file episode edges (preflight, rebase/retry, leg-dead)
@@ -60,7 +60,8 @@ watch-linkedin.ts  → watch-linkedin.test.ts   # cadence transcript (band-injec
 #                                              #   tick-before-sleep order, cap 0, both fault arms, the
 #                                              #   entry-guard pin (importing starts no loop) — the suite
 #                                              #   deliberately supersedes the old NO-TESTS-BY-DESIGN line
-scripts/probe-judge.ts — NO TESTS BY DESIGN: it drives a LIVE LLM endpoint (the dispatch gate is its check)
+scripts/probe-judge.ts — NO TESTS BY DESIGN: it drives a LIVE LLM endpoint (the dispatch gate is its check);
+#                                              #   its decision engine lives in src/judge-ramp.ts (suite above)
 probe-linkedin.ts  → probe-linkedin.test.ts   # the runProbe rewrite: entry-guard import pin, pass path under
 #                                             #   a pinned clock, the 10-post floor, the TAGGED local gates
 #                                             #   (floor, no-surfaces) disjoint from the walk's halt/leg-dead/
@@ -68,6 +69,10 @@ probe-linkedin.ts  → probe-linkedin.test.ts   # the runProbe rewrite: entry-gu
 linkedin-chain.ts  → linkedin-chain.test.ts   # the recording-legs transcript: login -> probe -> EXACTLY one
 #                                             #   tick, abort arms by IDENTITY, the D2 cookiePath forwarding
 #                                             #   (env never mutated), the D3 quiet-zero noop vs written outcome
+replay-linkedin.ts → replay-linkedin.test.ts  # offline replay: pure printer over capture files (schemaVersion
+#                                             #   pin), USAGE bare-print gate, never writes anything
+reset-linkedin.ts  → reset-linkedin.test.ts   # idempotent deletes: cookie file → profile → halt latch in order,
+#                                             #   removed/absent outcomes, failure throws naming the path
 scripts/hooks/*    → gate-destructive.test.ts, format-on-edit.test.ts   # black-box spawnSync; import no src code
 scripts/commit-state-rebase.sh → commit-state-rebase.test.ts   # black-box scratch-repo git scenarios; bash gate + explicit skip
 ```

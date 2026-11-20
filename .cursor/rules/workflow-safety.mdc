@@ -7,7 +7,7 @@ alwaysApply: false
 # Workflow safety rules
 
 - Credentials come from the `secrets` context only. Never echo them.
-- Only `state/seen-posts.json` is committed back, as `github-actions[bot]`.
+- Three state files are committed back, as `github-actions[bot]`: `state/seen-posts.json` (+ a guarded `state/judge-health.json`) by the watch job's Commit state step, `state/judge-ceilings.json` by the probe job, and `state/judge-health.json` alone on the failure path (`always() && failure()`). `state/linkedin-posts.json` is PC-owned and never added by any workflow.
 - The commit step must skip cleanly when the state file is unchanged.
 - Do not widen the cron schedule without saying so in the PR.
 - Keep `permissions` minimal; `contents: write` exists for state commits only.

@@ -85,10 +85,12 @@ export const LINKEDIN_CAPTURES_ROOT = "captures";
  * LINKEDIN_PAYLOAD_PATH shape): the probe job is the ONLY writer — it
  * commits live-only readings before its dead-account gate — and the watch
  * run is the only reader (src/judge-ceilings.ts). A flat {baseUrl: ceiling}
- * map with no version or timestamp: the probe runs dispatch-only, so
- * readings legitimately age for days, and the 429 rotation remains the
+ * map plus a `probedAt` epoch-seconds stamp: the probe runs dispatch-only,
+ * so readings legitimately age for days, and the 429 rotation remains the
  * correctness net (a stale optimistic ceiling costs throughput, never
- * correctness). A missing entry floors that account at ceiling 1 with one
+ * correctness). The watch.yml Freshness gate (8h) reads `probedAt` with
+ * `jq -r '.probedAt // 0'`; the resolver skips the key when matching
+ * accounts. A missing entry floors that account at ceiling 1 with one
  * warning; the file never fails a run (src/judge-ceilings.ts).
  */
 export const JUDGE_CEILINGS_PATH = "state/judge-ceilings.json";

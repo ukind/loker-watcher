@@ -37,6 +37,7 @@ Detailed guidance:
 | `npm run lint` | Biome check over src, tests, and the enumerated scripts/ entries + hooks |
 | `npm run format` | `biome format --write` in place over the enumerated lint scope (src, tests, and the scripts list — see package.json) |
 | `npx biome check --write <path>` | scoped check+fix for the given files (the lint-staged form) |
+| `npm run knip` | unused-export check (CI's final gate; runs on defaults, no config file) |
 | `npm start` | run the watcher locally (needs LLM_* and GMAIL_* env vars; an absent or stale `state/linkedin-posts.json` degrades to a threads-only run with one log line) |
 | `npx tsx scripts/probe-judge.ts` | gate every LLM_ACCOUNTS entry: latency, bulk shape, per-account `ceiling=N`; exit 1 on a dead account (needs LLM_ACCOUNTS) |
 | `npm run fetch-linkedin` / `watch-linkedin` | PC leg: one LinkedIn fetch tick / the always-on loop (tick + wake band from `watcher.config.json`, 60 min default) from a dedicated clone of main |
@@ -64,7 +65,7 @@ The policy is **gc once, document, no schedule**:
 <important if="you are adding a new pipeline stage end-to-end">
 1. Stage code and funnel wiring — see `.rpiv/guidance/src/architecture.md` ("Adding a New Pipeline Stage")
 2. Tests — see `.rpiv/guidance/tests/architecture.md` ("Adding a Test for a New src Module")
-3. Gates: `npm run typecheck && npm run lint && npm test` (CI runs these three plus knip)
+3. Gates: `npm run typecheck && npm run lint && npm test`
 </important if>
 
 <important if="you are adding a new platform surface">
