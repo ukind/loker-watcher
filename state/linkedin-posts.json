@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-20T00:36:28.541Z",
+  "writtenAt": "2026-11-20T01:10:21.738Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -97,6 +97,48 @@
         {
           "type": "linkedin",
           "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529339639741014016",
+      "text": "On 27 May 2003, Matt Mullenweg released the first version of WordPress. It started small: the blogging tool b2/cafelog was GPL licensed and its development had stalled, so in January 2003 Matt wrote on his blog that he wanted to fork it. Mike Little was the first to comment that he'd like to help, and together they shipped WordPress 0.70 for free.\n\nWhy it still matters to me: because b2's code was open, the old work wasn't lost, it could be picked up and carried on. Then in version 1.2 (May 2004) WordPress added a plugin architecture, so people could add features without touching the core. To this day a huge number of business websites, including many here in Indonesia, run on WordPress.\n\nThe lesson for me: a stalled project isn't always the end, and software that leaves room for others to extend it often outlives its first authors. If your developer walked away tomorrow, could someone else keep your app going?\n\nSource: https://lnkd.in/eWjCxgzW\nhttps://lnkd.in/d-PCjw8m\n\n#WebHistory #WordPress #OpenSource #WebDevelopment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529339638331842560",
+      "timestamp": "2026-11-20T00:27:38.480Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529338748396875776",
+      "text": "On 27 May 2003, Matt Mullenweg released the first version of WordPress. It started small: the blogging tool b2/cafelog was GPL licensed and its development had stalled, so in January 2003 Matt wrote on his blog that he wanted to fork it. Mike Little was the first to comment that he'd like to help, and together they shipped WordPress 0.70 for free.\nWhy it still matters to me: because b2's code was open, the old work wasn't lost, it could be picked up and carried on. Then in version 1.2 (May 2004) WordPress added a plugin architecture, so people could add features without touching the core. To this day a huge number of business websites, including many here in Indonesia, run on WordPress.\nThe lesson for me: a stalled project isn't always the end, and software that leaves room for others to extend it often outlives its first authors. If your developer walked away tomorrow, could someone else keep your app going?\nSource: https://lnkd.in/gRByaTRV\nhttps://lnkd.in/gd9-JxQB\n#WebHistory #WordPress #OpenSource #WebDevelopment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529338747117559808",
+      "timestamp": "2026-11-20T00:24:05.967Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529336472336834560",
+      "text": "Hotel owners and developers: planning a refresh for 2027?\n\nAllure FIRST by @ASPECTA",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7527623556277379073",
+      "timestamp": "2026-11-20T00:15:03.312Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
         }
       ]
     },
@@ -214,6 +256,62 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7529344584301137920",
+      "text": "X-Code Bootcamp #17 - Penetration Testing & Cyber Security Engineer dengan 30x sesi pertemuan (Kelas Pagi)\n🌐 Hackerbootcamp.asia\n\n💼 Tersedia program magang!\nBagi peserta yang ingin mendapatkan pengalaman industri nyata yang langsung bisa dimasukkan ke portofolio!\n📆 Jadwal Bootcamp:\nDengan 30x pertemuan diselenggarakan:\n🗓 Selasa, 1 Desember 2026 (Senin s.d Kamis)\n⏰ 09.00 WIB - selesai\n📍 Zoom Meeting\n🧠 Info akses VPS untuk peserta\n🐚 Dalam bootcamp, tiap peserta mendapatkan VPS terisolasi untuk lab dan enterprise cyber range\n\n🔥 Materi yang Dipelajari:\n📄 Alur Penetration Testing Lengkap: Mulai dari penyusunan proposal, NDA, kontrak, eksekusi pentest, penyusunan laporan teknis & non-teknis, manajemen bisnis.\n🎯 Pentest modes: Learn Black-box & Gray-box\n🔧 Web Exploitation: XSS, LFI, RFI, SQLi, Command Injection, CSRF, SSRF, Clickjacking, Race Conditon, dll (+mitigasi)\n🔓 Broken Authentication & Session Management (SQLi, XSS Cookie Theft, IDOR, Bypass 2FA, Session Hijacking via MITM, Privilege Escalation, Credential Stuffing, JWT Manipulation, Account Takeover)\n📈 SIEM & Log Analysis: Instalasi Wazuh, deteksi brute-force, serangan web, perubahan sistem.\n📚 Belajar OWASP Top 10 2025\n🔍 API Pentest: Auth bypass, input validation flaws, REST API exp\n🛡️ WAF Bypass: XSS & SQLi bypass\n🎯 Target tidak hanya PHP, tapi juga Node.js\n Exploit Dev: BOF, SEH, SafeSEH, ASLR, DEP/NX bypass, egghunter, jumpshort, dll\n🧪 Fuzzing & Exploitation: Bug finding & shellcode execution (Windows/Linux)\n🐍 Custom Exploit: Buat exploit sendiri, buat shellcode sendiri (asm), bind/reverse shell (msfvenom)\n🔓 Privilege Escalation: Kernel, sudo, polkit, misconfig (Linux&BSD)\n📡 Network Attack: ARP spoof, bruteforce, sniffing, DoS, router exploit, IPcam Exploitation\n🔬 Nessus & Metasploit: Scanning & exp\n📶 Wireless Pentest: recon, deauth, WPA/WPA2 testing, mitigasi\n🧠 Secure Coding & IR: Patch cepat, auditctl, respon insiden real-time\n🛡️ Hardening & Defensive Eng: WAF, anti-bf, anti-port-scanner, firewall, patch\n🔧 Rule: Blue Team diberikan akses penuh ke Wazuh & server untuk pertahanan.\n🎯 STAR interview method, careers in pentesting, & soft skills for translating tech to business\n🐚Pembelajaran Lab: Exploit Chain, Pivoting, LatMov, JWT/API Exp, Mobile App Exp, Container Escape, AD Takeover (Golden Ticket), Cross-Domain AD (Golden Ticket), FreeIPA Exp, MalwAnalysis, dll.\n\n💡 Magang di X-Code:\nPemagang akan terjun langsung di Pentest & SOC, menggunakan tools industri modern:\n🔧 Proxmox, Wazuh SIEM, Grafana, Prometheus, Netdata & sistem internal milik PT\n\nBiaya: IDR 1800k\n\nBelajar langsung menjadi:\n- Pentester\n- SOC Level 1\n- SOC Level 2\n\nDownload silabus : https://lnkd.in/gxMh6vwd\nEnterprise Cyber Range: https://lnkd.in/gnnjNv7r\n\n📞 Daftar:\n- WA Admin 1: 0857-2891-7933\n- WA Admin 2: 0895-4207-54477",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529344582908542976",
+      "timestamp": "2026-11-20T00:47:17.355Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529327642056040449",
+      "text": "We're Hiring - IT Support Engineers (Dispatch Tasks) | Jakarta, Indonesia\n\nAUH Technologies is looking for motivated IT Support Engineers to join our team for Desktop Support Services (Level 1).\n\nLocation: Jakarta, Indonesia\n\nStart Date: ASAP\n\nRole: IT Support Engineer (Dispatch Tasks)\n\nIts on call support task. When ticket will raise then tech will have to go onsite.\n\nType: Early-career professionals / students encouraged to apply\n\nIf you're interested, please share your CV with us at:\n\ninfo@auhtech.com\n\n#JakartaTech #JakartaIT #ITSupportID #FreelanceIT_ID #FieldEngineerJakarta #SCBDTech #UITech #BINUS #OnCallDispatch #Level1Helpdesk #ContractIT_APAC #AUHTechnologies #LokerIT_Jakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327641061949441",
+      "timestamp": "2026-11-19T23:39:58.009Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529327411411304470",
+      "text": "📢 MEPCONS KNOWLEDGE SHARING WEBINAR\n\nJoin us for an insightful knowledge-sharing session discussing the importance of relative humidity in maintaining data center performance, operational stability, and equipment reliability.\n\n\"THE CRITICAL ROLE OF RELATIVE HUMIDITY IN DATA CENTER RELIABILITY\"\n\nDiscover why relative humidity management is a critical factor in data center operations, how it affects IT equipment, and its role in ensuring a reliable and efficient data center environment.\n\n🎙 Speaker\nMuhammad Reza Fachriansyah\nME & HVACR Specialist | Business Development Enthusiast\n\n🎤 Moderator\nIr. Jati Widiputra, S.T., M.T.\nMEP Practitioner\n\n📅 Date: Wednesday, 25 November 2026\n⏰ Time: 7:30 PM – 9:00 PM WIB\n💻 Platform: Live on Zoom\n\nJoin fellow engineers, practitioners, students, and industry professionals in this knowledge-sharing session.\n\n🔗 Registration Link:\nhttps://lnkd.in/gZ93PR_s\n\nDon't miss this opportunity to expand your knowledge and gain valuable insights into data center environmental\n\nDadan Hadiansyah B. Jaka Samudra Renno Dewi Ilham Belly Berto Jati Widiputra (Widi)",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327407875493888",
+      "timestamp": "2026-11-19T23:39:03.019Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529327007864639488",
+      "text": "We can build more data centers. But can we find enough qualified people to deliver them?\n\nBillions of dollars are being invested in data center development across Southeast Asia.\n\nNew projects, larger facilities, higher rack densities and increasingly complex technologies are creating enormous opportunities for the region.\n\nBut one challenge deserves considerably more attention: people.\n\nThe industry needs experienced:\n\n🔹 Mechanical and electrical engineers.\n🔹 Construction and project managers.\n🔹 QA/QC professionals.\n🔹 Testing and commissioning specialists.\n🔹 Critical facilities technicians.\n🔹 Data center operations managers.\n\nThese skills cannot be developed overnight.\n\nAs more projects compete for the same experienced professionals, could the industry face increasing construction costs, project delays and compromised quality?\n\nPerhaps we need to invest just as much in developing people as we do in developing infrastructure.\n\nWhat is the hardest data center role to recruit for in Southeast Asia right now?\n\nAnd what should the industry be doing to develop the next generation of data center professionals?\n\nWhether you’re a developer, contractor, consultant, engineer or operator, we would love to hear your perspective.\n\nJoin our growing Data Center in Southeast Asia community and invite your colleagues to help build a valuable network of industry professionals across the region.\n\n#DataCenter #SoutheastAsia #SkillsShortage #DigitalInfrastructure #DataCenterConstruction #Engineering #Commissioning #TalentDevelopment #Indonesia #Malaysia #Singapore #Thailand #CareerDevelopment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:activity:7529327007864639488",
+      "timestamp": "2026-11-19T23:37:26.806Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7529326297605459968",
       "text": "#hiring Senior IT & Security Engineer - First Hire\n\nApply here:https://lnkd.in/gT3iAhPQ\n\nXenith is a B2B fintech platform expanding across Singapore and Indonesia. We seek a hands-on IT/security engineer to own the technology backbone, build scalable policies, and steer tooling choices.Youll support engineering, product, commercial, operations, and finance-driving security, access governance, and automation. Youll shape the end-to-end security program, work with multiple regions, and influence how our IT function serves the whole company.\n\n#recruiting",
       "author": "linkedin-member",
@@ -242,15 +340,239 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7529327642056040449",
-      "text": "We're Hiring - IT Support Engineers (Dispatch Tasks) | Jakarta, Indonesia\n\nAUH Technologies is looking for motivated IT Support Engineers to join our team for Desktop Support Services (Level 1).\n\nLocation: Jakarta, Indonesia\n\nStart Date: ASAP\n\nRole: IT Support Engineer (Dispatch Tasks)\n\nIts on call support task. When ticket will raise then tech will have to go onsite.\n\nType: Early-career professionals / students encouraged to apply\n\nIf you're interested, please share your CV with us at:\n\ninfo@auhtech.com\n\n#JakartaTech #JakartaIT #ITSupportID #FreelanceIT_ID #FieldEngineerJakarta #SCBDTech #UITech #BINUS #OnCallDispatch #Level1Helpdesk #ContractIT_APAC #AUHTechnologies #LokerIT_Jakarta",
+      "id": "urn:li:activity:7529327850026409984",
+      "text": "We're Hiring - IT Support Engineers (Dispatch Tasks) | Cikarang, Indonesia\n\nAUH Technologies is looking for motivated IT Support Engineers to join our team for Desktop Support Services (Level 1).\n\nLocation: Cikarang, Indonesia\n\nStart Date: ASAP\n\nRole: IT Support Engineer (Dispatch Tasks)\n\nIts on call support task. When ticket will raise then tech will have to go onsite.\n\nType: Early-career professionals / students encouraged to apply\n\nIf you're interested, please share your CV with us at:\n\ninfo@auhtech.com\n\n#CikarangTech #CikarangIT #ITSupportID #FreelanceIT_ID #FieldEngineerCikarang #Jababeka #Deltamas #MM2100 #PresidentUniversity #OnCallDispatch #Level1Helpdesk #ContractIT_APAC #AUHTechnologies #LokerIT_Cikarang",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327641061949441",
-      "timestamp": "2026-11-19T23:39:58.009Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327849091129344",
+      "timestamp": "2026-11-19T23:40:47.593Z",
       "surfaces": [
         {
           "type": "linkedin",
           "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529309081245769728",
+      "text": "So honored to have received the ACEC Student Scholarship through the ASCE San Jose Branch Student Scholarship & Achievement Program! \n\nThis recognition is especially meaningful, as it gave me the opportunity to share how my family's roots in Indonesia have inspired my passion for developing resilient and accessible infrastructure that connects communities and improves access to essential resources.\n\nA huge thank you to the ASCE San Jose Branch and ACEC for this honor and for supporting the next generation of engineers!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529309080675487744",
+      "timestamp": "2026-11-19T22:26:12.767Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529307729836953602",
+      "text": "Hey folks, someone's tried to break into my account, looks like from Ukraine. That's definitely not me. I'm locking down my security as much as I can, but if this account ever starts acting funny, like trying to hire you, pitching something too good to be true, or asking to borrow money...\nI guarantee it's not me!\n\nCheers \n\nAulia Wiguna \nThe charming fullstack software engineer from Prambanan, Indonesia.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529307728863760384",
+      "timestamp": "2026-11-19T22:20:50.566Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529296535700877312",
+      "text": "I’m happy to share that I’m starting a new position as Junior Software Engineer at Formulatrix Indonesia!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529296534866427904",
+      "timestamp": "2026-11-19T21:36:21.676Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529287472061784064",
+      "text": "Software Engineer (Golang)\n\n⚡ Tangkap di posting rekrutmen LinkedIn — sebelum masuk ke papan lowongan.\n\n📍 Indonesia (Remote)\n💰 USD 18360-24840/year\n\nClient butuh Software Engineer (Golang) untuk mengembangkan backend aplikasi dan API. Kandidat ideal memiliki pengalaman backend 2+ tahun dan kuat dalam Go, API, basis data SQL, NoSQL, serta arsitektur terdistribusi dan containerization.\n\n🎙 New: prepare for the client call. Practice the questions they will ask, out loud, free 👉 https://lnkd.in/dC2GWtnf\n\n✍️ Your application is already drafted — review & send in one click.\n🔗 Apply free (first one's on us): https://lnkd.in/d2YXVDnj\n\nHundreds of fresh remote tech roles land on Freelanly every day — caught from LinkedIn hiring posts before the boards. Be first: freelanly.com\n\nTelegram: https://t.me/PCFTI\n🇪🇸 Síguenos en español: https://lnkd.in/dthNCFqz\n🇸🇦 تابعنا بالعربية: https://lnkd.in/dvfsy_Rd\n🇮🇳 हिंदी में फॉलो करें: https://lnkd.in/dxavg7Wj",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529287471180873730",
+      "timestamp": "2026-11-19T21:00:20.736Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529348176911466496",
+      "text": "📢 WE ARE HIRING!\nPT SANY Heavy Industry Indonesia is currently looking for a talented and motivated professional to join our team as:\n\n💼FINANCE & ACCOUNTING SPECIALIST\n📍 Placement: Makassar, South Sulawesi, Indonesia\nIf you have the relevant qualifications and experience, don't miss this opportunity to be part of our team!\n\n📩Apply Now!\nSubmit your application through the link below:\n🔗 https://lnkd.in/gGZ5Bjxn\n\n📢 Feel free to share this opportunity with your colleagues, friends, and professional networks.\ncc Yulius Reski Mado\n\nJoin us and take the next step in your career!\n\n#WeAreHiring #JobVacancy #FinanceAndAccounting #SANY #MakassarJobs #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529348176043053056",
+      "timestamp": "2026-11-20T01:01:33.900Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529347919095836672",
+      "text": "🚀 WE'RE HIRING | NOW OPEN | NEW🔥\n\n📍Jakarta, Indonesia \n💻Full Onsite/WFO \n🎓 S1\n\nNETWORK ENGINEER\n\n𝐊𝐞𝐲 𝐄𝐱𝐩𝐞𝐫𝐭𝐢𝐬𝐞: Networking Fundamentals (TCP/IP, OSI Layer, LAN/WAN, Internet Networking), IT Technologies (Cloud, Server, External Storage, Various OS and Application, etc), Cisco Products, Relevant Certificates (Cisco/Huawei/Aruba/Fortinet).\n\n📩 Send me your updated CV ➡️ azha@msbukonsultan.com\n✉️ Subject: [Role - Your Name]\n\nThank you!⭐️",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529130051720654848",
+      "timestamp": "2026-11-20T01:00:32.432Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529347225131569152",
+      "text": "recruitment.haidalampung@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529347224124706818",
+      "timestamp": "2026-11-20T00:57:46.978Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529346591028199424",
+      "text": "We are Hiring - R&D Product Supervisor\nPT Emina Cheese Indonesia, Kawasan Industry MM2100, Kab. Bekasi \n\nJob Responsibilities\n1. Develop new products and improve existing products based on market trends, customer needs, and business opportunities.\n2. Conduct product formulation, trials, sensory evaluation, shelf-life validation, and stability testing.\n3. Collaborate with Sales, Marketing, Production, QA/QC, SCM, and suppliers throughout product development projects.\n4. Assist in troubleshooting production issues related to product formulation and processing.\n5. Prepare and maintain product specifications, SOPs, trial reports, and other technical documentation to ensure regulatory compliance.\n6. Perform other duties as assigned.\n\nJob Requirements\n1. Bachelor's degree in Food Technology or a related field.\n2. Good command of spoken and written English.\n3. Knowledge of food processing, ingredient functionality, and product development.\n4. Strong communication and problem-solving skills.\n5. Experience in the dairy industry is preferred.\n\nSend application to: recruitment@emina.id; ihsan.defria@emina.id\nSubject: R&D Product Supervisor - Name\n\n#RND #Supervior #Hiring #Bekasi #research #development #product",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529346590386425856",
+      "timestamp": "2026-11-20T00:55:15.796Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529345824590286848",
+      "text": "📢 WE'RE HIRING | HUMAN RESOURCES STAFF\n\nPT Yamaha Music Manufacturing Indonesia is looking for a Human Resources Staff to join our Human Resources team, specifically in the People Development function.\nIf you have a bachelor's degree in Psychology, Human Resource Management, or a related field, with a strong interest in people development, training, and organizational development, we'd love to hear from you!\n\nCandidates with knowledge of Training Needs Analysis (TNA), competency development, performance management, and talent management are encouraged to apply.\nIn this role, you will be responsible for conducting Training Needs Analysis (TNA), developing and implementing internal and external training programs, evaluating training effectiveness, managing competency databases and training history, and developing Individual Development Plans (IDP).\n\nYou will also be involved in leadership development, coaching programs, performance management (KPI, appraisal, and feedback), talent management, succession planning, and coordination with other HR functions.\n\n📄 Please check the flyer below for the complete qualifications and job responsibilities.\n🔗Apply here:\nhttps://lnkd.in/gU6qbd_8\n⏰ Registration deadline: November 25th, 2026\n\nIf you know someone who would be a great fit for this position, feel free to share this opportunity or tag them in the comments.\nWe look forward to receiving your application!\n\n#Hiring #HumanResourcesStaff #HumanResources #PeopleDevelopment #TrainingAndDevelopment #TalentManagement #PerformanceManagement #CareerOpportunity #JobVacancy #ManufacturingJobs #JobsIndonesia #YMMI #Yamaha",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529345821356638208",
+      "timestamp": "2026-11-20T00:52:13.063Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529344892972466177",
+      "text": "PT JGC INDONESIA\nWE ARE HIRING\n\nEnvironmental Supervisor\n\nQualification:\n- Bachelor's Degree in Environmental Engineering or a related field.\n- Minimum 8 years of related experiences.\n- Strong knowledge of AMDAL, RKL-RPL and environmental regulations.\n- Strong knowledge of Environmental Management Systems (EMS)\n- Experience in environmental monitoring, waste management, compliance reporting, and environmental risk assessment.\n- Strong stakeholder management and communication skills, with the ability to coordinate effectively.\n\nSubmit your CV:\nshalimar.jasmine@jgc.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529344891965935616",
+      "timestamp": "2026-11-20T00:48:30.948Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529344905282887680",
+      "text": "https://lnkd.in/gxJygYSb",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529344904653783040",
+      "timestamp": "2026-11-20T00:48:33.883Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529343832597991424",
+      "text": "I'm working with an AI-native cybersecurity company developing solutions across AI SOC, penetration testing and code auditing.\n\nThe company is expanding internationally and looking for four commercial managers to establish its presence across Hong Kong, Malaysia and Indonesia.\n\n🇭🇰 Senior Sales Manager – Financial Services\nIndependently own 8–12 target financial institutions, building deep relationships with CISOs, CIOs, CTOs and heads of risk.\n\n🇭🇰 Carrier Sales Manager – Hong Kong\nYou know the telecom ecosystem and can engage senior decision-makers across major operators.\n\n🇲🇾 Carrier Sales Manager – Malaysia\nYou have established telco relationships and the commercial drive to develop a new market.\n\n🇮🇩 Country Manager – Indonesia\nYou'll own the market entry: securing the first customers, developing partnerships and building the local team.\n\nThese aren't traditional sales roles.\nAll four positions report directly to the founder. You'll be expected to lead from the front, win business and build your team as the business scales.\n\n 🗣️ Mandarin is an advantage.\n\nIf you're an experienced enterprise technology, cybersecurity or telecom sales professional looking for a chance to build something rather than inherit an established territory, I'd love to hear from you.\n\nKnow someone suitable? Feel free to pass this along.\nAll conversations are strictly confidential.\n\n#AISecurity #Cybersecurity #EnterpriseSales #Hiring\n\nPivot Search",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529343829792190464",
+      "timestamp": "2026-11-20T00:44:18.135Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529341344465473536",
+      "text": "[JOB VACANCY]\n\nCurrently we are hiring for PPIC Section Head (stamping-welding process)",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529341343559573504",
+      "timestamp": "2026-11-20T00:34:24.918Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529340873235685376",
+      "text": "One day at Universitas Indonesia made me rethink local hiring\n\nI spent yesterday at Universitas Indonesia. We discussed Indonesia’s role in ASEAN, how its natural resources shape industrial development, and what that means for local talent.\n\nThe last discussion, on workplace culture, left me with the most questions. Where do companies find the people they need? What makes a role attractive to candidates? How do local teams communicate and work with colleagues from China?\n\nEven “Chinese-speaking hire” can mean very different things. An interpreter, a buyer coordinating suppliers, a salesperson meeting local customers, and a manager leading a team all need different skills. To understand the market, you have to talk to the people doing those jobs and the companies hiring them.\n\nAt GALLEY, we’ve been learning these lessons in Vietnam. I’m in Jakarta to build that understanding here and meet local recruitment, HR, tax, legal, and business services partners. Some of our clients are exploring Indonesia. If you’re interested in working together, leave a comment or send me a message.\n\n#Indonesia #Jakarta #LocalHiring #SoutheastAsia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529340870194696192",
+      "timestamp": "2026-11-20T00:32:32.568Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529343140034617344",
+      "text": "https://lnkd.in/gyJBsVCg",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529343139355025408",
+      "timestamp": "2026-11-20T00:41:33.015Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529340568213315584",
+      "text": "Hello everyone!\n\nBDO in Indonesia is hiring for Senior Associate Consultant! \nFor those who are interested in this field, kindly send your CV tohrd@bdo.co.id\n\nThank you.\n\ncc: Tini Yuliati",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529161517028507648",
+      "timestamp": "2026-11-20T00:31:19.845Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -261,20 +583,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529316993775075328",
       "timestamp": "2026-11-20T00:30:16.961Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7529340148170469376",
-      "text": "https://lnkd.in/gZufaACw",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529340147386003456",
-      "timestamp": "2026-11-20T00:29:39.699Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -312,6 +620,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7529340148170469376",
+      "text": "https://lnkd.in/gZufaACw",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529340147386003456",
+      "timestamp": "2026-11-20T00:29:39.699Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7529332867689074688",
       "text": "**Hiring: SAP HCM Payroll Consultant**\n- Looking for an experienced SAP HCM Payroll Consultant\n- Min 7+ years of experience required.\n- Must have experience in with handling Malaysia OR Singapore Payroll\nProfessionals locally available in #Malaysia #Indonesia #Philippines #Thailand #Vietnam are welcome to apply.\n📩 Interested candidates, please share your CV torupal@myndreads.com\n\n#SAPHCM #SAPHCMPayroll #SAPHCMConsultant #SAPPayroll #SAPPayrollConsultant #MalaysiaJobs #IndonesiaJobs #ThailandJobs #SingaporeJobs #PhilippinesJobs #Hiring\n\nKaphieel (Kaps)Veda SK\nMyndReads Consulting Sdn Bhd\nSap.myndreads.com",
       "author": "linkedin-member",
@@ -331,20 +653,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327849091129344",
       "timestamp": "2026-11-19T23:40:47.593Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7529336568755707905",
-      "text": "https://lnkd.in/gD2K4viE",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529336567921053696",
-      "timestamp": "2026-11-20T00:15:26.300Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -382,6 +690,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7529336568755707905",
+      "text": "https://lnkd.in/gD2K4viE",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529336567921053696",
+      "timestamp": "2026-11-20T00:15:26.300Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7529309036337631234",
       "text": "Anthropic just had a record-breaking IPO:\n \n- Raised $81.3 billion, the largest initial raise of any IPO in history\n- $2 trillion at the open. That’s bigger than the economy of every country except 15 (Turkey, Indonesia, the Netherlands and Switzerland are all smaller than Anthropic)\n- A big first-day jump: it opened at $111.50 per share on the Nasdaq, 34.3% above the $83 offering price\n- At the open, Anthropic was worth 12× Boeing, 16× Starbucks and nearly 8× Netflix\nIt opened 25% above Meta’s valuation\n \nAt the same time, here’s the employee side:\n- 34 million Americans are knowledge workers, about 22% of all Americans employed\n- Knowledge-worker payrolls have shrunk for 31 months in a row\n- College grads now make up 1 in 3 of the long-term unemployed, up from 1 in 5 a decade ago\n- 46% of professionals plan to look for a new job in the next six months, up from 27% a year ago. That’s roughly 15 million people\n- There are only about 1.3 million openings in professional and business services. That’s about 12 people wanting to move for every open role\n- Tech has been hit hardest: 172,000 announced US job cuts this year, more than any other industry, and up 21%\n- Software postings are still 27.5% below 2020 levels, but nearly half of them now ask for AI skills\n- Postings requiring AI skills grew 144% in a year\n- OpenAI, Anthropic and Google DeepMind together have about 1,700 open roles. That’s about 9,000 people wanting to move for every frontier-lab job\n \nThe gap: we’ve built a $2 trillion company in six years, yet 15 million knowledge workers can’t find a clear path to their next role. Plenty of people want to move and plenty of jobs ask for AI skills. What’s missing is a trusted way to show who actually has them.\n \nTakeaway:\n\nInnovation is essential. It’s how we move forward, and slowing it down isn’t the answer. What matters now is filling the jobs that already exist faster, and today we’re not.\n \nIt still takes employers more than 2 months to fill a role, even though they now get nearly 3× as many applications per hire as in 2021. On the other side, the average job seeker spends 27 weeks out of work, longer than unemployment benefits last.\n \nMore applications, but no faster hiring.\n \nWe’ve taken the human out of hiring. Only 1 in 10 job seekers believes a person reviews their applications. We’re judging people by a static résumé that AI has polished, when what we need to understand is:\n - What people actually bring to the table, not just where they’ve worked\n - What they want to do next, not just what they’ve done\n - Who will actually succeed in a given role, which is deeply human: the expectations, the team, the culture\n \nI’m optimistic that AI will eventually create more opportunities than it takes away. But we need to fill those opportunities faster, AND in a human way.\n\nSources in comments.\n\n#anthropic #openai #frontier #forwardhumans",
       "author": "linkedin-member",
@@ -401,20 +723,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327641061949441",
       "timestamp": "2026-11-19T23:39:58.009Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7529333008584114176",
-      "text": "https://lnkd.in/gDipJRPY",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529333007661400064",
-      "timestamp": "2026-11-20T00:01:17.489Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -452,11 +760,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7529330917144715264",
-      "text": "https://lnkd.in/giP2nRss",
+      "id": "urn:li:activity:7529333008584114176",
+      "text": "https://lnkd.in/gDipJRPY",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529330916482199552",
-      "timestamp": "2026-11-19T23:52:58.851Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529333007661400064",
+      "timestamp": "2026-11-20T00:01:17.489Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -494,6 +802,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7529330917144715264",
+      "text": "https://lnkd.in/giP2nRss",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529330916482199552",
+      "timestamp": "2026-11-19T23:52:58.851Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7529240056310681600",
       "text": "Discover the top 10 best headhunting agencies in Indonesia for 2027. Compare leading executive search firms and recruitment services.\nhttps://lnkd.in/gaYwKxbm\n#HeadhuntingIndonesia, #BestHeadhuntingAgencies, #TopHeadhuntingAgencies2027, #ExecutiveSearchIndonesia, #ExecutiveRecruitmentIndonesia, #RecruitmentAgenciesIndonesia, #BestRecruitmentAgenciesIndonesia, #HeadhuntersIndonesia, #HeadhuntingJakarta, #ExecutiveSearchJakarta, #IndonesiaRecruitment2027, #TalentAcquisitionIndonesia, #IndonesiaHiring, #IndonesiaJobMarket, #ExecutiveHiring, #CSuiteRecruitment, #LeadershipRecruitment, #SeniorManagementRecruitment, #ProfessionalRecruitment, #TalentSourcing, #RecruitmentConsulting, #HRConsultingIndonesia, #IndonesiaHR, #IndonesiaTalentMarket, #RecruitmentTrends2027, #HiringTrendsIndonesia, #9cv9, #9cv9RecruitmentAgency, #MichaelPageIndonesia, #RobertWaltersIndonesia, #JACRecruitment, #MonroeConsultingGroup, #KornFerry, #HRnetRimbun, #PERSOLIndonesia, #HeadhunterIndonesia, #PotentiaHRConsulting",
       "author": "linkedin-member",
@@ -522,11 +844,39 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7529209323969818624",
-      "text": "https://lnkd.in/gFtJQbzK",
+      "id": "urn:li:activity:7529220932465422336",
+      "text": "🚀 Influencer Marketing Research & Outreach That Drives Real Results\n\nStruggling to find the right influencers for your brand?\n\nTired of low engagement and wasted budgets?\nI help brands grow through data-driven influencer marketing — not guesswork.\n\n🔍 What I Do: \n\n✔ In-depth Influencer Research (niche, audience, authenticity)\n✔ Targeted Outreach (personalized, non-spammy communication)\n✔ Campaign Strategy & Planning\n✔ Relationship Building with Influencers\n✔ Performance Tracking & Reporting\n💡 I don’t just find influencers — I find the right voices that connect with your audience and convert into real customers.\n\n📈 Results You Can Expect: \n\n• Higher Engagement\n• Authentic Brand Awareness\n• Better ROI on Campaigns\n\nWhether you're a startup or an established brand, I can help you scale with smart influencer collaborations.\n\n📩 Let’s connect and grow your brand the right way!\n\nhttps://bit.ly/4myz0Xs\n\n#Smallbusinessowner #Digitalmarketingagencies #Socialmediamanager #Coaches #realtor\n#ecommercesellers #ceo #founder #owner #strategist #manager #salemanager\n#director #creator #contentcreator #everyone #businessman #business\n#LinkedIn #dataentry #datamining #websearch #leadgeneration #freelancer\n#Fiverr #promotion #editor #influencer #influencermarketing #WordPress\n#webdevelopment #hiring #realestateagent #realestate #agency #Etsy #Amazon\n#godady #store #brand #clothingbrand #fitness #ecommercestore #Digitalmarket\n#marketing #expert #professional #emailmarketing #emailcollection\n#datacollection #productlisting #temu #shopify #eBay #seller #buyer #job\n#growth #data #experience #research #google #instagram #database #uae #usa\n#finland #france #newbusiness #canada #australia #newyork #newzealand\n#saudiarabia #turkey #italy #germany #srilanka #brazil #india #iraq #iran\n#indonesia #england #southafrica #korea #world #companies #bangladesh\n#linkedinmarketing #linkedinleads #socialmediamarketing #digitalmarketing\n#seo #switzerland #mexico #dataconversion #virtualassistantservice\n#socialadvertising #designer #projects #design #writer #contentwriter\n#editors #uk #kuwait #malai #leadb2b #leadershipdevelopment #malaysia\n#fiverrbuyers #fiverrgigpromotion #blogger #influencermarketingagency\n#ugc #content #agent #ecommerce #researchmarketing",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529209322778767361",
-      "timestamp": "2026-11-19T15:49:48.779Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529220931769102336",
+      "timestamp": "2026-11-19T16:35:56.460Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529327642056040449",
+      "text": "We're Hiring - IT Support Engineers (Dispatch Tasks) | Jakarta, Indonesia\n\nAUH Technologies is looking for motivated IT Support Engineers to join our team for Desktop Support Services (Level 1).\n\nLocation: Jakarta, Indonesia\n\nStart Date: ASAP\n\nRole: IT Support Engineer (Dispatch Tasks)\n\nIts on call support task. When ticket will raise then tech will have to go onsite.\n\nType: Early-career professionals / students encouraged to apply\n\nIf you're interested, please share your CV with us at:\n\ninfo@auhtech.com\n\n#JakartaTech #JakartaIT #ITSupportID #FreelanceIT_ID #FieldEngineerJakarta #SCBDTech #UITech #BINUS #OnCallDispatch #Level1Helpdesk #ContractIT_APAC #AUHTechnologies #LokerIT_Jakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529327641061949441",
+      "timestamp": "2026-11-19T23:39:58.009Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529219038925799424",
+      "text": "🚀 Project Completed – UPS Mobile Installation | PLN UID Jakarta\nI’m pleased to share my involvement in the UPS Mobile Installation Project for PLN UID Jakarta, featuring 2 units of Borri B9600FXS UPS with a capacity of 100 kVA each.\n\n🔧 Scope of Work:\n• 2 Units – UPS Borri B9600FXS (100 kVA each)\n• Supervision of the mobile storage frame fabrication and preparation.\n• Supervision of UPS positioning and installation within the mobile storage.\n• Battery system installation, including battery racks and interconnections.\n• Functional testing, system verification, and commissioning.\n\n📌 Project Status: Completed Successfully\n\nThis project provided valuable hands-on experience in supervising the installation process of a mobile UPS system, from storage structure preparation and equipment positioning to battery integration, testing, and commissioning.\n\nWorking on this project strengthened my technical understanding of UPS integration, installation supervision, and critical power system readiness, while emphasizing the importance of safety, coordination, and reliability throughout every stage of execution.\n\nAnother project completed, another valuable experience gained. Looking forward to taking on more challenging projects and continuing to grow as a UPS Engineer / Technician. ⚡\n#UPS #UPSMobile #UPSEngineer #UPSTechnician #Borri #B9600FXS #PLN #CriticalPower #ElectricalEngineering #Installation #Commissioning #PowerSystems #EngineeringProject #ProjectCompleted",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7529219036434444289",
+      "timestamp": "2026-11-19T16:28:25.005Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -541,6 +891,20 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529209245553242113",
       "timestamp": "2026-11-19T15:49:30.346Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529209323969818624",
+      "text": "https://lnkd.in/gFtJQbzK",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529209322778767361",
+      "timestamp": "2026-11-19T15:49:48.779Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -578,29 +942,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7529184012897107970",
-      "text": "#UrgentlyHiring Commissioning Engineer for Oil & Gas company - Jakarta.\n\nHi everyone, PT. Istana Karang Laut is currently looking for a Commissioning Engineer to join our team.\n\nRequirements:\n- WNI (Warga Negara Indonesia / Indonesian)\n- Minimum Bachelor's Degree in Engineering (Mechanical, Electrical, Instrumentation, or Chemical Engineering preferred)\n- Fluent in English (strong written and verbal communication skills)\n- Minimum 5-10 years of experience as a Commissioning Engineer within the Oil & Gas and EPC/EPCC sector\n- Willing to work from anywhere (based at Jakarta Head Office or assigned to project sites as required)\n- Able to multitask effectively and thrive in a fast-paced project environment with tight deadlines\n- Highly proactive, a fast learner, and capable of coordinating with cross-functional engineering, construction, and project teams\n- Strong problem-solving skills and proficiency in Microsoft Office (Excel, Word)\n\nHow to Apply: If you are interested, please send your updated English CV to\nrecruitment@istakala.co.id with the subject:\nCommissioning Engineer_[Your Name]\n\nPlease help repost this opportunity to your network. Thank you!",
+      "id": "urn:li:activity:7529214924556963840",
+      "text": "Apache Struts 7.4.0: The Breaking Changes Developers Need to Check\n\nApache Struts 7.4.0 became generally available on October 2, 2026, alongside Struts 6.12.0, but the 7.4 release is not just a routine maintenance update for Java web applications. Its version notes contain a source-breaking change around SecurityMemberAccess, several deprecations, and a new HTML5 validation feature that can affect how older applications are configured. The 6.x line receives a separate release with a different compatibility profile, giving teams another path if moving to Struts 7 would require a larger Java and Jakarta EE migration.\n\nApache Struts 7.4.0 removes five SecurityMemberAccess setters\n\nThe most significant code-level change in Struts 7.4.0 is the removal of five development-mode configuration setters from SecurityMemberAccess. These include setters controlling development mode and several excluded-class and excluded-package settings, while the corresponding struts.devMode.* configuration properties themselves remain unchanged. Applications that directly call those Java setters can therefore encounter source-level failures even though an application's existing configuration properties may still look familiar. Apache's own release notes classify this as a breaking change, so it deserves a compile-and-test pass rather than being treated as an invisible patch update.\n\nRead full article from this link\n\nhttps://lnkd.in/dspvkTeV\n\n#Software #ApacheStruts740 #Struts74breakingchanges #Struts612upgrade #StrutsRESTchanges #Strutsmigrationguide #Java17Struts #ApacheStruts #Java #WebFrameworks #RESTAPI #SoftwareUpdates",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529184010862776320",
-      "timestamp": "2026-11-19T14:09:14.149Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529214921188995072",
+      "timestamp": "2026-11-19T16:12:04.063Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7529171757291798528",
-      "text": "TEN YEARS OF POWER STUDIES · JAKARTA · THREE TO SIX MONTHS\n\nA global engineering and construction contractor needs a senior power system studies engineer at its Jakarta office. Load flow, short circuit, earthing and relay coordination, delivered in ETAP and defended in front of the client.\n\nExtendable three to six months. Open to any nationality. Accommodation provided.\n\nThe work\nStudies performed, reviewed, interpreted and defended. ETAP through project execution. Temporary power systems, power tie-ins and temporary-to-permanent facility connections. Brownfield projects and live-plant modifications. Technical recommendations justified to the client, with engineering scope managed end to end.\n\nThe engineer\nTen or more years in power system engineering and studies. Degree-level electrical engineering. Hands-on ETAP on work that actually went into service. Comfortable standing behind a study under challenge. Strong written and spoken English. Brownfield experience counts heavily.\n\nPractical\nJakarta, at the client's office. Monday to Friday, 8am to 5pm.\n\nTo apply\nEmail your updated CV naming the position to Indira (indira@expouniverse.com). Switchboard +91(22)40432000 (30 Lines). www.expouniverse.com\nInternational Jobs channel: https://lnkd.in/dNNifBn9\n\nExpo Universe does not charge any fees from candidates at any stage of the recruitment process. No employment, visa or permit outcome is promised. Candidate data is handled under applicable data-protection rules.\nMEA Recruiting Agent Licence B-0670/MUM/PART/1000+/5/254/84\nIllustrative visual · Visual enhanced by AI\n\n#PowerSystems #ETAP #RelayCoordination #JakartaJobs #EngineeringJobs",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529171755672698880",
-      "timestamp": "2026-11-19T13:20:32.185Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
+          "value": "developer jakarta"
         }
       ]
     },
@@ -639,6 +989,34 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:activity:7529182137611132930",
       "timestamp": "2026-11-19T14:01:47.046Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529171234023096320",
+      "text": "We're Hiring: Java/JEE Solution Architect/Developer (Struts Migration), Remote\n\nDo you remember Struts 1.x and EJB 2.1? Want to be the person who finally retires them?\nA state pension agency is modernizing a mission-critical system, and we’re looking for a hands-on architect to lead the way.\n\nWhat you’ll do\n✅ Assess the current architecture and recommend the best modern stack\n✅ Prove it with POCs and migrate the first screen to production\n✅ Design old and new components running side by side (strangler pattern)\n✅ Train the in-house team to take over\n\nWhat we need\n🔹 10+ years Java, 5+ as architect or tech lead\n🔹 3+ years Struts 1.x and EJB\n🔹 3+ years leading legacy-to-modern migrations\n🔹 Spring Boot, Spring MVC or Jakarta EE\n🔹 SQL Server, security, and testing experience\nBonus: jClarety, pension/financial systems, public sector, CI/CD\n\nRemote | 6+ months\n\nSend your resume toshubham.jaiswal@consultstm.com or message me directly.\n\n#Java #JavaArchitect #Struts #EJB #SpringBoot #JakartaEE #AppModernization #LegacyModernization #Hiring #RemoteJobs #ContractJobs #SQLServer #WebSphere #GovTech",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529171232416792576",
+      "timestamp": "2026-11-19T13:18:27.428Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7529170640990523393",
+      "text": "👋 Hello LinkedIn Members!\n 🚀 OneSource Consulting is Hiring | Full-stack Software Engineer – Advanced\n 🔹 Role: Full-stack Software Engineer – Advanced\n 📍 Location: EU Union\n 🏢 Work Mode: Remote\n 💼 Regime: Full-time\n 🗣️ Language: English (French B2 is a plus)\n 📅 Contract: 15/01/2027 – Long term\n 🎯 Target Date: 24/11/2026\n \n💼 Your Role\n Join the team and take on tasks assigned by project and service managers across the full stack, from user interfaces and APIs to server-side logic and databases. You will deliver secure, scalable and high-performing web applications that meet functional and non-functional requirements.\n \n🎯 Key Responsibilities\n ✅ Develop front-end and back-end web applications, including user interaction design\n ✅ Design and develop APIs and implement core business logic\n ✅ Apply data and security best practices (validation, authN/authZ, secure storage, compliant logging)\n ✅ Build responsive applications optimized across browsers and devices\n ✅ Deploy and manage applications on cloud platforms using CI/CD and containers\n ✅ Perform unit/integration testing, debugging and validation\n ✅ Write technical documentation\n \n🛠️ Required Skills & Qualifications\n 🔹 Java (19/21/25), Spring Boot, Spring Framework, Hibernate/JPA and REST API development\n 🔹 Frontend: JavaScript, HTML5, CSS3, Angular, Vue, Bootstrap, RxJS, Webpack/Vite/Nx\n 🔹 Databases: Oracle, PostgreSQL, MongoDB (schema design and query optimization)\n 🔹 J2EE / Jakarta EE (EJB 3, CDI, JMS), WebLogic 14, Maven, Liquibase\n 🔹 Apache Kafka, OpenAPI/Swagger, JAX-WS, JAXB, Protobuf\n 🔹 AWS, Terraform/CloudFormation, Docker, Kubernetes\n 🔹 Git workflows (GitFlow, Trunk-based), GitLab, Bitbucket\n 🔹 Hexagonal Architecture, microservices, CQRS; OAuth 2.0, OpenID Connect, JWT\n 🔹 JUnit 4/5, Mockito, Vitest, Playwright\n 🔹 Agile at scale with Jira\n 🔹 Nice to have: Camunda/Activiti, BPMN 2, Elasticsearch, Kibana, Dynatrace, Prometheus, Micrometer, AI-assisted tools (Amazon Q, Kiro)\n 🔹 Optional certifications: Oracle Java SE 21, Jakarta EE, Spring Professional, AWS Certified Developer – Associate\n \n⭐ Ideal Candidate\n A skilled, analytical full-stack engineer who communicates clearly, collaborates well in cross-functional teams, works autonomously, learns new domains quickly and stays proactive and results-oriented.\n \n📩 Apply Now!\n Send your updated CV to: lolakshi@onesource.one\n\n👉 Know someone who would be a great fit? Tag them or share this opportunity with your network!\n\n#OneSourceConsulting #Hiring #FullStackDeveloper #JavaDeveloper #SpringBoot #Angular #Oracle #AWS #Kubernetes #RemoteJobs #ITJobs #SoftwareDevelopment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529170639698526210",
+      "timestamp": "2026-11-19T13:16:06.038Z",
       "surfaces": [
         {
           "type": "linkedin",
