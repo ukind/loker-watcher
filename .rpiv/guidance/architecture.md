@@ -65,7 +65,7 @@ The policy is **gc once, document, no schedule**:
 <important if="you are adding a new pipeline stage end-to-end">
 1. Stage code and funnel wiring — see `.rpiv/guidance/src/architecture.md` ("Adding a New Pipeline Stage")
 2. Tests — see `.rpiv/guidance/tests/architecture.md` ("Adding a Test for a New src Module")
-3. Gates: `npm run typecheck && npm run lint && npm test`
+3. Gates: `npm run typecheck && npm run lint && npm test` locally; CI adds knip as the final gate
 </important if>
 
 <important if="you are adding a new platform surface">
