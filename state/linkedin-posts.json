@@ -1,7 +1,21 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-26T02:50:44.646Z",
+  "writtenAt": "2026-11-26T03:23:50.654Z",
   "posts": [
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531332428594966528",
+      "text": "I have been building a multi-page website for Greenfield Academy with React and Vite, and this week was about the details that make a site feel finished.\n\nHere is what I worked on:\n1. Set up a consistent brand colour palette across every page.\n2. Chose Playfair Display for headings and Plus Jakarta Sans for body text, then used browser DevTools to confirm the fonts were actually rendering and not falling back to defaults.\n3. Replaced emojis and default arrows with lucide-react icons in the header, homepage and footer, which made the whole interface look cleaner and more professional.\n4. Tracked down image loading problems so every visual displays properly.\n\nWhat I learned: \nSmall things like fonts, icons and images decide whether a site looks like a tutorial or like a real product. Checking that something works in the browser, and not just assuming it does, saves a lot of time.\nI am still refining it, and I will share the live version soon.\nI am looking for a junior full-stack developer role or internship in Kenya or remote. If your team is hiring, I would love to connect.\n#React #Vite #FrontendDevelopment #WebDevelopment #FullStackDeveloper #Kenya #OpenToWork",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531332427328438272",
+      "timestamp": "2026-11-25T12:26:16.367Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react jakarta"
+        }
+      ]
+    },
     {
       "platform": "linkedin",
       "id": "urn:li:activity:7531329000342929408",
@@ -88,6 +102,104 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531552817497489408",
+      "text": "We are delighted to announce Mr. Steve Tjen, Director of Business Development - Indonesia & Malaysia at Radisson Hotel Group, as one of the distinguished speakers joining the 10th Hospitality Indonesia Conference #HIC2027!\n\nSteve will be speaking at the Hotel Investment Summit, bringing his experience and perspective to the conversations shaping the future of Indonesia’s hospitality industry.\n\nSteve is responsible for RHG’s development strategy and execution in Indonesia since 2022. He has made it his mission to communicate RHG’s mission throughout the region by being practical, straightforward, and offering value-adding solutions.\n\nHis insights will be part of an exciting programme bringing together leading hotel owners, investors, developers, operators, and hospitality professionals from across Indonesia and beyond.\n\nSave the date!\n📅 27–28 January 2027\n 📍 Le Méridien Jakarta\n\n🎟️ Ready to join us?\n Register your delegate pass and be part of the conversation at #HIC2027.\n👉 Register here: https://bit.ly/HIC2027Reg\n🌐 Learn more about the event: https://bit.ly/HIC2027\n\n🤝 Interested in sponsorship or partnership opportunities?\n 📩 Contact Gloria Wong, Managing Director\ngloria@hospitality-asia.com\n\n🎟️ For delegate registration enquiries:\n 📩 Contact Jewel Solano, Head of Administration\njewel@hospitality-asia.com\n\nWe look forward to welcoming you to #HIC2027 and introducing more of our industry-leading speakers in the weeks ahead.\n\n#HIC #HospitalityAsia #HISA #HDSA #HRSA #TBSA #HospitalityIndonesia #Conference #HospitalityAsiaEventSeries2027",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531181529163628544",
+      "timestamp": "2026-11-26T03:02:01.176Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552509274771456",
+      "text": "We are PT. China Harbour Indonesia subsidiary of China Harbour Engineering Company Ltd. (CHEC) an internationally first-class engineering contractor, industrial investment contractor, urban developer and ecological manager in the fields of ports, buildings, roads and bridges, rails, comprehensive urban development, ecological and enviromental protection, pipeline network and green power with investment and financing, consulting and planning, design and construction, management and operation services\n\nKami saat ini sedang mencari One-stop Sourcing Supplier Partner / Mitra Pemasok Satu Pintu atau yang biasa dikenal dengan General Supplier atau  Pemasok / Supplier Umum di Sumatera Utara, Medan. Vendor Supplier yang memahami benefit jangka panjang ini dipersilakan direct message, diskusi langsung ke email dan mobile phone yang ada di kartu nama profil. Sekian informasi ini. Vendor Supplier yang berasal dari Jakarta apalagi langsung dari Medan jelas merupakan Nilai Prioritas #Medan #Vendor #Supplier #EPC #Construction #Supplier#Subcontractor",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552508524105728",
+      "timestamp": "2026-11-26T03:00:47.690Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531551590948798464",
+      "text": "Great to be in Jakarta this week for the 10th Waste Management & Waste to Energy Asia Summit 2026 – Indonesia Focus, organised by INBC Global at Hotel Bidakara (25–27 November).\n \nWe were glad to present MARTIN Technologies at the summit and share how our proven waste-to-energy technology can help Indonesia and the wider ASEAN region turn municipal solid waste into reliable, clean energy.\n \nIndonesia's push on waste-to-energy is gaining real momentum, and the conversations here, with developers, EPC contractors, utilities and policymakers, showed how much appetite there is for technology that is bankable, reliable and built for the region's waste.\n \nOur thanks to INBC Global for a well-run event, to the partners and fellow exhibitors, and to everyone who stopped by to talk with us. We look forward to continuing these discussions and to building partnerships across Indonesia and Southeast Asia.\n\n#WasteToEnergy #WtE #Indonesia #ASEAN #EnergyTransition #Decarbonization #CircularEconomy #MARTINTechnologies #WMWTE2026",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531551590105812992",
+      "timestamp": "2026-11-26T02:57:08.744Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531550589713895426",
+      "text": "Telkom and BRIN are joining forces to strengthen Indonesia’s digital sovereignty through research and innovation in artificial intelligence, satellite technology, and quantum computing.\n\nThe collaboration adopts a joint innovation-to-commercialization approach, connecting BRIN’s research capabilities with industry needs through TelkomGroup. Initial priorities include Indonesian-language AI models, satellite services, and Post-Quantum Cryptography (PQC), paving the way for homegrown technologies to reach wider commercial applications.\n#INTIMEDIA #DigitalSovereignty #ArtificialIntelligenc #BRIN",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531550588619173888",
+      "timestamp": "2026-11-26T02:53:10.031Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531549131102900224",
+      "text": "🚀 WE'RE HIRING: iOS Developer (Middle Level) | ADI Consulting Indonesia\n\nADI Consulting Indonesia is looking for a talented iOS Developer (Middle Level) to join a banking project based in Bintaro.\n\nIf you have solid experience in iOS application development and are passionate about building scalable, high-quality mobile applications, we'd love to hear from you!\n\n📌 Job Details\nPosition: iOS Developer (FE iOS)\nLevel: Middle Level\nExperience: 3–5 years\nProject Type: Banking\nEmployment Type: Outsourcing\nContract Duration: 6 Months\nWork Arrangement: Hybrid\nLocation: Bintaro, South Tangerang\nStart Date: Immediate / Maximum 1 Month Notice Period\n\n🛠 Required Skills & Qualifications\n\n✅3–5 years of experience in iOS application development.\n✅Strong proficiency in Swift (Middle Level).\n✅Hands-on experience with SwiftUI.\n✅Good understanding and implementation experience of Clean Architecture.\n✅Experience working with Firebase SDK, particularly:\n✅Firebase Analytics\n✅Firebase Cloud Messaging (FCM)\n✅Firebase Crashlytics\n✅Understanding of CI/CD concepts and workflows.\n✅Familiarity with the Apple App Store submission and release process.\n\n🎯 What We're Looking For\n\nCandidates with experience developing and maintaining iOS applications.\nStrong understanding of iOS development best practices and software architecture.\nAbility to work collaboratively with cross-functional teams.\nCandidates who are ready to join immediately or within one month's notice.\n\n📩 Apply Now!Please submit your updated CV through the application link:\n\n🔗 Application Submission Form: https://lnkd.in/g-Px85dw\n\nOr, you can send me a DM directly for more information.Feel free to share this opportunity with your network!\n\n#Hiring #iOSDeveloper #iOSDevelopment #Swift #SwiftUI #Firebase #MobileDeveloper #BankingJobs #ITJobs #TechJobs #Bintaro #HybridWork #ADiConsultingIndonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531549129571794946",
+      "timestamp": "2026-11-26T02:47:22.271Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531546467069743104",
+      "text": "Hi everyone!\nWe are currently looking for several IT professionals to join our team for a Banking Industry project.\n\n📍 Location: West Jakarta\n🏢 Working Arrangement: Full Work From Office (WFO)\n📄 Employment Type: Contract (6–12 Months)\n\nGeneral Requirements:\n- Minimum Bachelor's Degree (S1) or equivalent in a relevant field.\n\n1. Project Manager\n- Minimum 3 years of experience in SDLC projects.\n- Experience as Project Manager, Scrum Master, Product Owner, or Development Team member.\n- Understand Agile & Waterfall methodologies and Scrum ceremonies.\n- Familiar with Jira and Confluence.\n\n2. iOS Developer\n- Minimum 3 years of experience in iOS development using Swift.\n- Proficient in Xcode, UIKit, RESTful APIs, and Core Data.\n- Understand MVC, MVVM, or VIPER architecture.\n- Familiar with Git, Jira, Docker, and CocoaPods/SPM.\n- Experience in deployment and troubleshooting.\n\n3. Solution Analyst\n- Minimum 3 years of experience as a Solution Designer, Developer, Solution Architect, or equivalent.\n- Previous experience as a Developer is preferred.\n- Strong analytical, communication, and problem-solving skills.\n- Able to collaborate with cross-functional teams.\n\n4. Integration Analyst\n- Minimum 3 years of experience in IT Banking or a similar field.\n- Strong analytical and problem-solving skills.\n- Good communication and coordination skills.\n\n5. Frontend Developer (Angular)\n- Minimum 3 years of experience in Frontend Development.\n- Proficient in HTML, CSS, JavaScript, and Bootstrap.\n- Hands-on experience with Angular (Version 2+).\n- Understand OOP concepts and Agile methodologies.\n\n📩 Interested?\nSend your updated CV via DM or email to Sheila.Widjaya@accordinnovations.com with the subject: Name – Roles\nOR Apply through the link below:\n🔗https://lnkd.in/gu9Qk6Pt\n\nFeel free to share this opportunity with your network!\n\n#Hiring #ITJobs #Banking #ProjectManager #iOSDeveloper #SolutionAnalyst #IntegrationAnalyst #AngularDeveloper #JakartaJobs #Swift #LokerIT #Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531546466440601600",
+      "timestamp": "2026-11-26T02:36:47.116Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531545006952579073",
+      "text": "I had a great time attending the GitHub Universe 2026 Recap at the Microsoft Melbourne office and even walked away with a small plush owl from the lucky draw! 🦉🚀\n\nYou can read release notes online anytime, but stepping away from our screens to learn alongside local peers brings a completely different level of clarity and inspiration.\nIt’s incredible to see the sheer scale of the ecosystem we are building in. According to GitHub’s Octoverse 2026 report, the platform now connects 225M+ developers and 630M+ repositories worldwide (including 90% of Fortune 100 companies)—led by massive communities in the US (38.3M), India (32M), China (12.4M), and Brazil (10.2M), alongside booming hubs in Japan, the UK, Indonesia, and Germany.\nMy top takeaways from the evening:\n• Agentic AI is mainstream: Over 40% of pull requests now start with an AI agent's first draft, as GitHub Copilot evolves from simple autocomplete into collaborative, multi-model workflows.\n• TypeScript leads the way: Driven by teams prioritizing type safety alongside AI agents, TypeScript is now the #1 most-used language on GitHub.\n• Community accelerates learning: Hearing how Melbourne engineers are applying these updates in production makes big industry shifts immediately actionable.\nHuge thanks to Michelle Duke and Dylan McCarthy for the deep dive, and a special shoutout to Mark K. and Max for hosting 50+ local tech enthusiasts—and for the awesome lucky draw prize that now has a permanent spot on my desk! 😄\n\nGrateful to be part of such a forward-thinking community—looking forward to the next one!\n#GitHubUniverse #GitHub #Microsoft #GitHubCopilot #Melbourne #DeveloperCommunity #AI #SoftwareEngineering #Octoverse",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531545005920862208",
+      "timestamp": "2026-11-26T02:30:58.997Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531542354789470208",
       "text": "Batam as Singapore’s Digital Spillover Hub: Engineering Tier-IV Power Reliability and Cross-Border Low-Latency Infrastructure\n\nAs Singapore enforces strict power, water, and carbon-efficiency thresholds on new data center allocations, Batam has emerged as Southeast Asia’s premier digital spillover hub—located just 20 kilometers across the Singapore Strait with sub-3-millisecond latency potential. Anchored by Special Economic Zones (KEKs) such as Nongsa Digital Park, Batam offers hyperscale and AI-ready campus developers rapid land scalability and direct proximity to Singapore’s financial and cloud ecosystem. \n\nYet turning geographic proximity into institutional bankability requires far more than proximity alone. \n\nFrom an energy investment origination and enterprise risk governance perspective, Batam data center campuses reach institutional financial close only when Tier-IV redundant power architecture, cross-border subsea fiber diversity, and clean energy transition pathways are engineered upfront.\n\nDeveloping hyperscale capacity on an islanded grid without dedicated dual-substation redundancy, diverse subsea cable landings, and verifiable low-carbon power exposes sponsors to SLA penalties and tenant hesitation.\n\nSix core pillars define institutional origination for Tier-IV power reliability and cross-border infrastructure in Batam:\n\n 1. Dual-Substation Redundancy & Island Grid Stability: Engineering independent 150 kV/20 kV feeds from PLN Batam—paired with grid-forming Battery Energy Storage Systems (BESS) and N+1/2N backup generation—eliminates single-point-of-failure risks on an islanded power system.\n\n 2. Cross-Border Subsea Fiber Diversity & Low-Latency Routing: Securing multiple physically diverse subsea fiber-optic cable landings connecting Batam directly to Singapore’s carrier-neutral data centers guarantees sub-3ms round-trip latency and route resilience.\n\n 3. 24/7 Clean Power & Cross-Border Green Corridor Alignment: Integrating utility-scale solar-plus-BESS, regional renewable energy certificates (RECs), and emerging Indonesia–Singapore clean-power interconnection frameworks satisfies global hyperscaler decarbonization mandates.\n\n 4. Water-Efficient Cooling & Reservoir Security: Deploying closed-loop liquid cooling, air-cooled chillers, and industrial-water recycling mitigates Batam’s limited freshwater catchment capacity while optimizing Power Usage Effectiveness (PUE).\n\n 5. KEK Special Economic Zone Licensing & Customs Certainty: Leveraging Batam’s KEK fiscal incentives, streamlined import-duty exemptions for high-value server/MEP equipment, and clean HGB land titles accelerates construction schedules.\n\n 6. Subsea Permitting Integrity, Cybersecurity & ABAC Controls: Enforcing rigorous marine-corridor permitting, physical/cyber security governance, and zero-tolerance anti-bribery and anti-corruption (ABAC) controls protects institutional credit committees.",
       "author": "linkedin-member",
@@ -103,7 +215,7 @@
     {
       "platform": "linkedin",
       "id": "urn:li:activity:7531536986096979968",
-      "text": "We’re hiring a Mid-Level Full Stack Developer (Python / React) at Origo Labs.\nOur lead developer has been building the Origo Engine faster than I expected, and it’s time to give him some help. We’re looking for someone who can work alongside him, take direction, and say “there’s a better way to do this” when they see one.\nWe use Python, FastAPI, PostgreSQL, TypeScript, and React. You should be using AI coding tools every day, ideally Claude Code, and be able to code live without them. That’s part of the interview.\nThe first few months will be mostly client onboarding and support, alongside shipping fixes. Being good with people matters as much as being good with code.\nThe role is remote and open to people based in the Philippines, Vietnam, Indonesia, Malaysia, Thailand, and Sri Lanka. You’ll work Asia-Pacific hours. Pay isUSD 1,500 to 2,000 per month.\nWe’re reviewing applications through December and aiming for a January 2027 start.\nFull details and how to apply are in the LinkedIn listing below.\n\nIf someone comes to mind, I’d appreciate you sending them the link.",
+      "text": "We’re hiring a Mid-Level Full Stack Developer (Python / React) at Origo Labs.\nOur lead developer has been building the Origo Engine faster than I expected, and it’s time to give him some help. We’re looking for someone who can work alongside him, take direction, and say “there’s a better way to do this” when they see one.\nWe use Python, FastAPI, PostgreSQL, TypeScript, and React. You should be using AI coding tools every day, ideally Claude Code, and be able to code live without them. That’s part of the interview.\nThe first few months will be mostly client onboarding and support, alongside shipping fixes. Being good with people matters as much as being good with code.\nThe role is remote and open to people based in the Philippines, Vietnam, Indonesia, Malaysia, Thailand, and Sri Lanka. You’ll work Asia-Pacific hours. Pay isUSD 1,500 to 2,000 per month.\nWe’re reviewing applications through December and aiming for a January 2027 start.\n\nWe’re still accepting applications by email. Send your résumé to careers@origolabs.ai with a link to something you’ve built and a few lines on what you personally worked on.",
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531536985425915906",
       "timestamp": "2026-11-26T01:59:06.676Z",
@@ -144,6 +256,132 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531530179169406976",
+      "text": "Now 200000RMB Worldwide  \n🇻🇳 Vietnam | 🇮🇩 Indonesia | 🇸🇬 Singapore | 🇲🇾 Malaysia\n🇦🇪 Dubai | 🇵🇰 Pakistan | 🇮🇳 India | 🇧🇩 Bangladesh\n#Hywin #AluminumWindows #AluminumDoors #FactoryDirect #BuildingMaterials #Construction #RealEstate #ArchitecturalSolutions #Export #Importers #Developers #Bangladesh #India #Pakistan #UAE #Malaysia #Vietnam #Indonesia #Singapore",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531530178339028992",
+      "timestamp": "2026-11-26T01:32:03.778Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531529562674003968",
+      "text": "For a while now I've been building something from scratch with my team: Simpaskor 🏆\nIt started with a problem we kept running into. Competitions were still judged on paper, scores were added up by hand, registrations were scattered across chat groups and tickets were sold somewhere else. It was slow, mistakes were common and the results were hard to trust.\nSimpaskor puts all of it in one place:\n- Online participant registration\n- Digital judging with automatic scoring \n- E-voting for the audience\n- Ticketing and payouts for organizers\n- Web and mobile apps\nAs Co-Founder and developer, I built the system end to end, from architecture and backend to the mobile app and deployment. My biggest lesson: good products come from talking to organizers on the ground, not from feature lists.\nIf you run competitions for a school, community or organization and want things to run smoother, let's talk 👋\n#Simpaskor #Startup #CoFounder #FullStackDeveloper #EventTech #Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531529561772134401",
+      "timestamp": "2026-11-26T01:29:36.794Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531553198008938496",
+      "text": "dessry.anjelica@adidata.co.id",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531553197480632320",
+      "timestamp": "2026-11-26T03:03:31.897Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552915212312576",
+      "text": "Blanking, piercing, bending, forming, and drawing are NOT the same operation. ⚙️\n\nThey may happen on the same stamping line, but each serves a different purpose.\n\nUnderstanding the difference helps engineers design better tooling, and helps buyers ask the right questions before approving a die.\n\nLet's break it down. 👇\n\n✂️ 1️⃣ Blanking\nThe punch cuts a shape out of sheet metal, and the removed piece is the intended product. The remaining sheet becomes scrap or skeleton material.\n\n🕳️ 2️⃣ Piercing\nThe punch creates holes or openings in the material. Here, the hole is the feature you need, while the removed slug is scrap.\n\n📐 3️⃣ Bending\nThe material is forced around a punch or die to create an angle or shape. The metal is reshaped without intentionally cutting through it.\n\n🔧 4️⃣ Forming\nA broader category of operations that change the shape of sheet metal. This can include flanging, embossing, curling, and other features that do not simply cut material away.\n\n🥣 5️⃣ Drawing\nIn deep drawing, a punch pushes a sheet metal blank into a die cavity to create a three dimensional shape, such as a cup or housing. Material flows into the cavity, so blank holder force and material properties matter.\n\nWhy does this matter in real production?\n\nBecause every operation creates different tooling demands.\n\nA piercing operation needs suitable cutting clearance. Bending requires control of springback. Deep drawing needs careful control of material flow to reduce wrinkling and tearing.\n\nMix these requirements up during die design, and you risk dimensional problems, defects, extra adjustments, and higher production costs.\n\nThe goal isn't just to make the metal take a new shape.\n\nIt's to achieve the required geometry, repeatability, and quality throughout production.\n\n💬 Which operation gives your team the biggest headache: piercing, bending, or deep drawing?\n\n📩 Need a precision metal stamping partner for your next project? Let's discuss your requirements.\n📱 WhatsApp: +62811699226\n✉️ Email: erik.sebastian@ckpi.co.id\n\n#MetalStamping #SheetMetal #PrecisionEngineering #Manufacturing #MetalForming #ToolAndDie #ProgressiveDie #DeepDrawing #QualityControl #AutomotiveManufacturing",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7520378239601684480",
+      "timestamp": "2026-11-26T03:02:24.473Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552352630132736",
+      "text": "The future of engineering starts with curiosity, knowledge, and the willingness to keep learning.\n\nBecause developing great engineers takes more than theoretical knowledge. It takes real-world exposure, hands-on experience, and opportunities to learn directly from industry experts.\n\nIn collaboration with IAFMI (Ikatan Ahli Fasilitas Produksi Minyak dan Gas), KSB Indonesia welcomed young engineers to our facility in Cibitung for an engaging learning experience through IAFMI Campfire Chat: Pump Introduction for Young Engineers. The program featured a factory tour and centrifugal pump training, offering participants a closer look at pump technology, engineering applications, and the expertise behind KSB's solutions.\n\nBringing together young professionals from Mechanical, Civil, Instrumentation, Electrical, Chemical, and other engineering disciplines, the initiative created an opportunity to:\n•\tExpand technical knowledge of centrifugal pumps.\n•\tGain firsthand insights into pump technology and applications.\n•\tConnect with industry professionals and fellow engineers.\n•\tExchange ideas and build valuable professional networks.\n\nAt KSB, we believe that sharing knowledge today helps shape the engineers who will drive the industry forward tomorrow.\n\nOur sincere appreciation to IAFMI for the collaboration and to all participants for their enthusiasm and active engagement.\n\nLet's continue creating opportunities to learn, connect, and grow together!\n\n#KSB #KSBIndonesia #IAFMI #YoungEngineers #Engineering #PumpTechnology #KnowledgeSharing #EngineeringExcellence",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531531714590937088",
+      "timestamp": "2026-11-26T03:00:10.343Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552353070616576",
+      "text": "We're Hiring in Indonesia! Join SuperMap Indonesia 🇮🇩\n\nSuperMap Indonesia is expanding its technical team, and we're looking for passionate GIS professionals to join us in Jakarta!\n\nWe currently have two full-time opportunities available:\n🔹 GIS Engineer (Implementation & Development)\nFocus on GIS platform deployment, web GIS application development, system integration, and technical support.\n🔹 GIS Engineer (Presales & Solution)\nFocus on GIS solution design, technical presentations, product demonstrations, and customer engagement.\n\nWhether you're passionate about hands-on GIS technology or enjoy turning customer needs into innovative solutions, we'd love to hear from you!\n\n📍 Location: Jakarta, Indonesia\n💼 Employment Type: Full-time\n🌟 Fresh graduates are welcome to apply!\n\nInterested? Check out the job descriptions in the posters and take the next step in your GIS career with SuperMap!\n\n📩 Apply now: indonesia@supermap.com\n\n#SuperMap #Hiring #GISJobs #GISCareer #IndonesiaJobs #GISEngineer",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531535833430962176",
+      "timestamp": "2026-11-26T03:00:10.448Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531548672388485120",
+      "text": "🚀 WE'RE HIRING: SOFTWARE DEVELOPMENT ENGINEER IN TEST (AGENT)!\n\nPARKEE is looking for a curious and detail-oriented Software Development Engineer in Test (Agent) to join our team!\n\nIf you have a background in Software Engineering or Computer Science, an interest in software quality assurance, and a passion for test automation and exploring new technologies, this opportunity might be for you!\n\nFresh graduates and candidates with internship experience, especially in QA, are welcome to apply.\n\nHow to Apply:\n\nSend your CV and application to:\n📩 pops@parkee.app\n\nEmail Subject: Apply for Position - Name\n\nYou can also find this opportunity on Glints, Dealls, and LinkedIn:\nPT. Inovasi Anak Indonesia - PARKEE\n\nCheck out the poster for complete job requirements and responsibilities.\n\nJoin us and grow with PARKEE!\n\n#PARKEE #WeAreHiring #Hiring #SoftwareEngineer #SoftwareTesting #QAEngineer #AutomationTesting #FreshGraduate #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548671268794368",
+      "timestamp": "2026-11-26T02:45:32.905Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531548387599532032",
+      "text": "Hello All Seafarers\n\nPT. KSM INDONESIA\n\n📢JOB VACANCY📢 \n ‼️VERY URGENT‼️\n\n🛳️ LNG VESSEL\n1. GAS ENGINEER     $9760\n2. 3/O                       $3860\n\nRequirement\n- All documents valid mi1n 18 months and already updating cert BST MSC 560\n- ⁠Have experience mix crew \n- ⁠Fluent in english skill\n- ⁠Completed COVID-19 Vaccination \n\nSend your resume: +62 8567242691 (Dillon)\n\nIkuti saluran PT. KSM INDONESIA - DILLON di WhatsApp: https://lnkd.in/gQ2JuZb9\n\n🆓FREE OF CHARGE",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548386856984576",
+      "timestamp": "2026-11-26T02:44:25.006Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531548188810379265",
+      "text": "✨ Sangfor Internship for Future Talents｜Jakarta, Indonesia\nSangfor Technologies is a global leading provider of IT infrastructure solutions, focusing on Cloud Computing & Network Security. Founded in 2000, we have over 9,500 employees and 60+ branch offices worldwide, including our Indonesia office in Jakarta.\nWe are launching our paid internship program (3–6 months) and looking for motivated final-year students to join our team as Field Application Engineer / Presales Engineer / Sales Intern!\n🎯 Basic Requirements\nFinal-year university students or fresh graduates, Bachelor’s degree in Engineering, Cyber Security, Computer Science, Information Systems or related majors\nAble to work on-site at our Jakarta office\n💼 Role Highlights 🔹 Field Application Engineer Intern\nProvide on-site & remote technical support for customers, handle POC and after-sales inquiries\nTrack, manage and resolve incidents, prepare customer-facing reports\nConduct device installation & integration at customer environments\n🔹 Presales Engineer Intern\nIdentify requirements & business opportunities from customer/partner meetings, build technical solution strategies\nAnalyze client requirements, map risks & constraints, recommend suitable project approaches\nPrepare presentations, cost estimations and support full project lifecycle planning\n🔹 Sales Intern\nIdentify, recruit and collaborate with distributors & value-added resellers to develop new business and retain existing customers\nEngage and motivate channel partners, design sales & marketing initiatives to drive revenue growth\nDiscover new sales opportunities and maintain long-term healthy customer relationships\n🎁 What We Offer ✅ Paid internship allowance ✅ Clear full-time conversion opportunity after internship ✅ Team building, birthday gifts, festival gifts and regular department activities ✅ Hands-on exposure to cutting-edge cloud & cybersecurity industry, global platform resources\n📩 Contact: nina.sun@sangfor.com Please send your resume to this email if you are interested!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548186432131072",
+      "timestamp": "2026-11-26T02:43:37.611Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531547955074478081",
       "text": "https://lnkd.in/gj4THx5Z",
       "author": "linkedin-member",
@@ -172,6 +410,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531545579517206528",
+      "text": "Saipem International Oil & Gas Jobs – Worldwide Recruitment 2026\nSaipem, a global leader in engineering, construction and energy infrastructure, is inviting applications from qualified and experienced professionals for multiple international Oil & Gas and offshore project opportunities.\nCandidates with relevant experience in offshore construction, engineering, commissioning, HSE, rigging, marine operations, maintenance and technical disciplines are encouraged to apply.\nJob Locations: China, Australia, Qatar, Saudi Arabia, Italy, UAE, Algeria, Mozambique, Indonesia, Guyana and Angola.\nAvailable Job Vacancies\n🇨🇳 China\n1.    Engine Room Supervisor\n2.    Commissioning HVAC Supervisor\n3.    Engine Room Technician\n4.    Piping Superintendent\n5.    Structural Superintendent\n6.    Senior Construction Engineer\n7.    Technical Manager\n8.    Naval Architect Lead\n9.    Commissioning Engineer\n10. Commissioning Lead\n🇦🇺 Australia\n1.    Construction Subcontract Engineer\n🇶🇦 Qatar\n1.    Offshore Methods Draftsman\n2.    Commissioning Manager\n🇸🇦 Saudi Arabia\n1.    HSE Officer\n2.    HSE Supervisor\n3.    Commissioning & Operation Lead\n🇮🇹 Italy\n1.    Welding Engineer\n2.    NDT Engineer\n3.    Pipeline Technologies Project Manager\n🇦🇪 UAE\n1.    Pre-Commissioning Technician\n🌊 Offshore Opportunities\n1.    Pipeline Pre-Comm Electrical Technician\n2.    2nd Engineer\n3.    Engine Room Supervisor\n4.    Junior Offshore Construction Shift\n5.    Vessel ICT Technician\n6.    Mechanical Supervisor Plant\n7.    Hook Up Superintendent\n8.    Hook Up Assistant Superintendent\n9.    Offshore Pedestal Crane Operator\n10. Offshore Main Crane Operator\n11. Rigger Foreman\n12. Vessel Field Engineer\n13. Senior Offshore Shift Supervisor\n14. Offshore Construction Manager\n15. Offshore Crawler Crane Operator\n16. Quality Control Coordinator\n🇩🇿 Algeria\n1.    Construction Subcontract Manager\n🇲🇿 Mozambique\n1.    Deputy Construction Manager Marine\n2.    Construction Manager\n3.    Rig Mechanic\n🇮🇩 Indonesia\n1.    Planning Engineer Lead (In Office)\n2.    Planning Engineer (In Office)\n3.    Project Control Manager (In Office)\n🇬🇾 Guyana\n1.    Rigging Foreman\n2.    Lifting Supervisor\n🇦🇴 Angola\n1.    Dimensional QC Inspector\nClick the following link to Apply 👉https://cutt.ly/8yDki6jT",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531545578149867520",
+      "timestamp": "2026-11-26T02:33:15.507Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531545612979286016",
       "text": "Saipem International Oil & Gas Jobs – Worldwide Recruitment 2026\nSaipem, a global leader in engineering, construction and energy infrastructure, is inviting applications from qualified and experienced professionals for multiple international Oil & Gas and offshore project opportunities.\nCandidates with relevant experience in offshore construction, engineering, commissioning, HSE, rigging, marine operations, maintenance and technical disciplines are encouraged to apply.\nJob Locations: China, Australia, Qatar, Saudi Arabia, Italy, UAE, Algeria, Mozambique, Indonesia, Guyana and Angola.\nAvailable Job Vacancies\n🇨🇳 China\n1.    Engine Room Supervisor\n2.    Commissioning HVAC Supervisor\n3.    Engine Room Technician\n4.    Piping Superintendent\n5.    Structural Superintendent\n6.    Senior Construction Engineer\n7.    Technical Manager\n8.    Naval Architect Lead\n9.    Commissioning Engineer\n10. Commissioning Lead\n🇦🇺 Australia\n1.    Construction Subcontract Engineer\n🇶🇦 Qatar\n1.    Offshore Methods Draftsman\n2.    Commissioning Manager\n🇸🇦 Saudi Arabia\n1.    HSE Officer\n2.    HSE Supervisor\n3.    Commissioning & Operation Lead\n🇮🇹 Italy\n1.    Welding Engineer\n2.    NDT Engineer\n3.    Pipeline Technologies Project Manager\n🇦🇪 UAE\n1.    Pre-Commissioning Technician\n🌊 Offshore Opportunities\n1.    Pipeline Pre-Comm Electrical Technician\n2.    2nd Engineer\n3.    Engine Room Supervisor\n4.    Junior Offshore Construction Shift\n5.    Vessel ICT Technician\n6.    Mechanical Supervisor Plant\n7.    Hook Up Superintendent\n8.    Hook Up Assistant Superintendent\n9.    Offshore Pedestal Crane Operator\n10. Offshore Main Crane Operator\n11. Rigger Foreman\n12. Vessel Field Engineer\n13. Senior Offshore Shift Supervisor\n14. Offshore Construction Manager\n15. Offshore Crawler Crane Operator\n16. Quality Control Coordinator\n🇩🇿 Algeria\n1.    Construction Subcontract Manager\n🇲🇿 Mozambique\n1.    Deputy Construction Manager Marine\n2.    Construction Manager\n3.    Rig Mechanic\n🇮🇩 Indonesia\n1.    Planning Engineer Lead (In Office)\n2.    Planning Engineer (In Office)\n3.    Project Control Manager (In Office)\n🇬🇾 Guyana\n1.    Rigging Foreman\n2.    Lifting Supervisor\n🇦🇴 Angola\n1.    Dimensional QC Inspector\nClick the following link to Apply 👉https://cutt.ly/8yDki6jT",
       "author": "linkedin-member",
@@ -191,20 +443,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531545647657775104",
       "timestamp": "2026-11-26T02:33:32.003Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531545579517206528",
-      "text": "Saipem International Oil & Gas Jobs – Worldwide Recruitment 2026\nSaipem, a global leader in engineering, construction and energy infrastructure, is inviting applications from qualified and experienced professionals for multiple international Oil & Gas and offshore project opportunities.\nCandidates with relevant experience in offshore construction, engineering, commissioning, HSE, rigging, marine operations, maintenance and technical disciplines are encouraged to apply.\nJob Locations: China, Australia, Qatar, Saudi Arabia, Italy, UAE, Algeria, Mozambique, Indonesia, Guyana and Angola.\nAvailable Job Vacancies\n🇨🇳 China\n1.    Engine Room Supervisor\n2.    Commissioning HVAC Supervisor\n3.    Engine Room Technician\n4.    Piping Superintendent\n5.    Structural Superintendent\n6.    Senior Construction Engineer\n7.    Technical Manager\n8.    Naval Architect Lead\n9.    Commissioning Engineer\n10. Commissioning Lead\n🇦🇺 Australia\n1.    Construction Subcontract Engineer\n🇶🇦 Qatar\n1.    Offshore Methods Draftsman\n2.    Commissioning Manager\n🇸🇦 Saudi Arabia\n1.    HSE Officer\n2.    HSE Supervisor\n3.    Commissioning & Operation Lead\n🇮🇹 Italy\n1.    Welding Engineer\n2.    NDT Engineer\n3.    Pipeline Technologies Project Manager\n🇦🇪 UAE\n1.    Pre-Commissioning Technician\n🌊 Offshore Opportunities\n1.    Pipeline Pre-Comm Electrical Technician\n2.    2nd Engineer\n3.    Engine Room Supervisor\n4.    Junior Offshore Construction Shift\n5.    Vessel ICT Technician\n6.    Mechanical Supervisor Plant\n7.    Hook Up Superintendent\n8.    Hook Up Assistant Superintendent\n9.    Offshore Pedestal Crane Operator\n10. Offshore Main Crane Operator\n11. Rigger Foreman\n12. Vessel Field Engineer\n13. Senior Offshore Shift Supervisor\n14. Offshore Construction Manager\n15. Offshore Crawler Crane Operator\n16. Quality Control Coordinator\n🇩🇿 Algeria\n1.    Construction Subcontract Manager\n🇲🇿 Mozambique\n1.    Deputy Construction Manager Marine\n2.    Construction Manager\n3.    Rig Mechanic\n🇮🇩 Indonesia\n1.    Planning Engineer Lead (In Office)\n2.    Planning Engineer (In Office)\n3.    Project Control Manager (In Office)\n🇬🇾 Guyana\n1.    Rigging Foreman\n2.    Lifting Supervisor\n🇦🇴 Angola\n1.    Dimensional QC Inspector\nClick the following link to Apply 👉https://cutt.ly/8yDki6jT",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531545578149867520",
-      "timestamp": "2026-11-26T02:33:15.507Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -312,11 +550,333 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531548899183091712",
-      "text": "🦷 WE ARE HIRING!\n\nPT Opal Dental Indonesia, home to 100+ amazing healthcare professionals, is growing, and we're looking for a passionate and dedicated talent to join our team!\n\n✨ Open Position:\nFront Office — Jakarta\n\nIf you are friendly, detail-oriented, have excellent communication skills, and are passionate about delivering exceptional service and creating a welcoming experience for every patient, this opportunity might be for you!\n\n📩 How to Apply:\nSend your latest CV to : hrd.opaldental@gmail.com\n\nEmail Subject: Name - Front Office\n\nJoin us and be part of a growing team committed to making a difference and creating great smiles!\n\n#Wearehiring #jakarta #loker #frontoffice",
+      "id": "urn:li:activity:7531556516131311616",
+      "text": "📢 WE ARE HIRING – FINANCE SUPERVISOR\n\nPT BREXA Raya Indonesia\n(Formerly PT OS Selnajaya Indonesia)\n📧 **Valentina.kartika@Brexa.com**\n\nPosition: Finance Supervisor\nIndustry: Electronics Manufacturing (Home Appliances)\nLocation: EJIP Industrial Estate, Cikarang\nSalary: IDR 8,000,000 – 9,000,000 (Take-Home Pay)\n\n🎯 QUALIFICATIONS : \nBachelor's Degree (S1) in Finance, Accounting, or a related field.\nGood English communication skills.\nHands-on experience using SAP systems.\nProven experience as a Finance Supervisor in the manufacturing industry, preferably in Home Appliances or Electronics Manufacturing.\nStrong knowledge of financial analysis, cost control, budgeting, and financial reporting.\n\n💼 KEY RESPONSIBILITIES : \nPerform cost control and financial analysis.\nManage inventory and fixed asset management.\nHandle annual budgeting and budgetary control.\nOversee finance operations and drive process improvements.\nProvide financial and business value-added analysis.\nControl Data Center Resource Management.\nManage SBU forecasting and Profit & Loss (P&L) performance.\n\n📩 HOW TO APPLY?\nAre you the right candidate, or do you know someone who fits this opportunity?\nWe would love to hear from you!\nPlease send your updated CV in English (Microsoft Word format) to:\n📧 **Valentina.kartika@Brexa.com**\nEmail Subject: Finance Supervisor\n\nFeel free to share this opportunity with your professional network or tag someone who might be interested.\nYour next career opportunity could start here! 🚀\n\n#Hiring #FinanceSupervisor #FinanceJobs #AccountingJobs #FinanceCareer #ManufacturingJobs #ElectronicsManufacturing #SAP #SAPFI #CostControl #FinancialAnalysis #Budgeting #FinancialManagement #CikarangJobs #EJIP #KarirCikarang #LowonganKerja #LokerCikarang #IndonesiaJobs",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548898524385280",
-      "timestamp": "2026-11-26T02:46:26.977Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531556514885533696",
+      "timestamp": "2026-11-26T03:16:42.999Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531556043080941569",
+      "text": "hr@jk.beautymaxid.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531556042376372224",
+      "timestamp": "2026-11-26T03:14:50.215Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531556184529612800",
+      "text": "Five IT roles are open at Asian Technology Solutions (ATS) in Indonesia. One of them might have your name on it.\n\nWe're looking for people who enjoy building digital products that millions of users rely on every day, especially in banking, fintech, and insurance.\nOpen positions:\n → Business Analyst (Loyalty)\n → iOS Developer (Swift)\n → Fullstack Developer\n → Product Manager (Banking)\n → Angular Developer\n\nAt ATS, you'll grow with a team that values collaboration, supports you every step of the way, and gives your ideas room to make a difference.\nRequirements for each role are in the slides. Send your CV to us!\n\nKnow someone who fits? Tag them in the comments.\n#Hiring #ITJobs #loker #lowonganit #jakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531551840086310912",
+      "timestamp": "2026-11-26T03:15:23.939Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531555212096962560",
+      "text": "📢 We’re Hiring!\n\nYour next career opportunity might be right here! 👀\n\nI’m looking for an Ads & KOL Admin Staff to join our team atPT World Innovative Telecommunication – OPPO Authorized Exclusive Distributor Indonesia!\n\nFresh graduates are welcome to apply. If you're detail-oriented, organized, and excited to learn, we'd love to hear from you!\n\n📍 Pluit, North Jakarta\n\nInterested? Feel free to share your CV to nadine.surya@oppo-aed.id with subject Ads & KOL Admin Staff_Your Name\n\n#Hiring #JobOpening #FreshGraduates #Marketing #KOL #Recruitment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531555211056721920",
+      "timestamp": "2026-11-26T03:11:32.093Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531555041384566784",
+      "text": "Hiring: Engineering Education Practitioner – Learning & Assessment Specialist\n\nmicro1 is hiring university-level engineering educators for an AI training project!\n\n$$90–$130/hour\nLocation: Remote – USA Preferred\nContract: Independent Contractor\n\nRequirements:\nMaster's degree or PhD in Mechanical, Civil, Electrical, Industrial, or another relevant engineering discipline.\nExperience as a University Professor, Assistant Professor, Associate Professor, Lecturer, or equivalent engineering educator.\nStrong engineering knowledge, academic teaching experience, and assessment skills.\nPreferred: PhD, curriculum development, instructional design, and US Pacific Time availability.\nNo previous AI experience required!\n\nApply here: https://lnkd.in/dnNkX7_q\n\nShare with qualified engineering professors and educators!\n\n#EngineeringJobs #EngineeringProfessor #MechanicalEngineering #CivilEngineering #ElectricalEngineering #IndustrialEngineering #AcademicJobs #AITraining #AIJobs #RemoteJobs #USAJobs #USRemoteJobs #EuropeJobs #RemoteEurope #UK #Germany #France #Netherlands #Ireland #Spain #Italy #Portugal #Poland #Switzerland #Sweden #Norway #Denmark #Finland #Austria #Belgium #Romania #Greece #Hungary #CzechRepublic #Slovakia #Croatia #Serbia #Bulgaria #Ukraine #Estonia #Latvia #Lithuania #Iceland #Turkey #Cyprus #Albania #Moldova #Georgia #Armenia #Azerbaijan #LatinAmerica #LATAMJobs #RemoteLATAM #SouthAmerica #CentralAmerica #Caribbean #Mexico #Brazil #Argentina #Chile #Colombia #Peru #Ecuador #Uruguay #Paraguay #Bolivia #Venezuela #Guyana #Suriname #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #Belize #Cuba #Jamaica #DominicanRepublic #Haiti #Bahamas #Barbados #TrinidadAndTobago #Grenada #Dominica #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Thailand #Vietnam #Philippines #Taiwan #HongKong #Australia #NewZealand #UAE #SaudiArabia #Qatar #Oman #Kuwait #Bahrain #Israel #WorldwideJobs #GlobalRemoteJobs #RemoteWorldwide #WorkFromAnywhere",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531555040587640832",
+      "timestamp": "2026-11-26T03:10:51.392Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531555152030441472",
+      "text": "📢 WE ARE HIRING!\nMAINTENANCE / TECHNICIAN\n\n📍 Bali, Indonesia\nLPK Aksela is currently looking for a qualified and motivated candidate to join our team as a Maintenance Technician.\nRequirements:\n- Male candidate.\n- Previous experience in maintenance or technical work.\n- Knowledge of general maintenance, repairs, and facility upkeep.\n- Basic knowledge of electrical systems and plumbing is an advantage.\n- Able to work independently and as part of a team.\n- Responsible, disciplined, proactive, and willing to learn.\n- Willing to be assigned in Bali.\n📩 Interested candidates are welcome to send their CV to:\nhrd@lpkaksela.com\nJoin our team and grow with LPK Aksela!\nLPK Aksela – Bali",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531555151422087168",
+      "timestamp": "2026-11-26T03:11:17.772Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531554210442686464",
+      "text": "We're Hiring\nSoftware Tester / Quality Assurance (QA)\nMiddle & Senior Level\n📍 Jakarta, Indonesia | Full Time\n\nJob Description\n\nWe are looking for experienced Software Testers / QA Engineers at Middle and Senior levels to ensure the quality, reliability, and performance of applications.\n\nKey Responsibilities\n\nDevelop Test Plans, Test Scenarios, Test Cases, Test Scripts, and Test Execution.\nPerform SIT, UAT, System Testing, and Regression Testing.\nConduct Functional and Non-Functional Testing, including Compatibility, Performance, Deployment, and Rollback Testing.\nPerform Smoke Testing and End-to-End Testing to ensure business processes meet requirements.\nConduct API Testing and Database Testing.\nIdentify, document, track, and monitor defects/bugs until resolution.\nDevelop and execute Automation Testing and Performance Testing.\nEnsure applications meet business requirements and technical specifications.\nPrepare testing documentation and submit Daily/Weekly Reports to the QA Lead.\n\nRequirements\n\nBachelor's Degree (S1) in Mathematics, Physics, Information Technology, Computer Science, Information Systems, or a related field.\nMinimum GPA of 2.75 out of 4.00.\nExperience as a Software Tester / QA Engineer:\nMiddle Tester: 2–3 years of experience.\n\nGood understanding of Software Development Life Cycle (SDLC), including Agile and Waterfall methodologies.\nFamiliarity with FSD, TSD, PCR, or other related technical documents.\nHands-on experience with:\nTest Management Tools.\nPerformance Testing Tools.\nAutomation Testing Tools.\nAPI Testing and Database Testing.\nUnderstanding of Risk-Based Testing and risk mitigation strategies.\nStrong analytical, problem-solving, and communication skills.\n\nHow to Apply\n\nInterested candidates who meet the qualifications are welcome to apply by sending their updated CV to:\n\n📩 firdaus@intikom.co.id\n\nPlease include the position you are applying for (Middle Tester ) in your email subject.\nWe look forward to connecting with you!\n\nPT Intikom Berlian Mustika\n\nHashtags\n#Hiring #WeAreHiring #SoftwareTester #QualityAssurance #QAEngineer #MiddleTester #SeniorTester #AutomationTesting #PerformanceTesting #ITJobs #JakartaJobs #Intikom",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531554209721167872",
+      "timestamp": "2026-11-26T03:07:33.280Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531553766517485569",
+      "text": "Hello, everyone! 👋 \n\nWe are currently hiring for the position of Fisioterapis at Fullerton Health Indonesia. Kindly check the poster below for more details.\n\nIf you believe you meet the qualifications and are interested in applying, please send your updated CV and required documents to: recruitment.id@fullertonhealth.com\n\nPlease remember to include the job position you are applying for in the subject line: (GAH_FIS).\n\nThank you, and have a wonderful day!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531553765599105024",
+      "timestamp": "2026-11-26T03:05:47.440Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531553198008938496",
+      "text": "dessry.anjelica@adidata.co.id",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531553197480632320",
+      "timestamp": "2026-11-26T03:03:31.897Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552691236352000",
+      "text": "Hangry is Hiring: Head of Legal!\n\nAre you an experienced legal professional passionate about driving business growth while ensuring strong legal governance and risk management?\n\nAt Hangry, we're looking for a strategic and business-oriented Head of Legal to lead our Legal function! In this role, you'll play a critical part in shaping company-wide legal strategies, managing legal and regulatory risks, advising senior leadership on strategic business decisions, and overseeing key corporate matters, including fundraising, venture debt, and litigation.\n\nWhat we're looking for:\n- Bachelor's degree in Law (S.H.) and a valid license to practice law in Indonesia.\n- Minimum 7–10 years of relevant legal experience, including experience in a managerial in-house legal role. \n- Strong knowledge of Indonesian legal and regulatory frameworks, corporate governance, and compliance.\n- Proven experience in managing complex legal matters, litigation, regulatory risks, and external legal counsel.\n- Experience in fundraising, venture debt, M&A, or corporate transactions is highly preferred.\n- Strong leadership, strategic thinking, and executive communication skills, with the ability to balance legal considerations and business objectives.\n\nIf you're ready to take on a strategic leadership role, navigate complex legal challenges, and contribute to business growth in a fast-paced environment, we'd love to hear from you!\n\n📩Apply here: https://lnkd.in/gMaMj8Ps\n\nKnow someone who might be a great fit? Feel free to tag them or share this opportunity!\n\n#Hiring #WeAreHangry #HeadOfLegal #LegalJobs #LegalCareer #CorporateLegal #LegalLeadership #JakartaJobs #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552690447790080",
+      "timestamp": "2026-11-26T03:01:31.073Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552756432633856",
+      "text": "📢 WE ARE HIRING: EXECUTIVE AND PROGRAM OFFICE (EPO) MANAGER \n\nAre you an experienced program management professional with strong leadership, governance, and coordination skills? Prospera Phase 2 is looking for an Executive and Program Office (EPO) Manager to join our team in Jakarta! \n\nIn this role, you will play a key part in strengthening program governance and supporting the effective management and delivery of Prospera Phase 2. Working closely with the Program Director, Coordination Lead, and Senior Leadership Team, you will: \n\n- Lead and coordinate program governance processes, including management meetings, secretariat functions, and governance calendars. \n- Maintain decision logs, action registers, and program risk registers, ensuring effective follow-up and escalation. \n- Lead the preparation of weekly management dashboards and regular reporting to the Australian Embassy. \n- Establish and maintain governance systems, templates, and standards in line with program requirements. \n- Ensure compliance with Prospera's Standard Operating Procedures (SOPs), quality standards, and donor requirements. \n- Build effective working relationships with internal teams, Australian Embassy, and relevant government stakeholders. \n\nWhat we are looking for: \n- Master's degree (S2) in a relevant field. \n- Minimum 8 years of experience in program management, governance, or Project Management Office (PMO) roles, preferably in donor-funded or government programs. \n- Proven experience managing governance or board secretariat processes and delivering management reports. \n- Experience in staff supervision and handling confidential information. \n- Professional proficiency in English. Fluency in Bahasa Indonesia is highly desirable. \n- Familiarity with Australian Government programs, DFAT-funded initiatives, and Indonesian government processes would be an advantage. \n\n📍 Location: Jakarta, Indonesia \n📋 Engagement Type: Long-Term Personnel (Local) \n📅 Duration: 12 months, with possibility of extension \n⏰ Application Deadline: 10 December 2026 \nInterested in joining us? Find out more about the position and submit your application through the link below: \n\n🔗 https://lnkd.in/gf8cbcyJ\n\nWe look forward to receiving your application!\n#Hiring #WeAreHiring #ProgramManagement #Governance #PMO #ManagementJobs #DevelopmentSector #ProsperaPhase2 #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552753240748032",
+      "timestamp": "2026-11-26T03:01:46.617Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552872879144961",
+      "text": "PT. LZWL Motors Indonesia Hiring!!!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552871872430080",
+      "timestamp": "2026-11-26T03:02:14.380Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552426261401600",
+      "text": "🚀 WE ARE HIRING | SALES & MARKETING DIRECTOR\n\nPremiere Services International is seeking an experienced Sales & Marketing Director for our client, a leading Hajj & Umrah Travel Agency based in South Jakarta. This strategic leadership role offers an exciting opportunity to drive business growth, strengthen brand positioning, expand market reach, and lead high-performing commercial teams. We are looking for a results-driven leader with proven experience in sales, marketing, business development, and commercial strategy, preferably within the travel, hospitality, or related service industries. If you are passionate about building successful businesses while contributing to meaningful spiritual journeys, we would love to hear from you!\n\n📩 Send your CV to: t.arief@peoplesearchinternational.com\n\n📍 Location: South Jakarta, Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552424977711104",
+      "timestamp": "2026-11-26T03:00:27.898Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552431952965632",
+      "text": "🚀 WE ARE HIRING | SALES & MARKETING DIRECTOR\n\nPremiere Services International is seeking an experienced Sales & Marketing Director for our client, a leading Hajj & Umrah Travel Agency based in South Jakarta. This strategic leadership role offers an exciting opportunity to drive business growth, strengthen brand positioning, expand market reach, and lead high-performing commercial teams. We are looking for a results-driven leader with proven experience in sales, marketing, business development, and commercial strategy, preferably within the travel, hospitality, or related service industries. If you are passionate about building successful businesses while contributing to meaningful spiritual journeys, we would love to hear from you!\n\n📩 Send your CV to: t.arief@peoplesearchinternational.com\n\n📍 Location: South Jakarta, Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552430682066944",
+      "timestamp": "2026-11-26T03:00:29.255Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552623712423936",
+      "text": "PT. Ingress Industrial Indonesia is currently hiring Finance & Accounting Supervisor.\n\nCompany: PT. Ingress Industrial Indonesia\nPosition: Finance & Accounting Supervisor\nLocation: Cikarang – Bekasi\n\nRequirements:\n- Bachelor's degree (S1) in Accounting\n- Minimum 5 years of relevant working experience\n- Experienced in handling Bank, Account Receivable (AR), and Account Payable (AP); SAP expertise is preferred\n- Strong knowledge of PSAK and financial reporting\n- Understanding of national tax regulations, tax review, and tax reconciliation\n- Strong leadership, analytical, problem-solving, and communication skills\n- Available to join as soon as possible and willing to be placed in Cikarang – Bekasi\n\n🔗 Apply: recruitment@ingress.biz.id (Application period: 24 – 30 November 2026)",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531289835865538560",
+      "timestamp": "2026-11-26T03:01:14.974Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552353070616576",
+      "text": "We're Hiring in Indonesia! Join SuperMap Indonesia 🇮🇩\n\nSuperMap Indonesia is expanding its technical team, and we're looking for passionate GIS professionals to join us in Jakarta!\n\nWe currently have two full-time opportunities available:\n🔹 GIS Engineer (Implementation & Development)\nFocus on GIS platform deployment, web GIS application development, system integration, and technical support.\n🔹 GIS Engineer (Presales & Solution)\nFocus on GIS solution design, technical presentations, product demonstrations, and customer engagement.\n\nWhether you're passionate about hands-on GIS technology or enjoy turning customer needs into innovative solutions, we'd love to hear from you!\n\n📍 Location: Jakarta, Indonesia\n💼 Employment Type: Full-time\n🌟 Fresh graduates are welcome to apply!\n\nInterested? Check out the job descriptions in the posters and take the next step in your GIS career with SuperMap!\n\n📩 Apply now: indonesia@supermap.com\n\n#SuperMap #Hiring #GISJobs #GISCareer #IndonesiaJobs #GISEngineer",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531535833430962176",
+      "timestamp": "2026-11-26T03:00:10.448Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552422566002688",
+      "text": "🏢 We're Hiring | Environmental Manager (Data Center Project - Karawang)\nJoin PT. Jaya Obayashi and contribute to high-quality construction projects through operational excellence, engineering expertise, and sustainable practices.\n\nWe are looking for an experienced Environmental Manager to lead environmental management for our Data Center Construction Project in Karawang.\nRequirements:\n• Bachelor's Degree (S1) in Environmental Engineering, Environmental Science, or a related discipline.\n• Minimum 5 years of experience in environmental or sustainability managing roles within projects.\n• Strong knowledge of Indonesian environmental laws and regulatory compliance, including Owner Requirements and applicable implementing regulations.\n• Experience managing Environmental Approval documents, AMDAL / UKL-UPL, RKL-RPL implementation, and environmental reporting.\n• Good understanding of ISO 14001 Environmental Management Systems, environmental aspects and impacts, risk assessment, and compliance evaluation.\n• Strong knowledge of construction environmental management, including B3 and non-B3 waste, wastewater, air emissions/dust, noise, soil and water pollution prevention, and environmental monitoring.\n• Ability to lead environmental audits, inspections, incident investigations, spill response, and corrective/preventive actions.\n• Relevant training in ISO 14001 Internal Audit & Awareness, Environmental Monitoring, B3 Waste Management, and RKL/RPL Competency. Energy Management training is an advantage.\n• Good command of Bahasa Indonesia and English, both written and verbal.\n• Proficient in Microsoft Office, environmental documentation, reporting, and data analysis.\n\nKey Responsibilities:\n• Lead and manage the project Environmental Team, including manpower planning, work allocation, and coaching.\n• Establish, implement, and maintain the project Environmental Management System in accordance with ISO 14001, applicable Indonesian regulations, and client requirements.\n• Ensure environmental approval and permit obligations are fulfilled through proper implementation, monitoring, and evaluation.\n• Oversee environmental controls for construction activities, including B3/non-B3 waste, wastewater, dust and emissions, noise, water and soil pollution prevention, and resource use.\n• Plan and lead environmental inspections, internal and subcontractor audits, environmental monitoring, incident investigations, and emergency response, ensuring corrective actions are completed and effective.\n• Coordinate with the Client, Project Management, subcontractors, consultants, laboratories, and relevant government authorities on environmental matters, and prepare management reports.\n\n📩 Send your updated CV to: hrjo@jayaobayashi.co.id\nSubject: Environmental Manager_Name\n\n#WeAreHiring #EnvironmentalManager #EnvironmentalManagement #EnvironmentalEngineering #Construction #DataCenterConstruction #Karawang #PTJayaObayashi",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552421366431744",
+      "timestamp": "2026-11-26T03:00:27.017Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552095955652608",
+      "text": "feri@tridaya-dimensi.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552095007768576",
+      "timestamp": "2026-11-26T02:59:09.147Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531551899565690881",
+      "text": "📢WE ARE HIRING: VISUAL COMMUNICATIONS DESIGNER \n\nAre you a creative visual storyteller with a passion for turning ideas into compelling designs? Prospera Phase 2 is looking for a talented Visual Communications Designer to join our Communications & Knowledge Management team in Jakarta! \n\nIn this role, you will: \n- Develop creative visual concepts and designs aligned with Prospera's brand identity and communication objectives. \n- Produce engaging graphics, illustrations, and layouts for print, digital, and social media platforms. \n- Support the development of multimedia content, including animations, infographics, and videos. \n- Collaborate with communications and program teams to translate ideas into impactful visual narratives. \n\nMaintain brand consistency across communication materials and publications. \nWhat we are looking for: \n- Bachelor's degree (S1) in a relevant field. \n- Minimum 5 years of professional experience in graphic and visual communications design. \n- Experience in developing and enhancing brand guidelines and style guides. \n- A strong portfolio showcasing design work across different formats and communication purposes. \n\nFluency in both Bahasa Indonesia and English. \n📍 Location: Jakarta, Indonesia \n📅 Engagement: Long-Term Personnel (12 months, with possibility of extension) \n⏰ Application Deadline: 10 December 2026 \n\nInterested? Explore the full position description and submit your application through the link below: \n🔗 https://lnkd.in/gzWUYbHa\n\nWe look forward to hearing from you!\n\n#Hiring #WeAreHiring #VisualCommunicationsDesigner #GraphicDesigner #GraphicDesign #CommunicationsJobs #ProsperaPhase2 #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531551897200087040",
+      "timestamp": "2026-11-26T02:58:22.324Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531551086948728832",
+      "text": "✨EXCITING OPPORTUNITIES✨\n\nPT Geely Auto Indonesia is looking for Customer Relationship Management #hiring\n\nJob description :\n1. Develop and implement CRM strategies and programs to retain existing customers, enhance brand loyalty, increase customer lifetime value, and strengthen brand reputation.\n2. Manage end-to end handling of customer inquiries, feedback, and complaints; ensure issues are resolved promptly, fairly, and in line with company standards.\n3. Manage Customer Voice and Customer Satisfaction Index (CSI) survey programs by monitoring customer feedback, analyzing insights and satisfaction trends, and driving continuous service improvement through actionable recommendations.\n4. Manage the allocation and scheduling of home charger installations, ensuring all installations are completed within the targeted service timeline and in accordance with operational standards.\n5. Manage Roadside Assistance (RSA) operations by monitoring team responsiveness, ensuring rescue requests are responded to and resolved within the defined service level targets (SLAs), and coordinating with relevant stakeholders to deliver timely customer support.\n\nRequirements\n- Bachelor’s degree in a relevant field.\n- Minimum 3–5 years of experience in CRM, customer service, or after-sales operations.\n- Automotive industry experience is preferred.\n- Familiar with complaint handling, CSI surveys, RSA, and service-level targets.\n - Strong communication, analytical, and problem-solving skills.\n - Fluent in English\n\nLocation : Jakarta\n\n📩interested in this opportunities? \n\nFeel free to contact me : \n📧Email : fernando.kosasih@geely.com orKaylaAttira.Lubna@geely.com\n📱whatsapp :(+62) 85691078088",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531551085053009920",
+      "timestamp": "2026-11-26T02:55:08.581Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531550650187554816",
+      "text": "Hiring: Admin & Sales\n📍Placement: South Tangerang, Indonesia\n\nAs part of Transformind, we’re currently supporting our clients and partners to find the right talent for their teams.\n\nKey Responsibilities:\n- Coordinate with the Admin team to ensure smooth client handling, timely follow-ups, and efficient administrative processes.\n- Handle inbound leads and client inquiries through WhatsApp, Instagram, phone calls, and face-to-face interactions.\n- Engage with prospective clients, explain products and offerings, and convert leads into memberships or sales.\n- Manage the sales pipeline, follow up on prospects, and ensure timely and effective closing.\n\nQualifications:\n- Bachelor’s degree in Business, Management, Finance, Marketing, or a related field.\n- Proven experience in sales, business development, customer service, or sales team leadership.\n- Familiarity with the Indonesian stock market, investment products, and financial markets, with a genuine interest in the industry.\n- Organized, responsive, and able to manage high volumes of client inquiries and follow-ups.\n\nFeel free to Apply on link bellow or Linked DM. Tag someone who might be a great fit or share this opportunity with your network!\nhttps://lnkd.in/gHr3Xejt",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531550647289044992",
+      "timestamp": "2026-11-26T02:53:24.449Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531549952305451008",
+      "text": "🌍 WE ARE HIRING | INTERNATIONAL RECRUITMENT\nWe are expanding our global team and looking for experienced professionals to join our growing Voice Room business.\n📌 Open Positions:\nCountry Manager\nAdministrator\nCoin Seller\n🌎 Target Markets:\n🇵🇭 Philippines\n🇮🇩 Indonesia\n🇵🇰 Pakistan\n🌍 CIS Region (Uzbekistan, Kazakhstan, Kyrgyzstan, Tajikistan, and other CIS markets)\nRequirements:\nPrevious work experience in Voice Room or Social Entertainment Apps is required.\nGood communication and team management skills.\nFamiliarity with local markets and user communities.\nExperience in agency recruitment, host development, or coin sales is a plus.\nResponsible, proactive, and results-oriented.\nWhat We Offer:\nCompetitive compensation based on experience and performance.\nLong-term cooperation opportunities.\nProfessional support from our international team.\nOpportunities to develop and grow local markets.\n📩 Interested in joining us?\nContact us directly via WhatsApp:\n+86 198 6479 3682\nWe welcome experienced professionals who are passionate about the Voice Room industry. Let's grow together!\n#Hiring #Recruitment #VoiceRoom #SocialEntertainment #CIS #PhilippinesJobs #IndonesiaJobs #PakistanJobs #CountryManager #CoinSeller",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531549951072452610",
+      "timestamp": "2026-11-26T02:50:38.061Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531549215139930112",
+      "text": "WE ARE HIRING — FINANCE STAFF / 财务专员 Mandarin Speaker\n\nLocation: Indonesia\nIndustry: Finance & Accounting\n\nResponsibilities : \nHandle daily finance and accounting activities.\nProcess invoices, payments, and financial documentation.\nPrepare financial reports and maintain accurate financial records.\nCoordinate with internal departments and external parties regarding finance matters.\nCommunicate and coordinate with Chinese-speaking colleagues and business partners.\nSupport other finance-related administrative tasks as required.\n\nRequirements : \nBachelor's degree in Accounting, Finance, or a related field.\nAble to communicate in Mandarin, both spoken and written.\nMinimum 1 year of experience in Finance/Accounting.\nFresh graduates with strong Mandarin skills are welcome to apply!\nFamiliar with Microsoft Excel and basic accounting principles.\nDetail-oriented, responsible, organized, and able to work independently.\n\nInterested candidates are welcome to submit their CV!\nEmail : aipassaezra831@gmail.com\nApply via : https://lnkd.in/dxPxTE4k\n\n#Hiring #FinanceStaff #财务专员 #MandarinSpeaker #FinanceJobs #Accounting #FreshGraduate #IndonesiaJobs #CareerOpportunity",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531549214372347904",
+      "timestamp": "2026-11-26T02:47:42.307Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531549131102900224",
+      "text": "🚀 WE'RE HIRING: iOS Developer (Middle Level) | ADI Consulting Indonesia\n\nADI Consulting Indonesia is looking for a talented iOS Developer (Middle Level) to join a banking project based in Bintaro.\n\nIf you have solid experience in iOS application development and are passionate about building scalable, high-quality mobile applications, we'd love to hear from you!\n\n📌 Job Details\nPosition: iOS Developer (FE iOS)\nLevel: Middle Level\nExperience: 3–5 years\nProject Type: Banking\nEmployment Type: Outsourcing\nContract Duration: 6 Months\nWork Arrangement: Hybrid\nLocation: Bintaro, South Tangerang\nStart Date: Immediate / Maximum 1 Month Notice Period\n\n🛠 Required Skills & Qualifications\n\n✅3–5 years of experience in iOS application development.\n✅Strong proficiency in Swift (Middle Level).\n✅Hands-on experience with SwiftUI.\n✅Good understanding and implementation experience of Clean Architecture.\n✅Experience working with Firebase SDK, particularly:\n✅Firebase Analytics\n✅Firebase Cloud Messaging (FCM)\n✅Firebase Crashlytics\n✅Understanding of CI/CD concepts and workflows.\n✅Familiarity with the Apple App Store submission and release process.\n\n🎯 What We're Looking For\n\nCandidates with experience developing and maintaining iOS applications.\nStrong understanding of iOS development best practices and software architecture.\nAbility to work collaboratively with cross-functional teams.\nCandidates who are ready to join immediately or within one month's notice.\n\n📩 Apply Now!Please submit your updated CV through the application link:\n\n🔗 Application Submission Form: https://lnkd.in/g-Px85dw\n\nOr, you can send me a DM directly for more information.Feel free to share this opportunity with your network!\n\n#Hiring #iOSDeveloper #iOSDevelopment #Swift #SwiftUI #Firebase #MobileDeveloper #BankingJobs #ITJobs #TechJobs #Bintaro #HybridWork #ADiConsultingIndonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531549129571794946",
+      "timestamp": "2026-11-26T02:47:22.271Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -340,11 +900,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531548352753254400",
-      "text": "Fresh job openings in Indonesia.\n\nHere are some of the latest roles posted by companies hiring right now.\nTo find your next career visit https://notifyai.tech\n\n𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 𝗢𝘂𝘁𝗹𝗲𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗕𝗮𝗿 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗢𝘂𝘁𝗹𝗲𝘁 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗢𝘂𝘁𝗹𝗲𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗟𝗮𝘂𝗻𝗱𝗿𝘆 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿: Marriott\n𝗕𝗮𝗿 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗦𝗲𝗿𝘃𝗲𝗿 𝗙𝗼𝗼𝗱 & 𝗕𝗲𝘃𝗲𝗿𝗮𝗴𝗲 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗔𝗰𝗰𝗼𝘂𝗻𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿: datalabs\n𝗔𝗜 𝗦𝘁𝗿𝗮𝘁𝗲𝗴𝘆 𝗖𝗼𝗻𝘀𝘂𝗹𝘁𝗶𝗻𝗴 𝗠𝗮𝗻𝗮𝗴𝗲𝗿: Artefact\n𝗔𝗜 𝗖𝗼𝗻𝘀𝘂𝗹𝘁𝗮𝗻𝘁: Artefact\n𝗦𝗲𝗻𝗶𝗼𝗿 𝗜𝗻𝘁𝗲𝗴𝗿𝗮𝘁𝗶𝗼𝗻 𝗘𝗻𝗴𝗶𝗻𝗲𝗲𝗿, 𝗢𝗿𝗰𝗵𝗲𝘀𝘁𝗿𝗮𝘁𝗶𝗼𝗻 𝘁𝗲𝗮𝗺: Grab\n𝗟𝗲𝗮𝗱 𝗜𝗻𝘁𝗲𝗴𝗿𝗮𝘁𝗶𝗼𝗻 𝗘𝗻𝗴𝗶𝗻𝗲𝗲𝗿, 𝗢𝗿𝗰𝗵𝗲𝘀𝘁𝗿𝗮𝘁𝗶𝗼𝗻 𝗧𝗲𝗮𝗺: Grab\n𝗥𝗲𝗴𝗶𝗼𝗻𝗮𝗹 𝗔𝗰𝗰𝗼𝘂𝗻𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 (𝗪𝗵𝗶𝘁𝗲𝘀𝗽𝗮𝗰𝗲) - 𝗜𝗻𝗱𝗼𝗻𝗲𝘀𝗶𝗮: Fortinet\n𝗠𝗥𝗣 𝗥𝗠 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿 𝗦𝘂𝗽𝗽𝗹𝘆 𝗖𝗵𝗮𝗶𝗻 𝗠𝗮𝗻𝗮𝗴𝗲𝗺𝗲𝗻𝘁 | 𝗣𝗿𝗼𝗳𝗲𝘀𝘀𝗶𝗼𝗻𝗮𝗹 | 𝗠𝗮𝗹𝗮𝗻𝗴, 𝗜𝗻𝗱𝗼𝗻𝗲𝘀𝗶𝗮: Beiersdorf\n𝗖𝘂𝘀𝘁𝗼𝗺𝗲𝗿 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 - 𝗥𝗲𝘀𝗼𝗹𝘂𝘁𝗶𝗼𝗻 & 𝗢𝘂𝘁𝗯𝗼𝘂𝗻𝗱 𝗥𝗲𝘁𝗲𝗻𝘁𝗶𝗼𝗻 𝗦𝗽𝗲𝗰𝗶𝗮𝗹𝗶𝘀𝘁 (𝗩𝗼𝗶𝗰𝗲): WeWorkRemotely\n𝗙𝗼𝗼𝗱 & 𝗕𝗲𝘃𝗲𝗿𝗮𝗴𝗲 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗖𝗼𝗼𝗿𝗱𝗶𝗻𝗮𝘁𝗼𝗿: Accor Group\n𝗞𝗲𝘆 𝗔𝗰𝗰𝗼𝘂𝗻𝘁 & 𝗖𝗼𝗺𝗺𝗲𝗿𝗰𝗶𝗮𝗹 𝗠𝗮𝗻𝗮𝗴𝗲𝗿: Cargill\n𝗥𝗲𝗺𝗼𝘁𝗲 𝗦𝗮𝗹𝗲𝘀 𝗥𝗲𝗽𝗿𝗲𝘀𝗲𝗻𝘁𝗮𝘁𝗶𝘃𝗲 𝗜: Medtronic\n𝗔𝗽𝗽𝗿𝗲𝗻𝘁𝗶𝗰𝗲 𝗕𝗮𝗿𝘁𝗲𝗻𝗱𝗲𝗿 - 𝗠𝗮𝗻𝗱𝗮𝗽𝗮, 𝗮 𝗥𝗶𝘁𝘇-𝗖𝗮𝗿𝗹𝘁𝗼𝗻 𝗥𝗲𝘀𝗲𝗿𝘃𝗲: Marriott\n𝗔𝗿𝗲𝗮 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗧𝗿𝗮𝗱𝗲 - 𝗝𝗮𝗺𝗯𝗶: Flora Food Group\n𝗔𝗿𝗲𝗮 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗧𝗿𝗮𝗱𝗲 - 𝗔𝗺𝗯𝗼𝗻: Flora Food Group\n𝗚𝗿𝗮𝗽𝗵𝗶𝗰 𝗗𝗲𝘀𝗶𝗴𝗻 𝗜𝗻𝘁𝗲𝗿𝗻 (𝗥𝗲𝗺𝗼𝘁𝗲): WeWorkRemotely\n𝗖𝘂𝘀𝘁𝗼𝗺𝗲𝗿 𝗗𝗲𝘃𝗲𝗹𝗼𝗽𝗺𝗲𝗻𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗕𝗮𝗹𝗶𝗸𝗽𝗮𝗽𝗮𝗻: Flora Food Group\n𝗠𝗮𝗿𝗸𝗲𝘁𝗶𝗻𝗴 𝗖𝗼𝗼𝗿𝗱𝗶𝗻𝗮𝘁𝗼𝗿 - 𝗖𝗼𝘂𝗿𝘁𝘆𝗮𝗿𝗱 𝗯𝘆 𝗠𝗮𝗿𝗿𝗶𝗼𝘁𝘁 𝗠𝗮𝗻𝗮𝗱𝗼: Marriott\n𝗠𝗮𝗿𝗸𝗲𝘁𝗗𝗶𝗿-𝗥𝗲𝘃𝗲𝗻𝘂𝗲 𝗦𝘁𝗿𝗮𝘁𝗲𝗴𝘆: Marriott\n𝗣𝗶𝗽𝗲𝗳𝗶𝘁𝘁𝗲𝗿 𝗙𝗼𝗿𝗲𝗺𝗮𝗻: McDermott\n𝗔𝘀𝘀𝗼𝗰𝗶𝗮𝘁𝗲 𝗣𝗿𝗼𝗱𝘂𝗰𝘁𝗶𝗼𝗻 𝗧𝗲𝗰𝗵: McDermott\n𝗖𝗵𝗶𝗲𝗳 𝗘𝗻𝗴𝗶𝗻𝗲𝗲𝗿: Marriott\n𝗝𝗮𝗱𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁 𝗪𝗮𝗶𝘁𝗲𝗿/𝘀𝘀: Marriott\n𝗕𝗮𝗿𝘁𝗲𝗻𝗱𝗲𝗿 𝗖𝗮𝗽𝘁𝗮𝗶𝗻: Accor Group\n\n#hiring #jobs #careers",
+      "id": "urn:li:activity:7531548899183091712",
+      "text": "🦷 WE ARE HIRING!\n\nPT Opal Dental Indonesia, home to 100+ amazing healthcare professionals, is growing, and we're looking for a passionate and dedicated talent to join our team!\n\n✨ Open Position:\nFront Office — Jakarta\n\nIf you are friendly, detail-oriented, have excellent communication skills, and are passionate about delivering exceptional service and creating a welcoming experience for every patient, this opportunity might be for you!\n\n📩 How to Apply:\nSend your latest CV to : hrd.opaldental@gmail.com\n\nEmail Subject: Name - Front Office\n\nJoin us and be part of a growing team committed to making a difference and creating great smiles!\n\n#Wearehiring #jakarta #loker #frontoffice",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531548310768271361",
-      "timestamp": "2026-11-26T02:44:16.698Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548898524385280",
+      "timestamp": "2026-11-26T02:46:26.977Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -369,10 +929,24 @@
     {
       "platform": "linkedin",
       "id": "urn:li:activity:7531548510928875520",
-      "text": "Are you an experienced Government Affairs leader who understands how policy, healthcare and business come together in Indonesia?\n\nWe’re #hiring aDirector, Government & External Affairs, Indonesia, to lead Danaher's government and external affairs strategy across our businesses in the country. \n\nYou’ll have the opportunity to work across the Danaher group, partnering with senior country, regional and platform leaders to develop a coordinated approach to government engagement. \n\nYour impact will spangovernment relations, policy, market access, regulatory developments, and strategic risk management, while building meaningful relationships with ministries, regulators, public-sector institutions, and industry bodies.\n\nWe’re looking for a leader who brings:\n✅12 to 15+ years in Government Affairs, Public Policy, External Affairs or related fields\n✅ Deep understanding of Indonesia’s healthcare, public procurement and policy environment & strong senior-level relationships and experience within the ecosystem\n✅ Experience working across complex, matrixed organisations\n✅ The confidence and judgement to advise and influence senior leadership\n✅ Fluency inBahasa Indonesia and English\n\n📍 Location: Indonesia, on-site\n🌏Scope: Enterprise-wide across Danaher businesses in Indonesia\n✈️Travel: Approximately 25%\n\n𝗜𝗳 𝘆𝗼𝘂’𝗿𝗲 𝗹𝗼𝗼𝗸𝗶𝗻𝗴 𝗳𝗼𝗿 𝗮 𝗿𝗼𝗹𝗲 𝘄𝗵𝗲𝗿𝗲 𝘆𝗼𝘂 𝗰𝗮𝗻 𝗶𝗻𝗳𝗹𝘂𝗲𝗻𝗰𝗲 𝗯𝗼𝘁𝗵 𝗮𝘁 𝘁𝗵𝗲 𝗽𝗼𝗹𝗶𝗰𝘆 & 𝗲𝗻𝘁𝗲𝗿𝗽𝗿𝗶𝘀𝗲 𝗹𝗲𝘃𝗲𝗹, 𝗱𝗼 𝗮𝗽𝗽𝗹𝘆 𝗻𝗼𝘄:https://lnkd.in/g9dwXyAR\n\n#Governmentaffairs #Recruitment #Danaher\n\nTing Feng Wan Zoe Chow Venus Ho Aida Asmadi Indira M",
+      "text": "𝗔𝗿𝗲 𝘆𝗼𝘂 𝗮𝗻 𝗲𝘅𝗽𝗲𝗿𝗶𝗲𝗻𝗰𝗲𝗱 𝗚𝗼𝘃𝗲𝗿𝗻𝗺𝗲𝗻𝘁 𝗔𝗳𝗳𝗮𝗶𝗿𝘀 𝗹𝗲𝗮𝗱𝗲𝗿 𝘄𝗵𝗼 𝘂𝗻𝗱𝗲𝗿𝘀𝘁𝗮𝗻𝗱𝘀 𝗵𝗼𝘄 𝗽𝗼𝗹𝗶𝗰𝘆, 𝗵𝗲𝗮𝗹𝘁𝗵𝗰𝗮𝗿𝗲 𝗮𝗻𝗱 𝗯𝘂𝘀𝗶𝗻𝗲𝘀𝘀 𝗰𝗼𝗺𝗲 𝘁𝗼𝗴𝗲𝘁𝗵𝗲𝗿 𝗶𝗻 𝗜𝗻𝗱𝗼𝗻𝗲𝘀𝗶𝗮?\n\nWe’re #hiring a 𝗗𝗶𝗿𝗲𝗰𝘁𝗼𝗿, 𝗚𝗼𝘃𝗲𝗿𝗻𝗺𝗲𝗻𝘁 & 𝗘𝘅𝘁𝗲𝗿𝗻𝗮𝗹 𝗔𝗳𝗳𝗮𝗶𝗿𝘀, 𝗜𝗻𝗱𝗼𝗻𝗲𝘀𝗶𝗮, to leadDanaher's government and external affairs strategy across our businesses in the country. \n\nYou’ll have the opportunity to work across the Danaher group, partnering with senior country, regional and platform leaders to develop a coordinated approach to government engagement. \n\nYou’ll play a key role in shaping Danaher’s engagement with 𝗴𝗼𝘃𝗲𝗿𝗻𝗺𝗲𝗻𝘁 𝘀𝘁𝗮𝗸𝗲𝗵𝗼𝗹𝗱𝗲𝗿𝘀, 𝗻𝗮𝘃𝗶𝗴𝗮𝘁𝗶𝗻𝗴 𝗽𝗼𝗹𝗶𝗰𝘆 𝗮𝗻𝗱 𝗿𝗲𝗴𝘂𝗹𝗮𝘁𝗼𝗿𝘆 𝗱𝗲𝘃𝗲𝗹𝗼𝗽𝗺𝗲𝗻𝘁𝘀, 𝗲𝗻𝗮𝗯𝗹𝗶𝗻𝗴 𝗺𝗮𝗿𝗸𝗲𝘁 𝗮𝗰𝗰𝗲𝘀𝘀, 𝗮𝗻𝗱 𝗺𝗮𝗻𝗮𝗴𝗶𝗻𝗴 𝗲𝗺𝗲𝗿𝗴𝗶𝗻𝗴 𝗿𝗶𝘀𝗸𝘀, while building trusted relationships with key stakeholders across Indonesia.\n\nWe’re looking for a leader who brings:\n✅12 to 15+ years in Government Affairs, Public Policy, External Affairs or related fields\n✅ Deep understanding of Indonesia’s healthcare, public procurement and policy environment & strong senior-level relationships and experience within the ecosystem\n✅ Experience working across complex, matrixed organisations\n✅ The confidence and judgement to advise and influence senior leadership\n✅ Fluency in Bahasa Indonesia and English\n\n📍 Location: Indonesia, on-site\n🌏 Scope: Enterprise-wide across Danaher businesses in Indonesia\n✈️ Travel: Approximately 25%\n\n𝗜𝗳 𝘆𝗼𝘂’𝗿𝗲 𝗹𝗼𝗼𝗸𝗶𝗻𝗴 𝗳𝗼𝗿 𝗮 𝗿𝗼𝗹𝗲 𝘄𝗵𝗲𝗿𝗲 𝘆𝗼𝘂 𝗰𝗮𝗻 𝗶𝗻𝗳𝗹𝘂𝗲𝗻𝗰𝗲 𝗯𝗼𝘁𝗵 𝗮𝘁 𝘁𝗵𝗲 𝗽𝗼𝗹𝗶𝗰𝘆 & 𝗲𝗻𝘁𝗲𝗿𝗽𝗿𝗶𝘀𝗲 𝗹𝗲𝘃𝗲𝗹, 𝗱𝗼 𝗮𝗽𝗽𝗹𝘆 𝗻𝗼𝘄:https://lnkd.in/g9dwXyAR\n\n#Governmentaffairs #Recruitment #Danaher\n\nTing Feng Wan Zoe Chow Venus Ho Aida Asmadi Indira M",
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548507841658880",
       "timestamp": "2026-11-26T02:44:54.410Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531548352753254400",
+      "text": "Fresh job openings in Indonesia.\n\nHere are some of the latest roles posted by companies hiring right now.\nTo find your next career visit https://notifyai.tech\n\n𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁 𝗢𝘂𝘁𝗹𝗲𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗕𝗮𝗿 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗢𝘂𝘁𝗹𝗲𝘁 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗢𝘂𝘁𝗹𝗲𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗟𝗮𝘂𝗻𝗱𝗿𝘆 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿: Marriott\n𝗕𝗮𝗿 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗦𝗲𝗿𝘃𝗲𝗿 𝗙𝗼𝗼𝗱 & 𝗕𝗲𝘃𝗲𝗿𝗮𝗴𝗲 - 𝗝𝗮𝗽𝗮𝗻𝗲𝘀𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁: Marriott\n𝗔𝗰𝗰𝗼𝘂𝗻𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿: datalabs\n𝗔𝗜 𝗦𝘁𝗿𝗮𝘁𝗲𝗴𝘆 𝗖𝗼𝗻𝘀𝘂𝗹𝘁𝗶𝗻𝗴 𝗠𝗮𝗻𝗮𝗴𝗲𝗿: Artefact\n𝗔𝗜 𝗖𝗼𝗻𝘀𝘂𝗹𝘁𝗮𝗻𝘁: Artefact\n𝗦𝗲𝗻𝗶𝗼𝗿 𝗜𝗻𝘁𝗲𝗴𝗿𝗮𝘁𝗶𝗼𝗻 𝗘𝗻𝗴𝗶𝗻𝗲𝗲𝗿, 𝗢𝗿𝗰𝗵𝗲𝘀𝘁𝗿𝗮𝘁𝗶𝗼𝗻 𝘁𝗲𝗮𝗺: Grab\n𝗟𝗲𝗮𝗱 𝗜𝗻𝘁𝗲𝗴𝗿𝗮𝘁𝗶𝗼𝗻 𝗘𝗻𝗴𝗶𝗻𝗲𝗲𝗿, 𝗢𝗿𝗰𝗵𝗲𝘀𝘁𝗿𝗮𝘁𝗶𝗼𝗻 𝗧𝗲𝗮𝗺: Grab\n𝗥𝗲𝗴𝗶𝗼𝗻𝗮𝗹 𝗔𝗰𝗰𝗼𝘂𝗻𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 (𝗪𝗵𝗶𝘁𝗲𝘀𝗽𝗮𝗰𝗲) - 𝗜𝗻𝗱𝗼𝗻𝗲𝘀𝗶𝗮: Fortinet\n𝗠𝗥𝗣 𝗥𝗠 𝗦𝘂𝗽𝗲𝗿𝘃𝗶𝘀𝗼𝗿 𝗦𝘂𝗽𝗽𝗹𝘆 𝗖𝗵𝗮𝗶𝗻 𝗠𝗮𝗻𝗮𝗴𝗲𝗺𝗲𝗻𝘁 | 𝗣𝗿𝗼𝗳𝗲𝘀𝘀𝗶𝗼𝗻𝗮𝗹 | 𝗠𝗮𝗹𝗮𝗻𝗴, 𝗜𝗻𝗱𝗼𝗻𝗲𝘀𝗶𝗮: Beiersdorf\n𝗖𝘂𝘀𝘁𝗼𝗺𝗲𝗿 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 - 𝗥𝗲𝘀𝗼𝗹𝘂𝘁𝗶𝗼𝗻 & 𝗢𝘂𝘁𝗯𝗼𝘂𝗻𝗱 𝗥𝗲𝘁𝗲𝗻𝘁𝗶𝗼𝗻 𝗦𝗽𝗲𝗰𝗶𝗮𝗹𝗶𝘀𝘁 (𝗩𝗼𝗶𝗰𝗲): WeWorkRemotely\n𝗙𝗼𝗼𝗱 & 𝗕𝗲𝘃𝗲𝗿𝗮𝗴𝗲 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗖𝗼𝗼𝗿𝗱𝗶𝗻𝗮𝘁𝗼𝗿: Accor Group\n𝗞𝗲𝘆 𝗔𝗰𝗰𝗼𝘂𝗻𝘁 & 𝗖𝗼𝗺𝗺𝗲𝗿𝗰𝗶𝗮𝗹 𝗠𝗮𝗻𝗮𝗴𝗲𝗿: Cargill\n𝗥𝗲𝗺𝗼𝘁𝗲 𝗦𝗮𝗹𝗲𝘀 𝗥𝗲𝗽𝗿𝗲𝘀𝗲𝗻𝘁𝗮𝘁𝗶𝘃𝗲 𝗜: Medtronic\n𝗔𝗽𝗽𝗿𝗲𝗻𝘁𝗶𝗰𝗲 𝗕𝗮𝗿𝘁𝗲𝗻𝗱𝗲𝗿 - 𝗠𝗮𝗻𝗱𝗮𝗽𝗮, 𝗮 𝗥𝗶𝘁𝘇-𝗖𝗮𝗿𝗹𝘁𝗼𝗻 𝗥𝗲𝘀𝗲𝗿𝘃𝗲: Marriott\n𝗔𝗿𝗲𝗮 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗧𝗿𝗮𝗱𝗲 - 𝗝𝗮𝗺𝗯𝗶: Flora Food Group\n𝗔𝗿𝗲𝗮 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗚𝗲𝗻𝗲𝗿𝗮𝗹 𝗧𝗿𝗮𝗱𝗲 - 𝗔𝗺𝗯𝗼𝗻: Flora Food Group\n𝗚𝗿𝗮𝗽𝗵𝗶𝗰 𝗗𝗲𝘀𝗶𝗴𝗻 𝗜𝗻𝘁𝗲𝗿𝗻 (𝗥𝗲𝗺𝗼𝘁𝗲): WeWorkRemotely\n𝗖𝘂𝘀𝘁𝗼𝗺𝗲𝗿 𝗗𝗲𝘃𝗲𝗹𝗼𝗽𝗺𝗲𝗻𝘁 𝗠𝗮𝗻𝗮𝗴𝗲𝗿 - 𝗕𝗮𝗹𝗶𝗸𝗽𝗮𝗽𝗮𝗻: Flora Food Group\n𝗠𝗮𝗿𝗸𝗲𝘁𝗶𝗻𝗴 𝗖𝗼𝗼𝗿𝗱𝗶𝗻𝗮𝘁𝗼𝗿 - 𝗖𝗼𝘂𝗿𝘁𝘆𝗮𝗿𝗱 𝗯𝘆 𝗠𝗮𝗿𝗿𝗶𝗼𝘁𝘁 𝗠𝗮𝗻𝗮𝗱𝗼: Marriott\n𝗠𝗮𝗿𝗸𝗲𝘁𝗗𝗶𝗿-𝗥𝗲𝘃𝗲𝗻𝘂𝗲 𝗦𝘁𝗿𝗮𝘁𝗲𝗴𝘆: Marriott\n𝗣𝗶𝗽𝗲𝗳𝗶𝘁𝘁𝗲𝗿 𝗙𝗼𝗿𝗲𝗺𝗮𝗻: McDermott\n𝗔𝘀𝘀𝗼𝗰𝗶𝗮𝘁𝗲 𝗣𝗿𝗼𝗱𝘂𝗰𝘁𝗶𝗼𝗻 𝗧𝗲𝗰𝗵: McDermott\n𝗖𝗵𝗶𝗲𝗳 𝗘𝗻𝗴𝗶𝗻𝗲𝗲𝗿: Marriott\n𝗝𝗮𝗱𝗲 𝗥𝗲𝘀𝘁𝗮𝘂𝗿𝗮𝗻𝘁 𝗪𝗮𝗶𝘁𝗲𝗿/𝘀𝘀: Marriott\n𝗕𝗮𝗿𝘁𝗲𝗻𝗱𝗲𝗿 𝗖𝗮𝗽𝘁𝗮𝗶𝗻: Accor Group\n\n#hiring #jobs #careers",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531548310768271361",
+      "timestamp": "2026-11-26T02:44:16.698Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -387,20 +961,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548028554346496",
       "timestamp": "2026-11-26T02:43:00.068Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531547352365580288",
-      "text": "🚀 Artha Solutions Indonesia is #HIRING for a Business Development Representative!\n\n📍 Placement: Jakarta \n\n🔎 Role Overview: \nWe're looking for a driven and proactive Business Development Representative (BDR) to support a leading global data and technology solutions provider in expanding its market presence in Indonesia. In this role, you will take ownership of prospecting, lead generation, account research, and sales pipeline development. You’ll work independently while collaborating closely with the client’s sales team and relevant internal stakeholders to identify new business opportunities and build meaningful client relationships.\n\n📝 Requirements:\n- Bachelor’s degree in Business, Marketing, Information Technology, or a related field.\n- 5+ years of experience in B2B Business Development, Sales Development, Inside Sales, Lead Generation, or similar role \n- Experience in selling or promoting B2B technology solutions, SaaS, data solutions, IT services, or enterprise solutions is highly preferred.\n- Comfortable engaging with mid-to-senior level stakeholders and decision-makers.\n- Experience using CRM systems and sales prospecting tools.\n- Strong written and verbal communication skills in English and Bahasa Indonesia.\n- Willingness to work in a client-dedicated environment and collaborate with both Artha Solutions and client stakeholders.\n\n📩 Interested or know someone who fits this role? \nSend your updated CV torecruitment.id@thinkartha.com\nSubject: [BDR - Name]\n\n#Hiring #BusinessDevelopment #BusinessDevelopmentRepresentative #BDR #B2BSales #LeadGeneration #SalesDevelopment #TechSales #ITServices #DataSolutions #SaaS #JakartaJobs #IndonesiaJobs #CareerOpportunity",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531547351111360512",
-      "timestamp": "2026-11-26T02:40:18.187Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -452,11 +1012,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531546598506397696",
-      "text": "dimasaminullah831@gmail.com",
+      "id": "urn:li:activity:7531547352365580288",
+      "text": "🚀 Artha Solutions Indonesia is #HIRING for a Business Development Representative!\n\n📍 Placement: Jakarta \n\n🔎 Role Overview: \nWe're looking for a driven and proactive Business Development Representative (BDR) to support a leading global data and technology solutions provider in expanding its market presence in Indonesia. In this role, you will take ownership of prospecting, lead generation, account research, and sales pipeline development. You’ll work independently while collaborating closely with the client’s sales team and relevant internal stakeholders to identify new business opportunities and build meaningful client relationships.\n\n📝 Requirements:\n- Bachelor’s degree in Business, Marketing, Information Technology, or a related field.\n- 5+ years of experience in B2B Business Development, Sales Development, Inside Sales, Lead Generation, or similar role \n- Experience in selling or promoting B2B technology solutions, SaaS, data solutions, IT services, or enterprise solutions is highly preferred.\n- Comfortable engaging with mid-to-senior level stakeholders and decision-makers.\n- Experience using CRM systems and sales prospecting tools.\n- Strong written and verbal communication skills in English and Bahasa Indonesia.\n- Willingness to work in a client-dedicated environment and collaborate with both Artha Solutions and client stakeholders.\n\n📩 Interested or know someone who fits this role? \nSend your updated CV torecruitment.id@thinkartha.com\nSubject: [BDR - Name]\n\n#Hiring #BusinessDevelopment #BusinessDevelopmentRepresentative #BDR #B2BSales #LeadGeneration #SalesDevelopment #TechSales #ITServices #DataSolutions #SaaS #JakartaJobs #IndonesiaJobs #CareerOpportunity",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531546597671985152",
-      "timestamp": "2026-11-26T02:37:18.453Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531547351111360512",
+      "timestamp": "2026-11-26T02:40:18.187Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -494,6 +1054,34 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531546598506397696",
+      "text": "dimasaminullah831@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531546597671985152",
+      "timestamp": "2026-11-26T02:37:18.453Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531546029037375491",
+      "text": "We are Hiring,\n\nPT Westerfield Alumina Indonesia are looking candidate for Penerjemah Mandarin Power Plant placement at Toba, Sanggau.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531546028047753217",
+      "timestamp": "2026-11-26T02:35:02.681Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531546052173283328",
       "text": "📢 We are #hiring Marketing Executive for Chemical company in Cikarang! \n\nRGF HR Agent Indonesia is currently assisting our client, a multinational chemical company in looking for Marketing Executive position in Cikarang.\n\nResponsibilities:\n- Develop content plans and create engaging content for the Company's digital platforms, including LinkedIn, corporate websites, and other social media channels. \n- Plan, organize, and coordinate marketing events, including exhibitions, trade shows, industry conferences, and networking events. \n- Create and manage marketing materials, including corporate presentations, brochures, promotional materials, webinar content, and other marketing collateral. \n- Develop and execute marketing campaign strategies to increase brand awareness, strengthen market presence, and support business growth. \n- Plan and implement lead generation activities to identify potential clients, attract qualified prospects, and support the sales team's business development efforts. \n- Develop and implement SEO (Search Engine Optimization) and GEO (Generative Engine Optimization) strategies to enhance the Company's online visibility and presence across search engines and AI-powered platforms. \n- Manage and maintain the Group ASEAN website, ensuring content accuracy, relevance, consistency, and an optimal user experience. \n- Develop and execute branding initiatives to strengthen the Company's brand identity, market positioning, and visibility across the ASEAN region. \n\nQualifications:\n- Bachelor's degree in Engineering, Business Administration, Marketing, Communications, or a related field \n- High Conversational to business English proficiency\n- Min. 3 years of working experience in B2B marketing, digital marketing, brand management in the chemical industry OR experience in marketing agency handling various clients\n- Familiarity with Customer Relationship Management (CRM) systems \n- Proven experience in utilizing digital marketing platforms and tools, such as Google Ads, Google Analytics, and others \n- Own SIM A \n- Ability to work independently as well as collaboratively in a dynamic, multicultural, and fast-paced environment\n\n If you are interested, please send your CV (in English) tohaura@rgf-hragent.asia (Subject:135659_Name)\n\nYou can also apply in our job post below:\n\nhttps://lnkd.in/gQQEUAwx\n\nWe will be reaching out only to qualified candidates, thank you and good luck!\n\n#recruitmentagency #headhunter #recruitment",
       "author": "linkedin-member",
@@ -522,20 +1110,6 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531546029037375491",
-      "text": "We are Hiring,\n\nPT Westerfield Alumina Indonesia are looking candidate for Penerjemah Mandarin Power Plant placement at Toba, Sanggau.",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531546028047753217",
-      "timestamp": "2026-11-26T02:35:02.681Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
       "id": "urn:li:activity:7531545185919451136",
       "text": "WE ARE HIRING! URGENT! ⚓🔥\nPT. GULAT MARITIM INDONESIA\nOIL CHEMICAL - Join 29 Nov 2026\n4/E : 3,000 USD | AB : 1,200 USD\nOIL CHEMICAL - Join Early Dec 2026\n2/O : 3,600 - 3,800 USD\nBULK CARRIER / CONTAINER - Join Early Dec 2026\n3/E : 3,000 - 3,400 USD\nAFRAMAX - Join End Nov 2026\n4/E : 3,200 USD | OILER : 1,300 USD\n🔥 Passing warzone - Get bonus HRA\nSyarat:\n✅ Fluent English\n✅ Pengalaman rank & kapal yang sama\n✅ Pengalaman mixed crew\n✅ COC & COP valid min 18 bulan\n✅ Max 40 tahun\nWA: +6281113039033 (aza)\n⚠️ Beware of scammer! Only Indonesian Crew!",
       "author": "linkedin-member",
@@ -555,20 +1129,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531265062443905024",
       "timestamp": "2026-11-26T02:27:54.261Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531543849882714112",
-      "text": "🦷 WE ARE HIRING!\n\nPT Opal Dental Indonesia, home to 100+ amazing healthcare professionals, is growing, and we're looking for a reliable and dedicated person to join our team!\n\n✨ Open Position:\nOffice Boy — Yogyakarta\n\nIf you are hardworking, responsible, and have a good sense of cleanliness and neatness, this opportunity might be for you!\n\nQualifications:\n- Previous experience as an Office Boy or in a similar role is preferred.\n- Experience working in a dental clinic or healthcare facility will be a plus.\n- Willing to join as soon as possible\n\n📩 How to Apply:\nSend your latest CV to hrd.opaldental@gmail.com\n\nEmail Subject: Name - Office Boy\n\nJoin us and be part of a growing team committed to making a difference and creating great smiles!\n\n#WeAreHiring #Hiring #JobOpening #CareerOpportunity #OpalDental #OfficeBoy #YogyakartaJobs",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531543847106002944",
-      "timestamp": "2026-11-26T02:26:23.130Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -620,6 +1180,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531543849882714112",
+      "text": "🦷 WE ARE HIRING!\n\nPT Opal Dental Indonesia, home to 100+ amazing healthcare professionals, is growing, and we're looking for a reliable and dedicated person to join our team!\n\n✨ Open Position:\nOffice Boy — Yogyakarta\n\nIf you are hardworking, responsible, and have a good sense of cleanliness and neatness, this opportunity might be for you!\n\nQualifications:\n- Previous experience as an Office Boy or in a similar role is preferred.\n- Experience working in a dental clinic or healthcare facility will be a plus.\n- Willing to join as soon as possible\n\n📩 How to Apply:\nSend your latest CV to hrd.opaldental@gmail.com\n\nEmail Subject: Name - Office Boy\n\nJoin us and be part of a growing team committed to making a difference and creating great smiles!\n\n#WeAreHiring #Hiring #JobOpening #CareerOpportunity #OpalDental #OfficeBoy #YogyakartaJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531543847106002944",
+      "timestamp": "2026-11-26T02:26:23.130Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531543163275227136",
       "text": "Exploring Corporate Career Opportunities | Open to Opportunities Across Locations\n\nHello, LinkedIn community! I am reaching out to my professional network to seek advice and explore potential corporate career opportunities for someone I am currently helping.\n\nHe has an academic background in management and is interested in transitioning from the academic sector into the corporate industry. His particular interests include numerical analysis, statistics, calculations, and business-related functions.\n\nHe is keen to explore roles such as Business Analyst, Data Analyst, Financial Analyst, Business Operations, and other relevant management or analytical positions.\n\nHe is open to opportunities across different locations, including Indonesia and Malaysia, as well as other locations where suitable roles may be available.\n\nI would particularly welcome connections with recruiters, HR professionals, talent acquisition specialists, and hiring managers who may have insights into suitable vacancies or organizations open to considering international candidates.\n\nIf you know of any relevant opportunities or recruitment channels, I would genuinely appreciate your recommendations. I would be happy to share his CV privately with interested parties.\n\nSometimes, one meaningful professional connection can open the door to a new opportunity.\n\nThank you for your time and support!\n\n#ProfessionalNetworking #CareerOpportunities #IndonesiaJobs #MalaysiaJobs #Recruitment #TalentAcquisition #InternationalTalent",
       "author": "linkedin-member",
@@ -662,11 +1236,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531541286856609794",
-      "text": "WE ARE HIRING! URGENT! ⚓🔥\nPT. GULAT MARITIM INDONESIA\nOIL CHEMICAL - Join 29 Nov 2026\n4/E : 3,000 USD | AB : 1,200 USD\nOIL CHEMICAL - Join Early Dec 2026\n2/O : 3,600 - 3,800 USD\nBULK CARRIER / CONTAINER - Join Early Dec 2026\n3/E : 3,000 - 3,400 USD\nAFRAMAX - Join End Nov 2026\n4/E : 3,200 USD | OILER : 1,300 USD\n🔥 Passing warzone - Get bonus HRA\nSyarat:\n✅ Fluent English\n✅ Pengalaman rank & kapal yang sama\n✅ Pengalaman mixed crew\n✅ COC & COP valid min 18 bulan\n✅ Max 40 tahun\nWA: +6281113039033 (aza)\n⚠️ Beware of scammer! Only Indonesian Crew!",
+      "id": "urn:li:activity:7531541490465050624",
+      "text": "PT ALSOK Indonesia Services Tbk 🚨\n\nWe're looking for passionate talents to join our team as :\n\n✨Staff Payroll\n📍 Makassar\n\nAbout the Role\nManage payroll administration and employee compensation & benefits for project employees accurately and on time, while providing excellent service and ensuring compliance with BPJS and company regulations.\n\nKey Responsibilities\n1. Process Payroll\n- Calculate and process monthly payroll for project employees\n- Verify attendance, overtime, and allowance data before processing\n- Ensure salary payments are accurate and on schedule\n\n2. Manage Compensation & Benefits\n- Administer employee allowances, deductions, and other benefits\n- Handle employee questions and complaints related to payroll\n\n3. Handle BPJS Administration\n- Prepare BPJS Ketenagakerjaan and BPJS Kesehatan reporting\n- Manage employee registration, data updates, and contribution payments\n- Ensure compliance with applicable BPJS regulations\n\n4. Maintain Payroll Data and Documentation\n- Keep payroll records and supporting documents accurate and well organized\n- Ensure data confidentiality and integrity\n\n5. Prepare Reports\n- Prepare regular payroll and benefits reports\n- Identify and resolve payroll issues quickly\n\nQualifications\n1. Minimum D3/S1 in Accounting, Management, or a related field\n2. Minimum 1 year of experience in payroll administration or compensation & benefits\n3. Understanding of BPJS Ketenagakerjaan and BPJS Kesehatan reporting requirements\n4. Good communication skills\n5. Customer-focused, with an excellent service mindset toward project employees\n\n📧Send your CV (PDF) to : recruitment.makassar@alsok.co.id\n📝Email subject : Staff Payroll Makassar – [Applicant’s Name]\n☎️ Contact person : 0858 2357 1363\n\n🌐Learn more about us : www.alsok.co.id\n\n❗️Important Notice : Our recruitment process is 100% FREE. We never charge any fees at any stage.\n\n#Hiring #LowonganKerja #LokerMakassar #PayrollStaff #Payroll #LokerAdmin #CompensationAndBenefits #BPJS #Loker2026 #CareerOpportunity #ALSOKIndonesia #Sulawesi",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531541285879414784",
-      "timestamp": "2026-11-26T02:16:12.057Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531541489689034754",
+      "timestamp": "2026-11-26T02:17:00.601Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -676,11 +1250,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531541490465050624",
-      "text": "PT ALSOK Indonesia Services Tbk 🚨\n\nWe're looking for passionate talents to join our team as :\n\n✨Staff Payroll\n📍 Makassar\n\nAbout the Role\nManage payroll administration and employee compensation & benefits for project employees accurately and on time, while providing excellent service and ensuring compliance with BPJS and company regulations.\n\nKey Responsibilities\n1. Process Payroll\n- Calculate and process monthly payroll for project employees\n- Verify attendance, overtime, and allowance data before processing\n- Ensure salary payments are accurate and on schedule\n\n2. Manage Compensation & Benefits\n- Administer employee allowances, deductions, and other benefits\n- Handle employee questions and complaints related to payroll\n\n3. Handle BPJS Administration\n- Prepare BPJS Ketenagakerjaan and BPJS Kesehatan reporting\n- Manage employee registration, data updates, and contribution payments\n- Ensure compliance with applicable BPJS regulations\n\n4. Maintain Payroll Data and Documentation\n- Keep payroll records and supporting documents accurate and well organized\n- Ensure data confidentiality and integrity\n\n5. Prepare Reports\n- Prepare regular payroll and benefits reports\n- Identify and resolve payroll issues quickly\n\nQualifications\n1. Minimum D3/S1 in Accounting, Management, or a related field\n2. Minimum 1 year of experience in payroll administration or compensation & benefits\n3. Understanding of BPJS Ketenagakerjaan and BPJS Kesehatan reporting requirements\n4. Good communication skills\n5. Customer-focused, with an excellent service mindset toward project employees\n\n📧Send your CV (PDF) to : recruitment.makassar@alsok.co.id\n📝Email subject : Staff Payroll Makassar – [Applicant’s Name]\n☎️ Contact person : 0858 2357 1363\n\n🌐Learn more about us : www.alsok.co.id\n\n❗️Important Notice : Our recruitment process is 100% FREE. We never charge any fees at any stage.\n\n#Hiring #LowonganKerja #LokerMakassar #PayrollStaff #Payroll #LokerAdmin #CompensationAndBenefits #BPJS #Loker2026 #CareerOpportunity #ALSOKIndonesia #Sulawesi",
+      "id": "urn:li:activity:7531541286856609794",
+      "text": "WE ARE HIRING! URGENT! ⚓🔥\nPT. GULAT MARITIM INDONESIA\nOIL CHEMICAL - Join 29 Nov 2026\n4/E : 3,000 USD | AB : 1,200 USD\nOIL CHEMICAL - Join Early Dec 2026\n2/O : 3,600 - 3,800 USD\nBULK CARRIER / CONTAINER - Join Early Dec 2026\n3/E : 3,000 - 3,400 USD\nAFRAMAX - Join End Nov 2026\n4/E : 3,200 USD | OILER : 1,300 USD\n🔥 Passing warzone - Get bonus HRA\nSyarat:\n✅ Fluent English\n✅ Pengalaman rank & kapal yang sama\n✅ Pengalaman mixed crew\n✅ COC & COP valid min 18 bulan\n✅ Max 40 tahun\nWA: +6281113039033 (aza)\n⚠️ Beware of scammer! Only Indonesian Crew!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531541489689034754",
-      "timestamp": "2026-11-26T02:17:00.601Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531541285879414784",
+      "timestamp": "2026-11-26T02:16:12.057Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -718,6 +1292,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531539422014713856",
+      "text": "We Are Hiring!\n\nPT Westerfield Alumina Indonesia are looking candidate for Penerjemah Mandarin Power Plant placement at Toba, Sanggau",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531539421146537984",
+      "timestamp": "2026-11-26T02:08:47.444Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531539247258968064",
       "text": "We're #hiring for our internal team!\n\nPT NCS Consultant Indonesia is looking for experienced professionals to join our team!\n\nPositions:\n1. Senior Manager, Headhunting Business (Client Business & Client Success)\n2. Headhunter Manager / Supervisor\nPlacement: South Jakarta, Indonesia\nEmployment Type: Full-time\n\nQualifications:\n1. Senior Manager, Headhunting Business (Client Business & Client Success)\n• Bachelor's Degree or above.\n• Minimum 5 years of experience in key account sales, business development, or client success management, including at least 2 years of team management experience.\n• Background in headhunting, HR services, corporate consulting, or B2B services is highly preferred.\n• Fluent in Mandarin Chinese and Bahasa Indonesia; good English communication skills are an advantage.\n• Experience managing Chinese-invested companies or enterprise clients is a plus.\n\n2. Headhunter Manager / Supervisor\n• Bachelor's Degree or above.\n• Minimum 5 years of experience in headhunting or recruitment, including at least 2 years in a managerial or supervisory role, including experience leading and managing a recruitment team, preferably 10+ team members.\n• Fluent in English and native-level Bahasa Indonesia.\n• Strong understanding of the Indonesian recruitment market and end-to-end recruitment processes.\n• Experience working with Chinese-invested companies or Chinese recruitment agencies is an advantage.\n\nCompensation & Benefits:\n• Competitive base salary + performance-based commission.\n• Management performance bonuses and annual performance incentives.\n• BPJS and THR.\n• Business training and professional development opportunities.\n• Clear career growth and promotion path.\n\nHow to Apply:\n📩 Send your CV to: naufal@ncsgroupsa.com\n📝 Subject: [Position]_[Your Name]\n\nIf you have any questions, please DM me or text me at wa.me/6285121350507\n\nNote: Only shortlisted candidates will be contacted.\n\n#Loker #JobVacancy #Headhunting #Headhunter #RecruitmentManager #BusinessDevelopment #ClientSuccess #KeyAccountManagement #TalentAcquisition #HRServices #Management #Jakarta #SouthJakarta #ApplyNow #RecruitmentConsultant",
       "author": "linkedin-member",
@@ -732,15 +1320,113 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531539422014713856",
-      "text": "We Are Hiring!\n\nPT Westerfield Alumina Indonesia are looking candidate for Penerjemah Mandarin Power Plant placement at Toba, Sanggau",
+      "id": "urn:li:activity:7531554466605580288",
+      "text": "PT China State Construction Overseas Development Shanghai is looking for experienced talent:\n\n1. General Affair Coordinator (Mandarin Speaker)\n2. QS Engineer\n3. Procurement Assistant\n\nProject: Data Center\nPlacement: Cikarang\n\nRequirements:\n- Bachelor's Degree.\n- Engineering Background with related major are preferred.\n- 3 years minimum experience in the same position.\n- Fluency in English (both written and spoken) is mandatory.\n- Fluency in Mandarin (both written and spoken) is mandatory min HSK 3 (1).\n\nYou may submit your CV to gina_yrubee@cscecos.com with subject \" POSITION - YOUR DOMICILE\" example. \"GA Coordinator - Jakarta\"\n\nOnly shortlisted candidates will be contacted. All information collected will be treated with strict confidential and will be used for recruitment purpose only.\nApplicants not being invited for interview in 6 weeks after job application may consider your application unsuccessful and your personal data will be kept in our database for future positions you may qualify for.\n\n#cscec\n#cscecindonesia\n#hiring",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531539421146537984",
-      "timestamp": "2026-11-26T02:08:47.444Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531554465695449088",
+      "timestamp": "2026-11-26T03:08:34.354Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531554210442686464",
+      "text": "We're Hiring\nSoftware Tester / Quality Assurance (QA)\nMiddle & Senior Level\n📍 Jakarta, Indonesia | Full Time\n\nJob Description\n\nWe are looking for experienced Software Testers / QA Engineers at Middle and Senior levels to ensure the quality, reliability, and performance of applications.\n\nKey Responsibilities\n\nDevelop Test Plans, Test Scenarios, Test Cases, Test Scripts, and Test Execution.\nPerform SIT, UAT, System Testing, and Regression Testing.\nConduct Functional and Non-Functional Testing, including Compatibility, Performance, Deployment, and Rollback Testing.\nPerform Smoke Testing and End-to-End Testing to ensure business processes meet requirements.\nConduct API Testing and Database Testing.\nIdentify, document, track, and monitor defects/bugs until resolution.\nDevelop and execute Automation Testing and Performance Testing.\nEnsure applications meet business requirements and technical specifications.\nPrepare testing documentation and submit Daily/Weekly Reports to the QA Lead.\n\nRequirements\n\nBachelor's Degree (S1) in Mathematics, Physics, Information Technology, Computer Science, Information Systems, or a related field.\nMinimum GPA of 2.75 out of 4.00.\nExperience as a Software Tester / QA Engineer:\nMiddle Tester: 2–3 years of experience.\n\nGood understanding of Software Development Life Cycle (SDLC), including Agile and Waterfall methodologies.\nFamiliarity with FSD, TSD, PCR, or other related technical documents.\nHands-on experience with:\nTest Management Tools.\nPerformance Testing Tools.\nAutomation Testing Tools.\nAPI Testing and Database Testing.\nUnderstanding of Risk-Based Testing and risk mitigation strategies.\nStrong analytical, problem-solving, and communication skills.\n\nHow to Apply\n\nInterested candidates who meet the qualifications are welcome to apply by sending their updated CV to:\n\n📩 firdaus@intikom.co.id\n\nPlease include the position you are applying for (Middle Tester ) in your email subject.\nWe look forward to connecting with you!\n\nPT Intikom Berlian Mustika\n\nHashtags\n#Hiring #WeAreHiring #SoftwareTester #QualityAssurance #QAEngineer #MiddleTester #SeniorTester #AutomationTesting #PerformanceTesting #ITJobs #JakartaJobs #Intikom",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531554209721167872",
+      "timestamp": "2026-11-26T03:07:33.280Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531553419401048064",
+      "text": "We're Senior QA Engineer !  💻   \n\n📍 Location: Sudirman, Jakarta (WFO)\n📃 Contract-based (1 year)\n\nWe're looking for Senior QA Engineer with minimum 5 years of experience for our project with one of our big clients (insurance industry). This position is for local candidates only.\n\nAre you interested ? Just apply via Jobstreet!\n\nOnly shortlisted candidates will be contacted. \nThank you and have a good day!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531553418579001344",
+      "timestamp": "2026-11-26T03:04:24.681Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552353070616576",
+      "text": "We're Hiring in Indonesia! Join SuperMap Indonesia 🇮🇩\n\nSuperMap Indonesia is expanding its technical team, and we're looking for passionate GIS professionals to join us in Jakarta!\n\nWe currently have two full-time opportunities available:\n🔹 GIS Engineer (Implementation & Development)\nFocus on GIS platform deployment, web GIS application development, system integration, and technical support.\n🔹 GIS Engineer (Presales & Solution)\nFocus on GIS solution design, technical presentations, product demonstrations, and customer engagement.\n\nWhether you're passionate about hands-on GIS technology or enjoy turning customer needs into innovative solutions, we'd love to hear from you!\n\n📍 Location: Jakarta, Indonesia\n💼 Employment Type: Full-time\n🌟 Fresh graduates are welcome to apply!\n\nInterested? Check out the job descriptions in the posters and take the next step in your GIS career with SuperMap!\n\n📩 Apply now: indonesia@supermap.com\n\n#SuperMap #Hiring #GISJobs #GISCareer #IndonesiaJobs #GISEngineer",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531535833430962176",
+      "timestamp": "2026-11-26T03:00:10.448Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552070559084544",
+      "text": "🚀 WE'RE HIRING | FIRMWARE / CVE | AI COMPUTE / GPU | AI STORAGE ENGINEER\n\nWe are expanding our team and looking for skilled technical professionals to join exciting technology projects!\n\n📌 Current Openings:\n\n1️⃣ Firmware / CVE Engineer (L3)\n📍 Location: Cilandak / Kuningan / Karawang / Jakarta\n⏳ Availability: Immediate joiners or maximum 2 weeks' notice preferred.\n\n2️⃣ L3 Technical SME – AI Compute / L3 GPU Engineer\n🌍 Nationality: Open to all nationalities\n🏠 Work Arrangement: 100% Remote\n⏳ Availability: Immediate joiners preferred.\n\n3️⃣ AI Storage Engineer\n📍 Location: Cilandak / Kuningan / Karawang / Jakarta\n⏳ Availability: Immediate joiners or maximum 2 weeks' notice preferred.\n💡 If you have relevant experience in Firmware, CVE, AI Compute, GPU technologies, or AI Storage, we'd love to connect!\n\n📩 Interested candidates: Share your updated CV topoornima@pso.amktechnology.com or  DM or refer suitable profiles from your network.\n\n🔁 Feel free to share this post with your network!\n\n#Hiring #FirmwareEngineer #CVE #AICompute #GPUEngineer #AIStorage #TechnicalJobs #L3Support #ITJobs #RemoteJobs #JakartaJobs #IndonesiaHiring",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552069871202304",
+      "timestamp": "2026-11-26T02:59:03.092Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531548188810379265",
+      "text": "✨ Sangfor Internship for Future Talents｜Jakarta, Indonesia\nSangfor Technologies is a global leading provider of IT infrastructure solutions, focusing on Cloud Computing & Network Security. Founded in 2000, we have over 9,500 employees and 60+ branch offices worldwide, including our Indonesia office in Jakarta.\nWe are launching our paid internship program (3–6 months) and looking for motivated final-year students to join our team as Field Application Engineer / Presales Engineer / Sales Intern!\n🎯 Basic Requirements\nFinal-year university students or fresh graduates, Bachelor’s degree in Engineering, Cyber Security, Computer Science, Information Systems or related majors\nAble to work on-site at our Jakarta office\n💼 Role Highlights 🔹 Field Application Engineer Intern\nProvide on-site & remote technical support for customers, handle POC and after-sales inquiries\nTrack, manage and resolve incidents, prepare customer-facing reports\nConduct device installation & integration at customer environments\n🔹 Presales Engineer Intern\nIdentify requirements & business opportunities from customer/partner meetings, build technical solution strategies\nAnalyze client requirements, map risks & constraints, recommend suitable project approaches\nPrepare presentations, cost estimations and support full project lifecycle planning\n🔹 Sales Intern\nIdentify, recruit and collaborate with distributors & value-added resellers to develop new business and retain existing customers\nEngage and motivate channel partners, design sales & marketing initiatives to drive revenue growth\nDiscover new sales opportunities and maintain long-term healthy customer relationships\n🎁 What We Offer ✅ Paid internship allowance ✅ Clear full-time conversion opportunity after internship ✅ Team building, birthday gifts, festival gifts and regular department activities ✅ Hands-on exposure to cutting-edge cloud & cybersecurity industry, global platform resources\n📩 Contact: nina.sun@sangfor.com Please send your resume to this email if you are interested!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531548186432131072",
+      "timestamp": "2026-11-26T02:43:37.611Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531544660222164992",
+      "text": "purwati@hermes-solusi.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531544659618148353",
+      "timestamp": "2026-11-26T02:29:36.330Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531538416166084609",
+      "text": "fawzeeyaaa@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531538415603990528",
+      "timestamp": "2026-11-26T02:04:47.631Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
         }
       ]
     },
@@ -774,11 +1460,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531535363732082688",
-      "text": "Every weeknight at 9:30 pm in Jakarta, Wall Street opens.\n \nSomewhere in Surabaya, someone taps \"Buy\" on their very first US stock.\n \nIn the second that follows, a lot has to go right:\n → their money has to move exactly once. Never twice.\n → their identity has to be verified without slowing them down\n → an order has to cross half the world to a US broker and come back filled\n → a ledger has to reconcile to the last cent\n → and the whole system has to stay calm while the market isn't\n \nThat second is what our engineers build.\n\nAjaib started in 2018 to break down the barriers to investing in Indonesia. Today we serve millions of retail investors. We've just raised a $270M Series C, the largest funding round in Southeast Asia in four years, backed by Y Combinator, Ribbit Capital, SoftBank and SBI Holdings.\n \nNow we're writing the next chapter, and we're looking for the people who'll write it with us:\n \n💸 Money that moves exactly once\n· Staff Backend Engineer, Payments · Staff Engineer (Backend), Money · Senior Backend Engineers, Payments & Money\n \n🔐 The platform everything runs on\n · Staff Engineer (Backend), Platform · Senior Backend & Web Engineers, Platform\n \n🌏 Wall Street, from Jakarta\n · Senior Backend Engineer II (Team Lead), US Stocks · Senior Backend & iOS Engineers, US Stocks · Staff Backend Engineer, Investment\n \n📈 Calm at the market open\n·  Staff SRE · Senior SRE · Lead Ops Security\n \n📱 In millions of pockets\n·  Staff Mobile Engineers, iOS & Android\n \n🧭 Leading the people who build it\n · Engineering Managers\n \nMost roles are remote/hybrid, alongside engineers across Southeast Asia, India, the Middle East and Eastern Europe. Java or Go, Kafka, Redis, the cloud, and problems where \"mostly right\" isn't an option.\n \nNow my ask.\n \nThe best engineers you've ever worked with probably are not looking. Tag them below, or send this to them directly. If they join, you'll have helped millions of people invest with confidence, and I'll owe you a coffee ☕ or Matcha somewhere in Southeast Asia (or something strategically more! we can discuss :D). \n \nAll roles are here:apply.workable.com/ajaib\nDirect links to each in the first comment 👇 or reach out to our amazing recruiters Diah Fawnia, Cynthia Dewi , and their teams!\n\n#hiring #engineering #fintech #remotework #Indonesia",
+      "id": "urn:li:activity:7531535470552383488",
+      "text": "Hiring: SENIOR / LEAD PIPING OR PIPELINE ENGINEER! 🚀\nPlacement: Head Office (HO), Jakarta\n\nREQUIREMENTS\n- Bachelor's Degree (S1) in Mechanical Engineering.\n- Relevant experience in EPC projects, particularly in the Oil & Gas industry.\n- Strong understanding of applicable engineering codes, standards, and design practices.\n- Good command of written and spoken English.\n- Strong technical, analytical, communication, and coordination skills.\n\nSPECIFIC QUALIFICATIONS BASED ON SPECIALIZATION\nA. PIPING ENGINEERING (SENIOR PIPING ENGINEER)\n- Minimum 5–8 years of relevant experience in Piping Engineering within EPC projects.\n- Experience in piping design, piping routing, equipment accessibility, and operation and maintenance requirements.\n- Good understanding of piping design codes and standards.\n- Familiar with engineering software such as PDMS, AutoCAD, CAESAR II, and Navisworks.\n- Experience supervising piping designers or drafters is an advantage.\n\nB. PIPELINE ENGINEERING (LEAD PIPELINE ENGINEER)\n- Minimum 10–15 years of relevant experience in Pipeline Engineering within the Oil & Gas industry.\n- Minimum 5 years of experience in a Lead Engineering or equivalent supervisory position.\n- Proven experience in FEED, detailed engineering, and EPC projects.\n- Experience in gas distribution systems, gas transmission pipelines, and LNG facilities.\n- Strong knowledge of international pipeline codes and standards.\n- Familiar with engineering software such as CAESAR II, AutoCAD, 3D Modeling Tools, and PIPESIM.\n\nInterested? Apply now through the link below:\nhttps://lnkd.in/g-uS8MsU",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531535360699334656",
-      "timestamp": "2026-11-26T01:52:39.874Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531535469474635776",
+      "timestamp": "2026-11-26T01:53:05.342Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -788,11 +1474,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531535470552383488",
-      "text": "Hiring: SENIOR / LEAD PIPING OR PIPELINE ENGINEER! 🚀\nPlacement: Head Office (HO), Jakarta\n\nREQUIREMENTS\n- Bachelor's Degree (S1) in Mechanical Engineering.\n- Relevant experience in EPC projects, particularly in the Oil & Gas industry.\n- Strong understanding of applicable engineering codes, standards, and design practices.\n- Good command of written and spoken English.\n- Strong technical, analytical, communication, and coordination skills.\n\nSPECIFIC QUALIFICATIONS BASED ON SPECIALIZATION\nA. PIPING ENGINEERING (SENIOR PIPING ENGINEER)\n- Minimum 5–8 years of relevant experience in Piping Engineering within EPC projects.\n- Experience in piping design, piping routing, equipment accessibility, and operation and maintenance requirements.\n- Good understanding of piping design codes and standards.\n- Familiar with engineering software such as PDMS, AutoCAD, CAESAR II, and Navisworks.\n- Experience supervising piping designers or drafters is an advantage.\n\nB. PIPELINE ENGINEERING (LEAD PIPELINE ENGINEER)\n- Minimum 10–15 years of relevant experience in Pipeline Engineering within the Oil & Gas industry.\n- Minimum 5 years of experience in a Lead Engineering or equivalent supervisory position.\n- Proven experience in FEED, detailed engineering, and EPC projects.\n- Experience in gas distribution systems, gas transmission pipelines, and LNG facilities.\n- Strong knowledge of international pipeline codes and standards.\n- Familiar with engineering software such as CAESAR II, AutoCAD, 3D Modeling Tools, and PIPESIM.\n\nInterested? Apply now through the link below:\nhttps://lnkd.in/g-uS8MsU",
+      "id": "urn:li:activity:7531535363732082688",
+      "text": "Every weeknight at 9:30 pm in Jakarta, Wall Street opens.\n \nSomewhere in Surabaya, someone taps \"Buy\" on their very first US stock.\n \nIn the second that follows, a lot has to go right:\n → their money has to move exactly once. Never twice.\n → their identity has to be verified without slowing them down\n → an order has to cross half the world to a US broker and come back filled\n → a ledger has to reconcile to the last cent\n → and the whole system has to stay calm while the market isn't\n \nThat second is what our engineers build.\n\nAjaib started in 2018 to break down the barriers to investing in Indonesia. Today we serve millions of retail investors. We've just raised a $270M Series C, the largest funding round in Southeast Asia in four years, backed by Y Combinator, Ribbit Capital, SoftBank and SBI Holdings.\n \nNow we're writing the next chapter, and we're looking for the people who'll write it with us:\n \n💸 Money that moves exactly once\n· Staff Backend Engineer, Payments · Staff Engineer (Backend), Money · Senior Backend Engineers, Payments & Money\n \n🔐 The platform everything runs on\n · Staff Engineer (Backend), Platform · Senior Backend & Web Engineers, Platform\n \n🌏 Wall Street, from Jakarta\n · Senior Backend Engineer II (Team Lead), US Stocks · Senior Backend & iOS Engineers, US Stocks · Staff Backend Engineer, Investment\n \n📈 Calm at the market open\n·  Staff SRE · Senior SRE · Lead Ops Security\n \n📱 In millions of pockets\n·  Staff Mobile Engineers, iOS & Android\n \n🧭 Leading the people who build it\n · Engineering Managers\n \nMost roles are remote/hybrid, alongside engineers across Southeast Asia, India, the Middle East and Eastern Europe. Java or Go, Kafka, Redis, the cloud, and problems where \"mostly right\" isn't an option.\n \nNow my ask.\n \nThe best engineers you've ever worked with probably are not looking. Tag them below, or send this to them directly. If they join, you'll have helped millions of people invest with confidence, and I'll owe you a coffee ☕ or Matcha somewhere in Southeast Asia (or something strategically more! we can discuss :D). \n \nAll roles are here:apply.workable.com/ajaib\nDirect links to each in the first comment 👇 or reach out to our amazing recruiters Diah Fawnia, Cynthia Dewi , and their teams!\n\n#hiring #engineering #fintech #remotework #Indonesia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531535469474635776",
-      "timestamp": "2026-11-26T01:53:05.342Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531535360699334656",
+      "timestamp": "2026-11-26T01:52:39.874Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -811,6 +1497,118 @@
         {
           "type": "linkedin",
           "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531529080261947392",
+      "text": "Every business in Southeast Asia is racing to adopt AI. The ones that win will be the ones who know where their sensitive data sits, who can reach it, and whether it's safe to use.\nVeeam is the Data and AI Trust Company. With the acquisition of Securiti AI, a leader in AI-powered data security posture management (DSPM), we're building a dedicated team to take it to enterprise customers. We're now looking for a Sales Specialist to drive that growth across Indonesia and Malaysia.\nThe role\nYou'll focus exclusively on Securiti AI. That means working with Veeam Account Executives to cross-sell into our customer base, win new logos and expand existing accounts. You'll have:\nA shared territory with multiple AEs\nStrong earning potential\nA dedicated Securiti AI solution engineer for technical engagements\nVeeam's go-to-market machine behind you\nWhat you'll do\nBuild and run a territory plan that delivers repeatable revenue\nPartner with AEs to find and close cross-sell opportunities\nLead the full sales cycle as a trusted advisor, with business cases that land\nManage a high-value pipeline with sharp forecasting and CRM discipline\nGrow relationships with channel partners and resellers\nYou might be our person if you:\nHave 10-15+ years selling security software and a record of closing complex enterprise deals\nAre experienced at running multithreaded sales cycles with many stakeholders\nAlready have strong relationships with C-suite executives and channel partners in large enterprises\nUnderstand data security, data management or cybersecurity sales - AI Governance, Compliance, Privacy and associated areas.\nAre known for integrity and long-term customer relationships. \nHave the hunger and the passion to be the best at what you do.\nIf you know the enterprise and partner landscape in Indonesia and Malaysia, this is a chance to own a new category in the region.\n📍 Jakarta, Indonesia\n👉 Apply here: https://lnkd.in/gjmP-Efk\nKnow someone who fits? Tag them or share this post.\nWiliam Buyung Chee Pin Chua Teck Sze Tay\n#Veeam #Securiti #DataSecurity #AISecurity #DSPM #EnterpriseSales #Cybersecurity #Jakarta #Indonesia #Malaysia #Hiring",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531529079020494848",
+      "timestamp": "2026-11-26T01:27:41.778Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531556184529612800",
+      "text": "Five IT roles are open at Asian Technology Solutions (ATS) in Indonesia. One of them might have your name on it.\n\nWe're looking for people who enjoy building digital products that millions of users rely on every day, especially in banking, fintech, and insurance.\nOpen positions:\n → Business Analyst (Loyalty)\n → iOS Developer (Swift)\n → Fullstack Developer\n → Product Manager (Banking)\n → Angular Developer\n\nAt ATS, you'll grow with a team that values collaboration, supports you every step of the way, and gives your ideas room to make a difference.\nRequirements for each role are in the slides. Send your CV to us!\n\nKnow someone who fits? Tag them in the comments.\n#Hiring #ITJobs #loker #lowonganit #jakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531551840086310912",
+      "timestamp": "2026-11-26T03:15:23.939Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531555912315092993",
+      "text": "We are looking for several IT Positions!\nJakarta I WFO I PKWT I Banking Industry\n\n1. Fullstack  Developer\n- Minimum 3 years of experience as Fullstack Developer in the banking industry\n- Proficient in using Javascript + React Native \n\n2. Quality Assurance \n- Minimum 7 years of experience as QA \n- Proficient in manual testing\n- Knowledgeable with automation testing would be an added advantage\n\n3. System Analyst\n- Minimum 4 - 5 years of experience as System Analyst \n- Fluent in english \n\n4. Business Process Analyst \n- Have 2 years of experience as Business Analyst\n- Proficient in using SQL/other database tools\n\nSend your CV to sabila.a@avowstech.com or apply through this linkhttps://lnkd.in/gx3i4_Tc\n\n#Loker #FullstackDeveloper #QualityAssurance #SystemAnalyst #BusinessAnalyst #BusinessProcessAnalyst #Banking #Techjobs #LowonganKerja #Jakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531555911539077121",
+      "timestamp": "2026-11-26T03:14:19.038Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552817497489408",
+      "text": "We are delighted to announce Mr. Steve Tjen, Director of Business Development - Indonesia & Malaysia at Radisson Hotel Group, as one of the distinguished speakers joining the 10th Hospitality Indonesia Conference #HIC2027!\n\nSteve will be speaking at the Hotel Investment Summit, bringing his experience and perspective to the conversations shaping the future of Indonesia’s hospitality industry.\n\nSteve is responsible for RHG’s development strategy and execution in Indonesia since 2022. He has made it his mission to communicate RHG’s mission throughout the region by being practical, straightforward, and offering value-adding solutions.\n\nHis insights will be part of an exciting programme bringing together leading hotel owners, investors, developers, operators, and hospitality professionals from across Indonesia and beyond.\n\nSave the date!\n📅 27–28 January 2027\n 📍 Le Méridien Jakarta\n\n🎟️ Ready to join us?\n Register your delegate pass and be part of the conversation at #HIC2027.\n👉 Register here: https://bit.ly/HIC2027Reg\n🌐 Learn more about the event: https://bit.ly/HIC2027\n\n🤝 Interested in sponsorship or partnership opportunities?\n 📩 Contact Gloria Wong, Managing Director\ngloria@hospitality-asia.com\n\n🎟️ For delegate registration enquiries:\n 📩 Contact Jewel Solano, Head of Administration\njewel@hospitality-asia.com\n\nWe look forward to welcoming you to #HIC2027 and introducing more of our industry-leading speakers in the weeks ahead.\n\n#HIC #HospitalityAsia #HISA #HDSA #HRSA #TBSA #HospitalityIndonesia #Conference #HospitalityAsiaEventSeries2027",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531181529163628544",
+      "timestamp": "2026-11-26T03:02:01.176Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531552509274771456",
+      "text": "We are PT. China Harbour Indonesia subsidiary of China Harbour Engineering Company Ltd. (CHEC) an internationally first-class engineering contractor, industrial investment contractor, urban developer and ecological manager in the fields of ports, buildings, roads and bridges, rails, comprehensive urban development, ecological and enviromental protection, pipeline network and green power with investment and financing, consulting and planning, design and construction, management and operation services\n\nKami saat ini sedang mencari One-stop Sourcing Supplier Partner / Mitra Pemasok Satu Pintu atau yang biasa dikenal dengan General Supplier atau  Pemasok / Supplier Umum di Sumatera Utara, Medan. Vendor Supplier yang memahami benefit jangka panjang ini dipersilakan direct message, diskusi langsung ke email dan mobile phone yang ada di kartu nama profil. Sekian informasi ini. Vendor Supplier yang berasal dari Jakarta apalagi langsung dari Medan jelas merupakan Nilai Prioritas #Medan #Vendor #Supplier #EPC #Construction #Supplier#Subcontractor",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531552508524105728",
+      "timestamp": "2026-11-26T03:00:47.690Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531551590948798464",
+      "text": "Great to be in Jakarta this week for the 10th Waste Management & Waste to Energy Asia Summit 2026 – Indonesia Focus, organised by INBC Global at Hotel Bidakara (25–27 November).\n \nWe were glad to present MARTIN Technologies at the summit and share how our proven waste-to-energy technology can help Indonesia and the wider ASEAN region turn municipal solid waste into reliable, clean energy.\n \nIndonesia's push on waste-to-energy is gaining real momentum, and the conversations here, with developers, EPC contractors, utilities and policymakers, showed how much appetite there is for technology that is bankable, reliable and built for the region's waste.\n \nOur thanks to INBC Global for a well-run event, to the partners and fellow exhibitors, and to everyone who stopped by to talk with us. We look forward to continuing these discussions and to building partnerships across Indonesia and Southeast Asia.\n\n#WasteToEnergy #WtE #Indonesia #ASEAN #EnergyTransition #Decarbonization #CircularEconomy #MARTINTechnologies #WMWTE2026",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531551590105812992",
+      "timestamp": "2026-11-26T02:57:08.744Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531550647087898624",
+      "text": "We’re Hiring: SAP CO Consultant (Middle to Senior)\n\nWork Details:\nLevel: Middle to Senior\nEmployment Type: Internal Team (Full-Time)\nLocation: South Jakarta\nWork Arrangement: Full Onsite\n\nKey Responsibilities:\n- Analyze business requirements and configure SAP Controlling (CO) modules, including Cost Element Accounting, Cost Center Accounting, Internal Orders, Profit Center Accounting, Product Costing, and Profitability Analysis (CO-PA).\n- Ensure seamless integration between SAP CO and other core modules (especially FI, MM, SD, and PP).\n- Prepare Functional Specification Documents (FSD) for enhancements/RICEFW and collaborate closely with ABAP developers.\n- Lead or support System Integration Testing (SIT), User Acceptance Testing (UAT), data migration, end-user training, and post-go-live support.\n\nQualifications:\n- Minimum 4 years of hands-on experience as an SAP CO Consultant (Middle to Senior level).\n- Proven track record in at least 1–2 full-cycle SAP ECC or SAP S/4HANA implementations, as well as AMS/support projects.\n- Strong understanding of management accounting processes, product costing, and FI-CO integration.\n- Strong analytical, problem-solving, and client-facing communication skills.\n- Willing to work full onsite in South Jakarta.\n\nReady to take the next step in your SAP career with us?\nSend your updated CV to: https://lnkd.in/gMq3mRKA\n\n#SAPHiring #SAPCO #SAPConsultant #SAPJobs #S4HANA #ManagementAccounting #ITConsulting #JakartaJobs #LowonganIT #TMSConsulting",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531550644277608448",
+      "timestamp": "2026-11-26T02:53:23.710Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531546467069743104",
+      "text": "Hi everyone!\nWe are currently looking for several IT professionals to join our team for a Banking Industry project.\n\n📍 Location: West Jakarta\n🏢 Working Arrangement: Full Work From Office (WFO)\n📄 Employment Type: Contract (6–12 Months)\n\nGeneral Requirements:\n- Minimum Bachelor's Degree (S1) or equivalent in a relevant field.\n\n1. Project Manager\n- Minimum 3 years of experience in SDLC projects.\n- Experience as Project Manager, Scrum Master, Product Owner, or Development Team member.\n- Understand Agile & Waterfall methodologies and Scrum ceremonies.\n- Familiar with Jira and Confluence.\n\n2. iOS Developer\n- Minimum 3 years of experience in iOS development using Swift.\n- Proficient in Xcode, UIKit, RESTful APIs, and Core Data.\n- Understand MVC, MVVM, or VIPER architecture.\n- Familiar with Git, Jira, Docker, and CocoaPods/SPM.\n- Experience in deployment and troubleshooting.\n\n3. Solution Analyst\n- Minimum 3 years of experience as a Solution Designer, Developer, Solution Architect, or equivalent.\n- Previous experience as a Developer is preferred.\n- Strong analytical, communication, and problem-solving skills.\n- Able to collaborate with cross-functional teams.\n\n4. Integration Analyst\n- Minimum 3 years of experience in IT Banking or a similar field.\n- Strong analytical and problem-solving skills.\n- Good communication and coordination skills.\n\n5. Frontend Developer (Angular)\n- Minimum 3 years of experience in Frontend Development.\n- Proficient in HTML, CSS, JavaScript, and Bootstrap.\n- Hands-on experience with Angular (Version 2+).\n- Understand OOP concepts and Agile methodologies.\n\n📩 Interested?\nSend your updated CV via DM or email to Sheila.Widjaya@accordinnovations.com with the subject: Name – Roles\nOR Apply through the link below:\n🔗https://lnkd.in/gu9Qk6Pt\n\nFeel free to share this opportunity with your network!\n\n#Hiring #ITJobs #Banking #ProjectManager #iOSDeveloper #SolutionAnalyst #IntegrationAnalyst #AngularDeveloper #JakartaJobs #Swift #LokerIT #Indonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531546466440601600",
+      "timestamp": "2026-11-26T02:36:47.116Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer jakarta"
         }
       ]
     },
