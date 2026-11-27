@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-27T04:43:12.147Z",
+  "writtenAt": "2026-11-27T05:23:38.625Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -46,29 +46,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531902415634239489",
-      "text": "We’re #Hiring Mobile Developer Internship Opportunities!\n\nBaramulti Marine Group is currently opening internship opportunities for motivated individuals who are eager to learn and gain hands-on experience in a dynamic work environment.\n\n📍 Location: Jakarta\n\nRequirements:\n1. Bachelor's degree in Informatics Engineering, Information Systems, or other relevant fields.\n2. Familiar with Flutter and React Native for Android application and Progressive Web App (PWA) development.\n3. Understanding of RESTful APIs, JSON, and backend system integration.\n4. Understanding of Clean Architecture, authentication, authorization, and application security.\n5. Familiar with Git, debugging, testing, and application performance optimization.\n6. Familiar with Firebase services, including Authentication, Cloud Messaging, and Crashlytics.\n7. Good analytical and problem-solving skills, communication, and teamwork abilities.\n\nWhat You'll Get:\n1. Paid internship opportunity.\n2. Free lunch provided during working days.\n3. Hands-on experience in mobile application development.\n4. Opportunity to work on real-world projects and mobile application features.\n5. Exposure to Flutter, React Native, and mobile development technologies.\n\n📩 Apply now via the link below:\nhttps://lnkd.in/gr8G3FGF\n\nBaramulti Marine Career\n#baramultigroup #baramultimarine #internship #loker #magang #mobiledeveloperintern #careeropportunity",
+      "id": "urn:li:activity:7531933875933958144",
+      "text": "🚀 WE’RE HIRING | AVOWS TECHNOLOGIES INDONESIA\nWe’re looking for talented IT professionals to join our clients team!\n\n1. QA ENGINEER – FinTech Industry\n📍 Jakarta Area | WFO\n- Minimum 3 years of experience in QA, covering Manual & Automation Testing.\n- Hands-on experience with Katalon/Selenium and API Testing using Postman.\n- Familiar with test case development, Functional Testing, SIT, UAT, and Regression Testing.\n\n2. DATA ENGINEER – IT Managed Services\n📍 Remote | Occasional business trips to West Java (1–2 times)\n- Minimum 3 years of experience in Data Engineering and Big Data technologies.\n- Proficient in Python, PostgreSQL/ClickHouse, ETL pipelines, and Apache NiFi.\n- Familiar with Data Warehouse/Data Mart, Unix/Linux, and Bash/Shell Scripting. Cloud, Docker, Kubernetes, and Kafka knowledge is a plus.\n\n3. FULL STACK DEVELOPER (JAVASCRIPT & REACT NATIVE) – Banking Industry\n- Minimum 3 years of experience in Full Stack Development.\n- Proficient in JavaScript/TypeScript, Node.js, Express.js, React.js, and Next.js.\n- Experienced in React Native mobile development and REST API integration.\n\nGeneral Notes:\n- Only open for Indonesian citizen\n- Contract-based (extendable)\n\n📩 Interested? Send your updated CV to raffi.d@avowstech.com with subject [Position] - [Your Name] or simply fill out this formtinyurl.com/avowstechraffi\n\n#Hiring #AvowsTechnologies #ITJobs #QAEngineer #DataEngineer #FullStackDeveloper",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531902414510096384",
-      "timestamp": "2026-11-27T02:11:11.867Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531933875082776577",
+      "timestamp": "2026-11-27T04:16:12.587Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531864658803113986",
-      "text": "One thing I genuinely enjoy about software development is taking an idea and turning it into something people can actually use. \n\nThat's what I set out to do with Nath ResellDesk.\n\nResellDesk is a ticket reseller management application I built to make everyday business activities easier. It helps users manage ticket inventory, record sales, monitor revenue and profit, track events, and receive notifications.\n\nBuilding this project involved more than writing code. I worked on the interface, authentication, browser-based data storage, serverless functions, email delivery, notification integrations, deployment, and debugging.\n\nHere is the actual technology stack behind ResellDesk:\n\n🔹 Frontend\n\n- HTML5\n- CSS3 (CSS Variables, Grid, Flexbox and Media Queries)\n- Vanilla JavaScript (ES Modules)\n- Google Fonts (DM Sans and Plus Jakarta Sans)\n- Browser APIs (IndexedDB, localStorage, Fetch API and HTML Dialog)\n\n🔹 Authentication\n\n- Supabase Auth\n- supabase-js 2.45.4\n\n🔹 Data Storage\n\n- IndexedDB (ResellDeskDB) for locally storing tickets and sales records in each user's browser\n- localStorage for saving theme preferences\n\n🔹 Backend and Notifications\n\n- Netlify Functions\n- Node.js\n- esbuild\n- Resend for email delivery\n- Telegram Bot API\n- Discord Webhooks\n\n🔹 Hosting and Deployment\n\n- Netlify\n- GitHub\n- Netlify Environment Variables\n- Automatic deployment from GitHub\n\n🔹 Development Tools\n\n- Visual Studio Code\n- Git\n- GitHub\n- Netlify CLI\n- \"netlify dev\" for local development and testing\n\nA few technical details worth mentioning:\n\nResellDesk uses Vanilla JavaScript. There is no React, no frontend framework and no build step.\n\nSupabase handles authentication, while IndexedDB stores ticket and sales records locally in each user's browser. Cloud synchronisation is not currently implemented.\n\nNetlify hosts the application and serverless notification function, while Resend handles email delivery through a verified domain. Telegram and Discord are used for administrator alerts.\n\nI'm sharing this project because I want people to see not just the finished application, but also the technologies, engineering decisions and practical development skills behind it.\n\nI'm constantly learning, building and improving my craft as a Full-Stack Software Engineer.\n\nWould you like to see Nath ResellDesk in action?\n\nI've placed the live project link in the comments. Visit it, explore the application and let me know what you think. Your feedback would mean a lot! 🙌\n\n#NathMicrosystems #SoftwareDevelopment #fyp #trending #everyone",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531864656546693120",
-      "timestamp": "2026-11-26T23:41:09.937Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "react jakarta"
+          "value": "react indonesia"
         }
       ]
     },
@@ -130,43 +116,113 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531694020901830656",
-      "text": "You're only seeing half the story when it comes to surging market searches. 🚨📈📉\n\nSearch interest for stocks (+80%) and coins (+60%) surged together in late 2026 because both react to the exact same macro triggers US inflation, Treasury yields, and Fed rate signals.\n\nDuring the Nov 25 cross-asset selloff, global markets shed over $4 trillion, sending Bitcoin below $58,000, while Glassnode flagged a $14.2B drop in stablecoin supply and $1.6B in ETF outflows.\n\nKey takeaway: High search volume reflects curiosity and active repositioning—not guaranteed bull runs!\n\nProtect your capital: Keep everyday business cash flow separate from market swings with Kolan's dedicated USD, EUR, GBP, and AED accounts, and store long-term crypto offline with OneKey or Ellipal!\n\n(Note: Educational info only, not financial or legal advice).\n\nAre you watching stocks and crypto side by side right now? Comment below! 👇\n\nCheck bio/highlight for more! 🔗\n\nRead Full News: 🔗 https://lnkd.in/gt9yQtDd\n\nCold wallet\n\nOneKey\nhttps://onekey.so/r/TRC\n\nEllipal\nhttps://lnkd.in/gStn-stZ\n\nSelf custody wallet:\n\nMy Pal\nhttps://lnkd.in/gAEenFG7\n\nExplore Stablecoin Finance with KITE\nhttps://kite.financial/\n\nTrade on Bybit Indonesia\nhttps://lnkd.in/gCEKgN8s\n\nRegister here to open bank account in AUD,USD,EUR, GBP, AED,COP,NGN,MEX with our own name/company name (Kolan)\nhttps://lnkd.in/gRvPHnQQ\n\nConnect with Cryptomart Site:https://lnkd.in/gWk7yp7Q\n\nNeed help optimizing cross-border payments for your enterprise?\nEmail: info@cryptomart.site\nWhatsApp: +6285165098877\nTelegram: @sungazerlive\n\nSources:\nGlassnode, CryptoQuant, AMINA Bank, Finance Tradex Research, & Pluang\n\n#CryptoNews #Bitcoin #StockMarket #MacroEconomics #CryptoVolatility #ColdStorage #Kolan #Web3",
+      "id": "urn:li:activity:7531945543900606464",
+      "text": "Women and politics? Let's talk about it.\n\nWhether we like it or not, workplace politics shape our careers. From who gets heard and promoted to who gets paid what.\n\nThe Inner Circle: Navigating Power, Politics, and Pay\n\n✅ Join our candid conversations from women leaders across HR, consumer insights, and education\n✅ Breaking the glass-ceiling with essential skill practical\n✅ Go home with a head full of empowerment from fellow female corporate champions\n\nHosted by She Loves Data Indonesia Chapter to all women who thrive to reach the top.\n\n📅 12 Dec 2026 | 09:00–13:30 WIB\n 📍 Apple Developer Academy (The Autograph Tower, Lt. 52, Central Jakarta) \n\nLimited seats available. Register here 👉 https://bit.ly/4CoR4e1\n\n#SheLovesData #SheLovesDataIndonesia #WomenInData #WomenInLeadership #CareerGrowth #JakartaEvents",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531693933190623232",
-      "timestamp": "2026-11-26T12:23:06.691Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531765776777732096",
+      "timestamp": "2026-11-27T05:02:34.447Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531674059516981248",
-      "text": "elvira.y@avowstech.com",
+      "id": "urn:li:activity:7531944042339688448",
+      "text": "https://fitnessoutdoor.id/",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531674058879557632",
-      "timestamp": "2026-11-26T11:03:47.526Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531944041387761664",
+      "timestamp": "2026-11-27T04:56:36.447Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531633550673133568",
-      "text": "Most POS systems force small businesses to buy expensive hardware and spend weeks setting up.\n\nI’m building the opposite.\n\nWith UMKM Unggul Indonesia, shop owners sign up, get a working store instantly, and start selling the same day using the devices they already own.\n\nIt’s still a work in progress, so here is what already works in production today: \n- Zero-Hardware Cashier: A fast POS screen that runs smoothly on any phone, tablet, or laptop. \n-Shift-Level Cash Reconciliation: Every single rupiah is tracked and accounted for per shift eliminating mystery shortages. \n-One-Screen Business Health: Real-time dashboards and reports so owners immediately see which products actually make money.\n\nAt the end of the day, software results only matter when business owners can actually trust the numbers.\n\nSee the live product:www.umkmunggul.id\nCase studies & full portfolio: www.aziztaufiqurrahman.com\n\n#BuildInPublic #NextJs #React #SaaS #ProductEngineering",
+      "id": "urn:li:activity:7531946945817268224",
+      "text": "𝐈𝐧𝐝𝐨𝐧𝐞𝐬𝐢𝐚 𝐑𝐞𝐚𝐝𝐲-𝐦𝐢𝐱 𝐂𝐨𝐧𝐜𝐫𝐞𝐭𝐞 𝐌𝐚𝐫𝐤𝐞𝐭 𝟐𝟎𝟐𝟔 | 𝐆𝐫𝐨𝐰𝐭𝐡, 𝐓𝐫𝐞𝐧𝐝𝐬, 𝐚𝐧𝐝 𝐅𝐨𝐫𝐞𝐜𝐚𝐬𝐭 𝐛𝐲 𝟐𝟎𝟑𝟒\n\nThe Indonesia Ready-Mix Concrete Market is gaining momentum with rising infrastructure development, urbanization, and increasing construction activities. Growing demand for efficient and high-quality concrete solutions is creating new opportunities for market growth.\n\n#IndonesiaReadyMixConcreteMarket #ReadyMixConcrete #ConstructionIndustry #InfrastructureDevelopment #ConcreteMarket #IndonesiaConstruction #BuildingMaterials #IndonesiaMarket #MarketGrowth #MarketResearch",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531633549561528320",
-      "timestamp": "2026-11-26T08:22:49.465Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531946945372737536",
+      "timestamp": "2026-11-27T05:08:08.690Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531942055145746432",
+      "text": "𝐒𝐩𝐨𝐧𝐬𝐨𝐫 𝐀𝐧𝐧𝐨𝐮𝐧𝐜𝐞𝐦𝐞𝐧𝐭 𝐏𝐓 𝐀𝐬𝐭𝐫𝐚 𝐀𝐠𝐫𝐨 𝐋𝐞𝐬𝐭𝐚𝐫𝐢, 𝐓𝐛𝐤 | 𝐓𝐡𝐞 𝟒𝐭𝐡 𝐂𝐚𝐫𝐛𝐨𝐧 𝐃𝐢𝐠𝐢𝐭𝐚𝐥 𝐂𝐨𝐧𝐟𝐞𝐫𝐞𝐧𝐜𝐞 𝟐𝟎𝟐𝟔\n\nWe are pleased to welcome PT Astra Agro Lestari Tbk Lestari Tbk as a proud sponsor of the 4th Carbon Digital Conference 2026 (CDC 2026). As one of Indonesia's leading palm oil producers, Astra Agro Lestari operates in a sector that plays an important role in balancing economic growth, food and energy security, environmental protection, and climate action.\n\nThe agricultural sector offers substantial opportunities for emissions reduction and carbon removal, from methane capture through palm oil mill effluent (POME) treatment, biomass utilization, and biochar production to sustainable land management and ecosystem restoration. Credible carbon market mechanisms can help mobilize investment, accelerate the adoption of low-carbon technologies, and strengthen the global competitiveness of Indonesia's agricultural industry.\n\nWe extend our sincere appreciation to Astra Agro Lestari for supporting CDC 2026 and contributing to the dialogue towards a stronger, more inclusive, and high-integrity carbon market ecosystem.\n\n- 𝐒𝐩𝐞𝐚𝐤𝐞𝐫𝐬 𝐥𝐢𝐧𝐞 𝐮𝐩 & 𝐚𝐠𝐞𝐧𝐝𝐚:https://lnkd.in/gjK7VfFH\n- 𝐑𝐞𝐠𝐢𝐬𝐭𝐞𝐫: https://lnkd.in/ghTQ3j8a\n- 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐢𝐧 𝐬𝐩𝐨𝐧𝐬𝐨𝐫𝐢𝐧𝐠, exhibiting, or speaking? Email: cdc@idcarbontrade.org\n\n𝐓𝐡𝐞 𝟒𝐭𝐡 𝐂𝐚𝐫𝐛𝐨𝐧 𝐃𝐢𝐠𝐢𝐭𝐚𝐥 𝐂𝐨𝐧𝐟𝐞𝐫𝐞𝐧𝐜𝐞 𝟐𝟎𝟐𝟔\nTHE LARGEST CARBON PROJECT DEVELOPERS CONVENTION IN THE REGION\n📅 8-9 December 2026\n📍 Hotel Sheraton Gandaria, Jakarta, Indonesia\n🌐 https://lnkd.in/gUbDdX6p\n\n#CDC2026 #CarbonDigitalConference #AstraAgroLestari #AstraAgro #CarbonMarket #CarbonCredits #CarbonTrading #CarbonInvestment #CarbonFinance #CarbonRemoval #CarbonReduction #AgriculturalCarbon #SustainableAgriculture #SustainablePalmOil #PalmOil #Biochar #Biogas #MethaneCapture #NatureBasedSolutions #ClimateFinance #Decarbonization #NetZero #Sustainability #Indonesia #IDCTA #ecobizasia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942053333712896",
+      "timestamp": "2026-11-27T04:48:42.663Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531940564695515136",
+      "text": "MARANG BULO – REAL LAND. INTERNATIONAL OPPORTUNITIES.\n\nA coastal development opportunity in a designated Pink Zone tourism area, offering flexibility for private investors and large-scale developers.\n\nApproximately 2 hectares of beachfront and panoramic terrace plots, with the possibility to acquire individual lots or combine multiple plots into larger development areas.\n\nIdeal potential for:\n\n- Private estates and residences.\n- Boutique resorts and hospitality.\n- Larger tourism and integrated development projects.\n\nWe connect real land assets with international investors and developers.\n\nTHE COMPASS ROSE REAL ESTATE\nPT Mata Angin Bali | Indonesia\n\n🌐 Visit our website:\n👉 Click on The Compass Rose to discover more.\n\nhttps://lnkd.in/gXu2a-9v\n\nReal Assets. International Vision.\n\n#IndonesiaInvestment #LandDevelopment #TourismInvestment #InternationalRealEstate",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531940563584065537",
+      "timestamp": "2026-11-27T04:42:47.312Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531939764162420736",
+      "text": "https://lnkd.in/gfw6EE75",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531939763323555840",
+      "timestamp": "2026-11-27T04:39:36.450Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531938685592809472",
+      "text": "HIRING: Backend Developers (Global, Fully Remote)\n\nmicro1 is recruiting experienced Backend Developers for a global AI-training project focused on production systems and backend architecture.\nPay: $50–$70/hour (output-based compensation)\nLocation: Global, Fully Remote\nWork Type: Contractor\nCommitment: Approximately 15 hours per week\nSchedule: Flexible, including weekends\n\nRequired Skills:\nBackend service design and architecture\nAPI development and integration\nData systems and persistence\nAsynchronous and concurrent systems\nPerformance optimization and debugging\nProduction reliability and scalability\nRust programming and DevOps knowledge\n\nResponsibilities:\nSolve and validate backend engineering problems.\nEvaluate service behavior, APIs, persistence and system reliability.\nBuild reproducible implementation and testing workflows.\nPrepare test environments, databases, dependencies and containerized setups.\n\nSelection Process:\nApplication and screening questions\nApproximately 30-minute AI interview\nHiring manager review\nSelected candidates should be ready to start their first tasks within 24–48 hours after onboarding.\nPayment is output-based, with compensation for tasks meeting project specifications.\n\nApply here: https://lnkd.in/dSMBmhrJ\n\n#Hiring #BackendDeveloper #BackendJobs #SoftwareEngineering #Rust #RustDeveloper #BackendArchitecture #API #DevOps #CloudEngineering #SystemDesign #AITraining #Micro1 #RemoteJobs #WorldwideJobs #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531938684691189760",
+      "timestamp": "2026-11-27T04:35:19.299Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531943061380288512",
+      "text": "𝐈𝐧𝐝𝐨𝐧𝐞𝐬𝐢𝐚 𝐋𝐢𝐭𝐡𝐢𝐮𝐦-𝐢𝐨𝐧 𝐁𝐚𝐭𝐭𝐞𝐫𝐲 𝐌𝐚𝐫𝐤𝐞𝐭 𝟐𝟎𝟐𝟔 | 𝐒𝐢𝐳𝐞, 𝐒𝐡𝐚𝐫𝐞, 𝐚𝐧𝐝 𝐃𝐞𝐦𝐚𝐧𝐝 𝐅𝐨𝐫𝐞𝐜𝐚𝐬𝐭 𝐛𝐲 𝟐𝟎𝟑𝟒\n\nThe Indonesia Lithium-ion Battery Market is gaining momentum with rising demand for electric vehicles, renewable energy storage, and advanced battery technologies. Growing investments in battery manufacturing and Indonesia’s abundant nickel resources are creating new opportunities for market growth.\n\n#IndonesiaLithiumIonBatteryMarket #LithiumIonBattery #ElectricVehicleBattery #BatteryTechnology #EnergyStorage #EVIndustry #RenewableEnergy #IndonesiaMarket #MarketGrowth #MarketResearch",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531943060864237569",
+      "timestamp": "2026-11-27T04:52:42.568Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
         }
       ]
     },
@@ -205,6 +261,20 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531935254425636864",
       "timestamp": "2026-11-27T04:21:41.730Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531939028032540672",
+      "text": "𝐈𝐧𝐝𝐨𝐧𝐞𝐬𝐢𝐚 𝐁𝐨𝐚𝐫𝐝 𝐆𝐚𝐦𝐞𝐬 𝐌𝐚𝐫𝐤𝐞𝐭 𝐒𝐢𝐳𝐞, 𝐒𝐡𝐚𝐫𝐞, 𝐚𝐧𝐝 𝐑𝐞𝐩𝐨𝐫𝐭 𝟐𝟎𝟐𝟔-𝟐𝟎𝟑𝟒\n\n🎲 The Indonesia Board Games Market is growing as families, friends, and gaming enthusiasts embrace tabletop entertainment. Rising interest in strategy games, social gaming, and family-friendly activities is creating new opportunities for market growth.\n\n#IndonesiaBoardGamesMarket #BoardGames #TabletopGames #GamingIndustry #BoardGameCommunity #FamilyGames #StrategyGames #IndonesiaMarket #MarketTrends #MarketResearch",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531939027579744256",
+      "timestamp": "2026-11-27T04:36:40.943Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -326,85 +396,99 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531920307343851520",
-      "text": "Hi Everyone! 👋\nAccord Innovations Client is hiring for:\n\n📌 Integrations Analyst (System Analyst)\n🏙️ Industry: Banking \n💼 Employment Type: Contract 6-12 months under Accord Innovations\n📍 Location: Jakarta Barat, Indonesia\n❗ Can join January 2027\n\nRequirements:\n✅ Bachelor’s degree (S1) in Computer Science, Information Systems, or other relevant fields, with at least 3 years of experience in IT Banking (minimum 2 years as a System Analyst and 2 years in the banking sector).\n✅ Experience in project documentation such as FSD, TSD, PRD, and BAST, along with strong diagnostic, troubleshooting, and problem-solving skills and knowledge of RESTful APIs.\n✅ Additional advantage: Experience with programming (Java, Kotlin, C, C++, etc.) and SQL Query.\n✅ Good communication, interpersonal, and teamwork skills, with initiative, discipline, attention to detail, and ability to suggest team improvements.\n\nResponsibilities:\n🔹 Analyze business requirements, translate them into system requirements, design and configure applications, and create Technical Engineering Design (TED) and Functional Specification Documents (FSD).\n🔹 Coordinate application integration across stakeholders, collaborate with Product Owners, Scrum Masters, Developers, and Application Designers, and analyze and test External APIs.\n🔹 Prepare SIT and UAT test data and ensure surrounding applications function properly through go-live while driving innovation for Banking\n\nIf you are interested or have relevant references, kindly send your updated CV to:\n📩 raisya.shaffa@accordinnovations.com\n\n#Hiring #SystemAnalyst #ITBanking #RESTAPI #FSD #TSD #JakartaJobs #TechHiring",
+      "id": "urn:li:activity:7531944586856837121",
+      "text": "anpingc236@gmail.com",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531920306232365056",
-      "timestamp": "2026-11-27T03:22:17.583Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531944586324193281",
+      "timestamp": "2026-11-27T04:58:46.270Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531917577388924928",
-      "text": "Hi, Cloudtizen! 👋🏻\n\n85 Cloudtizens came together at “Build 24/7 AI Team for Your Businesses” on 25 November, 2026! Organized by BuildClub AI, ICCom, and PT DEWAWEB as part of Road to SCALECON 2027, this workshop was all about exploring how AI can make everyday work easier.\n\nFrom discovering how AI bots can help developers build applications and websites to getting hands-on with multi-agent workflows, the session was packed with exciting discussions, live demos, and guided practice. Participants got to see how different AI agents can work together to handle tasks, draft responses, and know when it’s time for a human to step in. The best part? Everyone had the chance to try it out themselves, exchange ideas, and connect with fellow AI builders and tech enthusiasts!\n\nA huge thank you to everyone who joined and made the evening so engaging. It was amazing to see so many curious minds learning, experimenting, and building together. See you at our next event, Cloudtizen!\n\n#iCCom #BuildClubAI #AIWorkshop #AgenticAI #SCALECON2027",
+      "id": "urn:li:activity:7531943485072060416",
+      "text": "🔥 Today's Hot Jobs | ICT & Construction | Indonesia\nLooking for your next career opportunity in Indonesia? EV Search is currently hiring for several exciting engineering and construction management positions within the ICT sector.\n\n📍 Featured Opportunities:\n- Construction Manager: Oversee construction project execution, ensuring project delivery, quality, safety and operational efficiency.\n👉 JD: https://lnkd.in/gbUhf6Va\n\n- HSE Manager: Lead health, safety and environmental initiatives, ensuring compliance with safety standards and regulations.\n👉 JD: https://lnkd.in/gUm3CPX9\n\n- Lead Electrical Design Engineer: Drive electrical design activities, technical solutions and engineering coordination.\n👉 JD: https://lnkd.in/gmdvMRux\n\n- Lead Mechanical Design Engineer: Lead mechanical design development, engineering activities and technical project delivery.\n👉 JD: https://lnkd.in/g4nFUvHJ\n\n- Project Director: Provide strategic project leadership, oversee project execution and ensure successful delivery.\n👉 JD: https://lnkd.in/gD7zrQJG\n\n💡 Why Explore These Opportunities?\n- Attractive gross salary packages.\n- Opportunities to work on projects in Indonesia's growing ICT sector.\n- Career development in engineering, design and construction management.\n- Opportunities to take on leadership and technical responsibilities.\n\n📩 Interested in these opportunities? Send your CV to Tisa Setia or attisa.setia@ev-search.com to learn more.\n\n#Hiring #HotJobs #IndonesiaJobs #ConstructionJobs #ICTJobs #EngineeringCareers #ConstructionManager #HSEManager #ElectricalEngineer #MechanicalEngineer #EVSearch",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531917574578614273",
-      "timestamp": "2026-11-27T03:11:26.711Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531943483129888769",
+      "timestamp": "2026-11-27T04:54:23.584Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531915912057344000",
-      "text": "🔐 APAC CYBERSECURITY BRIEFING | EDITION 22\n\nSoutheast Asia's Banking Sector on High Alert: The Growing Threat of Cyberattacks Against Financial Institutions\n\nThe rapid expansion of digital banking and cashless transactions across Asia-Pacific is creating new opportunities for cybercriminals to target financial institutions.\n\nFrom account takeovers and payment system disruptions to customer data exposure, the financial sector faces increasingly complex cybersecurity challenges.\n\nIn this edition, we explore emerging threats affecting financial institutions across Southeast Asia and the importance of strengthening cyber resilience to protect banking infrastructure, customer information, and digital financial services.\n\n📖 Read the latest edition of APAC Cybersecurity Briefing.\n\n🤝 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐢𝐧 𝐣𝐨𝐢𝐧𝐢𝐧𝐠 𝐨𝐮𝐫 𝐞𝐯𝐞𝐧𝐭𝐬?\nShowcase your solutions, increase your brand visibility, and connect with key decision-makers across the cybersecurity industry in ASEAN.\n\n📩 Send us a message here on our page or email us at cybersec@escom-events.com to explore our sponsorship opportunities.\n\n📢 For speaking opportunities and partnerships, contactCes Flores atprincess.flores@escom-events.com.\n\n🎟️ For delegate inquiries or assistance, reach out to karla.tenorio@escom-events.com.\n\nLet's work together to build a more secure digital future!\n\n📅 𝟐𝟎𝟐𝟕 𝐑𝐎𝐀𝐃𝐒𝐇𝐎𝐖 𝐂𝐀𝐋𝐄𝐍𝐃𝐀𝐑\n• February 17–18 — CyberSecPhil Conference 2027 | Manila, Philippines\n• March 24 — Asia AI Infrastructure Malaysia Summit 2027 | Kuala Lumpur, Malaysia\n• May 26–27 — CyberSecMalaysia Conference 2027 | Kuala Lumpur, Malaysia\n• July 14 — CyberSecIndonesia Summit 2027 | Jakarta, Indonesia\n• September 8 — CyberSecThailand Summit 2027 | Bangkok, Thailand\n• November 4 — CyberSecVietnam Summit 2027 | Ho Chi Minh City, Vietnam\n\n#CyberSecurity #APACCybersecurity #CyberResilience #DigitalBanking #FinancialSecurity #CyberSecAsia",
+      "id": "urn:li:activity:7531942783499051008",
+      "text": "HIRING: Forward Deployed Engineer\n\nmicro1 is hiring an experienced Forward Deployed Engineer to work with leading AI labs and enterprise partners on advanced AI research, infrastructure and production systems.\nSalary: $180,000–$250,000/year base\nLocation: Remote / Travel Required\nJob Type: Full-time\n\nKey Requirements:\nStrong Python engineering and production software development experience.\nHands-on experience with LLMs, agentic systems, multi-turn workflows, RAG and AI automation.\nExperience building data pipelines, ML infrastructure and model evaluation systems.\nKnowledge of data quality, dataset curation, taxonomies and labeling workflows.\nAbility to independently manage technical projects and work directly with enterprise partners and research teams.\n\nKey Responsibilities:\nBuild and deploy LLM applications, multi-agent systems and RAG workflows.\nDevelop ML pipelines for data curation, training and evaluation.\nDesign data quality frameworks and evaluation systems.\nBuild infrastructure for model inference, experimentation and deployment.\nTranslate complex AI research requirements into production-ready systems.\nOwn projects from architecture and implementation through deployment and partner success.\nBenefits include equity compensation, potential performance bonuses, health insurance reimbursement, paid time off and a 401(k) plan with company match.\n\nApply here: https://lnkd.in/dtdp2vgr\n\n#Hiring #ForwardDeployedEngineer #FDE #PythonJobs #LLM #AgenticAI #RAG #AIAutomation #MachineLearning #MLInfrastructure #DataEngineering #MLOps #AIResearch #SoftwareEngineering #Micro1 #RemoteJobs #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Mexico #Guatemala #Belize #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Cuba #Haiti #DominicanRepublic #Jamaica #TrinidadAndTobago #Bahamas #Barbados #AntiguaAndBarbuda #Dominica #Grenada #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Argentina #Bolivia #Brazil #Chile #Colombia #Ecuador #Guyana #Paraguay #Peru #Suriname #Uruguay #Venezuela #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531915911344349184",
-      "timestamp": "2026-11-27T03:04:49.665Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942780605218816",
+      "timestamp": "2026-11-27T04:51:36.316Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531914924315357184",
-      "text": "https://lnkd.in/g3ifMBFz",
+      "id": "urn:li:activity:7531941163352686593",
+      "text": "Hi everyone,\n\nWe are currently #hiring for our client Construction & Engineering (Data Center Projects) industry with this position:\n\nSite Engineer\nPlacement: Batam & Cikarang, West Java, Indonesia\n\nIf you or someone you know would be interested in this opening, kindly message me.\n\nThank you!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531757098121142272",
-      "timestamp": "2026-11-27T03:00:54.169Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531527128639549440",
+      "timestamp": "2026-11-27T04:45:10.043Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531907188802641920",
-      "text": "🚗 THE AUTOMOTIVE INDUSTRY DOESN'T NEED ANOTHER GREEN MATERIAL.\nIT NEEDS A MATERIAL THAT PASSES THE TEST.\n\nFor automotive manufacturers, choosing a material is not simply about where it comes from. It is about how it performs inside a component.\nMechanical properties. Thermal behavior. Moisture resistance. Durability. Processability. Batch consistency. Every requirement matters.\n\n🥥 THIS IS WHERE COCOFIBER ENTERS THE MATERIAL-ENGINEERING CONVERSATION.\nResearchers have investigated coir-fiber-reinforced polypropylene composites for potential automotive applications.\n\nBut there is an important distinction:\nRAW COCOFIBER IS NOT AN AUTOMOTIVE COMPONENT. IT IS A POTENTIAL REINFORCEMENT MATERIAL.\nIts performance depends on much more than the fiber itself.\n\nSeveral factors influence the final composite:\n📏 Fiber length and geometry — influence reinforcement behavior.\n🧪Fiber preparation and treatment — can affect surface characteristics and fiber–matrix interaction.\n⚙️Fiber–polymer compatibility — influences bonding within the composite.\n📊Fiber loading and distribution — affect the material's overall properties.\n🏭Processing conditions and composite structure — influence consistency and final performance.\n\n🔬AND THE RESEARCH IS WORTH PAYING ATTENTION TO.\nA 2024 life-cycle assessment published in the Journal of Cleaner Production compared a defined coir-fiber-reinforced polypropylene component with a comparable glass-fiber-reinforced polypropylene component.\nIn that particular study, the coir-based composite showed lower cumulative energy demand and greenhouse gas emissions within the assessed system boundaries.\nThat is promising evidence.\n\nAt CocoHeroBorneo, we believe cocofiber deserves to be explored beyond conventional applications—as a potential raw material for the next generation of natural-fiber composite development.\n\n🤝 For composite manufacturers, automotive component developers, and material R&D teams, we welcome conversations about cocofiber sourcing, material preparation, and potential industrial applications.\n#Cocofiber #NaturalFiberComposites #AutomotiveMaterials #MaterialEngineering #CompositeMaterials #SustainableMaterials #IndustrialInnovation #CoconutFiber #CocoHeroBorneo",
+      "id": "urn:li:activity:7531938492596064256",
+      "text": "The United States administration has decided the best way to calm inflation-weary voters is to slap fresh tariffs on nearly everyone who still trades with them.\n\n14 economies now face the axe: China, the European Union, Japan, India, South Korea, Taiwan, Vietnam, Thailand, Malaysia, Indonesia, Singapore, Bangladesh, Cambodia, and, because restraint is overrated, Switzerland. Yes, Switzerland. The land of chocolate and watches is apparently drowning in “structural excess manufacturing capacity.” One imagines Swiss engineers staring at their precision machinery in polite confusion.\n\nThis time the vehicle is Section 301 of the Trade Act of 1974, the administration’s latest workaround after courts, including the Supreme Court, dismantled large parts of the previous tariff regime. When one legal theory collapses, invent another. Persistence is admirable. Stubbornness after repeated judicial rejection is something else.\n\nUnited States Trade Representative Jamieson Greer insists these measures will confront the unfair subsidies and industrial policies that have supposedly warped global markets. The irony is rich: the United States has spent recent years enthusiastically subsidizing its own strategic sectors. One country’s “vital industrial policy” is another’s “trade-distorting practice.” The distinction seems to depend mainly on which flag flies over the factory.\n\nVoters spent the last election making it reasonably clear that higher prices and supply-chain headaches were not on their wish list. The administration’s reply has been to double down. Nothing says “we heard you” quite like expanding the policies that helped fuel the cost-of-living complaints in the first place.\n\nThe proposal includes a long list of product exemptions, an implicit confession that tariffs raise costs for businesses and households. When the exceptions start to resemble Swiss cheese, the economic rationale begins to look secondary.\n\nInflation remains sticky, markets are twitchy, and the Federal Reserve is still watching prices closely. Adding new cost layers through global supply chains at this moment is a bold strategy—bold in the same way lighting a match in a fireworks factory is bold.\n\nFor companies with international supply chains, the message is simple: keep the lawyers close and the contingency plans closer. Tariff-based enforcement remains the preferred instrument of United States trade policy, judicial setbacks and electoral feedback be damned.\n\nIn the end, the administration seems determined to prove that the best cure for economic anxiety is more economic anxiety, distributed as evenly as possible across the global trading system. Consistency, if nothing else, must be admired.\n\n🏨🏨🏨🏨",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531907186554294272",
-      "timestamp": "2026-11-27T02:30:09.879Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531938489823748096",
+      "timestamp": "2026-11-27T04:34:33.285Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531904093087522816",
-      "text": "🚀 WE ARE HIRING | PROJECT DIRECTOR – DATA CENTER (Business Development & EPC Project Delivery)\n\n📍Location: Cikarang / Jakarta\n🌐English Speaker Required | Mandarin is a Plus\n\nWe are looking for an experienced Project Director to lead Data Center business development and end-to-end EPC project delivery in Indonesia.\n\nKey Responsibilities :\n- Develop new Data Center business opportunities and project pipelines.\n- Build strategic relationships with Data Center owners, developers, consultants, contractors, and industry partners.\n- Lead EPC projects from design, procurement, construction, commissioning, to handover.\n- Manage project budgets, schedules, quality, safety, risks, and profitability.\n- Build and lead a dedicated Data Center project team.\n\nRequirements :\n- 15+ years of experience in EPC, construction, engineering, or project management.\n- Strong experience in Data Center or mission-critical infrastructure projects.\n- Proven experience in senior project leadership roles.\n- Strong understanding of Data Center MEP and critical infrastructure.\n- Experience in business development, commercial management, and contract negotiation.\n- Strong industry network within Indonesia's Data Center sector.\n- Professional English communication skills; Mandarin is an advantage.\n\nInterested in this opportunity? Feel free to send your updated CV via email or apply through the link below.\n\n📩 Email: [PROJECT DIRECTOR – DATA CENTER English speaker_Full Name]\n🔗Application Link: https://lnkd.in/g_6DYYkY\n\n#Hiring #ProjectDirector #DataCenter #EPC #Construction #Engineering #BusinessDevelopment #ProjectManagement #Jakarta #Cikarang #CareerOpportunity",
+      "id": "urn:li:activity:7531942420524167168",
+      "text": "HIRING: Associate Forward Deployed Engineer (aFDE) (Global, Remote)\n\nmicro1 is hiring an Associate Forward Deployed Engineer to support data ingestion, customer data workflows and engineering operations.\n\nPay: $40–$60/hour\nLocation: Remote\nJob Type: Full-time\nWork Arrangement: Hourly, with weekly hours agreed upfront\n\nKey Requirements:\nFoundational programming skills in Python or a similar language.\nFamiliarity with APIs, command-line tools and Git.\nAbility to write and debug basic scripts.\nStrong troubleshooting, problem-solving and communication skills.\nOwnership, reliability and attention to detail.\n\nNice to Have:\nSQL, data pipelines and large datasets.\nCloud storage and data-transfer workflows.\nLinux environments.\nJSON, CSV and Parquet.\nExperience with AI coding tools.\n\nResponsibilities:\nSupport customers with data preparation, ingestion, transfer and validation.\nBuild scripts, integrations and automations.\nTroubleshoot APIs, data formats and transfer workflows.\nMonitor data workflows and ensure data accuracy.\nCoordinate with customers and internal engineering teams.\nImprove documentation and reusable workflows.\nThis is a junior engineering opportunity with guidance from experienced Forward Deployed Engineers and potential to grow into a full FDE role.\n\nApply here: https://lnkd.in/dBqVGWKf\n\n#Hiring #AssociateEngineer #ForwardDeployedEngineer #aFDE #PythonJobs #SQLJobs #DataEngineering #DataPipelines #SoftwareEngineering #APIIntegration #Git #DevOps #AIJobs #Micro1 #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Mexico #Guatemala #Belize #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Cuba #Haiti #DominicanRepublic #Jamaica #TrinidadAndTobago #Bahamas #Barbados #AntiguaAndBarbuda #Dominica #Grenada #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Argentina #Bolivia #Brazil #Chile #Colombia #Ecuador #Guyana #Paraguay #Peru #Suriname #Uruguay #Venezuela #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531904091669811200",
-      "timestamp": "2026-11-27T02:17:51.803Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942419693596672",
+      "timestamp": "2026-11-27T04:50:09.776Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531938067415412736",
+      "text": "The best way to test what you know is to teach it.\n\nSince 2024 I have been a lecturer for the IIW International Welding Engineer (IWE) diploma, at the welding centre of Universitas Indonesia (WIRC-FTUI), at PPKM in Jakarta and at RED in Batam. This year I also started teaching the IWIP inspector course.\n\nIn some of my classes, most of the trainees come from other countries. Different codes, different sites, the same welding problems.\n\nWhat teaching has taught me:\n• If I can't explain it simply, I don't really understand it yet\n• Trainees ask the questions that seniors stop asking\n• Stories from the field stay longer than slides\n• Leading a team and leading a class are the same job: help people work well without you\n\nAfter 26+ years in the field, teaching is how I pass on what the field taught me.\n\nWho was the teacher or mentor who shaped your career the most?\n\n—\nKhoiri Ali, ST., MM., IWE.\n26+ years in Oil & Gas QA/QC | Project QA/QC Leader | Welding Engineering | Integrity Manager | QA/QC Manager\n\n#Welding #IWE #Leadership #Mentoring #IIW",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529390340794028032",
+      "timestamp": "2026-11-27T04:32:51.914Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -424,11 +508,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531936360073486336",
-      "text": "HIRING: Cyber Engineers (3+ Years Experience) (Global, Remote)\n\nMercor is recruiting experienced Cyber Engineers to help build and review code-security tasks for evaluating AI systems.\n\nCompensation: $400 per task\nLocation: Remote\nEstimated time: 5 hours per task\n\nRequired experience:\n3+ years of professional experience in application security, vulnerability research, penetration testing, or secure software engineering.\n\nKey responsibilities:\nIdentify security vulnerabilities and document reproducible exploits in controlled environments.\nValidate security fixes and regression tests.\nCreate and review realistic code-security tasks.\nStrong coding skills and clear technical writing are essential.\nApplication includes a recorded assessment with typed answers and camera/screen recording. No AI interviewer.\n\nApply here: https://t.mercor.com/oJyXW\n\n#Hiring #CyberSecurityJobs #CyberEngineer #ApplicationSecurity #PenetrationTesting #VulnerabilityResearch #SecureSoftwareEngineering #EthicalHacking #AIResearch #AITraining #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "id": "urn:li:activity:7531935882707206144",
+      "text": "🔥➡️💨 WATCH THIS PAN OIL FIRE DISAPPEAR IN SECONDS 💨\n \nKitchen fires are one of the most dangerous and most common fires in the world. Hot cooking oil can reignite after the flames go out, and water makes it far worse.\n \nNow watch what happens withHydra X. 🎥👇\n \n⚡ Flames knocked down almost instantly\n 🧊 Surface cooled to help stop re-ignition\n \nBut kitchens are just the start. 🚀 Hydra X is a fluoride-free, multi-class agent for:\n \n🟠 Class A, B and F fires, including pan and cooking oil fires\n 🔋 Lithium-ion battery fires\n 🚗 EV fires\n ⛽ Fuels, oils and hydraulic fluids\n 🛞 Rubber and carbon fires\n\n🌏 WE'RE LOOKING FOR DISTRIBUTION PARTNERS ACROSS SOUTH EAST ASIA! 🌏\n\nThe FireLab is a global distribution platform for innovative fire safety products, and we're expanding in:\n \n🇸🇬 Singapore\n 🇹🇭 Thailand\n 🇲🇾 Malaysia\n 🇮🇩 Indonesia\n 🇻🇳 Vietnam\n 🇵🇭 Philippines\n 🇯🇵 Japan\n 🇰🇷 South Korea\n \nIf you supply fire safety equipment, Serve Civil defense, Oil & Gas, Marine, Large Industry and Hospitality and  want to add a genuinely different product to your range, let's talk. 🤝\n \n📩 Send us a message or comment \"HYDRA\" below and we'll get in touch.\nEmaildarren@irg.ae or whatsapp +63 966 210 9780\n\nFor Europe ContactVogt-CTE GmbH\nFor Rest of the world email ignite@irg.ae\n\nPlease share this with anyone in your network who works in fire safety. ♻️\n\n#HydraX #FireSafety #KitchenFireSafety #FireProtection #DistributionPartner\n\nFire Protection Association Singapore Institution of Fire Engineers, Singapore\nSingapore Civil Defence Force Fire and Rescue Department of Malaysia (FRDM) Bureau of Fire Protection\n#HydraX #FireSafety #KitchenFireSafety #FireProtection #DistributionPartner\n#SoutheastAsia #Singapore #Thailand #Malaysia #Indonesia #Vietnam #Philippines #Japan #SouthKorea #FireSuppression #LithiumIonSafety #FoodService #Hospitality #Innovation #TheFireLab",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531936359347904512",
-      "timestamp": "2026-11-27T04:26:04.852Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531935836553064449",
+      "timestamp": "2026-11-27T04:24:11.039Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -438,11 +522,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531935882707206144",
-      "text": "🔥➡️💨 WATCH THIS PAN OIL FIRE DISAPPEAR IN SECONDS 💨\n \nKitchen fires are one of the most dangerous and most common fires in the world. Hot cooking oil can reignite after the flames go out, and water makes it far worse.\n \nNow watch what happens withHydra X. 🎥👇\n \n⚡ Flames knocked down almost instantly\n 🧊 Surface cooled to help stop re-ignition\n \nBut kitchens are just the start. 🚀 Hydra X is a fluoride-free, multi-class agent for:\n \n🟠 Class A, B and F fires, including pan and cooking oil fires\n 🔋 Lithium-ion battery fires\n 🚗 EV fires\n ⛽ Fuels, oils and hydraulic fluids\n 🛞 Rubber and carbon fires\n\n🌏 WE'RE LOOKING FOR DISTRIBUTION PARTNERS ACROSS SOUTH EAST ASIA! 🌏\n\nThe FireLab is a global distribution platform for innovative fire safety products, and we're expanding in:\n \n🇸🇬 Singapore\n 🇹🇭 Thailand\n 🇲🇾 Malaysia\n 🇮🇩 Indonesia\n 🇻🇳 Vietnam\n 🇵🇭 Philippines\n 🇯🇵 Japan\n 🇰🇷 South Korea\n \nIf you supply fire safety equipment, Serve Civil defense, Oil & Gas, Marine, Large Industry and Hospitality and  want to add a genuinely different product to your range, let's talk. 🤝\n \n📩 Send us a message or comment \"HYDRA\" below and we'll get in touch.\nEmaildarren@irg.ae or whatsapp +63 966 210 9780\n\nFor Europe ContactVogt-CTE GmbH\nFor Rest of the world email ignite@irg.ae\n\nPlease share this with anyone in your network who works in fire safety. ♻️\n\n#HydraX #FireSafety #KitchenFireSafety #FireProtection #DistributionPartner\n\nFire Protection Association Singapore Institution of Fire Engineers, Singapore\nSingapore Civil Defence Force Fire and Rescue Department of Malaysia (FRDM) Bureau of Fire Protection\n#HydraX #FireSafety #KitchenFireSafety #FireProtection #DistributionPartner\n#SoutheastAsia #Singapore #Thailand #Malaysia #Indonesia #Vietnam #Philippines #Japan #SouthKorea #FireSuppression #LithiumIonSafety #FoodService #Hospitality #Innovation #TheFireLab",
+      "id": "urn:li:activity:7531936360073486336",
+      "text": "HIRING: Cyber Engineers (3+ Years Experience) (Global, Remote)\n\nMercor is recruiting experienced Cyber Engineers to help build and review code-security tasks for evaluating AI systems.\n\nCompensation: $400 per task\nLocation: Remote\nEstimated time: 5 hours per task\n\nRequired experience:\n3+ years of professional experience in application security, vulnerability research, penetration testing, or secure software engineering.\n\nKey responsibilities:\nIdentify security vulnerabilities and document reproducible exploits in controlled environments.\nValidate security fixes and regression tests.\nCreate and review realistic code-security tasks.\nStrong coding skills and clear technical writing are essential.\nApplication includes a recorded assessment with typed answers and camera/screen recording. No AI interviewer.\n\nApply here: https://t.mercor.com/oJyXW\n\n#Hiring #CyberSecurityJobs #CyberEngineer #ApplicationSecurity #PenetrationTesting #VulnerabilityResearch #SecureSoftwareEngineering #EthicalHacking #AIResearch #AITraining #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531935836553064449",
-      "timestamp": "2026-11-27T04:24:11.039Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531936359347904512",
+      "timestamp": "2026-11-27T04:26:04.852Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -494,11 +578,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531928599814361088",
-      "text": "🚀 Laravel is hiring in Singapore! 🇸🇬\n\n💼 Role: Technical Support Engineer (APAC)\n🏢 Company: Laravel\n📍 Location: Australia, Indonesia, Japan, New Zealand, Singapore, Thailand\n💰 Salary: Negotiable\n🎯 Experience: Mid Level\n🕒 Type: Full time · Remote\n⏳ Apply by: 19 Jan 2027\n\nAt Laravel , we are committed to creating tools that empower developers to build exceptional web applications while nurturing a supportive and inclusive global community. By joining our team, you’ll play a pivotal role in helping developers succeed and thrive in their work. We’re seeking experienced and empathetic Tech…\n\n👉 Details & apply: https://chakrie.com/jobs/\n\n🔔 Follow Chakrie for fresh jobs every day, at home and abroad. Know someone who fits? Tag them!\n\n#Hiring #Jobs #Career #JobsInSingapore #JobSearch #Chakrie",
+      "id": "urn:li:activity:7531928670555516928",
+      "text": "💻 We’re Hiring: After-Sales Technical Support Engineer (Kubernetes)\n\n📍 Location: Jakarta, Indonesia (Hybrid - On-site at client locations as needed, WFH otherwise) \n\nWe are looking for a skilledAfter-Sales Technical Support Engineer with strong hands-on experience inKubernetes and cloud-native infrastructure to support enterprise deployments in Jakarta. You will act as the key technical bridge between clients and our R&D/product teams-leading on-site product trials, troubleshooting environments, and ensuring smooth post-sales delivery.\n\nWhat You’ll Do:\n*On-Site Support & Training: Guide and train customers during product trials, troubleshoot technical issues, manage support tickets, and maintain strong client relationships.\n*Solutions & Documentation: Partner with the sales team to identify opportunities, provide post-sales technical solutions, and prepare proposals, bids, test reports, and implementation plans.\n*Product & R&D Bridge: Gather client and market feedback to help shape back-end product improvements and R&D priorities.\n*Partner & Event Engagement: Collaborate with technical partners and represent the team at marketing events and technical keynotes.\n\nWhat We’re Looking For:\n*Bachelor’s degree in Computer Science, Computer Engineering, or a related field.\nProven experience in IT or internet companies, with solid knowledge of cloud computing technologies and industry products (after-sales, R&D, or medium/large-scale O&M experience is a strong plus).\n*Hands-on technical background in infrastructure, Kubernetes (K8s), OpenShift (OCP), network storage, monitoring, logging, and automation.\n*Strong analytical and problem-solving skills, comfortable working both independently on-site and collaboratively with a team.\n*Excellent communication skills, able to explain technical details clearly to both technical and non-technical stakeholders.\n\n📩 Interested? Send your updated CV via Direct Message (DM) to apply!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928599252271104",
-      "timestamp": "2026-11-27T03:55:14.662Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928669779341312",
+      "timestamp": "2026-11-27T03:55:31.528Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -508,11 +592,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531928670555516928",
-      "text": "💻 We’re Hiring: After-Sales Technical Support Engineer (Kubernetes)\n\n📍 Location: Jakarta, Indonesia (Hybrid - On-site at client locations as needed, WFH otherwise) \n\nWe are looking for a skilledAfter-Sales Technical Support Engineer with strong hands-on experience inKubernetes and cloud-native infrastructure to support enterprise deployments in Jakarta. You will act as the key technical bridge between clients and our R&D/product teams-leading on-site product trials, troubleshooting environments, and ensuring smooth post-sales delivery.\n\nWhat You’ll Do:\n*On-Site Support & Training: Guide and train customers during product trials, troubleshoot technical issues, manage support tickets, and maintain strong client relationships.\n*Solutions & Documentation: Partner with the sales team to identify opportunities, provide post-sales technical solutions, and prepare proposals, bids, test reports, and implementation plans.\n*Product & R&D Bridge: Gather client and market feedback to help shape back-end product improvements and R&D priorities.\n*Partner & Event Engagement: Collaborate with technical partners and represent the team at marketing events and technical keynotes.\n\nWhat We’re Looking For:\n*Bachelor’s degree in Computer Science, Computer Engineering, or a related field.\nProven experience in IT or internet companies, with solid knowledge of cloud computing technologies and industry products (after-sales, R&D, or medium/large-scale O&M experience is a strong plus).\n*Hands-on technical background in infrastructure, Kubernetes (K8s), OpenShift (OCP), network storage, monitoring, logging, and automation.\n*Strong analytical and problem-solving skills, comfortable working both independently on-site and collaboratively with a team.\n*Excellent communication skills, able to explain technical details clearly to both technical and non-technical stakeholders.\n\n📩 Interested? Send your updated CV via Direct Message (DM) to apply!",
+      "id": "urn:li:activity:7531928599814361088",
+      "text": "🚀 Laravel is hiring in Singapore! 🇸🇬\n\n💼 Role: Technical Support Engineer (APAC)\n🏢 Company: Laravel\n📍 Location: Australia, Indonesia, Japan, New Zealand, Singapore, Thailand\n💰 Salary: Negotiable\n🎯 Experience: Mid Level\n🕒 Type: Full time · Remote\n⏳ Apply by: 19 Jan 2027\n\nAt Laravel , we are committed to creating tools that empower developers to build exceptional web applications while nurturing a supportive and inclusive global community. By joining our team, you’ll play a pivotal role in helping developers succeed and thrive in their work. We’re seeking experienced and empathetic Tech…\n\n👉 Details & apply: https://chakrie.com/jobs/\n\n🔔 Follow Chakrie for fresh jobs every day, at home and abroad. Know someone who fits? Tag them!\n\n#Hiring #Jobs #Career #JobsInSingapore #JobSearch #Chakrie",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928669779341312",
-      "timestamp": "2026-11-27T03:55:31.528Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928599252271104",
+      "timestamp": "2026-11-27T03:55:14.662Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -606,113 +690,211 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531922622327078913",
-      "text": "🚨 WE ARE HIRING – JOIN OUR GROWING TEAM! 🚨\nAs part of our continuous growth and commitment to excellence, we are currently seeking passionate, dedicated, and skilled professionals to join our team. \n📌 Open Positions:\n- Maintenance Technician\n- International Sales (Able to Communicate in Mandarin)\n- QC – NT Certified\n- QA Engineer\n- CNC Programmer\n- Planner (Able to Communicate in Mandarin)\n- Warehouse Manager (Able to Communicate in Mandarin)\n- Admin QA (Able to Communicate in English)\n📍 Location: Komp. Dragon Industrial Park Block A No. 9-12, Kabil Batam, Indonesia\n📩 How to Apply: Please send your updated CV to: account@wijayafittings.com\nSubject: Position Applied – Full Name\nOnly shortlisted candidates will be contacted.\n✨ Let’s grow together and build a successful future with us!",
+      "id": "urn:li:activity:7531946195448041472",
+      "text": "📣 We’re hiring! Your next role could be at RevoU\n\nWe’re building how people learn and work in the age of AI, from co-branded programs with top universities to AI transformation for leading enterprises across Indonesia. To move faster, we’re looking for people who raise the bar.\n\n🎓 Admission Executive (Jakarta, hybrid)\n Be the first voice of RevoU for people deciding their next career move. You’ll reply fast, answer honestly, and book the right people into consultations with our Admission Counselors.\n🏢 B2B Talent Operations Executive (Jakarta, hybrid)\n Find the right trainer for every enterprise program. You’ll shortlist, confirm, contract and track performance, so every client gets the best people in front of their team.\n\nWe’re looking for people who:\n ✅ Take ownership and don’t wait to be told\n ✅ Use AI every day to work faster and smarter\n ✅ Hold a high bar for their own work\n\nIf that sounds like you, we’d love to hear from you.\n👉 Apply now: revou.id/careers\n\n🙌 Know someone who fits? Tag them below. Great people know great people.\n\n#Hiring #LowonganKerja #LokerJakarta #AI #EdTech #RevoU",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531922621404299264",
-      "timestamp": "2026-11-27T03:31:29.518Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531946192495292416",
+      "timestamp": "2026-11-27T05:05:09.788Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531920295750983680",
-      "text": "Dikstra Is Officially a Huawei FSI Partner\n\nOn 25–26 November 2026, Dikstra joined Huawei and fellow system integrator partners at the Huawei Finance Ronghai SI Value Growth Members' Meeting in China, strengthening collaboration across the financial services ecosystem.\n\nTogether, we will help banks and financial institutions in Indonesia modernize their infrastructure with Huawei's digital finance technologies, supported by Dikstra's assessment-first approach, certified engineers, and end-to-end delivery.\n\nTo discuss how this partnership can support your institution, contact sales@dikstrasolusi.com or visithttps://dikstrasolusi.com.\n\n#HumanizingTechnology #Huawei #FinancialServices #DigitalBanking #Dikstra",
+      "id": "urn:li:activity:7531946096265347072",
+      "text": "We’re Hiring!\n\nAt Forvis Mazars, we’re on the lookout for passionate and driven individuals to join our growing team. If you're ready to take on new challenges, learn continuously, and thrive in a collaborative environment.\n\nApply now and grow with us : https://lnkd.in/gDBE-Fd8\n\nor email to: recruitment.id@forvismazars.com\n\n#WeAreHiring #JoinOurTeam #ForvisMazarsIndonesia #CareerOpportunities #GrowBelongImpact",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531920293993553920",
-      "timestamp": "2026-11-27T03:22:14.819Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531946095254519808",
+      "timestamp": "2026-11-27T05:04:46.141Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531920027927633920",
-      "text": "safia.nida123@gmail.com",
+      "id": "urn:li:activity:7531945591090884609",
+      "text": "[WE ARE HIRING]\n🌱 A new journey begins at Nimble Explorers. And we’re looking for someone to begin it with us.\n\nWe believe that the early years are more than a time for learning facts and acquiring skills. They are a time for children to discover, question, experiment, create and develop the confidence to explore the world around them.\n\nNimble Explorers is a play-based enrichment hub for children aged 18 months to 6.5 years, built around an integrated, inquiry-based iSTEAM learning journey. Through hands-on exploration, creative expression, music, movement and meaningful experiences, we aim to nurture curious thinkers, creative explorers, confident communicators and capable problem-solvers.\n\nAs we prepare to open our doors in Batam, we’re excited to welcome our first founding educator:\n\n✨ ISTEAM Lead Teacher – Founding Team | January 2027\n\nWe’re looking for an educator who is passionate about early childhood education, believes in the power of inquiry and play, and is excited to contribute not just as a teacher, but as part of a team shaping a learning environment from the ground up.\n\nThis is the beginning of our story, and we’d love for the right person to be part of it.\n\n📍 Batam Center, Indonesia\n\nInterested in joining us? \nSend your CV to nimbleexplorers@gmail.com\nSubject: Lead Teacher_Name\n\nKnow someone who might be a great fit? Feel free to share this post or tag them below. We’d love to connect! ✨\n\n#Hiring #EarlyChildhoodEducation #STEAMEducation #PreschoolTeacher #InquiryBasedLearning #Batam",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531920026929512448",
-      "timestamp": "2026-11-27T03:21:10.965Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531945588049825792",
+      "timestamp": "2026-11-27T05:02:45.698Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531919411306299393",
-      "text": "Hi LinkedIn People!📢\n\nPT. China Comservice Indonesia is actively seeking qualified and motivated candidates to join our team as PM Engineer and CM Engineer for several project locations in Kalimantan.\n\nHow to Apply:\nInterested candidates are welcome to send their updated CV via WhatsApp to:\n089666277241 (Alia)\nSubject Format: Position - Location - Name\n\nWe look forward to reviewing your applications!\n\n#Hiring #JobVacancy #Recruitment #PMEngineer #CMEngineer #Telecommunications #ChinaComserviceIndonesia #CareerOpportunity #Kalimantan",
+      "id": "urn:li:activity:7531945049580937216",
+      "text": "Open to (remote work only) across the GCC 🌍\n\nSaudi national in West Java, Indonesia, with 25 years in admin and executive support (BAE Systems, Aramex, Ministry of Water & Electricity). Seeking remote data entry operator, data entry agent and admin roles in Saudi Arabia, UAE, Qatar and Kuwait. Bilingual Arabic and English, available on GCC hours.\n\nHiring, or know someone who is? Please message me. 🙏\n\n#OpenToWork #RemoteJobs #DataEntry #SaudiJobs #UAEJobs #QatarJobs #KuwaitJobs",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531919410257874946",
-      "timestamp": "2026-11-27T03:18:43.951Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531880719305072640",
+      "timestamp": "2026-11-27T05:00:36.592Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531919077028749313",
-      "text": "Hiring: Polymer Scientist (Plastics & Additives Formulation)\n\nRemote | Contractor | $60–$100/hour\n\nmicro1 is hiring experienced Polymer Scientists and Materials Engineers to help train next-generation AI systems through a project focused on plastics technology and additives formulation.\n\nRequirements: Strong experience in polymer chemistry, plastics formulation, additives, materials engineering, and performance testing. An advanced degree in Polymer Science, Materials Science, Chemical Engineering, or a related field is preferred.\n\nResponsibilities: Evaluate polymer selection, blending, and modification; analyze additive impacts on performance and processing; develop formulation strategies and troubleshooting examples; and create technical content covering regulatory, environmental, and sustainability considerations.\n\nNo prior AI experience required. Practical industry or R&D expertise and strong scientific communication skills are essential.\n\nApply here: https://lnkd.in/dX9unRgK\n\nShare this opportunity with qualified polymer scientists, materials engineers, and plastics formulation professionals.\n\n#PolymerScientist #PolymerChemistry #MaterialsScience #ChemicalEngineering #PlasticsEngineering #PlasticsFormulation #AdditivesFormulation #MaterialsEngineering #RAndD #ScienceJobs #AITraining #AIJobs #RemoteJobs #WorkFromAnywhere #USA #India #Europe #LatinAmerica #UK #Germany #France #Spain #Italy #Netherlands #Switzerland #Sweden #Norway #Denmark #Finland #Ireland #Belgium #Austria #Portugal #Poland #Greece #Turkey #Romania #CzechRepublic #Hungary #Slovakia #Slovenia #Croatia #Serbia #Bulgaria #Lithuania #Latvia #Estonia #Iceland #Luxembourg #Liechtenstein #Malta #Cyprus #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Andorra #Monaco #SanMarino #VaticanCity #Belize #Mexico #Guatemala #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Brazil #Argentina #Chile #Colombia #Peru #Ecuador #Bolivia #Paraguay #Uruguay #Venezuela #Guyana #Suriname #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #RemoteWork",
+      "id": "urn:li:activity:7531944586856837121",
+      "text": "anpingc236@gmail.com",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531919076009623552",
-      "timestamp": "2026-11-27T03:17:24.253Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531944586324193281",
+      "timestamp": "2026-11-27T04:58:46.270Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531919122708905986",
-      "text": "🚢 WE'RE HIRING – OIL TANKER CREW\nPT. Veratama Global Mandiri is currently seeking qualified and motivated seafarers to join our Gas Carrier & LPG Tanker fleet.\n\n📌 Open Positions :\n• Chief Officer – USD $ 8,700\n• 2nd Officer (x2 Persons) – USD $ 4,300\n• 3rd Officer – USD $ 3,000\n• Chief Engineer – USD $ 11,700\n• 2nd Engineer – USD $ 8,700\n• 3rd Engineer – USD $ 4,300\n• 4th Engineer – USD $ 2,500\n• ETO – USD $ 6,000\n• Bosun – USD $ 1,800\n• Pumpman – USD $ 1,800\n• Fitter – USD $ 1,800\n• AB (x4 Persons) – USD $ 1,500\n• OS – USD $ 500\n• Oiler (x3 Persons) – USD $ 1,500\n• Wiper – USD $ 500\n• Chief Cook – USD $ 1,700\n• Messman – USD $ 500\n\n⚓ Requirements:\n✔ Valid STCW Certificates, Seaman Book, and Medical Certificate\n✔ Experience on Gas Carrier & LPG Tanker is preferred\n✔ Good English communication skills\n✔ Good knowledge and positive attitude\n✔ Ready to join immediately\n\n📩 Send your CV & supporting documents to:\ninfo@veratamaglobalmandiri.com\n\n📝 Or apply directly through our Google Form:\nhttps://lnkd.in/gyPfNzae\n\n📱 WhatsApp:\n+62 822-2558-2911 (Melisa)\n+62 821-2122-342 (Thino)\n+62 895-6044-53409 (Nanda)\n+62 813-2630-3857 (Amanda)\n\n📍 Office:\nMenara Kuningan, 9th Floor, Suite\nJl. HR Rasuna Said Kav. X-2 No.4\nSouth Jakarta, Indonesia\n\n📌 Email Subject:\nPosition – Gas Carrier / LPG Tanker – Your Name\nJoin our fleet and take your maritime career to the next level with us! 🌊⚓\n\n#VeratamaGlobalMandiri #ContainerShip #SeafarerJob #HiringNow #MaritimeCareer #BulkCarrier #SailorJob #Sailor #Seafarer #GeneralCargo #OilTanker #Tanker #LPGTanker #GasCarrier",
+      "id": "urn:li:activity:7531943485072060416",
+      "text": "🔥 Today's Hot Jobs | ICT & Construction | Indonesia\nLooking for your next career opportunity in Indonesia? EV Search is currently hiring for several exciting engineering and construction management positions within the ICT sector.\n\n📍 Featured Opportunities:\n- Construction Manager: Oversee construction project execution, ensuring project delivery, quality, safety and operational efficiency.\n👉 JD: https://lnkd.in/gbUhf6Va\n\n- HSE Manager: Lead health, safety and environmental initiatives, ensuring compliance with safety standards and regulations.\n👉 JD: https://lnkd.in/gUm3CPX9\n\n- Lead Electrical Design Engineer: Drive electrical design activities, technical solutions and engineering coordination.\n👉 JD: https://lnkd.in/gmdvMRux\n\n- Lead Mechanical Design Engineer: Lead mechanical design development, engineering activities and technical project delivery.\n👉 JD: https://lnkd.in/g4nFUvHJ\n\n- Project Director: Provide strategic project leadership, oversee project execution and ensure successful delivery.\n👉 JD: https://lnkd.in/gD7zrQJG\n\n💡 Why Explore These Opportunities?\n- Attractive gross salary packages.\n- Opportunities to work on projects in Indonesia's growing ICT sector.\n- Career development in engineering, design and construction management.\n- Opportunities to take on leadership and technical responsibilities.\n\n📩 Interested in these opportunities? Send your CV to Tisa Setia or attisa.setia@ev-search.com to learn more.\n\n#Hiring #HotJobs #IndonesiaJobs #ConstructionJobs #ICTJobs #EngineeringCareers #ConstructionManager #HSEManager #ElectricalEngineer #MechanicalEngineer #EVSearch",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531919121567973376",
-      "timestamp": "2026-11-27T03:17:35.144Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531943483129888769",
+      "timestamp": "2026-11-27T04:54:23.584Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531918540526944256",
-      "text": "Hi everyone! I'm currently exploring new career opportunities and would appreciate your support. If you know of any opportunities or would like to reconnect, feel free to reach out!\n\nAbout Me & What I'm Looking For:\n\n💼 Mechanical Engineer, Maintenance Engineer, Technical Support Engineer, Equipment Management Engineer, Fleet Supervisor, and Supply Chain/Planning roles.\n\n🌎 Open to opportunities across Indonesia and Internationally.\n\n⭐ Previous experience at APRIL Group, with a background in heavy equipment maintenance, technical fleet support, equipment reliability, and operational improvement.\n\nThank you for your support!\n\n#OpenToWork #MechanicalEngineering #FleetManagement #Maintenance #HeavyEquipment",
+      "id": "urn:li:activity:7531943279249182720",
+      "text": "Closing Anytime Apply ASAP\n\nHIRING: AI Evaluation Rubric Reviewer\n\nMercor is recruiting experienced AI Evaluation Rubric Reviewers for a project testing AI agents on realistic shopping and delivery tasks.\n\nPay: $40–$75/hour\nLocation: Fully Remote\nContract: Independent Contractor\nSchedule: Flexible\n\nKey Requirements:\nSubstantial experience writing or reviewing rubrics for LLM evaluations.\nAbility to review long AI agent transcripts and identify errors.\nStrong analytical skills and precise technical writing.\nAbility to independently verify data rather than blindly trust reference answers.\nApplicants must list relevant AI evaluation and rubric projects.\n\nResponsibilities:\nReview AI-generated prompts, grading rubrics and model attempts.\nDetermine whether model failures are fairly evaluated.\nCheck whether information was available to the AI agent.\nIdentify inaccurate grading criteria and potential false negatives.\nCorrect unfair rubric criteria and flag tasks that cannot be fixed.\nProvide concise explanations for review decisions.\nPayments are made weekly through Stripe or Wise.\nNote: H-1B and STEM OPT candidates are not supported.\n\nApply here: https://t.mercor.com/hVOFq\n\n#Hiring #AIEvaluation #RubricReviewer #LLMEvaluation #AIReviewer #AITraining #ArtificialIntelligence #PromptEvaluation #ModelEvaluation #QualityAssurance #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Mexico #Guatemala #Belize #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Cuba #Haiti #DominicanRepublic #Jamaica #TrinidadAndTobago #Bahamas #Barbados #AntiguaAndBarbuda #Dominica #Grenada #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Argentina #Bolivia #Brazil #Chile #Colombia #Ecuador #Guyana #Paraguay #Peru #Suriname #Uruguay #Venezuela #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531918539667169282",
-      "timestamp": "2026-11-27T03:15:16.341Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531943278212968448",
+      "timestamp": "2026-11-27T04:53:34.512Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531916177510387713",
-      "text": "Thank you CNBC Indonesia & MbakShafinaz Nachiar for hosting me on Monday's Profit Tech a Look. This one means a lot to the wholeSarana team, & I'm grateful for the chance to share what we've been learning on the ground deploying AI across 20 industries in Southeast Asia.\n\nWe started Sarana on the tenet that AI should close the productivity delta, rather than feed the usual doom-&-gloom labour-efficiency narrative. After all, when enterprises become more productive, they tend to need more people, not fewer. \n\nOur job is to give the most precious commodity of all back to the people on the frontlines powering our economy: time. Some numbers that shape our thinking:\n\n• Of the roughly 5% we grow today, about 2.5 points come from capital, 1.6 from labour & only around 1 from productivity (Ministry of Finance)\n• For the 8% target, Bank Indonesia estimates productivity's contribution needs to triple, to about 3.6 points a year through 2029\n• With an ICOR of around 6, every Rp 1 of extra output still takes about Rp 6 of investment, so capital alone may not carry us there\n\nSo the gap has to close through what every working hour produces, & that is where we believe AI earns its place: helping the same people get more done in the same day, & go home on time.\n\nWe also believe this work doesn't require anyone to leave home. Our engineering base is in Malang, where some of East Java's most talented young engineers build careers close to their families & deploy wherever the work is: hospital wards, factory floors, mines, bank branches across the country.\n\nWe are nothing without the trust of our shareholders, customers & partners, & of course the talented people who have taken a bet on building with us. We are beyond grateful.",
+      "id": "urn:li:activity:7531942700552663041",
+      "text": "🚨 URGENT HIRING | Finance, Accounting & Tax (FAT) [FLUENT IN ENGLISH]\n\nPT Mosaic Solusi Indonesia is currently looking for an experienced Finance, Accounting & Tax (FAT) professional to join our client's team.\n\nKey Responsibilities:\n1. Manage daily finance, accounting, taxation, and cash management activities.\n2. Prepare and analyze financial statements and monthly reports.\n3. Handle bookkeeping, general ledger, bank reconciliation, AP/AR, and monthly closing.\n4. Manage corporate tax matters, including PPh and VAT (PPN).\n5. Monitor cash flow, banking transactions, and payment processes.\n6. Handle employee payroll and BPJS administration.\n\nRequirements:\n1. Bachelor's degree in Accounting, Finance, Taxation, or a related field.\n2. Minimum 1 year of experience in Finance, Accounting & Tax.\n3. Good understanding of Indonesian tax regulations (PPh and PPN).\n4. Able to independently prepare financial statements.\n5. Familiar with accounting software/ERP and Microsoft Excel.\n6. Fluent in English.\n\n📩 Interested candidates are welcome to send their updated CV via WhatsApp 0819-5836-9796.\nIf you know someone who might be a good fit, feel free to share this opportunity with them!\n\n#Hiring #UrgentHiring #FinanceJobs #AccountingJobs #TaxJobs",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531916174452817921",
-      "timestamp": "2026-11-27T03:05:52.954Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942699977900032",
+      "timestamp": "2026-11-27T04:51:16.540Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531942715911983104",
+      "text": "Hello Good People! 😊\nWere Hiring 🔥\n\n#talentready#\nRBFOOD MANUFAKTUR INDONESIA open opportunity for you guys to join for the position : \n1. Supervisor Maintenance\n\nIf you interested to join with us and included in the requirement above, please register immediately and send your best CV to :\n\nhttps://lnkd.in/gYHTqrFz\n\ndetail information please check the flyer and feel free to ask or sharing with me in comment below 😉 Note : Only applicants who match the classification will be processed Get ready to join be part of us!\n\n#lokercikarang\n#infoloker\n#hiring\n#openloker\n#spvmaintenance\n#technician\n#maintenance",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942714901192705",
+      "timestamp": "2026-11-27T04:51:20.202Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531941920839794688",
+      "text": "🚀 Open Position | Category Management Coordinator – Oil & Gas\n\nHello everyone! 👋\n\nWe're currently supporting our client in hiring an experienced Category Management Coordinator to support procurement and supplier management activities.\n\n📍 Work Location\nJakarta, Indonesia\n📄 Employment Type\n1-Year Contract (Extendable)\n\n🔍 We're looking for candidates who have:\n* Minimum 5 years of experience in Procurement, Category Management, or Strategic Sourcing.\n* Strong hands-on proficiency in SAP / ERP procurement systems, preferably SAP MM.\n* Experience in procurement system development, implementation, or process improvement.\n* Knowledge of vendor management, Approved Vendor List (AVL), supplier evaluation, and procurement governance.\n* Oil & Gas industry experience is preferred.\n* Strong analytical, stakeholder management, and English communication skills.\n\n📩 Interested? Apply Here or Send Your CV!\n🔗 Apply Online: https://lnkd.in/gP7cKH9C\n\nAlternatively, you may send your updated CV directly to puti@trees-engineering.com.\nWe are actively reviewing applications and encourage qualified candidates to apply.\n\nPlease feel free to share this opportunity with your network, especially professionals with Procurement and Strategic Sourcing backgrounds who may be interested!\n\n#Hiring #Procurement #CategoryManagement #StrategicSourcing #ProcurementJobs #SAPMM #SAP #VendorManagement #SupplyChain #OilAndGas #EPC #Jakarta #Indonesia #TreesEngineering\n\nTrees Engineering",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531941919619436545",
+      "timestamp": "2026-11-27T04:48:10.642Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531942783499051008",
+      "text": "HIRING: Forward Deployed Engineer\n\nmicro1 is hiring an experienced Forward Deployed Engineer to work with leading AI labs and enterprise partners on advanced AI research, infrastructure and production systems.\nSalary: $180,000–$250,000/year base\nLocation: Remote / Travel Required\nJob Type: Full-time\n\nKey Requirements:\nStrong Python engineering and production software development experience.\nHands-on experience with LLMs, agentic systems, multi-turn workflows, RAG and AI automation.\nExperience building data pipelines, ML infrastructure and model evaluation systems.\nKnowledge of data quality, dataset curation, taxonomies and labeling workflows.\nAbility to independently manage technical projects and work directly with enterprise partners and research teams.\n\nKey Responsibilities:\nBuild and deploy LLM applications, multi-agent systems and RAG workflows.\nDevelop ML pipelines for data curation, training and evaluation.\nDesign data quality frameworks and evaluation systems.\nBuild infrastructure for model inference, experimentation and deployment.\nTranslate complex AI research requirements into production-ready systems.\nOwn projects from architecture and implementation through deployment and partner success.\nBenefits include equity compensation, potential performance bonuses, health insurance reimbursement, paid time off and a 401(k) plan with company match.\n\nApply here: https://lnkd.in/dtdp2vgr\n\n#Hiring #ForwardDeployedEngineer #FDE #PythonJobs #LLM #AgenticAI #RAG #AIAutomation #MachineLearning #MLInfrastructure #DataEngineering #MLOps #AIResearch #SoftwareEngineering #Micro1 #RemoteJobs #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Mexico #Guatemala #Belize #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Cuba #Haiti #DominicanRepublic #Jamaica #TrinidadAndTobago #Bahamas #Barbados #AntiguaAndBarbuda #Dominica #Grenada #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Argentina #Bolivia #Brazil #Chile #Colombia #Ecuador #Guyana #Paraguay #Peru #Suriname #Uruguay #Venezuela #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942780605218816",
+      "timestamp": "2026-11-27T04:51:36.316Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531941163352686593",
+      "text": "Hi everyone,\n\nWe are currently #hiring for our client Construction & Engineering (Data Center Projects) industry with this position:\n\nSite Engineer\nPlacement: Batam & Cikarang, West Java, Indonesia\n\nIf you or someone you know would be interested in this opening, kindly message me.\n\nThank you!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531527128639549440",
+      "timestamp": "2026-11-27T04:45:10.043Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531940876214865920",
+      "text": "PT Bio Sarana Indonesia is #Hiring\nApply : https://bit.ly/46qXA5f",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531940875288072192",
+      "timestamp": "2026-11-27T04:44:01.584Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531940560828354560",
+      "text": "bit.ly/RekrutmenMSI",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531940559536467968",
+      "timestamp": "2026-11-27T04:42:46.390Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531942420524167168",
+      "text": "HIRING: Associate Forward Deployed Engineer (aFDE) (Global, Remote)\n\nmicro1 is hiring an Associate Forward Deployed Engineer to support data ingestion, customer data workflows and engineering operations.\n\nPay: $40–$60/hour\nLocation: Remote\nJob Type: Full-time\nWork Arrangement: Hourly, with weekly hours agreed upfront\n\nKey Requirements:\nFoundational programming skills in Python or a similar language.\nFamiliarity with APIs, command-line tools and Git.\nAbility to write and debug basic scripts.\nStrong troubleshooting, problem-solving and communication skills.\nOwnership, reliability and attention to detail.\n\nNice to Have:\nSQL, data pipelines and large datasets.\nCloud storage and data-transfer workflows.\nLinux environments.\nJSON, CSV and Parquet.\nExperience with AI coding tools.\n\nResponsibilities:\nSupport customers with data preparation, ingestion, transfer and validation.\nBuild scripts, integrations and automations.\nTroubleshoot APIs, data formats and transfer workflows.\nMonitor data workflows and ensure data accuracy.\nCoordinate with customers and internal engineering teams.\nImprove documentation and reusable workflows.\nThis is a junior engineering opportunity with guidance from experienced Forward Deployed Engineers and potential to grow into a full FDE role.\n\nApply here: https://lnkd.in/dBqVGWKf\n\n#Hiring #AssociateEngineer #ForwardDeployedEngineer #aFDE #PythonJobs #SQLJobs #DataEngineering #DataPipelines #SoftwareEngineering #APIIntegration #Git #DevOps #AIJobs #Micro1 #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Mexico #Guatemala #Belize #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Cuba #Haiti #DominicanRepublic #Jamaica #TrinidadAndTobago #Bahamas #Barbados #AntiguaAndBarbuda #Dominica #Grenada #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Argentina #Bolivia #Brazil #Chile #Colombia #Ecuador #Guyana #Paraguay #Peru #Suriname #Uruguay #Venezuela #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531942419693596672",
+      "timestamp": "2026-11-27T04:50:09.776Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -723,6 +905,20 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531939522796826624",
       "timestamp": "2026-11-27T04:38:39.297Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531939378856792064",
+      "text": "📢 **WE ARE HIRING!**\n\n⚠️ **JOB OPPORTUNITY \n\nOur client looking for a motivated, detail-oriented, and dynamic professional to join our team as:\n\n🇯🇵 **Sales Staff (Japanese Speaker)**\n\n📍 **Location: Jakarta \n🏢 **Industry:** General Trading  \n💰 **Salary Range:** IDR 9,000,000 – 13,000,000+ / month  \n📌 **Position Level:** Upper Middle Level  \n🆕 **Hiring Type:** New Position / Business Expansion\n\n🔎 **KEY RESPONSIBILITIES**\n\nAs a Sales Staff member, you will be responsible for engaging in direct sales activities with end-user customers, particularly Japanese companies, to achieve company targets and ensure customer satisfaction.\n\nYour main responsibilities include:\n\n1. Visiting, developing, and maintaining strong relationships with existing and potential customers.\n2. Following up on customer inquiries and handling sales documentation, including quotations, purchase orders, and delivery notes.\n3. Communicating and coordinating with company subsidiaries in Japan and overseas suppliers regarding product orders.\n4. Monitoring delivery schedules and ensuring products are delivered according to customer expectations.\n5. Acquiring new customers through company and product presentations, particularly targeting Japanese companies in the Cikarang and Karawang areas.\n6. Coordinating effectively with other internal departments and functional teams.\n7. Performing other related duties as assigned.\n8. Reporting directly to the Japanese Director.\n\n💼 **KEY REQUIREMENTS**\n\n- Minimum Japanese language proficiency of JLPT N2 or equivalent business-level Japanese.\n- Business-level English communication skills are required.\n- Previous working experience in Japanese companies is a MUST.\n- Excellent communication and negotiation skills.\n- Strong attention to detail and customer-oriented mindset.\n- Willingness to travel domestically, particularly to Lampung and Surabaya.\n- Possession of a valid driving license would be an advantage.\n\n🎓 **EDUCATION & LANGUAGE REQUIREMENTS**\n\n- Minimum Bachelor's Degree (S1).\n- Japanese: Business Level.\n- English: Business Level.\n\n🌟 **WHY JOIN US?**\n\nThis is an exciting opportunity for professionals with Japanese business communication skills who are passionate about sales, customer relationship management, and international business development.\n\nYou will have the opportunity to work closely with Japanese management, communicate with Japanese corporate clients, and contribute to business expansion in Indonesia.\n\n📩 **INTERESTED?**\n\nIf you meet the qualifications and are ready to take on this opportunity, we invite you to submit your updated CV and application.\n\nDon't miss this opportunity to grow your career in the Japanese business environment!\n\n#Hiring #WeAreHiring #JobOpening #JapaneseSpeaker #JapaneseJobs #SalesStaff #SalesExecutive #JLPTN2 #JapaneseCompany #GeneralTrading #JakartaJobs #CareerOpportunity #Recruitment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531939376914948096",
+      "timestamp": "2026-11-27T04:38:04.586Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -760,25 +956,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531938685592809472",
-      "text": "HIRING: Backend Developers (Global, Fully Remote)\n\nmicro1 is recruiting experienced Backend Developers for a global AI-training project focused on production systems and backend architecture.\nPay: $50–$70/hour (output-based compensation)\nLocation: Global, Fully Remote\nWork Type: Contractor\nCommitment: Approximately 15 hours per week\nSchedule: Flexible, including weekends\n\nRequired Skills:\nBackend service design and architecture\nAPI development and integration\nData systems and persistence\nAsynchronous and concurrent systems\nPerformance optimization and debugging\nProduction reliability and scalability\nRust programming and DevOps knowledge\n\nResponsibilities:\nSolve and validate backend engineering problems.\nEvaluate service behavior, APIs, persistence and system reliability.\nBuild reproducible implementation and testing workflows.\nPrepare test environments, databases, dependencies and containerized setups.\n\nSelection Process:\nApplication and screening questions\nApproximately 30-minute AI interview\nHiring manager review\nSelected candidates should be ready to start their first tasks within 24–48 hours after onboarding.\nPayment is output-based, with compensation for tasks meeting project specifications.\n\nApply here: https://lnkd.in/dSMBmhrJ\n\n#Hiring #BackendDeveloper #BackendJobs #SoftwareEngineering #Rust #RustDeveloper #BackendArchitecture #API #DevOps #CloudEngineering #SystemDesign #AITraining #Micro1 #RemoteJobs #WorldwideJobs #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "id": "urn:li:activity:7531940103817121792",
+      "text": "Closing Anytime Apply ASAP\n\nHIRING: Generalist for Queries Testing Vision\n\nMercor is recruiting Generalists for a visual reasoning and AI evaluation project.\n\nPay: $35/hour\nLocation: Fully Remote\nContract: Independent Contractor\nSchedule: Flexible\nTask Duration: Approximately 6 hours per task\n\nRole Overview:\nCreate short visual questions with one clear, verifiable answer. Each task includes 1–5 images, one direct question and its exact answer.\n\nAreas of Focus:\nEveryday visual reasoning\nCounting and perspective\nMaps and dials\nPhoto interpretation\nLookalike identification\nQuestions involving multiple images\nYou can select the images yourself. Your own photos are preferred, while web images are allowed if you have the necessary rights.\nPayments are made weekly through Stripe or Wise.\nNote: H-1B and STEM OPT candidates are not supported.\n\nApply here: https://t.mercor.com/rJS2k\n\n#Hiring #Mercor #RemoteJobs #AITraining #AIResearch #VisualReasoning #ImageEvaluation #VisionAI #AIJobs #FreelanceJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Mexico #Guatemala #Belize #Honduras #ElSalvador #Nicaragua #CostaRica #Panama #Cuba #Haiti #DominicanRepublic #Jamaica #TrinidadAndTobago #Bahamas #Barbados #AntiguaAndBarbuda #Dominica #Grenada #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Argentina #Bolivia #Brazil #Chile #Colombia #Ecuador #Guyana #Paraguay #Peru #Suriname #Uruguay #Venezuela #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531938684691189760",
-      "timestamp": "2026-11-27T04:35:19.299Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531939018888859648",
-      "text": "📢 **WE ARE HIRING! – OPEN RECRUITMENT | CLIENT PLACEMENT**\n\n⚠️ **DISCLAIMER:** This job vacancy is shared by a **Freelance Recruitment Staff of BREXA Indonesia** on behalf of their client.\n\nA Japanese Trading Company is currently looking for a qualified, motivated, and detail-oriented candidate to join their team!\n\n🇯🇵 **POSITION: ADMIN (JAPANESE SPEAKER)**\n\n📍 **Location:** West Jakarta\n🏢 **Industry:** Japanese Trading Company  \n💰 **Salary:** IDR 7,000,000 – 9,000,000 / month  \n💼 **Job Focus:** Import Administration, Inventory Control & Headquarters Coordination\n\n🔎 **KEY RESPONSIBILITIES**\n\n- Handle import administration, including PIB, Form E, and shipping documentation.\n- Manage inventory control, stock planning, and warehouse coordination.\n- Coordinate directly with Japanese Headquarters and freight forwarders.\n- Ensure smooth administrative processes related to import activities and inventory management.\n\n💼 **CANDIDATE REQUIREMENTS**\n\n- Female, maximum 30 years old.\n- Minimum Diploma Degree (D3).\n- Business-level Japanese communication skills are preferred.\n- Detail-oriented, well-organized, and responsible.\n- Willing to visit the warehouse when required.\n\n🌟 **WHY JOIN THIS OPPORTUNITY?**\n\nThis is a great opportunity for candidates interested in Japanese business operations, import-export administration, and international business coordination.\n\nYou will have the opportunity to work with a Japanese trading company, communicate with Japanese counterparts, and develop your professional experience in an international business environment.\n\n📩 **HOW TO APPLY?**\n\nInterested candidates who meet the qualifications are welcome to submit their updated CV to:\n\n📧 **Email:** donitarahmyy@gmail.com\n\n📱 **WhatsApp:** 0822010188046\n\n👤 **Contact Person:** Donita Rahmy  \nFreelance Recruitment Staff – BREXA Indonesia\n\n⚠️ Only shortlisted candidates will be contacted.\n\nFeel free to connect with me on LinkedIn or share this opportunity with anyone who might be interested!\n\nDon't miss this opportunity. Apply now!\n\n#Hiring #WeAreHiring #JobOpening #JapaneseSpeaker #AdminJapaneseSpeaker #JapaneseCompany #ImportAdministration #InventoryControl #WestJakartaJobs #JakartaJobs #CareerOpportunity #Recruitment #BREXAIndonesia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531939017391779840",
-      "timestamp": "2026-11-27T04:36:38.763Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531940101728202752",
+      "timestamp": "2026-11-27T04:40:57.430Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -802,6 +984,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7531939018888859648",
+      "text": "📢 **WE ARE HIRING! – OPEN RECRUITMENT | CLIENT PLACEMENT**\n\n⚠️ **DISCLAIMER:** This job vacancy is shared by a **Freelance Recruitment Staff of BREXA Indonesia** on behalf of their client.\n\nA Japanese Trading Company is currently looking for a qualified, motivated, and detail-oriented candidate to join their team!\n\n🇯🇵 **POSITION: ADMIN (JAPANESE SPEAKER)**\n\n📍 **Location:** West Jakarta\n🏢 **Industry:** Japanese Trading Company  \n💰 **Salary:** IDR 7,000,000 – 9,000,000 / month  \n💼 **Job Focus:** Import Administration, Inventory Control & Headquarters Coordination\n\n🔎 **KEY RESPONSIBILITIES**\n\n- Handle import administration, including PIB, Form E, and shipping documentation.\n- Manage inventory control, stock planning, and warehouse coordination.\n- Coordinate directly with Japanese Headquarters and freight forwarders.\n- Ensure smooth administrative processes related to import activities and inventory management.\n\n💼 **CANDIDATE REQUIREMENTS**\n\n- Female, maximum 30 years old.\n- Minimum Diploma Degree (D3).\n- Business-level Japanese communication skills are preferred.\n- Detail-oriented, well-organized, and responsible.\n- Willing to visit the warehouse when required.\n\n🌟 **WHY JOIN THIS OPPORTUNITY?**\n\nThis is a great opportunity for candidates interested in Japanese business operations, import-export administration, and international business coordination.\n\nYou will have the opportunity to work with a Japanese trading company, communicate with Japanese counterparts, and develop your professional experience in an international business environment.\n\n📩 **HOW TO APPLY?**\n\nInterested candidates who meet the qualifications are welcome to submit their updated CV to:\n\n📧 **Email:** donitarahmyy@gmail.com\n\n📱 **WhatsApp:** 0822010188046\n\n👤 **Contact Person:** Donita Rahmy  \nFreelance Recruitment Staff – BREXA Indonesia\n\n⚠️ Only shortlisted candidates will be contacted.\n\nFeel free to connect with me on LinkedIn or share this opportunity with anyone who might be interested!\n\nDon't miss this opportunity. Apply now!\n\n#Hiring #WeAreHiring #JobOpening #JapaneseSpeaker #AdminJapaneseSpeaker #JapaneseCompany #ImportAdministration #InventoryControl #WestJakartaJobs #JakartaJobs #CareerOpportunity #Recruitment #BREXAIndonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531939017391779840",
+      "timestamp": "2026-11-27T04:36:38.763Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7531937377565650945",
       "text": "🚨 We're #HIRING : Site Admin!\nJoin Menard Indonesia and support site operations in an international ground improvement and construction environment.\n\nJob Purpose\nSupport site operations by handling purchasing, supplier invoices, timesheets, and staff administration accurately and on time, so the site team can work smoothly and follow company procedures.\n\nKey Responsibilities\n• Find local suppliers, compare quotations, and issue purchase orders\n• Check that goods and services from suppliers are received correctly on site\n• Monitor and issue timesheets, and prepare staff allowances\n• Register new staff on site (Menard system, BPJS Health, and BPJS Employment)\n• Prepare and monitor site expenses and petty cash\n• Prepare the monthly budget, forecast, and financial project reports\n• Keep site administration documents organized and easy to find\n• Coordinate with the Site Manager, site team, suppliers, and the Finance Manager at Headquarters\n\nQualifications\n• Degree in Administration, Finance, Management, or a related field\n• 1–3 years of experience in administration, finance, or purchasing\n• Experience in preparing financial project reports\n• Proficient in Microsoft Excel, Word, and Outlook\n• Knowledge of heavy equipment terms and conditions (maintenance schedules, leasing agreements, warranty terms)\n• Organized, detail-oriented, and proactive\n• Willing to work on various construction projects managed by Menard in Indonesia\n\nAbout Menard\nMenard Asia is part of the Menard Group, a world specialist in ground improvement. Our parent company, Soletanche Freyssinet, belongs to VINCI, the global leader in concessions and construction.\n\nMenard Indonesia is committed to an inclusive workplace and welcomes qualified candidates, including persons with disabilities.\n\nInterested? Send your CV to dimas.priadi@menard-asia.com with the subject:\nSite Admin – Your Name.\n\nKnow someone who might be a good fit? Feel free to tag or share! 😊\n#Hiring #SiteAdmin #AdminJobs #Construction #JobVacancy",
       "author": "linkedin-member",
@@ -816,11 +1012,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531937520910004224",
-      "text": "Are you a fresh grad or young creative in Indonesia looking to build an international portfolio? Your next big break might be just across the ocean in Western Australia. 🌊🚀\n\nBecause Perth operates on a virtually identical timezone to Indonesia, Aussie SMEs are bypassing traditional local hiring and actively scouting top-tier Indonesian talent to run their digital presence.\n\nFrom Graphic Designers building brand identities to Digital Marketers running high-converting ad campaigns, young Indonesian professionals are making a massive impact on the Australian market. And the best part? They are doing it right from their local hubs in Jogja. 💻✨\n\nReady to elevate your resume, work directly with international founders, and unlock global earning potential right out of university?\n\nSwipe through to see the exact creative roles Australian brands are hiring for right now. ➡️\n\nIf your portfolio is polished and you are ready for a global role, we want to see it.\n💬 DM us the word \"CREATIVE\" and we will tell you how to share your work directly with our team!\n\n#CreativeCareers #GraphicDesignIndonesia #RemoteWork #WorkFromIndonesia #PerthBusiness",
+      "id": "urn:li:activity:7531938685592809472",
+      "text": "HIRING: Backend Developers (Global, Fully Remote)\n\nmicro1 is recruiting experienced Backend Developers for a global AI-training project focused on production systems and backend architecture.\nPay: $50–$70/hour (output-based compensation)\nLocation: Global, Fully Remote\nWork Type: Contractor\nCommitment: Approximately 15 hours per week\nSchedule: Flexible, including weekends\n\nRequired Skills:\nBackend service design and architecture\nAPI development and integration\nData systems and persistence\nAsynchronous and concurrent systems\nPerformance optimization and debugging\nProduction reliability and scalability\nRust programming and DevOps knowledge\n\nResponsibilities:\nSolve and validate backend engineering problems.\nEvaluate service behavior, APIs, persistence and system reliability.\nBuild reproducible implementation and testing workflows.\nPrepare test environments, databases, dependencies and containerized setups.\n\nSelection Process:\nApplication and screening questions\nApproximately 30-minute AI interview\nHiring manager review\nSelected candidates should be ready to start their first tasks within 24–48 hours after onboarding.\nPayment is output-based, with compensation for tasks meeting project specifications.\n\nApply here: https://lnkd.in/dSMBmhrJ\n\n#Hiring #BackendDeveloper #BackendJobs #SoftwareEngineering #Rust #RustDeveloper #BackendArchitecture #API #DevOps #CloudEngineering #SystemDesign #AITraining #Micro1 #RemoteJobs #WorldwideJobs #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531937520025137152",
-      "timestamp": "2026-11-27T04:30:41.617Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531938684691189760",
+      "timestamp": "2026-11-27T04:35:19.299Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -830,11 +1026,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531936360073486336",
-      "text": "HIRING: Cyber Engineers (3+ Years Experience) (Global, Remote)\n\nMercor is recruiting experienced Cyber Engineers to help build and review code-security tasks for evaluating AI systems.\n\nCompensation: $400 per task\nLocation: Remote\nEstimated time: 5 hours per task\n\nRequired experience:\n3+ years of professional experience in application security, vulnerability research, penetration testing, or secure software engineering.\n\nKey responsibilities:\nIdentify security vulnerabilities and document reproducible exploits in controlled environments.\nValidate security fixes and regression tests.\nCreate and review realistic code-security tasks.\nStrong coding skills and clear technical writing are essential.\nApplication includes a recorded assessment with typed answers and camera/screen recording. No AI interviewer.\n\nApply here: https://t.mercor.com/oJyXW\n\n#Hiring #CyberSecurityJobs #CyberEngineer #ApplicationSecurity #PenetrationTesting #VulnerabilityResearch #SecureSoftwareEngineering #EthicalHacking #AIResearch #AITraining #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "id": "urn:li:activity:7531937520910004224",
+      "text": "Are you a fresh grad or young creative in Indonesia looking to build an international portfolio? Your next big break might be just across the ocean in Western Australia. 🌊🚀\n\nBecause Perth operates on a virtually identical timezone to Indonesia, Aussie SMEs are bypassing traditional local hiring and actively scouting top-tier Indonesian talent to run their digital presence.\n\nFrom Graphic Designers building brand identities to Digital Marketers running high-converting ad campaigns, young Indonesian professionals are making a massive impact on the Australian market. And the best part? They are doing it right from their local hubs in Jogja. 💻✨\n\nReady to elevate your resume, work directly with international founders, and unlock global earning potential right out of university?\n\nSwipe through to see the exact creative roles Australian brands are hiring for right now. ➡️\n\nIf your portfolio is polished and you are ready for a global role, we want to see it.\n💬 DM us the word \"CREATIVE\" and we will tell you how to share your work directly with our team!\n\n#CreativeCareers #GraphicDesignIndonesia #RemoteWork #WorkFromIndonesia #PerthBusiness",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531936359347904512",
-      "timestamp": "2026-11-27T04:26:04.852Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531937520025137152",
+      "timestamp": "2026-11-27T04:30:41.617Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -872,11 +1068,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531935927292731392",
-      "text": "HIRING: Economics Research Experts\n\nMercor is recruiting Economics Research Experts for an AI research project with a leading foundational model lab.\n\nPay: $150–$160/hour\nLocation: Fully Remote\n\nRequirements:\nPhD in Economics\nAt least 2 years of economics research experience at leading institutions such as the World Bank, IMF, Federal Reserve, or graduate schools.\nCommitment: Minimum 10 hours per week\nDuration: At least 4 weeks\nFlexible schedule\nWeekly payments via Stripe or Wise\nIndependent contractor opportunity.\n\nNote: H-1B and STEM OPT candidates are not supported.\n\nApply here: https://t.mercor.com/bZNeP\n\n#Hiring #EconomicsJobs #EconomistJobs #ResearchJobs #PhDJobs #AIResearch #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
+      "id": "urn:li:activity:7531936360073486336",
+      "text": "HIRING: Cyber Engineers (3+ Years Experience) (Global, Remote)\n\nMercor is recruiting experienced Cyber Engineers to help build and review code-security tasks for evaluating AI systems.\n\nCompensation: $400 per task\nLocation: Remote\nEstimated time: 5 hours per task\n\nRequired experience:\n3+ years of professional experience in application security, vulnerability research, penetration testing, or secure software engineering.\n\nKey responsibilities:\nIdentify security vulnerabilities and document reproducible exploits in controlled environments.\nValidate security fixes and regression tests.\nCreate and review realistic code-security tasks.\nStrong coding skills and clear technical writing are essential.\nApplication includes a recorded assessment with typed answers and camera/screen recording. No AI interviewer.\n\nApply here: https://t.mercor.com/oJyXW\n\n#Hiring #CyberSecurityJobs #CyberEngineer #ApplicationSecurity #PenetrationTesting #VulnerabilityResearch #SecureSoftwareEngineering #EthicalHacking #AIResearch #AITraining #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531935926709547008",
-      "timestamp": "2026-11-27T04:24:21.669Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531936359347904512",
+      "timestamp": "2026-11-27T04:26:04.852Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -928,11 +1124,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531935432096362496",
-      "text": "Hiring: Creative & Media Expert (Global Remote)\n\nRemote | Hourly Contract | $80–$90/hour\n\nMercor is hiring experienced creative, media, and communications professionals to develop evaluation tasks for AI systems that generate professional creative work.\n\nAreas of Expertise:\nEnterprise communication, slide decks, reports, training videos, entertainment, film, audio, podcasts, game assets, marketing, advertising, social media content, brand design, posters, logos, concept art, websites, and interactive digital products.\n\nResponsibilities:\nCreate realistic creative briefs, prepare professional input files and reference materials, produce finished reference deliverables, and evaluate AI-generated work against professional standards.\nProvide clear explanations for quality judgments and help improve AI evaluation guidelines.\n\nRequirements:\n5+ years of professional experience in a relevant creative, media, design, marketing, advertising, communications, or production field.\nA strong portfolio demonstrating professional work, proficiency with industry tools such as Adobe Creative Cloud, Figma, PowerPoint, Premiere Pro, DaVinci Resolve, After Effects, Pro Tools, or Logic Pro, and the ability to assess and explain creative quality.\nPrior AI evaluation or rubric-writing experience is a plus.\n\nContract Details:\nFully remote independent contractor role with a flexible schedule. Weekly payments through Stripe or Wise.\n\nApply here: https://t.mercor.com/CUmBB\n\nH-1B and STEM OPT candidates are not supported.\n\n#CreativeJobs #MediaJobs #CreativeProfessional #GraphicDesign #ArtDirection #VideoProduction #Animation #Photography #Marketing #Advertising #PublicRelations #ContentCreation #AITraining #AIEvaluation #AIResearch #Mercor #RemoteJobs #USA #UnitedStates #India #Europe #Germany #France #Spain #Italy #Netherlands #UnitedKingdom #Ireland #Portugal #Poland #Hungary #Romania #CzechRepublic #Slovakia #Austria #Belgium #Switzerland #Sweden #Norway #Denmark #Finland #Iceland #Greece #Croatia #Serbia #Bulgaria #Slovenia #Estonia #Latvia #Lithuania #Luxembourg #Liechtenstein #Malta #Cyprus #Turkey #Ukraine #Moldova #Albania #Montenegro #NorthMacedonia #Bosnia #Kosovo #Andorra #Monaco #SanMarino #VaticanCity #Mexico #Brazil #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #Cuba #Jamaica #Haiti #DominicanRepublic #TrinidadAndTobago #Barbados #Bahamas #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #RemoteWork",
+      "id": "urn:li:activity:7531935927292731392",
+      "text": "HIRING: Economics Research Experts\n\nMercor is recruiting Economics Research Experts for an AI research project with a leading foundational model lab.\n\nPay: $150–$160/hour\nLocation: Fully Remote\n\nRequirements:\nPhD in Economics\nAt least 2 years of economics research experience at leading institutions such as the World Bank, IMF, Federal Reserve, or graduate schools.\nCommitment: Minimum 10 hours per week\nDuration: At least 4 weeks\nFlexible schedule\nWeekly payments via Stripe or Wise\nIndependent contractor opportunity.\n\nNote: H-1B and STEM OPT candidates are not supported.\n\nApply here: https://t.mercor.com/bZNeP\n\n#Hiring #EconomicsJobs #EconomistJobs #ResearchJobs #PhDJobs #AIResearch #Mercor #RemoteJobs #RemoteWork #UnitedStates #India #UK #Canada #Germany #France #Netherlands #Switzerland #Spain #Italy #Ireland #Portugal #Sweden #Norway #Denmark #Finland #Belgium #Austria #Poland #Greece #Romania #Hungary #CzechRepublic #Slovakia #Croatia #Slovenia #Bulgaria #Serbia #Ukraine #Turkey #Iceland #Luxembourg #Estonia #Latvia #Lithuania #Cyprus #Malta #Albania #Montenegro #NorthMacedonia #Bosnia #Moldova #Belarus #Russia #Brazil #Mexico #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #DominicanRepublic #Cuba #Jamaica #Haiti #TrinidadAndTobago #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531935429512716288",
-      "timestamp": "2026-11-27T04:22:23.605Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531935926709547008",
+      "timestamp": "2026-11-27T04:24:21.669Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -956,11 +1152,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531932111973281792",
-      "text": "Hiring: Music Production Expert - Urdu\n\nRemote | Hourly Contract | $11–$19/hour\n\nMercor is hiring experienced music producers and audio engineers to evaluate generative AI music models in Urdu and English, in partnership with a leading AI lab.\n\nRequirements:\nNative or near-native Urdu proficiency, ability to follow detailed written instructions in English, and at least 2 years of experience as a music producer, audio engineer, or mixing engineer. Suitable headphones or studio monitors are required.\n\nResponsibilities:\nCompare AI-generated songs for musicality, creativity, prompt adherence, vocal quality, and production quality. Label genres, instruments, song structures, and vocals. Review AI-generated lyrics and vocals for quality and accuracy.\n\nProject Details:\nImmediate start, up to 6 months. Flexible schedule, typically around 20 hours per week with no weekly cap. Weekly payments through Stripe or Wise. Application includes a bilingual competency interview in Urdu.\n\nApply here: https://t.mercor.com/dTfRE\n\nH-1B and STEM OPT candidates are not supported.\n\n#MusicProduction #AudioEngineering #MusicProducer #MixingEngineer #Urdu #AITraining #AIJobs #RemoteJobs #Mercor #USA #UnitedStates #India #Europe #Germany #France #Spain #Italy #Netherlands #UnitedKingdom #Ireland #Portugal #Poland #Hungary #Romania #CzechRepublic #Slovakia #Austria #Belgium #Switzerland #Sweden #Norway #Denmark #Finland #Iceland #Greece #Croatia #Serbia #Bulgaria #Slovenia #Estonia #Latvia #Lithuania #Luxembourg #Liechtenstein #Malta #Cyprus #Turkey #Ukraine #Moldova #Albania #Montenegro #NorthMacedonia #Bosnia #Kosovo #Andorra #Monaco #SanMarino #VaticanCity #Mexico #Brazil #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #Cuba #Jamaica #Haiti #DominicanRepublic #TrinidadAndTobago #Barbados #Bahamas #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #RemoteWork",
+      "id": "urn:li:activity:7531935432096362496",
+      "text": "Hiring: Creative & Media Expert (Global Remote)\n\nRemote | Hourly Contract | $80–$90/hour\n\nMercor is hiring experienced creative, media, and communications professionals to develop evaluation tasks for AI systems that generate professional creative work.\n\nAreas of Expertise:\nEnterprise communication, slide decks, reports, training videos, entertainment, film, audio, podcasts, game assets, marketing, advertising, social media content, brand design, posters, logos, concept art, websites, and interactive digital products.\n\nResponsibilities:\nCreate realistic creative briefs, prepare professional input files and reference materials, produce finished reference deliverables, and evaluate AI-generated work against professional standards.\nProvide clear explanations for quality judgments and help improve AI evaluation guidelines.\n\nRequirements:\n5+ years of professional experience in a relevant creative, media, design, marketing, advertising, communications, or production field.\nA strong portfolio demonstrating professional work, proficiency with industry tools such as Adobe Creative Cloud, Figma, PowerPoint, Premiere Pro, DaVinci Resolve, After Effects, Pro Tools, or Logic Pro, and the ability to assess and explain creative quality.\nPrior AI evaluation or rubric-writing experience is a plus.\n\nContract Details:\nFully remote independent contractor role with a flexible schedule. Weekly payments through Stripe or Wise.\n\nApply here: https://t.mercor.com/CUmBB\n\nH-1B and STEM OPT candidates are not supported.\n\n#CreativeJobs #MediaJobs #CreativeProfessional #GraphicDesign #ArtDirection #VideoProduction #Animation #Photography #Marketing #Advertising #PublicRelations #ContentCreation #AITraining #AIEvaluation #AIResearch #Mercor #RemoteJobs #USA #UnitedStates #India #Europe #Germany #France #Spain #Italy #Netherlands #UnitedKingdom #Ireland #Portugal #Poland #Hungary #Romania #CzechRepublic #Slovakia #Austria #Belgium #Switzerland #Sweden #Norway #Denmark #Finland #Iceland #Greece #Croatia #Serbia #Bulgaria #Slovenia #Estonia #Latvia #Lithuania #Luxembourg #Liechtenstein #Malta #Cyprus #Turkey #Ukraine #Moldova #Albania #Montenegro #NorthMacedonia #Bosnia #Kosovo #Andorra #Monaco #SanMarino #VaticanCity #Mexico #Brazil #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #Cuba #Jamaica #Haiti #DominicanRepublic #TrinidadAndTobago #Barbados #Bahamas #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #RemoteWork",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531932111130320896",
-      "timestamp": "2026-11-27T04:09:12.026Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531935429512716288",
+      "timestamp": "2026-11-27T04:22:23.605Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -979,6 +1175,216 @@
         {
           "type": "linkedin",
           "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531932111973281792",
+      "text": "Hiring: Music Production Expert - Urdu\n\nRemote | Hourly Contract | $11–$19/hour\n\nMercor is hiring experienced music producers and audio engineers to evaluate generative AI music models in Urdu and English, in partnership with a leading AI lab.\n\nRequirements:\nNative or near-native Urdu proficiency, ability to follow detailed written instructions in English, and at least 2 years of experience as a music producer, audio engineer, or mixing engineer. Suitable headphones or studio monitors are required.\n\nResponsibilities:\nCompare AI-generated songs for musicality, creativity, prompt adherence, vocal quality, and production quality. Label genres, instruments, song structures, and vocals. Review AI-generated lyrics and vocals for quality and accuracy.\n\nProject Details:\nImmediate start, up to 6 months. Flexible schedule, typically around 20 hours per week with no weekly cap. Weekly payments through Stripe or Wise. Application includes a bilingual competency interview in Urdu.\n\nApply here: https://t.mercor.com/dTfRE\n\nH-1B and STEM OPT candidates are not supported.\n\n#MusicProduction #AudioEngineering #MusicProducer #MixingEngineer #Urdu #AITraining #AIJobs #RemoteJobs #Mercor #USA #UnitedStates #India #Europe #Germany #France #Spain #Italy #Netherlands #UnitedKingdom #Ireland #Portugal #Poland #Hungary #Romania #CzechRepublic #Slovakia #Austria #Belgium #Switzerland #Sweden #Norway #Denmark #Finland #Iceland #Greece #Croatia #Serbia #Bulgaria #Slovenia #Estonia #Latvia #Lithuania #Luxembourg #Liechtenstein #Malta #Cyprus #Turkey #Ukraine #Moldova #Albania #Montenegro #NorthMacedonia #Bosnia #Kosovo #Andorra #Monaco #SanMarino #VaticanCity #Mexico #Brazil #Argentina #Colombia #Chile #Peru #Venezuela #Ecuador #Bolivia #Paraguay #Uruguay #Guyana #Suriname #Belize #CostaRica #Panama #Guatemala #Honduras #ElSalvador #Nicaragua #Cuba #Jamaica #Haiti #DominicanRepublic #TrinidadAndTobago #Barbados #Bahamas #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #RemoteWork",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531932111130320896",
+      "timestamp": "2026-11-27T04:09:12.026Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531930094789939200",
+      "text": "Career moves are personal. Having the right support can make all the difference.\r\n\r\nWhether you’re ready for your next challenge or simply exploring what’s out there, our consultants are here to listen, understand your goals and help you find the right fit.\r\n\r\n💼 Looking for your next opportunity? Explore our latest roles and connect with our consultants: https://brnw.ch/21x7i63\n\nThis month, we’re recognising some of our most-reviewed consultants; those who go the extra mile to support professionals through important career decisions and new opportunities.\r\n\r\n👏 A special shout-out to Stanford G., Dyna K., Katharine Prasetyo, Annisa, Jovan Thaddeus Jahja (叶孙龙）, Emeline Purnama, Hermawan Rahardjo, and to all our consultants who continue to make a difference for the clients and candidates they support.\r\n\r\nHere’s to more success stories ahead.\n\n#MichaelPageIndonesia #Hiring #JobSearch #Careers #Recruitment",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531930061982199809",
+      "timestamp": "2026-11-27T04:01:11.092Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531930143003664384",
+      "text": "WE'RE HIRING – IT PRODUCT MANAGER ⏰\n\n📍 South Jakarta, Indonesia\n\nWe are looking for a IT Product Manager to drive digital product development and collaborate with cross-functional teams to deliver innovative product solutions.\n\nRequirements:\n- Bachelor's degree in Engineering, Business, Computer Science, or related fields.\n- Minimum 2 years of experience in Product Management.\n- Experience in investment products or cryptocurrency products is preferred.\n- Familiarity with Agile/Scrum, Jira, and Confluence.\n- Understanding of UI/UX, Design Thinking, and product development processes.\n- Strong communication, analytical, and stakeholder management skills.\n- Capital market or financial services experience is a plus.\n\nInterested? Send your updated CV to it001720@abishar.com\n\n#Hiring #JobOpportunity #DigitalProductManager #ProductManager #JakartaJobs #TechnologyJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531930142428868608",
+      "timestamp": "2026-11-27T04:01:22.587Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531930245831045120",
+      "text": "How do Singapore SMEs hire in Indonesia?\n\nMost Singapore founders like the economics of hiring full-time talent in Indonesia. What stops them is the administration that comes after the interview.\n\nSetting up an overseas entity, drafting compliant Indonesian employment contracts, calculating statutory social security contributions, and running cross-border payroll is too much overhead when your SME needs one to three dedicated staff.\n\nThat is why Redox separates day-to-day team management from local employment administration.\n\nSwipe through how the 3-to-5-week process works from role brief to onboarding:\n\n1. Scope one dedicated role across Marketing, Admin & Operations, Finance, or Digital & Tech.\n\n2. Review a vetted shortlist of 5 to 10 candidates with recorded HR video interviews, portfolios, and transparent SGD cost breakdowns.\n\n3. Interview your top picks, assign a practical test task if needed, and make the final hiring decision.\n\n4. Onboard your new full-time team member with a 3-month probation replacement safety net while Redox handles local contracts, monthly payroll, statutory compliance, and continuous AI enablement.\n\nWalk through the full process at https://getredox.sg\n\n#RemoteStaffing #SingaporeSME #HireInIndonesia #BusinessOperations #Redox",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531324443843788800",
+      "timestamp": "2026-11-27T04:01:47.103Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531929824894935040",
+      "text": "🚦 The transition is #hiring\n\nElectric trucks in East Africa. Power for Kiribati's outer islands. Sixteen openings; eight close on 30 November. \n\n🇰🇪 UN Environment Programme: Sustainable Mobility Consultant (Green Freight), Nairobi, Kenya.  \n👉 Apply by 30 November: https://lnkd.in/e4zrbuv3\n\n🇵🇭 Clean Air Asia: Consultant, light electric vehicle market study, in a GEF-funded, UNEP-led programme.  \nWork location: Manila, Philippines.\n👉Apply by 30 November: https://bit.ly/LEVStudy\n\n🇮🇩 Clean Air Asia: three consultants in Jakarta, Indonesia (EV batteries, air quality, cleaner industry).  \n👉Apply by 30 November: https://lnkd.in/eJQmqUug\n\n🇧🇪 UITP: Head of the Mobility Governance Unit, Brussels (Belgium).  \n👉Apply by 30 November: https://lnkd.in/eKAPj4fi\n\n🌍 OPEC Fund: Transport Strategy Consultant, remote.  \n👉Apply by 30 November: https://lnkd.in/eW9TJrKS\n\n🇧🇪 T&E (Transport & Environment): Senior Analyst, Battery and Industrial Policy, Brussels.  \n👉Apply by 30 November:https://lnkd.in/enAdMAxM\n\n🇹🇿 Central Corridor Transit Transport Facilitation Agency (CCTTFA): Senior Advisor, Economic Corridor Transformation, Dar es Salaam.  \n👉Apply by: 2 December:https://lnkd.in/ejP4keU6\n\n🇧🇪 European Commission: Sustainable and Intelligent Transport Unit within the Investment, Innovative & Sustainable Transport Directorate of DG MOVE.  \nPosition: Secretary; work location: Brussels.  \n👉Apply by 3 December: https://lnkd.in/epAEchaM\n\n🇮🇳 GIZ India: Transport and Infrastructure Advisor, Gender in Green Mobility, New Delhi.  \n👉Apply by: 6 December: https://lnkd.in/dEJWr3Am\n\n🇰🇮 Global Green Growth Institute (GGGI): National Coordination Officer, EU-funded electrification programme, Kiribati.  \n👉Apply by: 7 December:https://lnkd.in/grMPik9Y\n\n🇧🇷 Banco Interamericano de Desenvolvimento (IDB): Lead Local Transport Specialist, Brasília. Applicants need fluent Portuguese and English and must already have the legal right to work in Brazil. \n👉Apply by: 9 December:https://lnkd.in/ekb7qp2V\n\n🇧🇪 T&E: Oil Policy Manager and Green Steel Analyst, Brussels.  \n👉Apply by 18 December: https://lnkd.in/ec6ZGTBq\n\n🇸🇬 T&E: Senior Transport and Energy Data Analyst, Singapore.  \n👉Apply by 31 December: https://lnkd.in/eG3SGgrC\n\nShared by UN Environment Programme's Sustainable Mobility Unit; apply directly to each organisation. Tag someone who fits.\n\n#SustainableMobility #UrbanTransport #JustTransition",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531387444722864128",
+      "timestamp": "2026-11-27T04:00:06.744Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531929012865077248",
+      "text": "📢 STILL HIRING — Corporate Legal & Compliance Division Head\n*Indonesian Citizens Only\n\nSIGMATECH is currently seeking a qualified Corporate Legal & Compliance Division Head to lead legal and compliance functions, ensure regulatory adherence, and support strategic business objectives.\n\n📌 Qualifications:\n- Bachelor’s degree (S1) in Law; Master’s degree (S2) is preferred.\n- Minimum 8 years of experience in Legal & Compliance at a managerial level.\n- Experience in corporate law, contracts, regulatory affairs, or financial institutions is preferred, particularly in multi-finance or Japanese companies.\n- Strong knowledge of corporate governance, commercial law, and regulatory compliance.\n- Established relationships with regulators, including OJK, and experience representing the company in regulatory matters (Mandatory).\n- Experienced in regulatory change management, compliance assessment, and regulatory reporting in English and Bahasa Indonesia.\n- Skilled in drafting legal opinions and formal responses to regulatory inquiries and notices.\n- Strong strategic thinking, business acumen, communication, negotiation, and stakeholder management skills.\n- Willing to fully WFO Jakarta Selatan\n\n📩 Send your updated CV toluthfia.indrar@sigma-tech.co.id or \napply throughhttps://lnkd.in/gVsd4URW\n\nFeel free to share this opportunity with your network who may be a good fit!\n#CorporateLegal #Compliance #LegalLeadership",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531929011867017217",
+      "timestamp": "2026-11-27T03:56:53.141Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531928599814361088",
+      "text": "🚀 Laravel is hiring in Singapore! 🇸🇬\n\n💼 Role: Technical Support Engineer (APAC)\n🏢 Company: Laravel\n📍 Location: Australia, Indonesia, Japan, New Zealand, Singapore, Thailand\n💰 Salary: Negotiable\n🎯 Experience: Mid Level\n🕒 Type: Full time · Remote\n⏳ Apply by: 19 Jan 2027\n\nAt Laravel , we are committed to creating tools that empower developers to build exceptional web applications while nurturing a supportive and inclusive global community. By joining our team, you’ll play a pivotal role in helping developers succeed and thrive in their work. We’re seeking experienced and empathetic Tech…\n\n👉 Details & apply: https://chakrie.com/jobs/\n\n🔔 Follow Chakrie for fresh jobs every day, at home and abroad. Know someone who fits? Tag them!\n\n#Hiring #Jobs #Career #JobsInSingapore #JobSearch #Chakrie",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928599252271104",
+      "timestamp": "2026-11-27T03:55:14.662Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531928670555516928",
+      "text": "💻 We’re Hiring: After-Sales Technical Support Engineer (Kubernetes)\n\n📍 Location: Jakarta, Indonesia (Hybrid - On-site at client locations as needed, WFH otherwise) \n\nWe are looking for a skilledAfter-Sales Technical Support Engineer with strong hands-on experience inKubernetes and cloud-native infrastructure to support enterprise deployments in Jakarta. You will act as the key technical bridge between clients and our R&D/product teams-leading on-site product trials, troubleshooting environments, and ensuring smooth post-sales delivery.\n\nWhat You’ll Do:\n*On-Site Support & Training: Guide and train customers during product trials, troubleshoot technical issues, manage support tickets, and maintain strong client relationships.\n*Solutions & Documentation: Partner with the sales team to identify opportunities, provide post-sales technical solutions, and prepare proposals, bids, test reports, and implementation plans.\n*Product & R&D Bridge: Gather client and market feedback to help shape back-end product improvements and R&D priorities.\n*Partner & Event Engagement: Collaborate with technical partners and represent the team at marketing events and technical keynotes.\n\nWhat We’re Looking For:\n*Bachelor’s degree in Computer Science, Computer Engineering, or a related field.\nProven experience in IT or internet companies, with solid knowledge of cloud computing technologies and industry products (after-sales, R&D, or medium/large-scale O&M experience is a strong plus).\n*Hands-on technical background in infrastructure, Kubernetes (K8s), OpenShift (OCP), network storage, monitoring, logging, and automation.\n*Strong analytical and problem-solving skills, comfortable working both independently on-site and collaboratively with a team.\n*Excellent communication skills, able to explain technical details clearly to both technical and non-technical stakeholders.\n\n📩 Interested? Send your updated CV via Direct Message (DM) to apply!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928669779341312",
+      "timestamp": "2026-11-27T03:55:31.528Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531928794312519680",
+      "text": "⚖️ Your Legal Expertise Could Be a Key Part of Indonesia’s Industrial Growth!\n\nA major integrated industrial company supporting the development of Indonesia’s nickel and stainless steel industry is looking for a Legal Supervisor to join its operations in Morowali, Central Sulawesi.\n\n📍 Morowali, Central Sulawesi\n💰 Salary: Open & negotiable\n⏰ Monday–Saturday | 08:00–11:30 & 13:00–17:30\n🏠 Company-provided accommodation & daily meals\n💸 PPh 21 fully covered\n🎁 THR, allowances, annual leave, family visit leave & medical check-up\n\nThis role goes beyond document handling. You’ll be involved in contract and business document review, negotiations, regulatory matters, licensing procedures, approval processes, and cross-department coordination, with plenty of room to apply your legal and business administration expertise in a large-scale industrial environment.\n\nWe're looking for:\n• Min. 2–3 years of relevant experience\n• Background in Legal Affairs, Corporate Legal, Contract Management, or Business Administration\n• Strong understanding of laws, regulations, policies, and licensing related to the construction sector\n• Experienced in drafting, reviewing, and negotiating contracts, official letters, and business documents\n• Familiar with basic financial administration, including invoice verification and payment requests\n• Strong communication, negotiation, problem-solving & multitasking skills\n• Proficient in Microsoft Office\n• Language: Bahasa Indonesia & English\n\n📩 Interested? Connect with Rahmad Fauzan for more information.\n\nKnow a legal professional who might be a great fit? Share this opportunity with them!\n\n#Hiring #LegalSupervisor #LegalJobs #CorporateLegal #LegalAffairs #ContractManagement #LegalCompliance #RegulatoryCompliance #ConstructionIndustry #IndustrialJobs #NickelIndustry #StainlessSteel #MorowaliJobs #CentralSulawesiJobs #LegalCareer #LowonganKerja #BOSSHIREExecutive",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7530847029745307648",
+      "timestamp": "2026-11-27T03:56:01.034Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531928191305764864",
+      "text": "📢 We're Hiring: KOL Specialist (English Speaker)\nLocation: Pluit Sakti, North Jakarta\nWork System: Full WFO, Monday–Friday, 09:00–18:00 WIB.\n\nInvens.co.id (PT. Invens Sukses Indonesia) is looking for a proactive and results-driven KOL Specialist to join our team!\n\nJob Overview:\nManage KOL and influencer collaborations for one assigned brand: PerySmith (Vacuum Cleaners) or Vinko (Mobile Phone Accessories). Each team member will handle one brand.\n\nKey Responsibilities:\nSource and approach KOLs, influencers, and agencies.\nNegotiate rates and manage KOL collaborations.\nPrepare campaign briefs and monitor content publication.\nBuild long-term relationships with KOLs and agencies.\nMonitor and analyze campaign performance (ROAS, engagement, conversion).\nStay updated on social media trends and competitor activities.\n\nRequirements:\nBachelor's Degree in any major.\nMinimum 1–2 years of experience in KOL Management or Influencer Marketing.\nGood command of English, written and spoken.\nStrong communication, negotiation, and networking skills.\nFamiliar with social media platforms and influencer trends.\nAble to analyze campaign performance.\nProactive, independent, and target-oriented.\n\n📩 Interested? Send your updated CV to: invens.hiring@shd-company.com, Subject: Position - Full name \nOr apply through the following link: https://lnkd.in/gACHsujh\n\nLet's grow together with Invens! ✨",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531928189682503680",
+      "timestamp": "2026-11-27T03:53:37.266Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531928291096637440",
+      "text": "🚨 HIRING: TRAINING SPECIALIST! 🚨\n\nXCMG Indonesia is looking for a Training Specialist to support employee development through training programs, language teaching, and learning & development initiatives! 👀\n\n📍 Jakarta Utara (WFO)\n💼 Full-Time\n🎓 Min. Bachelor’s Degree (preferably in HR, Mandarin Language Education, Education, or a related field)\n\nYou’ll be responsible for developing and delivering employee training programs, teaching Indonesian to Chinese expatriates and Mandarin to Indonesian employees, preparing learning materials, and evaluating training effectiveness.\n\nWe’re looking for someone with strong Mandarin & Indonesian language skills. Experience in training, teaching, L&D, or language instruction is a plus, along with strong communication, presentation, and coordination skills.\n\nScan the QR code to apply or click here:\n🔗https://lnkd.in/gjMA8UrV\n\nKnow someone who fits this role? Tag them or share this opportunity! 🚀\n\n#hiring #trainingspecialist #learninganddevelopment #hrtraining #mandarinspeaker #lokermandarin #mandarinjobs #lokerjakarta",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7530841177730924544",
+      "timestamp": "2026-11-27T03:54:01.058Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531927864984719360",
+      "text": "🌏 WE ARE HIRING | VIETNAMESE SPEAKING PROFESSIONAL\n📍 Jakarta, Indonesia\n\nAre you a multilingual professional looking for an exciting career opportunity in the financial industry?\n\nOur client, a Korean-based financial services company, is currently looking for a talented professional to join their team in Jakarta.\n\nCandidate Requirements:\n- Minimum Diploma (D3) or Bachelor's Degree (S1) from a reputable institution.\n- Fluent in Vietnamese and English (mandatory).\n- Proficiency inBahasa Indonesia is an advantage (Expatriate candidates are also welcome to apply).\n- Strong communication and interpersonal skills.\n- Willing to be based in Jakarta, Indonesia.\n\n📩Interested or know someone who might be a good fit?\nPlease send your updated CV to tommyphua@matala.co.in (Subject: Name - Vietnamese Speaker Jakarta).\n\nFeel free to share this opportunity with your network!\n\n#Hiring #WeAreHiring #VietnameseSpeaker #VietnameseLanguage #MultilingualJobs #JakartaJobs #FinanceJobs #InternationalCareer #Recruitment #JobOpportunity #IndonesiaJobs #KoreanCompany",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531927864418570241",
+      "timestamp": "2026-11-27T03:52:19.465Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531927606481289216",
+      "text": "🚀 WE’RE HIRING: COMPLIANCE MANAGER\n\nReady to take the next step in your career and make a meaningful impact?\nIndonesia Airawata Finance is looking for an experienced and driven Compliance Manager to join our team at Head Office!\n\nIf you have strong expertise in regulatory compliance, risk management, corporate governance, and leadership, this could be your next exciting opportunity.\n\n📩Ready to join us?\n📍 Location: Head Office\nSend your updated CV to:riska.indraswari@iaf.co.id\nEmail Subject: Compliance_Name\n\nBe part of our journey and grow with us!\n#Hiring #WeAreHiring #ComplianceManager #ComplianceJobs #CareerOpportunity #IndonesiaAirawataFinance #FinanceJobs",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531927605407571968",
+      "timestamp": "2026-11-27T03:51:17.833Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531939824920875008",
+      "text": "We are Hiring!!\n\nCloud DevOps Engineer\nWFO di Jakarta\n\n- Bachelor's degree (S1) in Informatics Engineering, Computer Science, Telecommunication Engineering, Electrical Engineering, or a related discipline.\n- Minimum 2 years of experience as a System Engineer, Cloud Engineer, or in a related technical ro\n- Good knowledge of AWS and Huawei Cloud services and technologies.\n- Hands-on experience in cloud infrastructure, cloud migration, and cloud managed services is preferred.\n- Familiar with server, storage, virtualization, data protection, and containerization technologies.\n- Good understanding of TCP/IP, internet, and networking fundamentals.\n- Professional-level certification in cloud or datacentre technologies (AWS, Huawei Cloud, CCNP Data Center, VCP-DCV, RHCE, Dell, HPE, or equivalent) is an advantage.\n\nIf you are interested, please click the following link https://bit.ly/FormMSBU",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531939824358862849",
+      "timestamp": "2026-11-27T04:39:50.936Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531939572721819648",
+      "text": "We're Hiring!\n\nWe’re looking for a Mid-Level Manual QA Engineer to join our team!\n📍Location: Jakarta\n\nRequirements:\n- Minimum Bachelor’s Degree (S1) in Information Technology, Computer Science, Information Systems, or other IT-related fields\n- Minimum 3 years of experience in Quality Assurance / Manual Testing\n- Strong understanding of Manual Testing\n- Experienced in creating and executing test cases and test scenarios\n- Experienced in bug/defect identification, documentation, and reporting\n- Proficient in Postman for API testing – mandatory\n- Familiar with API testing, including basic request/response validation\n- Familiar with JIRA or other bug tracking tools is a plus\n- Understanding of SDLC/STLC\n- Strong attention to detail and analytical skills\n- Good communication and teamwork skills\n- Experience in Banking-related projects is highly preferred.\n\n📩 Interested?\nSend your updated CV to zahra.nabeela@global.ntt\nor https://lnkd.in/gsEvNmhc\n\nEmail Subject: Position – [Your Name]\n\nFeel free to share this opportunity with your network!\n\n#NTTDATA #NTTDATAHiring #Hiring #ManualQA #QAEngineer #SoftwareTesting #QualityAssurance #JIRA #ITJobs #TechJobs #CareerOpportunity #HiringNow",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531939571605950465",
+      "timestamp": "2026-11-27T04:38:50.807Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer jakarta"
         }
       ]
     },
@@ -1096,11 +1502,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531925504023539712",
-      "text": "WE ARE HIRING! | MSBU KONSULTAN  ‼️\n\nHello, everyone! 👋\nAs a Freelance Recruiter at MSBU Konsultan, I'm excited to share several career opportunities for talented professionals who are ready to take the next step in their careers!\n\n📌 OPEN POSITIONS – WORK FROM OFFICE (WFO)\n- Cloud Devops Engineer – Jakarta\n- Network Engineer - Jakarta\n- IT Infrastructure & Cybersecurity - Jakarta\n- Data Analyst - Jakarta\n-  Sr. AI Engineer - Jakarta/Yogyakarta\n- Salesforce Developer - Jakarta\n- Scrum Master - Jakarta\n- System Engineer .Net Dynamics 365 - Jakarta\n- Site Reliability Engineer (SRE) - Jakarta\n- Project Management - Jakarta\n\nSubmit your application through the link below:\n🔗 https://lnkd.in/gTV2yent\n\nThank you, and good luck  ✨\n#Hiring #WeAreHiring #OpenToWork #WFO #WorkFromOffice #FreeRecruitment #JobVacancy #ITJobs #TechCareers #MSBUKonsultan #JakartaJobs #YogyakartaJobs #LokerIT #LokerJakarta",
+      "id": "urn:li:activity:7531925337379700736",
+      "text": "URGENT hiring! 🚀\nLooking for a QA Engineer.\nFresh graduates with hands-on Automation Testing experience through personal projects or internships are welcome to apply! Familiarity with Playwright is a plus.\n\n📍 Sunter, North Jakarta (WFO)\n📩 Grace.Yosephine@rsystems.com\n\nFeel free to share or tag someone who might be interested!\n#Hiring #QA #SoftwareTesting #AutomationTesting #FreshGraduate #Playwright",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531925503444934656",
-      "timestamp": "2026-11-27T03:42:56.568Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531925336817774593",
+      "timestamp": "2026-11-27T03:42:16.837Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -1110,11 +1516,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531925337379700736",
-      "text": "URGENT hiring! 🚀\nLooking for a QA Engineer.\nFresh graduates with hands-on Automation Testing experience through personal projects or internships are welcome to apply! Familiarity with Playwright is a plus.\n\n📍 Sunter, North Jakarta (WFO)\n📩 Grace.Yosephine@rsystems.com\n\nFeel free to share or tag someone who might be interested!\n#Hiring #QA #SoftwareTesting #AutomationTesting #FreshGraduate #Playwright",
+      "id": "urn:li:activity:7531925504023539712",
+      "text": "WE ARE HIRING! | MSBU KONSULTAN  (INDONESIAN ONLY)‼️\n\nHello, everyone! 👋\nAs a Freelance Recruiter at MSBU Konsultan, I'm excited to share several career opportunities for talented professionals who are ready to take the next step in their careers!\n\n📌 OPEN POSITIONS – WORK FROM OFFICE (WFO)\n- Cloud Devops Engineer – Jakarta\n- Network Engineer - Jakarta\n- IT Infrastructure & Cybersecurity - Jakarta\n- Data Analyst - Jakarta\n-  Sr. AI Engineer - Jakarta/Yogyakarta\n- Salesforce Developer - Jakarta\n- Scrum Master - Jakarta\n- System Engineer .Net Dynamics 365 - Jakarta\n- Site Reliability Engineer (SRE) - Jakarta\n- Project Management - Jakarta\n\nSubmit your application through the link below:\n🔗 https://lnkd.in/gTV2yent\n\nThank you, and good luck  ✨\n#Hiring #WeAreHiring #OpenToWork #WFO #WorkFromOffice #FreeRecruitment #JobVacancy #ITJobs #TechCareers #MSBUKonsultan #JakartaJobs #YogyakartaJobs #LokerIT #LokerJakarta",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531925336817774593",
-      "timestamp": "2026-11-27T03:42:16.837Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531925503444934656",
+      "timestamp": "2026-11-27T03:42:56.568Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -1138,113 +1544,29 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531920878121586688",
-      "text": "🚀 WE ARE HIRING! | IT & DATA PROFESSIONALS\n\n📍 Placement: Jakarta\n\nWe are currently looking for qualified IT & Data professionals to join our team for the following positions:\n\n🔹 1. Project Manager\n• Minimum education: S1/D4\n• Experience: At least 1 project work cycle within the last 5 years (since January 2020) as a Project Manager handling government and/or BUMN projects.\n• Certification: PMP, PfMP, or PgMP.\n\n🔹 2. IT Project Administrator\n• Minimum education: D3\n• Experience: At least 1 project work cycle in IT project administration within the last 5 years (since January 2020).\n\n🔹 3. Big Data Administrator\n• Minimum education: S1/D4\n• Experience: At least 2 project work cycles in Big Data administration and operation within the last 6 years (since January 2019).\n• Certification: CCA Administrator, CDP Administrator, or Certified Data Management Platform Essentials.\n\n🔹 4. Big Data Analyst\n• Minimum education: D3\n• Experience: At least 2 project work cycles in Big Data development or design within the last 6 years (since January 2019).\n• Certification: CDP, Certified Generalist, Certified Associate Big Data Analyst, or Certified Professional Data Science.\n\n🔹 5. Data Engineer\n• Minimum education: D3\n• Experience: At least 1 project work cycle in ETL (Extract, Transform, and Load) development or design within the last 5 years (since January 2020).\n• Certification: PCEP – Python Programmer or Certified Big Data Engineer.\n\n🔹 6. Streamset Data Specialist\n• Minimum education: S1/D4\n• Experience: At least 1 project work cycle in database migration within the last 5 years (since January 2020).\n• Certification: Oracle Big Data Implementation Specialist or Certified Big Data Implementation.\n\n🔹 7. Elastic Search Specialist\n• Minimum education: S1/D4\n• Experience: At least 1 project work cycle handling Elastic Search software within the last 5 years (since January 2020).\n• Certification: Elastic Certified Professional or Certified Elastic Search/Search Engine.\n\n🔹 8. Tableau Specialist\n• Minimum education: D3\n• Experience: At least 1 project work cycle handling Tableau software within the last 5 years (since January 2020).\n• Certification: Tableau Desktop Specialist or Certified Business Intelligence/Data Visualization.\n\n📩 Interested and qualified candidates are invited to apply by completing the registration form below:\n🔗 https://lnkd.in/gpCXyfPS\n\nPlease ensure that you provide accurate information and upload the required supporting documents through the form.\n\nFeel free to share this opportunity with your network!\n\n#Hiring #Recruitment #ITJobs #DataJobs #ProjectManager #BigData #DataEngineer #DataAnalyst #Tableau #ElasticSearch #CareerOpportunity",
+      "id": "urn:li:activity:7531936863645945856",
+      "text": "🚀 WE'RE HIRING: JAKARTA EE DEVELOPER (SMALLTALK)\n\nAre you an experienced developer with a background in Smalltalk and Jakarta EE? We're looking for a skilled professional to join our growing team!\n\n🔎 WHAT WE'RE LOOKING FOR:\n-Hands-on professional experience in Smalltalk development (MANDATORY)\n-Strong knowledge of Jakarta EE (formerly Java EE) and Java programming\n-Experience developing, maintaining, and enhancing enterprise applications\n-Solid understanding of Object-Oriented Programming (OOP)\n-Experience with RESTful APIs, web services, and SQL databases\n-Background in application troubleshooting, debugging, and production support\n-Strong analytical and problem-solving skills\n-Ability to work independently and collaborate with multicultural teams\n\n📍 WORK ARRANGEMENT:\nWork Setup: Hybrid\nLocation: Mandaluyong City or Quezon City\nShift: 12:00 NN – 10:00 PM\n\n⚠️IMPORTANT: Smalltalk development experience is a strict requirement. Candidates with Java/Jakarta EE experience but without hands-on Smalltalk experience will not be considered for this position.\n\n📩INTERESTED?\nSend us your updated CV here: TeamPH-AAM@geco.asia\n\n#Hiring #JakartaEE #Smalltalk #JavaDeveloper #SoftwareDeveloper #ITJobs #TechJobs #HybridWork #GECOPhilippines #NowHiring",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531920877341265920",
-      "timestamp": "2026-11-27T03:24:33.667Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531936862999965696",
+      "timestamp": "2026-11-27T04:28:04.913Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer jakarta"
+          "value": "developer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531919122708905986",
-      "text": "🚢 WE'RE HIRING – OIL TANKER CREW\nPT. Veratama Global Mandiri is currently seeking qualified and motivated seafarers to join our Gas Carrier & LPG Tanker fleet.\n\n📌 Open Positions :\n• Chief Officer – USD $ 8,700\n• 2nd Officer (x2 Persons) – USD $ 4,300\n• 3rd Officer – USD $ 3,000\n• Chief Engineer – USD $ 11,700\n• 2nd Engineer – USD $ 8,700\n• 3rd Engineer – USD $ 4,300\n• 4th Engineer – USD $ 2,500\n• ETO – USD $ 6,000\n• Bosun – USD $ 1,800\n• Pumpman – USD $ 1,800\n• Fitter – USD $ 1,800\n• AB (x4 Persons) – USD $ 1,500\n• OS – USD $ 500\n• Oiler (x3 Persons) – USD $ 1,500\n• Wiper – USD $ 500\n• Chief Cook – USD $ 1,700\n• Messman – USD $ 500\n\n⚓ Requirements:\n✔ Valid STCW Certificates, Seaman Book, and Medical Certificate\n✔ Experience on Gas Carrier & LPG Tanker is preferred\n✔ Good English communication skills\n✔ Good knowledge and positive attitude\n✔ Ready to join immediately\n\n📩 Send your CV & supporting documents to:\ninfo@veratamaglobalmandiri.com\n\n📝 Or apply directly through our Google Form:\nhttps://lnkd.in/gyPfNzae\n\n📱 WhatsApp:\n+62 822-2558-2911 (Melisa)\n+62 821-2122-342 (Thino)\n+62 895-6044-53409 (Nanda)\n+62 813-2630-3857 (Amanda)\n\n📍 Office:\nMenara Kuningan, 9th Floor, Suite\nJl. HR Rasuna Said Kav. X-2 No.4\nSouth Jakarta, Indonesia\n\n📌 Email Subject:\nPosition – Gas Carrier / LPG Tanker – Your Name\nJoin our fleet and take your maritime career to the next level with us! 🌊⚓\n\n#VeratamaGlobalMandiri #ContainerShip #SeafarerJob #HiringNow #MaritimeCareer #BulkCarrier #SailorJob #Sailor #Seafarer #GeneralCargo #OilTanker #Tanker #LPGTanker #GasCarrier",
+      "id": "urn:li:activity:7531935256459857921",
+      "text": "💻 TECH TALENT, WE'RE LOOKING FOR YOU!\nAre you experienced in software development, business analysis, or cybersecurity?\nWe're currently supporting a technology company in Indonesia with several key hires and are looking for professionals who are ready for their next career move.\nHere are the opportunities available:\n🔹 Business Analyst – Jakarta\nFor professionals experienced in SDLC documentation, process analysis, SQL, and translating business requirements into technical specifications.\n🔹Technical Lead – PKI & Digital Identity – Jakarta\nFor experienced software engineers with technical leadership experience, strong Go development skills, and a background in cryptography, PKI, and digital identity solutions.\n🔹Crypto & PKI Engineer/Developer – Jakarta\nFor professionals with expertise in cryptographic algorithms, PKI architecture, certificate management, HSM, and secure software development.\n📌 Why consider these opportunities?\nBe part of technology initiatives involving software engineering, digital security, cryptographic solutions, and enterprise technology development.\n📩 Interested? Let's connect!\nSend your updated CV to sarah@potentiahr.com and mention your preferred position in the email subject.\nKnow someone who might be interested? Feel free to tag them or share this post!\n#HiringNow #TechHiring #BusinessAnalyst #TechLead #SoftwareEngineer #PKI #Cryptography #CyberSecurity #DigitalIdentity #ITJobs #JakartaJobs #IndonesiaCareers",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531919121567973376",
-      "timestamp": "2026-11-27T03:17:35.144Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531935254425636864",
+      "timestamp": "2026-11-27T04:21:41.730Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531918499259092992",
-      "text": "nfatyakeysarani@gmail.com",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531918498617430016",
-      "timestamp": "2026-11-27T03:15:06.502Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531917952011436032",
-      "text": "📢 WE ARE HIRING – GEOTECHNICAL ENGINEER\n\nWe are currently looking for an experienced Geotechnical Engineer to join our mining operations team!\n \nIf you have a strong background in open-pit mining geotechnics, excellent analytical skills, and a passion for ensuring pit slopes are safe, stable, and optimally designed to support production, we would love to hear from you.\n\nJob Responsibilities:\n\nConduct geotechnical investigations, including drilling, sampling, and rock/soil testing.\nEvaluate and optimize pit slope geometry designs.\nMonitor slope stability using geotechnical monitoring instruments.\nPerform slope stability analysis and provide technical recommendations.\n\nQualifications:\n\nBachelor's degree in Mining Engineering, Civil Engineering, or Geological Engineering.\nMinimum 6 years of geotechnical experience, preferably in open-pit mining.\nMust hold a Work Competency Certificate in Open-Pit Mining Geotechnics.\nGood communication skills in English.\nStrong analytical thinking skills.\n \n📍 Work Location: Jakarta\n \nIf you're interested in this opportunity, feel free to reach out to me directly via LinkedIn DM or send your updated CV to 📩 :hr.jakarta@iwip.co.id",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531917951432843264",
-      "timestamp": "2026-11-27T03:12:56.028Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531920401694892032",
-      "text": "#infoloker",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531920400990117888",
-      "timestamp": "2026-11-27T03:22:40.078Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531916876289835008",
-      "text": "URGENT JOB \nFREE OF CHARGE\nJOB VACANCY \nXIN HAI TONG 28\nEST JOIN 29/30 NOV\n-  3rd  ENGINEER 3000$\n  ASAP 🔥\n📌 Reqruitmen:\n* All Document Valid 2 Years\n* Candidate Having Exp Mix Crew\n* Fluent in English\n* Have Experience same Rank & Vessel min. 2 years\n* FREE CASHH \n* URGENT JOIN THIS MONTH\nPlease Send Your Update Cv : \nNote : (Name-Rank)\n📲 +6285813790644\n📍Our Office kantor PT OCEANTRUST\nRUKAN ARTHA GADING NIAGA BLOK F NO. 12 JAKARTA UTARA",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531916875736186880",
-      "timestamp": "2026-11-27T03:08:39.556Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531916932384595968",
-      "text": "🚀 WE ARE HIRING! | IT & DATA PROFESSIONALS\n\n📍 Placement: Jakarta\n\nWe are currently looking for qualified IT & Data professionals to join our team for the following positions:\n\n🔹 1. Project Manager\n• Minimum education: S1/D4\n• Experience: At least 1 project work cycle within the last 5 years (since January 2020) as a Project Manager handling government and/or BUMN projects.\n• Certification: PMP, PfMP, or PgMP.\n\n🔹 2. IT Project Administrator\n• Minimum education: D3\n• Experience: At least 1 project work cycle in IT project administration within the last 5 years (since January 2020).\n\n🔹 3. Big Data Administrator\n• Minimum education: S1/D4\n• Experience: At least 2 project work cycles in Big Data administration and operation within the last 6 years (since January 2019).\n• Certification: CCA Administrator, CDP Administrator, or Certified Data Management Platform Essentials.\n\n🔹 4. Big Data Analyst\n• Minimum education: D3\n• Experience: At least 2 project work cycles in Big Data development or design within the last 6 years (since January 2019).\n• Certification: CDP, Certified Generalist, Certified Associate Big Data Analyst, or Certified Professional Data Science.\n\n🔹 5. Data Engineer\n• Minimum education: D3\n• Experience: At least 1 project work cycle in ETL (Extract, Transform, and Load) development or design within the last 5 years (since January 2020).\n• Certification: PCEP – Python Programmer or Certified Big Data Engineer.\n\n🔹 6. Streamset Data Specialist\n• Minimum education: S1/D4\n• Experience: At least 1 project work cycle in database migration within the last 5 years (since January 2020).\n• Certification: Oracle Big Data Implementation Specialist or Certified Big Data Implementation.\n\n🔹 7. Elastic Search Specialist\n• Minimum education: S1/D4\n• Experience: At least 1 project work cycle handling Elastic Search software within the last 5 years (since January 2020).\n• Certification: Elastic Certified Professional or Certified Elastic Search/Search Engine.\n\n🔹 8. Tableau Specialist\n• Minimum education: D3\n• Experience: At least 1 project work cycle handling Tableau software within the last 5 years (since January 2020).\n• Certification: Tableau Desktop Specialist or Certified Business Intelligence/Data Visualization.\n\n📩 Interested and qualified candidates are invited to apply by completing the registration form below:\n🔗 https://lnkd.in/gpCXyfPS\n\nPlease ensure that you provide accurate information and upload the required supporting documents through the form.\n\nFeel free to share this opportunity with your network!\n\n#Hiring #Recruitment #ITJobs #DataJobs #ProjectManager #BigData #DataEngineer #DataAnalyst #Tableau #ElasticSearch #CareerOpportunity",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531916931529105408",
-      "timestamp": "2026-11-27T03:08:52.930Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531916993667579904",
-      "text": "⚡ WE ARE HIRING: Service Engineer for Protection Relay (High Voltage Electrical System) \n\n PT. Permata Prima Enjiniring Elektrika is looking for a dedicated Protection & Substation Commissioning Engineer to handle relay protection testing, SCADA/telecontrol configuration, fault analysis, and commissioning engineering for High Voltage electrical systems!\n\n📍 Location: Jakarta Barat, Jakarta Raya 💼 Job Type: Kasual 💰 Salary: Rp 8.000.000 – Rp 12.000.000 / month\n\nKey Responsibilities:\nProtection & Substation Automation: Design, configure, test, and commission protection relays (CYG or other brands) for line, transformer, bus differential, and capacitor schemes; handle substation background/SCADA, RTU/EMS/DMS, point-to-point testing, and protocols (IEC 61850, 101, 104, DNP3), including PLN qualification/network access support.\n\nAuxiliary Systems & Renewable Energy: Understand PV microgrid structures, power electronics, and inverter configurations (TBEA, Ginlong/Solis) as well as high-frequency power supplies (Xuji) and electrical control systems for dust collectors (Longjing).\n\nProject Execution & Quality Management: Independently deliver test reports, manage post-project configuration filings, lead Factory Acceptance Tests (FAT), oversee panel/cabinet assembly quality control, conduct technical training, and coordinate with stakeholders.\n\nSystem Design & Technical Support: Perform on-site fault analysis (COMTRADE reports), calculate protection settings for new and expansion substations, and support primary and secondary substation engineering design.\n\nRequirements:\n🎓 Education: Bachelor's degree (S1) or at least Diploma (D3) in Electrical Engineering from a reputable university. \n\n💼Experience: At least 3 years of working experience in power telecommunication or power electrical engineering (power system, automation, protection, etc.). \n\n📋Technical & Soft Skills: Strong hands-on capability in relay protection, SCADA/telecontrol, industrial communication protocols, FAT/commissioning workflows, self-motivated, and strong team/interpersonal communication skills. \n\n🗣️Language: Excellent English (written and spoken).   \nimage_615c1e.png\n\n📩How to Apply: Send your updated CV to our recruitment team athr.ppee@gmail.com (or apply directly via JobStreet).\n\n#JobHiring #ProtectionRelay #SubstationCommissioning #HighVoltage #ElectricalEngineer #SCADA #IEC61850 #PowerSystems #PermataPrimaEnjiniringElektrika",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531916992761737216",
-      "timestamp": "2026-11-27T03:09:07.541Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
+          "value": "developer jakarta"
         }
       ]
     },
@@ -1321,7 +1643,7 @@
     {
       "platform": "linkedin",
       "id": "urn:li:activity:7531925504023539712",
-      "text": "WE ARE HIRING! | MSBU KONSULTAN  ‼️\n\nHello, everyone! 👋\nAs a Freelance Recruiter at MSBU Konsultan, I'm excited to share several career opportunities for talented professionals who are ready to take the next step in their careers!\n\n📌 OPEN POSITIONS – WORK FROM OFFICE (WFO)\n- Cloud Devops Engineer – Jakarta\n- Network Engineer - Jakarta\n- IT Infrastructure & Cybersecurity - Jakarta\n- Data Analyst - Jakarta\n-  Sr. AI Engineer - Jakarta/Yogyakarta\n- Salesforce Developer - Jakarta\n- Scrum Master - Jakarta\n- System Engineer .Net Dynamics 365 - Jakarta\n- Site Reliability Engineer (SRE) - Jakarta\n- Project Management - Jakarta\n\nSubmit your application through the link below:\n🔗 https://lnkd.in/gTV2yent\n\nThank you, and good luck  ✨\n#Hiring #WeAreHiring #OpenToWork #WFO #WorkFromOffice #FreeRecruitment #JobVacancy #ITJobs #TechCareers #MSBUKonsultan #JakartaJobs #YogyakartaJobs #LokerIT #LokerJakarta",
+      "text": "WE ARE HIRING! | MSBU KONSULTAN  (INDONESIAN ONLY)‼️\n\nHello, everyone! 👋\nAs a Freelance Recruiter at MSBU Konsultan, I'm excited to share several career opportunities for talented professionals who are ready to take the next step in their careers!\n\n📌 OPEN POSITIONS – WORK FROM OFFICE (WFO)\n- Cloud Devops Engineer – Jakarta\n- Network Engineer - Jakarta\n- IT Infrastructure & Cybersecurity - Jakarta\n- Data Analyst - Jakarta\n-  Sr. AI Engineer - Jakarta/Yogyakarta\n- Salesforce Developer - Jakarta\n- Scrum Master - Jakarta\n- System Engineer .Net Dynamics 365 - Jakarta\n- Site Reliability Engineer (SRE) - Jakarta\n- Project Management - Jakarta\n\nSubmit your application through the link below:\n🔗 https://lnkd.in/gTV2yent\n\nThank you, and good luck  ✨\n#Hiring #WeAreHiring #OpenToWork #WFO #WorkFromOffice #FreeRecruitment #JobVacancy #ITJobs #TechCareers #MSBUKonsultan #JakartaJobs #YogyakartaJobs #LokerIT #LokerJakarta",
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531925503444934656",
       "timestamp": "2026-11-27T03:42:56.568Z",
@@ -1353,48 +1675,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531920306232365056",
       "timestamp": "2026-11-27T03:22:17.583Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531915912057344000",
-      "text": "🔐 APAC CYBERSECURITY BRIEFING | EDITION 22\n\nSoutheast Asia's Banking Sector on High Alert: The Growing Threat of Cyberattacks Against Financial Institutions\n\nThe rapid expansion of digital banking and cashless transactions across Asia-Pacific is creating new opportunities for cybercriminals to target financial institutions.\n\nFrom account takeovers and payment system disruptions to customer data exposure, the financial sector faces increasingly complex cybersecurity challenges.\n\nIn this edition, we explore emerging threats affecting financial institutions across Southeast Asia and the importance of strengthening cyber resilience to protect banking infrastructure, customer information, and digital financial services.\n\n📖 Read the latest edition of APAC Cybersecurity Briefing.\n\n🤝 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐢𝐧 𝐣𝐨𝐢𝐧𝐢𝐧𝐠 𝐨𝐮𝐫 𝐞𝐯𝐞𝐧𝐭𝐬?\nShowcase your solutions, increase your brand visibility, and connect with key decision-makers across the cybersecurity industry in ASEAN.\n\n📩 Send us a message here on our page or email us at cybersec@escom-events.com to explore our sponsorship opportunities.\n\n📢 For speaking opportunities and partnerships, contactCes Flores atprincess.flores@escom-events.com.\n\n🎟️ For delegate inquiries or assistance, reach out to karla.tenorio@escom-events.com.\n\nLet's work together to build a more secure digital future!\n\n📅 𝟐𝟎𝟐𝟕 𝐑𝐎𝐀𝐃𝐒𝐇𝐎𝐖 𝐂𝐀𝐋𝐄𝐍𝐃𝐀𝐑\n• February 17–18 — CyberSecPhil Conference 2027 | Manila, Philippines\n• March 24 — Asia AI Infrastructure Malaysia Summit 2027 | Kuala Lumpur, Malaysia\n• May 26–27 — CyberSecMalaysia Conference 2027 | Kuala Lumpur, Malaysia\n• July 14 — CyberSecIndonesia Summit 2027 | Jakarta, Indonesia\n• September 8 — CyberSecThailand Summit 2027 | Bangkok, Thailand\n• November 4 — CyberSecVietnam Summit 2027 | Ho Chi Minh City, Vietnam\n\n#CyberSecurity #APACCybersecurity #CyberResilience #DigitalBanking #FinancialSecurity #CyberSecAsia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531915911344349184",
-      "timestamp": "2026-11-27T03:04:49.665Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531913756956860416",
-      "text": "🚀 We're hiring for several IT positions!\n\n1. Quality Assurance (Banking)\n- Minimum 3 years of experience in manual and automated software testing.\n- Strong proficiency in test automation and API testing tools, specifically Katalon andPostman.\n- Able to join ASAP\n\n2. Fullstack Developer (Banking)\n- Minimum 3 years of hands-on experience in end-to-end application development.\n- Strong proficiency in JavaScript andReact Native for building responsive, high-performance applications.\n- Solid understanding of RESTful APIs, databases, and version control (Git).\n\n3. Data Engineer\n- Minimum 2 years of experience working as a Data Engineer / Data Scientist.\n- Strong programming proficiency inPython to write clean, production-ready code, data pipelines, ETL processes, and analytics.\n- Willingness and flexibility to travel for business trips as needed.\n\n*WFO Set up\n*PKWT\n*Only shortlisted candidate will be contacted\n\nSend your CV tosabila.a@avowstech.com or apply through this linkhttps://lnkd.in/gx3i4_Tc\n\n#QualityAssurance #DataEngineer #FullstackDeveloper #Banking #Fintech #LowonganKerja #Jakarta #Techjobs",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531913756034023425",
-      "timestamp": "2026-11-27T02:56:15.849Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531913333315194880",
-      "text": "Hi everyone!\nWe are currently looking for an iOS Developer to join our team for a Banking Industry project.\n\n📍 Location: West Jakarta\n🏢 Working Arrangement: Full WFO\n📄 Employment Type: Contract (6–12 Months)\n\nRequirements:\n- Bachelor's Degree (S1) in IT, Computer Science, Information Systems, or related fields.\n- Minimum 3 years of experience in iOS Development using Swift.\n- Proficient in Xcode, UIKit, RESTful APIs, and Core Data.\n- Familiar with MVC, MVVM, or VIPER architecture.\n- Experience with SPM, CocoaPods, Git Flow, Jira, and Confluence.\n- Hands-on experience in application deployment, troubleshooting, and maintenance.\n- Good communication and teamwork skills.\n\n📩 Interested?\nSend your updated CV via DM or email to Sheila.Widjaya@accordinnovations.com with the subject: Name – Roles\nOR Apply through the link below:\n🔗https://lnkd.in/gu9Qk6Pt\n\nFeel free to share this opportunity with your network!\n\n#Hiring #Swift #iOS #Developer #Engineer #Mobile #XCode #UIKit #MVC #MVVM #RESTfulAPIs",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531913332728102912",
-      "timestamp": "2026-11-27T02:54:34.845Z",
       "surfaces": [
         {
           "type": "linkedin",
