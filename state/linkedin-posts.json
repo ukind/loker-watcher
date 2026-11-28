@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-28T02:47:04.746Z",
+  "writtenAt": "2026-11-28T03:07:57.766Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -60,6 +60,20 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7532112855047847936",
+      "text": "Grateful to have completed my on-site internship in the Compliance Division at PT Pembiayaan Digital Indonesia (AdaKami) in Jakarta (July 13 – August 14, 2026).\n\nWorking inside one of Indonesia's leading digital lending platforms gave me firsthand insight into how regulatory frameworks and governance operate in fast-moving fintech. To put my data and engineering background to practical use, I built RegulationLibrary—an internal React-based dashboard designed to organize, visualize, and browse company-applied regulations down to individual clause breakdowns (Detail Pasal).\n\nTech stack behind the project: React, Vite, Tailwind CSS, Recharts, i18next, and automated Excel-to-JS data pipelines.\nRepository: https://lnkd.in/gEB22R2m\n\nThank you to the Compliance team and everyone at AdaKami for the mentorship and trust. Excited to keep building data- and compliance-aware solutions.\n\n#Internship #AdaKami #FinTech #Compliance #DataScience #ReactJS #UNS",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532112853835710466",
+      "timestamp": "2026-11-27T16:07:24.533Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7532032267721027584",
       "text": "A reliable compressed air system doesn’t start with complex troubleshooting,it starts with mastering the fundamentals.\n\nI recently had the pleasure of welcoming our customer team from Indonesia to our Training Service Academy in Malaysia for an interactive technical training session.\n\nTogether, we dived into:\n🔹 Oil-free and oil-injected compressor fundamentals\n🔹 Desiccant dryer operation and air quality\n🔹 Basic maintenance and operational best practices\n🔹 Why genuine, original parts matter for long-term performance\n\nWhen maintenance teams truly understand how their compressed and dry air systems work, they don’t just react to breakdowns,they spot early warning signs, improve energy efficiency, and prevent costly downtime.\nWhat made this session truly rewarding was the energy in the room. The thoughtful questions and active participation from the team showed a genuine commitment to excellence. \nWhen we invest in building strong technical foundations, we empower teams on the ground to take proactive ownership and drive continuous improvement.\nA big thank you to our guests from Indonesia for traveling to Malaysia and making it such a dynamic, engaging session!\n\n#CompressedAir #TechnicalTraining #CustomerSuccess #PreventiveMaintenance #ReliabilityEngineering #Malaysia🇲🇾 #Indonesia #atlascopcogroup #atlascopcomalaysia\nthank you #atlascopcoindonesia 🇮🇩\nRizal Yahya Erlina Erlina",
       "author": "linkedin-member",
@@ -93,6 +107,34 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017627024588800",
       "timestamp": "2026-11-27T10:01:23.530Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531977703252561920",
+      "text": "We ran forged-JWT attack tests on our own app and closed cross-tenant vulnerabilities before they could be exploited.\n\nBuilding UMKM Unggul Indonesia taught me one thing: speed comes from AI, but quality comes from guardrails.\n\nWhat we put in place:\n1. Tenant Isolation: Row-level security across all tables, verified with forged-JWT tests.\n2. Access Control: Granular permissions + segregation of duties (nobody can approve their own void, refund, or price change).\n\n4 practices I’m keeping for every build:\n- Staged database migrations\n- Atomic transactions & hash-chained audit logs\n- Privacy by design \n- Hardened operations \n\nSee the live product: www.umkmunggul.id\nCase studies & full portfolio: www.aziztaufiqurrahman.com\n\n#BuildInPublic #NextJs #React #SaaS #ProductEngineering",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531977702501965824",
+      "timestamp": "2026-11-27T07:10:21.834Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7531966868459302914",
+      "text": "🚨 Urgently Hiring! 🚨\n\nAsiatek Energi Mitratama (AEM) is looking for qualified and experienced professionals to join our growing team and contribute to exciting engineering projects in the energy sector.\n\n📌 OPEN POSITIONS\n\n1. Pipeline Engineer - Singapore\nMinimum 8+ years of relevant working experience in the Oil & Gas industry.\nStrong experience in pipeline engineering, design, and technical deliverables.\nExperience in an Engineering Consultant or EPC company is preferred.\nWork Location: Singapore.\nMandarin language proficiency is an advantage.\n\n2. Project Engineer – Singapore\nMinimum 5+ years of relevant working experience in the Oil & Gas industry.\nExperience in project engineering, multidisciplinary engineering coordination, and project execution.\nAbility to coordinate with Project Managers, Lead Engineers, and multidisciplinary engineering teams.\nWork Location: Singapore.\nMandarin language proficiency is an advantage.\n\n3. Project Engineer – South Jakarta, Indonesia\nMinimum 5+ years of relevant working experience in the Oil & Gas industry.\nExperience in engineering project coordination and execution within an Engineering Consultant, EPC, or EPCIC environment.\nGood understanding of multidisciplinary engineering activities, project schedules, progress monitoring, and engineering deliverables.\nStrong communication and coordination skills.\nWork Location: South Jakarta, Indonesia.\n\n📩 How to Apply:\n Please send your updated CV to careers@asiatekenergi.com\n\nEmail subject format: Position – Name – Total Years of Experience\n\nFeel free to reach out via DM or email for further information.\nYou are also welcome to share, react, or recommend anyone who may be suitable for these positions.\n \nOnly shortlisted candidates will be contacted.\n \nImportant Notice:\nOur recruitment process is free of charge. We do not request or accept any payment at any stage of the hiring process.\n \n Be part of building energy infrastructure that matters — Connecting Indonesia to the World.\n\n#Hiring #WeAreHiring #OilAndGasJobs #EngineeringJobs #PipelineEngineer #ProjectEngineer #SingaporeJobs #JakartaJobs #OilAndGasIndustry #EngineeringConsultant #AEM",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531966865678614528",
+      "timestamp": "2026-11-27T06:27:18.618Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -172,29 +214,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532199243164487680",
-      "text": "I asked my AI for a new feature.\nThe most useful thing it asked back wasn't how to build it.\nIt was \"what if the user already left the page when the error comes back?\"\n\nAnd it doesn't just ask. It comes with options:\n👉 Show nothing, they've moved on\n👉 Show it on the next page\n👉 Save it for later\n\nI choose one.\nThen the AI writes it down as the intent, writes the proof, and builds.\n\nThis is what shipping frontend features with AI looks like for me at DANA Indonesia now.\n\n----\nHow does it know what to ask?\n\nEvery feature we've built comes with its intent: plain sentences about what must stay true. Together they're a list of every promise the product makes. That's the intent corner of the triangle of truth from my last post.\n\nSo when I ask for something new, the AI doesn't start from a blank page. It reads those promises first, and asks only where my request leaves a gap or could break one of them.\n\nIt doesn't ask what colour the button should be. That's already in the design.\nIt doesn't ask which library to use or where the code should go. That's already in the codebase.\n\n----\nThe more intent promises we add, the better its questions get.\n\nFrontend is full of questions like this.\nWhat if they go back before the list loads? What if they can't afford it? These used to show up as bug reports.\nNow they show up as a question with options, before any code is written.\n\nAnd because the AI asks those questions, you don't need to be a frontend developer to answer them.\n\nThat's the real reason I built this. Not to help developers code faster, but so a product owner, a designer, a backend engineer or a QA tester can make a real change to a frontend with AI, and not break it.\n\nThey don't need to know every edge case. The AI asks, offers options, and recommends one. They just pick.\n\n----\nSimon Sinek says start with Why.\nWith AI, I start with What.\nThe Why stays with me as a human.\nThe AI sharpens myWhat, and does all the How.\n\n𝗬𝗼𝘂 𝗯𝗿𝗶𝗻𝗴 𝘁𝗵𝗲 𝗰𝗵𝗮𝗻𝗴𝗲. 𝗧𝗵𝗲 𝗔𝗜 𝗯𝗿𝗶𝗻𝗴𝘀 𝘁𝗵𝗲 𝗾𝘂𝗲𝘀𝘁𝗶𝗼𝗻𝘀 𝘆𝗼𝘂 𝗱𝗶𝗱𝗻'𝘁 𝗸𝗻𝗼𝘄 𝘁𝗼 𝗮𝘀𝗸.\n\n----\n#DANANulis #M8stoElevate",
+      "id": "urn:li:activity:7532264717231308801",
+      "text": "⚡ Factory Acceptance Test (FAT) – Control Relay Panel (CRP) & Substation Automation System (SAS) | 150 kV Substation\n\nAnother valuable milestone in my journey as an Electrical Engineer!\n\nI had the opportunity to participate in the Factory Acceptance Test (FAT) of Control Relay Panels (CRP) and Substation Automation System (SAS) for a 150 kV Gas Insulated Substation (GIS) alongside Dani Kusuma Pratama, conducted at Schneider Electric, Karawang, Indonesia, representing PT. Arfy Reka Cerdas as an engineering consultant.\n\nSuccessfully completed a series of Factory Acceptance Test (FAT) activities for Control Relay Panels (CRP) and Substation Automation Systems (SAS) at Schneider Electric.\n\nThe FAT activities covered several panels and systems, including:\n1. Transformer Control & Protection Panel\n2. Busbar Protection Panel\n3. Bus Coupler & Bus Section Panel\n4. Underground Cable (UGC) Protection Panel\n5. Common IED IO Panel\n6. Substation Automation System (SAS) Panel\n\nScope of Testing & Verification:\n✅ Visual Inspection & Mechanical Check\n✅ Electrical Check & Wiring Continuity Verification\n✅ General Functional Check\n✅ Bay Control Unit (BCU) – BI/BO/LED Testing\n✅ Automatic Voltage Regulator (AVR) Testing\n✅ Main Protection Unit (MPU) Testing\n✅ Backup Protection Unit (BPU) Testing\n✅ Busbar Differential Protection Testing\n✅ Circuit Breaker Failure (CBF) Logic Verification\n✅ Control, Protection & Interlocking Function Testing\n✅ On-Load Transfer Simulation\n✅ Power Meter Verification\n✅ Intertrip & Tripping Scheme Verification\n✅ HMI Signal, Indication & Alarm Verification\n✅ Substation Automation System (SAS) Functional Testing\n\nThis experience further strengthened my technical understanding of power system protection, control schemes, interlocking logic, and the integration of protection and automation systems within high-voltage substations.\n\nFAT is not merely a testing activity, but a critical engineering milestone in ensuring system reliability, operational safety, and readiness prior to site installation and commissioning.\n\nGrateful for the collaboration, technical discussions, and knowledge sharing with all engineers and stakeholders involved throughout the FAT process.\nEvery test is a step closer to a safer, more reliable, and intelligent power system. ⚡\n\n#ElectricalEngineering #FactoryAcceptanceTest #PowerSystem #Substation #ProtectionAndControl #SubstationAutomation #SAS #HighVoltage #150kV #SchneiderElectric #PowerSystemProtection #EngineeringExcellence",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532194797080592384",
-      "timestamp": "2026-11-27T21:50:41.065Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532264714010066944",
+      "timestamp": "2026-11-28T02:10:51.299Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532197819764641792",
-      "text": "Jakarta, Cairo, Lahore: same dollar salary dream, same next problem.\n\nKelvin Desman, a software engineer, wrote a guide on Medium for Indonesian developers chasing remote jobs paid in US dollars. His argument: skills are rarely the obstacle. Finding employers that hire from Indonesia and pay in dollars is. And dollar pay \"holds its value even when the rupiah weakens.\"\n\nI agree, and I'd add what comes after the offer letter. Four things I'd tell any developer in an emerging market:\n\n1. Check they can pay your country. Not every payroll or contractor platform supports every country. Ask early.\n\n2. Price the net, not the gross. Platform fees, transfer fees and the exchange spread come off the top.\n\n3. Decide when you convert. Rent is local. Savings don't have to be. Convert what you spend.\n\n4. Keep the paper trail. Contracts and invoices matter when your bank asks where the dollars came from.\n\nThe offer is step one. Getting paid is step two, in Jakarta, Cairo or Lahore.\n\nWhich one caught you out first: the fees, the timing or the paperwork?\n\nInspired by Kelvin Desman's piece on Medium, 6 Jul 2026",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532181361118420992",
-      "timestamp": "2026-11-27T21:45:01.700Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -284,43 +312,127 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532229603453636608",
-      "text": "We are Hiring! 🚀\n\nSenior Mechanical Design Engineer\n\nHi, I’m Crystin, Hiring Partner from Matcha Talent, currently supporting our client in the Manufacturing industry.\n\n📍 Location: Indonesia\n🏢 Industry: Manufacturing – Mechanical Instruments & Robotics\n\nQualifications:\n\n* Minimum 10+ years of verified professional experience dedicated strictly to mechanical or mechatronics design engineering, special-purpose machinery (SPM), and dynamic mechanism design.\n* Professional background in a similar industry, particularly in the manufacturing of mechanical instruments or robotics.\n* Experienced and skilled in Scratch Machine Design, Mechanism & Motion, In-House Manufacturing Integration, and CAD Software.\n\n📩 Send your CV to: crystin.diaspora@partner.matchatalent.com\n\nEmail Subject: Senior Mechanical Design Engineer_Full Name\n\nOnly shortlisted candidates will be contacted.\n\n#Hiring #WeAreHiring #MechanicalDesignEngineer #MechatronicsEngineer #EngineeringJobs #Manufacturing #JobOpportunity #Career #Recruitment",
+      "id": "urn:li:activity:7532276507579293696",
+      "text": "🌍 GLOBAL HIRING ALERT | IT, BUSINESS & PRODUCT ROLES\nExplore opportunities across the USA, Canada, India, LATAM, Indonesia and Saudi Arabia!\n🔹 BUSINESS ANALYST\n• Business Analyst – Delhi | 2–3 Years | FinTech / Banking / Lending\n📩 hr@zapcash.in\n• Senior Business Analyst – Remote | 8+ Years\n📩 abhishek.komma@epsoftinc.com\n• Business Analyst – US Banking / Credit Cards | Gurgaon | 7–14 Years\n📩 sakshi.khanka@neweraindia.com\n🔹 PROJECT / PROGRAM MANAGEMENT\n• AI-enabled Project Coordinator – Remote (LATAM) | 5+ Years\n📩 claudia.campos@ancient.global\n• Senior IT Project Manager – Remote\n📩 jessisangeeth@arkinfotechspectrum.com\n• Program Manager – Cybersecurity | Toronto, Canada\n📩 inhou@corGTA.com\n• Program Manager – Business Development | Gurgaon | 1–2 Years\n📩 anshika@chaayos.com\n🔹 PRODUCT MANAGEMENT\n• Junior Product Owner – Banking / Financial Services\n📩 niken.amara@sigma-tech.co.id\n• Product Intern – Animall | Gurgaon | 2 Openings | ₹30,000/month\nApply by 30 November 2026:\nCase Study: https://shorturl.at/ZwJCN\nApplication: https://shorturl.at/vE2fI\n🔹 TECHNOLOGY / SUPPORT\nRiyadh, Saudi Arabia | Onsite | 7+ Years | Immediate Joiners\nOpen roles: ServiceNow ITOM, SolarWinds, AppDynamics, Splunk and IBM CP4i Integration Support (L3).\n📩 salim@dwttechnology.com\n🔹 OTHER OPPORTUNITIES\n• Software Development Intern – Remote\n📩 hr@betatestsolutions.com\n• Order to Cash – Mindlance | Noida | 6 Months–2 Years\n📩 Heenac@mindlance.com\n• Healthcare Relationship Executive | Mumbai | 0–2 Years\n📩 sapna@organomart.in\n• MIS Executive – Quess Corp | Pune | Up to ₹4 LPA\nHR Madhurima: 9689074451\n🚀 AGTP BUSINESS ANALYST / BUSINESS SYSTEMS ANALYST BOOTCAMP\nWant to transition into IT or strengthen your Business Analyst skills?\nOur Intensive Paid Bootcamp covers:\n✅ Requirement Gathering & Documentation\n✅ BRD / FRD, User Stories & Use Cases\n✅ Agile / Scrum & JIRA\n✅ SQL Basics & Process Mapping\n✅ Live Projects & Practical Sessions\n✅ Interview Preparation & Placement Assistance\n📌 Register: https://lnkd.in/g3QUU85F\n📢 Share this post with your network to help professionals discover global career opportunities!\n#GlobalHiring #BusinessAnalyst #ProjectManager #ProductOwner #AIJobs #ITJobs #RemoteJobs #DataAnalytics #CareerOpportunities #AGTP",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532229602660827137",
-      "timestamp": "2026-11-27T23:51:19.522Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532276504316030977",
+      "timestamp": "2026-11-28T02:57:42.337Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532213355109867520",
-      "text": "As business ties between Indonesia and China continue to grow, Mandarin is quickly becoming a major competitive advantage for career growth and international collaboration.\n\nI’m looking to connect with Indonesian professionals across Business, Finance, Tech, Mining, Manufacturing, Supply Chain, Healthcare, Hospitality, HR , Engineer,  and Property who want to expand their career opportunities through Business Mandarin.\n\nWhether you are negotiating with suppliers, managing cross-border projects, or working with Chinese clients, learning Mandarin can open new doors.\n\nTo help you get started, I’m inviting you to a 1X Mandarin Short Learning & Briefing Session with Kunkwan Mandarin. In this session, you will: \n📌 Experience a beginner-friendly Mandarin short class. \n📌 Explore how Mandarin applies directly to your industry. \n📌 Discuss your learning goals and program options with our Laoshi.\n\nNo prior experience is required—beginners are very welcome!\n\n📩 Interested? Connect with me or send a DM with the keyword MANDARIN, and I’ll share the session details with you. Feel free to tag or share this with a colleague who works closely with Chinese partners!\n\n#BusinessMandarin #MandarinForProfessionals #CareerDevelopment #IndonesiaChinaBusiness #ProfessionalDevelopment #KunkwanMandarin",
+      "id": "urn:li:activity:7532275831730126848",
+      "text": "WE ARE HIRING! JOIN OUR TEAM!\n\nJiangsu Suzhong Construction Group Co., LTD is expanding, and we're looking for talented, motivated, and dedicated individuals to become part of our team!\n\nAvailable Positions:\n- Surveyor Admin Project\n- HSE Officer\n\nLocation: Tanjung Morawa, North Sumatra, Indonesia\n\nHow to Apply:\n\nInterested candidates are welcome to submit their updated CV to:\n\nEvalencia.anthoni@szcginternational.com\nEvalenciagozali@gmail.com\nWhatsApp: 082168074014\n\nDon't miss this opportunity to grow your career with us!\n\nAPPLY NOW!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532213352371101696",
-      "timestamp": "2026-11-27T22:46:45.615Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532212383327625217",
+      "timestamp": "2026-11-28T02:55:01.202Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532199243164487680",
-      "text": "I asked my AI for a new feature.\nThe most useful thing it asked back wasn't how to build it.\nIt was \"what if the user already left the page when the error comes back?\"\n\nAnd it doesn't just ask. It comes with options:\n👉 Show nothing, they've moved on\n👉 Show it on the next page\n👉 Save it for later\n\nI choose one.\nThen the AI writes it down as the intent, writes the proof, and builds.\n\nThis is what shipping frontend features with AI looks like for me at DANA Indonesia now.\n\n----\nHow does it know what to ask?\n\nEvery feature we've built comes with its intent: plain sentences about what must stay true. Together they're a list of every promise the product makes. That's the intent corner of the triangle of truth from my last post.\n\nSo when I ask for something new, the AI doesn't start from a blank page. It reads those promises first, and asks only where my request leaves a gap or could break one of them.\n\nIt doesn't ask what colour the button should be. That's already in the design.\nIt doesn't ask which library to use or where the code should go. That's already in the codebase.\n\n----\nThe more intent promises we add, the better its questions get.\n\nFrontend is full of questions like this.\nWhat if they go back before the list loads? What if they can't afford it? These used to show up as bug reports.\nNow they show up as a question with options, before any code is written.\n\nAnd because the AI asks those questions, you don't need to be a frontend developer to answer them.\n\nThat's the real reason I built this. Not to help developers code faster, but so a product owner, a designer, a backend engineer or a QA tester can make a real change to a frontend with AI, and not break it.\n\nThey don't need to know every edge case. The AI asks, offers options, and recommends one. They just pick.\n\n----\nSimon Sinek says start with Why.\nWith AI, I start with What.\nThe Why stays with me as a human.\nThe AI sharpens myWhat, and does all the How.\n\n𝗬𝗼𝘂 𝗯𝗿𝗶𝗻𝗴 𝘁𝗵𝗲 𝗰𝗵𝗮𝗻𝗴𝗲. 𝗧𝗵𝗲 𝗔𝗜 𝗯𝗿𝗶𝗻𝗴𝘀 𝘁𝗵𝗲 𝗾𝘂𝗲𝘀𝘁𝗶𝗼𝗻𝘀 𝘆𝗼𝘂 𝗱𝗶𝗱𝗻'𝘁 𝗸𝗻𝗼𝘄 𝘁𝗼 𝗮𝘀𝗸.\n\n----\n#DANANulis #M8stoElevate",
+      "id": "urn:li:activity:7532275190572142592",
+      "text": "https://lnkd.in/g7kkt3jy",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532194797080592384",
-      "timestamp": "2026-11-27T21:50:41.065Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532275189506809856",
+      "timestamp": "2026-11-28T02:52:28.338Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532274629659426816",
+      "text": "🌿 Let's Grow with Us at MagangHub Batch 3B 🌿\n\nNestled at the foothills of Mount Merapi,Griya Persada Convention Hotel & Resort Kaliurang is opening its doors to passionate and motivated individuals ready to learn, grow, and gain real hands-on experience in hospitality.\n\nIn collaboration withKementerian Ketenagakerjaan Republik Indonesia underMagangHub Batch #3B, we’re now opening internship positions for:\n✨ Content Creator \n✨ Social Media Specialist \n✨ Sport & Recreation Attendant\n✨ Engineering\n✨ General Maintenance/Engineering\n\n📲 How to apply:\nVisit https://lnkd.in/gJ27p3NC and search“GRIYA PERSADA MITRA”\n\nGriya Persada Convention Hotel & Resort Kaliurang\n📍 Jl. Boyong 99 Kaliurang Barat, Pakem, Sleman, Yogyakarta 55585\n🌐 https://lnkd.in/gwT3vU52\n\nYour journey in hospitality starts here. Don’t miss this chance! 🚀\n\n#GriyaPersadaKaliurang #GriyaPersada #MagangHub #Kemnaker #Hiring #Internship #GrowAtGriyaPersadaKaliurang",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274628594020352",
+      "timestamp": "2026-11-28T02:50:14.606Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532274764304867328",
+      "text": "HIRING: Lawyer \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house lawyers to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and model performance.\nCreate evaluation frameworks and grading criteria.\nCollaborate with product and research teams to improve AI-driven legal tools.\n\nRequirements:\nJ.D. or equivalent recognized law degree.\nActive license to practice law or current admission in good standing with the relevant legal authority.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review, draft, and negotiate complex legal agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d3S-D2gY\n\n#LawyerJobs #LegalJobs #Lawyer #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractLaw #ContractNegotiation #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274763365244928",
+      "timestamp": "2026-11-28T02:50:46.708Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532272898414219264",
+      "text": "🍃 WE ARE HIRING! JOIN MOLLY TEA – LIVING WORLD DENPASAR, BALI! 🍃\n\nHello, Bali! 👋✨\n\nExciting career opportunities are now open atMolly Tea, a new F&B brand under PT Jasmine Journey Indonesia. We are looking for passionate, motivated, and talented individuals to join our team and grow together!\n\n📍 Location: Living World Denpasar, Bali\n\nOPEN POSITIONS:\n1. Store Manager (F&B)\n2. Tea Barista\n\n🚀 HOW TO APPLY?\nInterested in joining Molly Tea? Apply through:\n🔹 Scan the barcode on the recruitment flyer, or\n🔹 Visit the following link: bit.ly/MollyTea_Dps\n\nApplication Guidelines:\n- Applications must be submitted online through karir.kawanlamagroup.com.\n- Create an account and complete your personal profile.\n-Complete the online psychometric test available on the career website.\nGoogle Chrome is recommended for a smoother application process.\n\n📌 IMPORTANT NOTES:\nOnly candidates who meet the qualifications will be considered for further recruitment processes.\nThe entire recruitment process is FREE OF CHARGE.\nDon't miss this opportunity to be part of Molly Tea's journey in Bali! 🌿\n\nTag your friends, family, or connections who might be interested in this opportunity!\n\nLet's grow together and create meaningful experiences with Molly Tea! 💚\n\n#KawanLamaGroup #MollyTea #BaliJobs #StoreManager #TeaBarista",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532272895448858624",
+      "timestamp": "2026-11-28T02:43:21.845Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532270293709471744",
+      "text": "hrdsulton@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532270293176893440",
+      "timestamp": "2026-11-28T02:33:00.835Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532269534448365571",
+      "text": "bit.ly/TalentPoolFirman",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532269533760364544",
+      "timestamp": "2026-11-28T02:29:59.813Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532274193065799680",
+      "text": "HIRING: General Counsel \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house General Counsels to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to complex legal contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop objective evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams to improve legal AI systems.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing in your jurisdiction.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review and negotiate complex agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d4v9Zpba\n\n#GeneralCounsel #GeneralCounselJobs #LegalJobs #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractNegotiation #ContractDrafting #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274192201805824",
+      "timestamp": "2026-11-28T02:48:30.514Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -331,34 +443,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532263267566505986",
       "timestamp": "2026-11-28T02:05:06.111Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262158139723776",
-      "text": "PS Centre | Business Needs Board\nReal Business Challenges. Connecting the Right Expertise.\n \nEvery business challenge presents an opportunity for the right expertise and connections to make a difference.\n\nAcross our PS Centres in Singapore, Jakarta, Ho Chi Minh City, Shanghai and Nanjing, businesses are turning to the PS Centre network for professional expertise, business connections and support in navigating challenges and pursuing growth opportunities.\n \nThrough our weekly Business Needs Board, we spotlight selected, anonymised business requests received across our network and invite professional services firms and potential partners to explore opportunities to help.\n \n📌 THIS WEEK'S BUSINESS NEEDS\n \n01 | Market Expansion\n📍 Singapore | Accounting Firm\n\nFollowing its participation in a promotional study mission to China organised by the PS Centre Alliance, a Singapore-based accounting firm is exploring opportunities to expand into the Chinese market.\n\nExpertise Sought: HR Advisory / Employer of Record (EOR)\nSeeking guidance on EOR services to support hiring in China before establishing a local entity, enabling faster market entry and reducing administrative complexities.\n \n02 | Market Expansion\n 📍 Vietnam | AI Technology Firm\n\nA Vietnam-based AI technology firm is looking to expand its customer base in Indonesia, having already secured its first client in Jakarta. Over the next five years, the firm aims to focus on developing AI applications for the audit profession.\n\nSupport Sought: Event Collaboration & Business Connections\nSeeking opportunities to organise a webinar or host an in-person session at the PS Centre in Jakarta to showcase its AI solutions, engage prospective clients and build connections with local businesses and audit practitioners.\n \n03 | Valuation Advisory\n 📍 Singapore | Manufacturing Company\n\nA Singapore-based manufacturing company with over 40 years of operations is exploring a potential business sale to an identified buyer with whom it has maintained a 20-year business relationship.\nThe proposed acquisition would offer the buyer an opportunity to enter the ASEAN market.\n\nExpertise Sought: Business Valuation Advisory\nSeeking a valuation firm to assess the company's business and financial performance, determine an appropriate valuation approach and support the proposed transaction.\n \n🤝 CAN YOUR ORGANISATION SUPPORT?\nIf your organisation has relevant expertise, industry connections or collaboration opportunities, we'd love to hear from you!\n \n📩 Express your interest: info@pscentre.com.sg\nPlease indicate the relevant request number (01, 02 or 03), your firm's expertise and how you may be able to help.\n \nHave a business challenge of your own?\nJoin our monthly Business Growth Clinic, held on the last Thursday of each month across our PS Centre network in 2027. Connect with professional services experts and explore solutions to your business challenges.\n\n🔗 Discover more about PS Centre: Professional Service (PS) Centre",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017689633071104",
-      "timestamp": "2026-11-28T02:00:41.164Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262165584523264",
-      "text": "hrd@inspeksirumah.id",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531261209053040641",
-      "timestamp": "2026-11-28T02:00:42.939Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -387,6 +471,48 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532071514716954624",
       "timestamp": "2026-11-28T02:01:16.906Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532273605729239040",
+      "text": "HIRING: Transactional Attorney \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house transactional attorneys to help train and evaluate advanced AI systems focused on legal contract review and negotiation.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and experience reviewing complex legal agreements.\n\nPreferred: Experience in AI, legal technology, or corporate law, including M&A or private equity fund formation.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/dSQQCDYV\n\n#TransactionalAttorney #LegalJobs #AttorneyJobs #CorporateLaw #TechnologyLaw #ContractLaw #LegalTech #ArtificialIntelligence #AITraining #RemoteJobs #LegalProfessionals #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532273604965691392",
+      "timestamp": "2026-11-28T02:46:10.482Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532262158139723776",
+      "text": "PS Centre | Business Needs Board\nReal Business Challenges. Connecting the Right Expertise.\n \nEvery business challenge presents an opportunity for the right expertise and connections to make a difference.\n\nAcross our PS Centres in Singapore, Jakarta, Ho Chi Minh City, Shanghai and Nanjing, businesses are turning to the PS Centre network for professional expertise, business connections and support in navigating challenges and pursuing growth opportunities.\n \nThrough our weekly Business Needs Board, we spotlight selected, anonymised business requests received across our network and invite professional services firms and potential partners to explore opportunities to help.\n \n📌 THIS WEEK'S BUSINESS NEEDS\n \n01 | Market Expansion\n📍 Singapore | Accounting Firm\n\nFollowing its participation in a promotional study mission to China organised by the PS Centre Alliance, a Singapore-based accounting firm is exploring opportunities to expand into the Chinese market.\n\nExpertise Sought: HR Advisory / Employer of Record (EOR)\nSeeking guidance on EOR services to support hiring in China before establishing a local entity, enabling faster market entry and reducing administrative complexities.\n \n02 | Market Expansion\n 📍 Vietnam | AI Technology Firm\n\nA Vietnam-based AI technology firm is looking to expand its customer base in Indonesia, having already secured its first client in Jakarta. Over the next five years, the firm aims to focus on developing AI applications for the audit profession.\n\nSupport Sought: Event Collaboration & Business Connections\nSeeking opportunities to organise a webinar or host an in-person session at the PS Centre in Jakarta to showcase its AI solutions, engage prospective clients and build connections with local businesses and audit practitioners.\n \n03 | Valuation Advisory\n 📍 Singapore | Manufacturing Company\n\nA Singapore-based manufacturing company with over 40 years of operations is exploring a potential business sale to an identified buyer with whom it has maintained a 20-year business relationship.\nThe proposed acquisition would offer the buyer an opportunity to enter the ASEAN market.\n\nExpertise Sought: Business Valuation Advisory\nSeeking a valuation firm to assess the company's business and financial performance, determine an appropriate valuation approach and support the proposed transaction.\n \n🤝 CAN YOUR ORGANISATION SUPPORT?\nIf your organisation has relevant expertise, industry connections or collaboration opportunities, we'd love to hear from you!\n \n📩 Express your interest: info@pscentre.com.sg\nPlease indicate the relevant request number (01, 02 or 03), your firm's expertise and how you may be able to help.\n \nHave a business challenge of your own?\nJoin our monthly Business Growth Clinic, held on the last Thursday of each month across our PS Centre network in 2027. Connect with professional services experts and explore solutions to your business challenges.\n\n🔗 Discover more about PS Centre: Professional Service (PS) Centre",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017689633071104",
+      "timestamp": "2026-11-28T02:00:41.164Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532262165584523264",
+      "text": "hrd@inspeksirumah.id",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531261209053040641",
+      "timestamp": "2026-11-28T02:00:42.939Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -438,188 +564,6 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532254217135132672",
-      "text": "WE ARE HIRING\nCOST ESTIMATOR\n\nWe are looking for a passionate, detail-oriented, and dedicated Cost Estimator to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532254216224985088",
-      "timestamp": "2026-11-28T01:29:07.881Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532249329969926144",
-      "text": "FIRST CAREER INDONESIA HIRING!\n\nLEARNING PROGRAM DEVELOPMENT 🎓\nOwn your First Career Move! ✨\n\nAbout First Career Indonesia 💙\nFounded in August 2026, First Career helps university students prepare for their careers before graduation through proper guidance, exposure, and real opportunities. We connect students, young professionals, and HR practitioners to learn, grow, and collaborate.\n\nAbout the Program 📌\nA program to help students develop themselves and get ready for the professional world. You'll gain practical experience through real tasks and projects that support First Career Indonesia's growth.\n\nRequirements ✅\n🎓 Currently enrolled Indonesian university students (2023, 2024, 2025, or 2026 cohorts)\n⏳ Able to commit for 4 months\n💬 Good communication skills\n📍 Based in Bandung, Jakarta, or Bogor (a plus)\n🌟 Open to all academic majors\n\nDepartments Available 👇\n• Learning & Academic Development\n• Software Development\n• Program Development\n• Program Scouting Information\n• Product Development\n• Human Resources\n• Graphic Design\n• Marketing\n• Social Media Specialist\n• Public Relation\n• Business Development\n\nBenefits 🎁\n• Free products worth IDR 1,500,000\n• Professional coaching\n• LinkedIn recommendation\n• HR recommendation\n• Free training\n• Professional work experience\n• Skills & portfolio development\n• Performance-based bonus\n• Real project experience\n\nRecruitment Process 🗓️\n1️⃣ CV Screening: Nov – Dec 2026\n2️⃣ HR Interview: Nov – Dec 2026\n3️⃣ Stakeholder Interview: Nov – Dec 2026\n4️⃣ Offering Letter: Jan 2027\n5️⃣Onboarding: Jan 2027\n\n🔗Register here\nhttps://lnkd.in/g5vUXv7J\n\n📖 Read the guidebook\nhttps://lnkd.in/gpxBGMRp\n\n📲 Follow us on Social Media\nInstagram & TikTok: @firstcareer_id\nLinkedIn: First Career Indonesia\n\n#FirstCareerIndonesia #FirstCareer #Hiring #WeAreHiring #OpenRecruitment #InternshipOpportunity #StudentInternship #CareerDevelopment #LearningAndDevelopment #ProfessionalDevelopment #TalentDevelopment #FutureLeaders #CareerOpportunity #FreshGraduate #UniversityStudents #IndonesiaJobs #CampusHiring #YouthDevelopment",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532249329261072384",
-      "timestamp": "2026-11-28T01:09:42.690Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532248239492792320",
-      "text": "https://lnkd.in/gN6bvrMW",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532248238729502720",
-      "timestamp": "2026-11-28T01:05:22.700Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532253858870263808",
-      "text": "WE ARE HIRING\nLANDSCAPE ARCHITECT\n\nWe are looking for a passionate, detail-oriented, and dedicated Landscape Architect to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532253857884733440",
-      "timestamp": "2026-11-28T01:27:42.464Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532242287154618368",
-      "text": "🎌 URGENT HIRING | JAPANESE INTERPRETER\n\nA leading Japanese manufacturing company in the Cikarang area is currently seeking a Japanese Interpreter to join its growing team and support communication between local employees and Japanese expatriates.\n\n🏭 Japanese Manufacturing Company\n📍 Cikarang, West Java\n💰 Salary: Rp5.500.000 - Rp7.000.000\n\n📌 Responsibilities\n\n✅ Interpret during meetings and daily operational activities\n✅ Translate business communications, work instructions, and internal discussions\n✅ Assist Japanese management during meetings and business activities\n✅ Translate emails, documents, and company materials\n✅ Ensure effective communication between local employees and Japanese expatriates\n\n📌 Qualifications\n\n✅ Bachelor's Degree (S1)\n✅ JLPT N3 or above\n✅ English proficiency is an advantage\n✅ Strong communication skills\n✅ Detail-oriented, responsible, and professional\n✅ Willing to work in Cikarang, West Java\n\n📩 How to Apply\n\nSend your updated CV to:\n📧 usmanwidi.hr@gmail.com\nSubject:\n67680-Japanese Interpreter-Full Name\n\nExample:\n67680-Japanese Interpreter-Rina Wijaya\n\n📞 Contact Person\n📱 WhatsApp: 0821-3431-3172\nUsman Widi\nFreelance Recruiter | BREXA Indonesia\n\n⚠️ Only shortlisted candidates will be contacted.\n\n#Hiring #OpenRecruitment #JapaneseInterpreter #JapaneseSpeaker #JLPTN3 #TranslatorJepang #InterpreterJepang #KarirJepang #LokerCikarang #ManufacturingJobs",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532242285506502656",
-      "timestamp": "2026-11-28T00:41:43.552Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532247781936181249",
-      "text": "https://lnkd.in/g-ivXZZE",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532247781256626177",
-      "timestamp": "2026-11-28T01:03:33.610Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532238381532028929",
-      "text": "WE'RE HIRING | CDP – CHEF DE PARTIE\n\nOmni Social Wellness Club is looking for a passionate and talented Chef de Partie to join our growing kitchen team in Bali! 👨‍🍳\n\nWe're looking for someone who takes pride in their craft, understands the importance of quality ingredients and enjoys creating fresh, nutritious and delicious food.\n\nAt Omni, food is more than just a dining experience. It's an important part of our wider health and wellness philosophy.\n\nWHAT WE'RE LOOKING FOR:\n\n- Minimum 2 years of experience as a Chef de Partie or in a similar culinary position.\n- Strong culinary skills and a passion for fresh, healthy and nutritious food.\n- Knowledge of macronutrients, healthy eating and nutrition would be a big advantage.\n- Good communication skills in English and Bahasa Indonesia.\n- A positive attitude, strong work ethic and ability to work effectively as part of a team.\n- Someone who takes pride in presentation, consistency and maintaining high kitchen standards.\n\nGROW WITH OMNI \n\nThis is an opportunity to become part of a growing team that values quality, continuous improvement, teamwork and a genuine commitment to health and wellness.\n\nIf you're passionate about food and want to develop your career in an environment that shares that passion, we'd love to hear from you!\n\nHOW TO APPLY\n\nPlease send your most up-to-date CV, including a recent photograph, to:\n\nhr@omni.club\n\nKnow someone who might be a great fit? Please share this opportunity with them.\n\n#OmniBali #WereHiring #ChefDePartie #CDP #BaliJobs #ChefJobs #HospitalityCareers #HealthyEating #FitnessAndWellness",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532238379107799040",
-      "timestamp": "2026-11-28T00:26:12.379Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532254014780948480",
-      "text": "WE ARE HIRING\nARCHITECTURAL DRAFTER\n\nWe are looking for a passionate, detail-oriented, and dedicated Architectural Drafter to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532254013812064256",
-      "timestamp": "2026-11-28T01:28:19.636Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532238099515445248",
-      "text": "🚀 Bjak is hiring in Indonesia! 🇮🇩\n\n💼 Role: Strategy Lead\n🏢 Company: Bjak\n📍 Location: Indonesia\n💰 Salary: Negotiable\n🎯 Experience: Lead / Manager\n🕒 Type: Full time · Remote\n⏳ Apply by: 13 Dec 2026\n\nAbout BJAK BJAK was founded on a simple belief: people deserve smarter ways to plan, save and grow their money. That is where our name comes from. We started in 2019 by building the region's first mobile-first insurance platform, making insurance accessible online to millions. Today we are Southeast Asia's leading insu…\n\n👉 Details & apply: https://chakrie.com/jobs/\n\n🔔 Follow Chakrie for fresh jobs every day, at home and abroad. Know someone who fits? Tag them!\n\n#Hiring #Jobs #Career #JobsInIndonesia #JobSearch #Chakrie",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532238098991251456",
-      "timestamp": "2026-11-28T00:25:05.141Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532235315416141824",
-      "text": "american companies outsource both manufacturing and white-collar service jobs globally—primarily to cut labour costs, access specialised talent and expand market reach, not to mention enjoy higher profits at home.\n\nKey Destinations and Sectors\n\nManufacturing: China and parts of Asia have long been major hubs for electronics, apparel and industrial goods, driven by lower labour costs, supply chain scale and trade agreements.\n\nIT, Software and BPO: India and the Philippines are top offshore hubs for software development, customer support and business process outsourcing (BPO), supported by large tech workforces and strong English proficiency.\n\nNearshoring: Countries like Mexico and Brazil attract US companies seeking closer time zones, bilingual talent and lower costs for software engineering, call centers and manufacturing.\n\nWhy It Happens & Current Shifts\n\nCompanies often pursue outsourcing for substantial cost savings (frequently cited at 50%–70% on labour), faster hiring and round-the-clock operations.\n\nThen, Ultimate Stupidity Manifested (again)\n\nOn Nov 25, 2026, the don’s administration, via Office of the USTR, proposed new Sect 301 tariffs on 14 trading partners following an 8-month investigation into \"excess industrial capacity\" and subsidised production.\n\nUS Trade Representative Jamieson Greer stated that the levies target industrial subsidies, labour suppression and market-distorting practices that flood global markets with low-cost goods and undercut US manufacturing.\n\nCause, meet effect.\n\nThe 14 economies named include China, the EU, Japan, South Korea, Taiwan, Vietnam, India, Malaysia, Indonesia, Thailand, Cambodia, Bangladesh, Singapore and Switzerland. Mexico and Norway were part of the probe but received no immediate decision.\n\nChina's embassy and commerce officials rejected the \"overcapacity\" premise as a pretext and warned of potential retaliation or WTO violations. The EU, Japan and Brazil have also pushed back against the accusations, while economists warn the new duties (what’s new?) could raise prices for US consumers.\n\nWhat the fuck is this? Tariffs 3.0? US companies have already gotten their tariffs refunds. Booked them as bona fide profits instead of returning them to US consumers who paid for higher prices. Chumps.\n\nThe excess industrial capacity excuse is a pretty stupid reason to use when the US has been offshoring and nearshoring for decades. Decades. All was hunky dory back then when american firms were registering record profits.\n\nHonestly, slap higher tariffs and prices will just go up again for american consumers. They’ll be the ones (again) paying out of pocket.\n\nHave donny and rest of his pre-Jan 2027 GOP Senate and Congress not learnt from previous tariffs drawbacks? \n\nPlay stupid games, win stupid prizes.\n\nSeriously dumb mofos 🤣😂🥴🤭",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532235312664772608",
-      "timestamp": "2026-11-28T00:14:01.360Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532230110934990849",
-      "text": "We are Hiring! 🚀\n\nFAT Assistant Manager (Electrical & Electronics Manufacturing)\n\nHi, I’m Crystin, Hiring Partner from Matcha Talent, currently supporting our client in the Electrical & Electronics Manufacturing industry.\n\n📍 Location: Indonesia\n🏢 Industry: Electrical & Electronics Manufacturing\n\nQualifications:\n\n* Minimum 5+ years of hands-on accounting and tax experience, with at least the last 2 years in a Senior Accountant, Accounting Supervisor, or FAT Assistant Manager role.\n* Relevant exposure in Consumer Electronics, Electrical Products, Fast-Moving Consumer Goods (FMCG), Multi-Entity Trading & Distribution, Retail, or Manufacturing.\n* Strong All-Rounder FAT Knowledge: Hands-on proficiency across General Ledger, Accounts Receivable (AR), Accounts Payable (AP), Inventory Accounting, Tax Compliance (e-Faktur, PPh, PPN), and Financial Statements.\n\n📩 Send your CV to: crystin.diaspora@partner.matchatalent.com\n\nEmail Subject: FAT Assistant Manager_Full Name\n\nOnly shortlisted candidates will be contacted.\n\n#Hiring #WeAreHiring #FATAssistantManager #FinanceAccountingTax #AccountingJobs #TaxJobs #ManufacturingJobs #JobOpportunity #Career #Recruitment",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532230110339387392",
-      "timestamp": "2026-11-27T23:53:20.515Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532227786585915392",
-      "text": "We're hiring a marketing specialist at Navélia Yacht Charters ⛵\n\nWe're a luxury yacht charter company with operations in Indonesia and the South of France, and we growing fast. So we’re looking for someone who can join the team full time and really take ownership of our marketing.\n\nWhat matters to us:\n• You have real experience in marketing (paid ads, SEO, social, content, whatever your strength is)\n• You have interest in AI and ideally already use it in your work. We use it a lot in the company so this is a big plus\n• You can work independent and like to figure things out yourself\nLocation: Bali based or remote, both is fine.\n\nIf this sounds like you, send us an email at team@naveliacharters.com with a bit about yourself and what you worked on before.\n\nAnd if you know someone who could be a good fit, feel free to tag them, would appreciate it a lot!",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532227785558274048",
-      "timestamp": "2026-11-27T23:44:06.347Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532192843558330368",
-      "text": "🚀 Paytm is hiring in Indonesia! 🇮🇩\n\n💼 Role: Supply chain, Logistics and Operations – Indonesia\n🏢 Company: Paytm\n📍 Location: Jakarta, Indonesia\n💰 Salary: Negotiable\n🎯 Experience: Mid Level\n🕒 Type: Full time · On-site\n⏳ Apply by: 25 Dec 2026\n\nSupply chain, Logistics and Operations – Indonesia Role Overview Department - Supply Chain / Operations Location- Jakarta, Indonesia (On-site) Reporting To - Director / Business head Employment Type - Full-Time Industry - Electronics / Payment Solutions / Payment devices We are looking for a proactive and detail-orient…\n\n👉 Details & apply: https://chakrie.com/jobs/\n\n🔔 Follow Chakrie for fresh jobs every day, at home and abroad. Know someone who fits? Tag them!\n\n#Hiring #Jobs #Career #JobsInIndonesia #JobSearch #Chakrie",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532192843009007616",
-      "timestamp": "2026-11-27T21:25:15.280Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
       "id": "urn:li:activity:7532241930584408064",
       "text": "Earlier this month we hosted the first AWS Indonesia Observability Day in Jakarta! 🇮🇩\n\nCloudOps engineers, SREs, architects and IT leaders from across Indonesia spent the day with us on where operations is heading: from monitoring to AI-led, agentic operations.\n\n✨ Spotlight: Amazon CloudWatch Omni Omni is the next generation of Amazon CloudWatch: an AI-powered observability experience built on open standards, with native OpenTelemetry. It was great to show it live and see how quickly the conversation turned to what teams could do with it in their own environments.\n\nWe also covered: 🔹 What's new in AWS Observability 🔹 Application Performance Monitoring (APM) 🔹 Unified Data Store 🔹 GenAI Observability 🔹 AWS DevOps Agent 🔹 A hands-on workshop and quiz to finish the day\n\nWhat stood out to me: most teams already collect plenty of telemetry. The real challenge is finding the root cause fast enough. That's exactly where Omni and AI-assisted investigation come in.\n\nThank you to everyone who joined us, and to an amazing team: Attha Surya Dharma Elkana Pariwono Kovan Chandra Triadimas Satria Dhika Isfahan andEko Wajar Hidayat. 🙏\n\nNone of this would have happened without our sponsors:Baino Paul from the APJ GTM Specialist team, who brought Observability Day to Indonesia, andWelianthy Sukirman from AWS Enterprise Support Indonesia. \n\nLooking forward to the next one!\n\n#AWS #Observability #CloudOps #AIOps #AmazonCloudWatch #CloudWatchOmni #OpenTelemetry #AWSEnterpriseSupport #AWSAdaUntukIndonesia",
       "author": "linkedin-member",
@@ -653,20 +597,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532132745993486337",
       "timestamp": "2026-11-27T17:26:27.109Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "engineer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532104637567356928",
-      "text": "Among three Directors, there's a Lead Piping Engineer sneaking into the picture... hahaha! ✌️🤭\n\n1. Former Director of JGC\n2. Former Director of Shell\n3. Lead Piping Engineer\n4. Former Director of Bukaka (also a former SKK Migas official)\n\nNumber 2 is a close friend of Mr. Anindya Bakrie, President Director of Bakrie Group.\n\n.\n.\n.\n\nMy Schedule for This Week:\n\nMonday ---> Lunch with the Director of PT. Hiramisu Jimmulya Offshore.\n\nTuesday ---> Dinner with the Marketing Manager of PT. AMS\n\nWednesday ---> Meet-up with the Director of PT. PPS.\n\nThursday ---> Dinner with the PMT of the Genting Oil Project.\n\nFriday --->\n\n- Meeting with the Director of PT. CKN.\n- Meet-up with a Manager from Top Golf.\n- Lunch with my circle of friends, former PGN colleagues.\n- Meeting with Director PT. MTS\n\nSaturday ---> Taekwondo with several CEOs.\n\nSunday ---> Drone activities with the Director and Manager of PT. RDA.\n\nSo, my side activities every weekend usually involve Golf, Drones, and Sports with various Directors and Managers.\n\nConnecting Vendors to EPC Projects. That's part of what I do!\n\nThey know me so well, indeed...\n\nThis Saturday morning, I'm heading to Bandung for a business trip and will be returning to Jakarta on Sunday afternoon.\n\n.\n.\n.\n\nFabiayyi aalaa'i Rabbikumaa tukadzdhibaan... 😭😭😭",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532104636770537472",
-      "timestamp": "2026-11-27T15:34:45.333Z",
       "surfaces": [
         {
           "type": "linkedin",
