@@ -164,7 +164,7 @@
          "value":"developer jakarta"
       }
    ],
-   "scrollRounds":50,
+   "scrollRounds":100,
    "linkedinWakeMinMinutes":15,
    "linkedinWakeMaxMinutes":45,
    "platforms":{
