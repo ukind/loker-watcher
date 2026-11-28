@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-28T03:07:57.766Z",
+  "writtenAt": "2026-11-28T03:32:22.066Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -144,6 +144,48 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7532262101235515392",
+      "text": "Langit Pictures Indonesia is opening opportunities!\n\nLooking for aspiring creatives and film enthusiasts to join its team across three opportunities: Production Team, Project Marketing, and Creative Developer.\n\nBring your CV and portfolio and visit Langit Pictures Indonesia's booth at JAFF Market 2026.\nLocation: Booth D2, JAFF Market 2026 (Day 1 & Day 3).\n\nFollow Lowongan Cinema for more opportunities in the film and creative industries.",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532262100333928448",
+      "timestamp": "2026-11-28T02:00:27.597Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532258872808595456",
+      "text": "1st time in the world, \nRWA =} RIA (Real assets INFRASTRUCTURE) \n🇮🇩 1001INDONESIA – THE FUTURE OF GLOBAL INVESTMENT, TECHNOLOGY & HUMAN CIVILIZATION\n\n🌏 17,000 ISLANDS. ONE VISION. UNLIMITED OPPORTUNITIES!\n\nIndonesia is home to thousands of islands, breathtaking beaches, private islands, productive land, extraordinary natural resources, rich cultural heritage, and world-class tourism potential. Yet many landowners still lack the capital, technology, and international connections needed to unlock the full value of their assets.\n\nNOW IS THE TIME TO BUILD THE FUTURE TOGETHER!\n\n1001INDONESIA INVESTMENT, COMMUNITY & ENTREPRENEURS invites international investors, landowners, entrepreneurs, developers, technology partners, and stakeholders to join a new global collaboration ecosystem.\n\n🚀 WHAT ARE WE BUILDING?\n\n🏝️ Private Island Development & Luxury Tourism Destinations.\n\n🏗️ Smart Infrastructure & Smart Tourism.\n\n🌱 Sustainable Development & Renewable Energy.\n\n🎭 Art, Culture, Heritage, Education & Creative Industries.\n\n🌐 Digital Economy powered by NeuroSphere Sovereign OS and Sphere Technology.\n\n💎 Real Asset Infrastructure (RAI), connecting tangible assets with new economic opportunities.\n\n🤝 Strategic partnerships with Indigenous Communities, traditional landowners, local stakeholders, investors, and regional entrepreneurs.\n\nOUR DIFFERENCE: ONE SUPER OPERATING SYSTEM CONNECTING PEOPLE, REAL ASSETS, TECHNOLOGY & GLOBAL OPPORTUNITIES.\n\nWe believe development should not mean taking assets away from local communities. Instead, we want to create partnerships with indigenous communities and landowners, transforming valuable land into sustainable economic opportunities while protecting cultural heritage, creating employment, and empowering local people.\n\nYou don't have to be a billionaire to participate in building a better civilization. Everyone can contribute according to their capacity through transparent and properly structured partnerships.\n\n🏝️ We also welcome international collaboration for exclusive private island destinations: places to relax, innovate, connect, build businesses, exchange ideas, and create together.\n\nLET'S BUILD THE FUTURE OF INDONESIA, TOGETHER!\n\n🌐 EXPLORE OUR DIGITAL ECOSYSTEM:\n\nhttps://lnkd.in/gAesdRui\n\nDiscover our technology, explore the ecosystem, and become part of this extraordinary journey.\n\nOMNI-AUTHORITY — Master Architect of KINDNESS Civilization\nINDIE-Founder E J H N\n\n1001INDONESIA INVESTMENT • COMMUNITY • ENTREPRENEURS\n\n#1001INDONESIA #IndonesiaInvestment #GlobalInvestors #NeuroSphere #SphereTechnology #SovereignOS #PrivateIsland #RealAssetInfrastructure #SmartTourism #IndigenousCommunities #DigitalCivilization #GlobalEntrepreneurs #IndonesiaParadise",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532258870946168832",
+      "timestamp": "2026-11-28T01:47:37.880Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532257728614871040",
+      "text": "Another milestone in my journey of learning and digital skill development!\nI am grateful to have successfully completed the Maju Bareng AI Program organized byHacktiv8 Indonesia, with the course “AI Productivity and AI API Integration for Developers.”\n\nThroughout this 10-hour learning program, I gained valuable insights into how Artificial Intelligence can be utilized to improve productivity and how AI API integration can support the development of technology-driven solutions.\n\nThis experience has broadened my understanding of AI and motivated me to keep exploring how emerging technologies can be applied to solve real-world problems.\nThank you to Maju Bareng AI and Hacktiv8 Indonesia for providing this valuable learning opportunity.\nKeep learning, adapting, and growing in the era of AI.\n#MajuBarengAI #Hacktiv8 #ArtificialIntelligence #AIProductivity #APIIntegration #DigitalSkills #ContinuousLearning",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532257726035492864",
+      "timestamp": "2026-11-28T01:43:05.083Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7532255634579365888",
       "text": "This week in cybersecurity and AI: 5 things worth knowing\n\n1️⃣ The US Air Force's Cloud One platform was breached. Reuters says a software flaw gave attackers control-plane access, and migrations and updates are on hold. Whoever owns the control plane owns everything under it.\n\n2️⃣ NFS2ROOT (CVE-2026-99362), CVSS 9.8. A 12-year-old heap overflow in the Linux kernel NFS server gives remote root with no authentication. File servers, NAS, build farms and Kubernetes storage nodes are in scope. Patch and reboot, or restrict TCP 2049 to trusted hosts today.\n\n3️⃣ Developer accounts are the new front door. SAP and 1Password both reported incidents tied to employee GitHub accounts and tokens. Phishing-resistant MFA and short-lived tokens, please.\n\n4️⃣ Nvidia has reportedly paused AI server shipments to Singapore, Malaysia, Thailand and Indonesia under new US rules on offshore data centres. If you have regional AI capacity plans, check your delivery dates.\n\n5️⃣ CSA says reported incidents in Singapore since September are running at three times the January to August monthly average. Patch internet-facing systems, enforce MFA and least privilege, watch your vendors. PDPC and CSA also issued a joint advisory on insecure APIs.\n\nMy take:\nI have been in infrastructure a long time, and most incidents I have seen up close did not need a genius attacker. They needed one unpatched box, one shared admin password, or one vendor account nobody switched off.\n\nThis week is the same story with bigger names. Cloud One is a control-plane problem. NFS2ROOT is an old bug on a port that should never have been reachable from half the network. SAP and 1Password are identity problems.\n\nIn NS we checked the boring things before every sail, every time, even when nothing ever went wrong. Nobody gets a medal for it. Security is the same. AI makes attackers faster, but it does not change the doors they walk through.\n\nMy homework this weekend: find every host listening on 2049, and every token older than 90 days.\n\nWhat's at the top of your patch list this week?\n\nFeel free to comment, like, forward and subscribe for more cybersecurity info/insight. Refer to the news URLs for details.\n\nSources:\n1. https://lnkd.in/gcMPvwWz\n2. https://lnkd.in/g-QdnRMz\n3. https://lnkd.in/gbtM_tXb\nhttps://lnkd.in/gQ_pwtQw\n4. https://lnkd.in/gcNYC-PE\n5. https://lnkd.in/gbmcD7Em\nhttps://lnkd.in/g6wkYyMV\n\n#Cybersecurity #AI #CloudSecurity #Linux #Singapore #InfoSec #5cybersecure #5cyber #qicyber #formintiumai",
       "author": "linkedin-member",
@@ -209,6 +251,20 @@
         {
           "type": "linkedin",
           "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532274495470977025",
+      "text": "DEVELOP YOUR PROFESSIONAL COMPETENCY IN WELDING INSPECTION\n\nKompetensi Welding Inspection dan Non-Destructive Testing (NDT) merupakan bekal penting dalam mendukung kualitas, keselamatan, dan keandalan pekerjaan pengelasan di berbagai sektor industri.\n\nSLV Metropolitan Indonesia menghadirkan:\n\nWELDING INSPECTOR STANDARD + NDT 5 METHODS\n\nProgram sertifikasi terintegrasi yang mencakup:\n\n• Welding Inspector Standard – SLV BNSP\n• NDT Level 2 ASNT\n• Visual Testing (VT)\n• Magnetic Testing (MT)\n• Penetrant Testing (PT)\n• Ultrasonic Testing (UT)\n• Radiographic Interpretation (RI)\n\nPROGRAM SCHEDULE\n\n* Online Theory: 7 December 2026 – 21 January 2027\n* Offline Practical & Examination: 23–31 January 2027\n\nProgram ini ditujukan bagi Welder, QC/QA Engineer, Supervisor, Inspector, Fresh Graduate Teknik, serta tenaga profesional yang ingin meningkatkan kompetensi di bidang inspeksi pengelasan.\n\nInvest in your competency. Strengthen your professional value. Expand your career opportunities.\n\nRegistration:\n\n📲 0878 4321 4710 \nChat WA https://lnkd.in/gEn9aWt2\n\n📲 0819 2854 5169 \nChat WA https://lnkd.in/ggydYicG\n\n🌐 https://lnkd.in/ga7_MQyv\n\nSLV METROPOLITAN INDONESIA\nTraining | Certification | Consultancy\n\n#WeldingInspector #NDTLevel2 #ASNT #WeldingInspection #ProfessionalCertification #QualityAssurance #OilAndGas #EPC #SLVTraining",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274494455861248",
+      "timestamp": "2026-11-28T02:49:42.613Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -284,29 +340,29 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532243652979646464",
-      "text": "Knowledge sharing is always a two-way learning experience.\n\nLast month, I had the opportunity to participate as a Guest Lecturer for final-year students at theDepartment of Electrical Engineering, Universitas Indonesia, sharing industry perspectives through a session on:\n\n\"The Evolution of Power Substations: From Conventional to Digital Substations.\"\n\nWe explored the evolution of substation technologies, from conventional protection systems to substation automation, IEC 61850, and digital substations, including their practical applications in the industry.\n\nInterestingly, the discussion went beyond technical topics. Students were also curious about life after graduation, transitioning into the professional world, adapting to workplace challenges, and developing skills across different engineering disciplines, particularly electrical and control systems.\n\nOne thing I shared is that becoming an engineer doesn't mean knowing everything from day one. The willingness to learn, adapt, explore different disciplines, and keep asking questions is just as important as technical knowledge.\n\nThank you to the Department of Electrical Engineering, Universitas Indonesia, for the opportunity and engaging discussion. Looking forward to more opportunities to connect academia with industry and share experiences with the next generation of engineers.\n\n#GuestLecturer #ElectricalEngineering #PowerSystems #IEC61850 #DigitalSubstation #EngineeringEducation",
+      "id": "urn:li:activity:7532277323040129024",
+      "text": "Gold Coin Indonesia is participating in MagangHub Batch 3B 2026! 🚀 \n\nCalling all eligible fresh graduates—this is your chance to gain real-world experience and take your first step into the professional world.\n\nJoin us to learn, grow, and contribute through meaningful internship opportunities across various functions and locations.\n\nOpportunities are available in Finance, RTD and many more.\n\n 💬 Ready to apply? Click here: https://lnkd.in/gszrrsBb\n\nHave questions about any of the available positions? Feel free to leave a comment below—we'll be happy to help!\n\n#Hiring #MagangHub #AboitizFoods #GoldCoinIndonesia #GrowWithGoldCoin",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532243651171864576",
-      "timestamp": "2026-11-28T00:47:09.190Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532277322029170688",
+      "timestamp": "2026-11-28T03:00:56.758Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532241930584408064",
-      "text": "Earlier this month we hosted the first AWS Indonesia Observability Day in Jakarta! 🇮🇩\n\nCloudOps engineers, SREs, architects and IT leaders from across Indonesia spent the day with us on where operations is heading: from monitoring to AI-led, agentic operations.\n\n✨ Spotlight: Amazon CloudWatch Omni Omni is the next generation of Amazon CloudWatch: an AI-powered observability experience built on open standards, with native OpenTelemetry. It was great to show it live and see how quickly the conversation turned to what teams could do with it in their own environments.\n\nWe also covered: 🔹 What's new in AWS Observability 🔹 Application Performance Monitoring (APM) 🔹 Unified Data Store 🔹 GenAI Observability 🔹 AWS DevOps Agent 🔹 A hands-on workshop and quiz to finish the day\n\nWhat stood out to me: most teams already collect plenty of telemetry. The real challenge is finding the root cause fast enough. That's exactly where Omni and AI-assisted investigation come in.\n\nThank you to everyone who joined us, and to an amazing team: Attha Surya Dharma Elkana Pariwono Kovan Chandra Triadimas Satria Dhika Isfahan andEko Wajar Hidayat. 🙏\n\nNone of this would have happened without our sponsors:Baino Paul from the APJ GTM Specialist team, who brought Observability Day to Indonesia, andWelianthy Sukirman from AWS Enterprise Support Indonesia. \n\nLooking forward to the next one!\n\n#AWS #Observability #CloudOps #AIOps #AmazonCloudWatch #CloudWatchOmni #OpenTelemetry #AWSEnterpriseSupport #AWSAdaUntukIndonesia",
+      "id": "urn:li:activity:7532277110846148608",
+      "text": "Hiring across tech, sales and corporate teams often means juggling three different agencies.\n\nBase Camp is a boutique recruitment firm that covers all three: IT, go-to-market and corporate hiring.\n\nFrom our offices in Singapore and Jakarta, we work with companies hiring across Singapore, Indonesia, Thailand and the wider region. One team that already knows your business when the next role opens, so you don't have to explain your company, your culture or your tech stack all over again each time.\n\nPlanning hires for the new year? Send us the brief:\nhttps://basecamp.com.sg/\n\n#Recruitment #Singapore",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532241927413542912",
-      "timestamp": "2026-11-28T00:40:18.539Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532277107780001792",
+      "timestamp": "2026-11-28T03:00:06.167Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -354,11 +410,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532274629659426816",
-      "text": "🌿 Let's Grow with Us at MagangHub Batch 3B 🌿\n\nNestled at the foothills of Mount Merapi,Griya Persada Convention Hotel & Resort Kaliurang is opening its doors to passionate and motivated individuals ready to learn, grow, and gain real hands-on experience in hospitality.\n\nIn collaboration withKementerian Ketenagakerjaan Republik Indonesia underMagangHub Batch #3B, we’re now opening internship positions for:\n✨ Content Creator \n✨ Social Media Specialist \n✨ Sport & Recreation Attendant\n✨ Engineering\n✨ General Maintenance/Engineering\n\n📲 How to apply:\nVisit https://lnkd.in/gJ27p3NC and search“GRIYA PERSADA MITRA”\n\nGriya Persada Convention Hotel & Resort Kaliurang\n📍 Jl. Boyong 99 Kaliurang Barat, Pakem, Sleman, Yogyakarta 55585\n🌐 https://lnkd.in/gwT3vU52\n\nYour journey in hospitality starts here. Don’t miss this chance! 🚀\n\n#GriyaPersadaKaliurang #GriyaPersada #MagangHub #Kemnaker #Hiring #Internship #GrowAtGriyaPersadaKaliurang",
+      "id": "urn:li:activity:7532274764304867328",
+      "text": "HIRING: Lawyer \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house lawyers to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and model performance.\nCreate evaluation frameworks and grading criteria.\nCollaborate with product and research teams to improve AI-driven legal tools.\n\nRequirements:\nJ.D. or equivalent recognized law degree.\nActive license to practice law or current admission in good standing with the relevant legal authority.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review, draft, and negotiate complex legal agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d3S-D2gY\n\n#LawyerJobs #LegalJobs #Lawyer #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractLaw #ContractNegotiation #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274628594020352",
-      "timestamp": "2026-11-28T02:50:14.606Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274763365244928",
+      "timestamp": "2026-11-28T02:50:46.708Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -368,11 +424,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532274764304867328",
-      "text": "HIRING: Lawyer \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house lawyers to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and model performance.\nCreate evaluation frameworks and grading criteria.\nCollaborate with product and research teams to improve AI-driven legal tools.\n\nRequirements:\nJ.D. or equivalent recognized law degree.\nActive license to practice law or current admission in good standing with the relevant legal authority.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review, draft, and negotiate complex legal agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d3S-D2gY\n\n#LawyerJobs #LegalJobs #Lawyer #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractLaw #ContractNegotiation #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
+      "id": "urn:li:activity:7532274629659426816",
+      "text": "🌿 Let's Grow with Us at MagangHub Batch 3B 🌿\n\nNestled at the foothills of Mount Merapi,Griya Persada Convention Hotel & Resort Kaliurang is opening its doors to passionate and motivated individuals ready to learn, grow, and gain real hands-on experience in hospitality.\n\nIn collaboration withKementerian Ketenagakerjaan Republik Indonesia underMagangHub Batch #3B, we’re now opening internship positions for:\n✨ Content Creator \n✨ Social Media Specialist \n✨ Sport & Recreation Attendant\n✨ Engineering\n✨ General Maintenance/Engineering\n\n📲 How to apply:\nVisit https://lnkd.in/gJ27p3NC and search“GRIYA PERSADA MITRA”\n\nGriya Persada Convention Hotel & Resort Kaliurang\n📍 Jl. Boyong 99 Kaliurang Barat, Pakem, Sleman, Yogyakarta 55585\n🌐 https://lnkd.in/gwT3vU52\n\nYour journey in hospitality starts here. Don’t miss this chance! 🚀\n\n#GriyaPersadaKaliurang #GriyaPersada #MagangHub #Kemnaker #Hiring #Internship #GrowAtGriyaPersadaKaliurang",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274763365244928",
-      "timestamp": "2026-11-28T02:50:46.708Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274628594020352",
+      "timestamp": "2026-11-28T02:50:14.606Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -410,20 +466,6 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532269534448365571",
-      "text": "bit.ly/TalentPoolFirman",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532269533760364544",
-      "timestamp": "2026-11-28T02:29:59.813Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
       "id": "urn:li:activity:7532274193065799680",
       "text": "HIRING: General Counsel \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house General Counsels to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to complex legal contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop objective evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams to improve legal AI systems.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing in your jurisdiction.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review and negotiate complex agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d4v9Zpba\n\n#GeneralCounsel #GeneralCounselJobs #LegalJobs #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractNegotiation #ContractDrafting #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
       "author": "linkedin-member",
@@ -438,11 +480,53 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7532269534448365571",
+      "text": "bit.ly/TalentPoolFirman",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532269533760364544",
+      "timestamp": "2026-11-28T02:29:59.813Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7532263269407916034",
       "text": "#hiring Internal Sales\n\nApply here:https://lnkd.in/gCkS8NNA\n\nDrive sales, support customers & grow your career with a leading industrial supplier. Apply now!$ Market aligned remuneration + Bonuses + Annual salary reviews!Unlock your potential with free training and clear career growth pathways!Exclusive employee benefits retail discounts + uniform supplied and more!As an Internal Sales team member, you are the essential connection between our customers and our products.Your role ensures exceptional service, timely order processing, and strong customer relationships that keep our business thriving and our customers satisfied.What We Offer You:Market aligned remuneration with annual salary reviews: Your salary grows with your skills and performance.Career",
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532263267566505986",
       "timestamp": "2026-11-28T02:05:06.111Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532262165584523264",
+      "text": "hrd@inspeksirumah.id",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531261209053040641",
+      "timestamp": "2026-11-28T02:00:42.939Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532273605729239040",
+      "text": "HIRING: Transactional Attorney \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house transactional attorneys to help train and evaluate advanced AI systems focused on legal contract review and negotiation.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and experience reviewing complex legal agreements.\n\nPreferred: Experience in AI, legal technology, or corporate law, including M&A or private equity fund formation.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/dSQQCDYV\n\n#TransactionalAttorney #LegalJobs #AttorneyJobs #CorporateLaw #TechnologyLaw #ContractLaw #LegalTech #ArtificialIntelligence #AITraining #RemoteJobs #LegalProfessionals #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532273604965691392",
+      "timestamp": "2026-11-28T02:46:10.482Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -480,81 +564,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532273605729239040",
-      "text": "HIRING: Transactional Attorney \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house transactional attorneys to help train and evaluate advanced AI systems focused on legal contract review and negotiation.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and experience reviewing complex legal agreements.\n\nPreferred: Experience in AI, legal technology, or corporate law, including M&A or private equity fund formation.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/dSQQCDYV\n\n#TransactionalAttorney #LegalJobs #AttorneyJobs #CorporateLaw #TechnologyLaw #ContractLaw #LegalTech #ArtificialIntelligence #AITraining #RemoteJobs #LegalProfessionals #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532273604965691392",
-      "timestamp": "2026-11-28T02:46:10.482Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
       "id": "urn:li:activity:7532262158139723776",
       "text": "PS Centre | Business Needs Board\nReal Business Challenges. Connecting the Right Expertise.\n \nEvery business challenge presents an opportunity for the right expertise and connections to make a difference.\n\nAcross our PS Centres in Singapore, Jakarta, Ho Chi Minh City, Shanghai and Nanjing, businesses are turning to the PS Centre network for professional expertise, business connections and support in navigating challenges and pursuing growth opportunities.\n \nThrough our weekly Business Needs Board, we spotlight selected, anonymised business requests received across our network and invite professional services firms and potential partners to explore opportunities to help.\n \n📌 THIS WEEK'S BUSINESS NEEDS\n \n01 | Market Expansion\n📍 Singapore | Accounting Firm\n\nFollowing its participation in a promotional study mission to China organised by the PS Centre Alliance, a Singapore-based accounting firm is exploring opportunities to expand into the Chinese market.\n\nExpertise Sought: HR Advisory / Employer of Record (EOR)\nSeeking guidance on EOR services to support hiring in China before establishing a local entity, enabling faster market entry and reducing administrative complexities.\n \n02 | Market Expansion\n 📍 Vietnam | AI Technology Firm\n\nA Vietnam-based AI technology firm is looking to expand its customer base in Indonesia, having already secured its first client in Jakarta. Over the next five years, the firm aims to focus on developing AI applications for the audit profession.\n\nSupport Sought: Event Collaboration & Business Connections\nSeeking opportunities to organise a webinar or host an in-person session at the PS Centre in Jakarta to showcase its AI solutions, engage prospective clients and build connections with local businesses and audit practitioners.\n \n03 | Valuation Advisory\n 📍 Singapore | Manufacturing Company\n\nA Singapore-based manufacturing company with over 40 years of operations is exploring a potential business sale to an identified buyer with whom it has maintained a 20-year business relationship.\nThe proposed acquisition would offer the buyer an opportunity to enter the ASEAN market.\n\nExpertise Sought: Business Valuation Advisory\nSeeking a valuation firm to assess the company's business and financial performance, determine an appropriate valuation approach and support the proposed transaction.\n \n🤝 CAN YOUR ORGANISATION SUPPORT?\nIf your organisation has relevant expertise, industry connections or collaboration opportunities, we'd love to hear from you!\n \n📩 Express your interest: info@pscentre.com.sg\nPlease indicate the relevant request number (01, 02 or 03), your firm's expertise and how you may be able to help.\n \nHave a business challenge of your own?\nJoin our monthly Business Growth Clinic, held on the last Thursday of each month across our PS Centre network in 2027. Connect with professional services experts and explore solutions to your business challenges.\n\n🔗 Discover more about PS Centre: Professional Service (PS) Centre",
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017689633071104",
       "timestamp": "2026-11-28T02:00:41.164Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262165584523264",
-      "text": "hrd@inspeksirumah.id",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531261209053040641",
-      "timestamp": "2026-11-28T02:00:42.939Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532259452977152000",
-      "text": "#WeAreHiring",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532259452125696000",
-      "timestamp": "2026-11-28T01:49:56.203Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532257765612957697",
-      "text": "[WE'RE HIRING: RAKAMIN x MAGANGHUB BATCH 3B]\n\nRakamin is opening internship opportunities through MagangHub Batch 3B, in collaboration with Kementerian Ketenagakerjaan Republik Indonesia.\nAt Rakamin, we help companies transform how they grow their people, powered by AI. As an intern, you'll work alongside our team on human-centered AI solutions for talent development, gaining hands-on experience in projects that create real business impact.\n\nAvailable positions:\n- Quality Assurance Intern\nhttps://lnkd.in/gk7YTu2q\n- Project Operations Intern\nhttps://lnkd.in/gsykatJC\n- Product Consulting Intern\nhttps://lnkd.in/grti7gTj\n\nRecruitment timeline:\n- Registration: 27 November – 1 December 2026\n- Recruitment: 2 – 10 December 2026\n- Selection: 11 December 2026\n- Announcement: 11 December 2026\n- First Day: 14 December 2026\n\nIf you're eager to learn, enjoy solving problems, and want to start your career in a fast-growing environment that embraces AI, we encourage you to apply.\nApplications are open through maganghub.kemnaker.go.id\n\nKnow someone who would be a great fit? Feel free to share this opportunity with them.\n#Hiring #Internship #MagangHubBatch3B #MagangHubKemnaker #Magang #QualityAssurance #ProjectOperations #ProductConsulting #AI #Rakamin\n\nAdmiranti Adhyarizka W. Danu Panca Kusumah Dyah K. Ragil Fily Ramadhan Ilham Adi Wildani Supriadi",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532257762186088448",
-      "timestamp": "2026-11-28T01:43:13.904Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532255699788083200",
-      "text": "#MSBUKonsultan",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532255698819121152",
-      "timestamp": "2026-11-28T01:35:01.373Z",
       "surfaces": [
         {
           "type": "linkedin",
