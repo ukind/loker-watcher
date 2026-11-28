@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-28T02:01:46.993Z",
+  "writtenAt": "2026-11-28T02:47:04.746Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -102,15 +102,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531977703252561920",
-      "text": "We ran forged-JWT attack tests on our own app and closed cross-tenant vulnerabilities before they could be exploited.\n\nBuilding UMKM Unggul Indonesia taught me one thing: speed comes from AI, but quality comes from guardrails.\n\nWhat we put in place:\n1. Tenant Isolation: Row-level security across all tables, verified with forged-JWT tests.\n2. Access Control: Granular permissions + segregation of duties (nobody can approve their own void, refund, or price change).\n\n4 practices I’m keeping for every build:\n- Staged database migrations\n- Atomic transactions & hash-chained audit logs\n- Privacy by design \n- Hardened operations \n\nSee the live product: www.umkmunggul.id\nCase studies & full portfolio: www.aziztaufiqurrahman.com\n\n#BuildInPublic #NextJs #React #SaaS #ProductEngineering",
+      "id": "urn:li:activity:7532255634579365888",
+      "text": "This week in cybersecurity and AI: 5 things worth knowing\n\n1️⃣ The US Air Force's Cloud One platform was breached. Reuters says a software flaw gave attackers control-plane access, and migrations and updates are on hold. Whoever owns the control plane owns everything under it.\n\n2️⃣ NFS2ROOT (CVE-2026-99362), CVSS 9.8. A 12-year-old heap overflow in the Linux kernel NFS server gives remote root with no authentication. File servers, NAS, build farms and Kubernetes storage nodes are in scope. Patch and reboot, or restrict TCP 2049 to trusted hosts today.\n\n3️⃣ Developer accounts are the new front door. SAP and 1Password both reported incidents tied to employee GitHub accounts and tokens. Phishing-resistant MFA and short-lived tokens, please.\n\n4️⃣ Nvidia has reportedly paused AI server shipments to Singapore, Malaysia, Thailand and Indonesia under new US rules on offshore data centres. If you have regional AI capacity plans, check your delivery dates.\n\n5️⃣ CSA says reported incidents in Singapore since September are running at three times the January to August monthly average. Patch internet-facing systems, enforce MFA and least privilege, watch your vendors. PDPC and CSA also issued a joint advisory on insecure APIs.\n\nMy take:\nI have been in infrastructure a long time, and most incidents I have seen up close did not need a genius attacker. They needed one unpatched box, one shared admin password, or one vendor account nobody switched off.\n\nThis week is the same story with bigger names. Cloud One is a control-plane problem. NFS2ROOT is an old bug on a port that should never have been reachable from half the network. SAP and 1Password are identity problems.\n\nIn NS we checked the boring things before every sail, every time, even when nothing ever went wrong. Nobody gets a medal for it. Security is the same. AI makes attackers faster, but it does not change the doors they walk through.\n\nMy homework this weekend: find every host listening on 2049, and every token older than 90 days.\n\nWhat's at the top of your patch list this week?\n\nFeel free to comment, like, forward and subscribe for more cybersecurity info/insight. Refer to the news URLs for details.\n\nSources:\n1. https://lnkd.in/gcMPvwWz\n2. https://lnkd.in/g-QdnRMz\n3. https://lnkd.in/gbtM_tXb\nhttps://lnkd.in/gQ_pwtQw\n4. https://lnkd.in/gcNYC-PE\n5. https://lnkd.in/gbmcD7Em\nhttps://lnkd.in/g6wkYyMV\n\n#Cybersecurity #AI #CloudSecurity #Linux #Singapore #InfoSec #5cybersecure #5cyber #qicyber #formintiumai",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531977702501965824",
-      "timestamp": "2026-11-27T07:10:21.834Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532255631815323648",
+      "timestamp": "2026-11-28T01:34:45.826Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
         }
       ]
     },
@@ -200,15 +200,29 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532158509828722688",
-      "text": "Understanding how AI works conceptually is one thing; integrating it cleanly into real applications is another.\nI recently completed the Maju Bareng AI program hosted by Hacktiv8 Indonesia, focusing on AI Productivity and AI API Integration for Developers. Beyond exploring practical workflows, building the final project gave me hands on experience in structuring prompts, handling API responses, and designing reliable AI powered features.\nThese technical takeaways directly support my ongoing work in product development and AI research. Grateful to Hacktiv8 Indonesia and the program organizers for the structured curriculum and practical guidance.",
+      "id": "urn:li:activity:7532262094659051521",
+      "text": "10 years. 5 service hubs. Drilling depths from 29 meters to 152 meters.\n\nWhen we founded Xuzhou Jiuman Machinery Technology Co., Ltd. in 2016, we started with a straightforward goal: build rotary Kelly bars tough enough for China's hardest high-speed rail, bridge, and tunnel foundations—and back them with real field service, not just a shipping invoice.\n\nA decade later, in 2026, that same engineering discipline is supporting deep foundation projects far beyond Xuzhou:\n\n• Interlocking (JS377–JS630) and Friction (MZ406–MZ630) Kelly bars engineered for depths up to 152 meters\n• Export deliveries working across Indonesia, Malaysia (including East Coast Railway infrastructure), Vietnam, India, Bangladesh, Pakistan, UAE, Turkmenistan, and Canada\n• New, inspected used, and fully remanufactured rotary drilling rigs (XR178E, XR220D, XR280E, XR360E, XR400E) tested before dispatch\n• ISO 9001 quality management and SGS-audited manufacturing processes from raw alloy tubing to four-layer sea-freight protection\n\nEvery contractor we partner with—from a single-rig specialist in Southeast Asia to multi-rig infrastructure fleets in the Middle East and North America—asks for the same three things: honest specs, reliable lead times, and steel that holds up when the geology turns ugly.\n\nThank you to every client, engineer, and partner who has trusted Jiuman Machinery over the last 10 years. We're just getting started.\n\nIf you work in deep foundations, geotechnical contracting, or heavy equipment trading, let's connect and follow along as we share more project cases, technical guides, and behind-the-scenes builds from our Xuzhou factory: https://jmachglobal.com/\n\n#Infrastructure #GeotechnicalEngineering #RotaryDrillingRig #B2BManufacturing #JiumanMachinery",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532158509036265472",
-      "timestamp": "2026-11-27T19:08:49.481Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7529961453995352064",
+      "timestamp": "2026-11-28T02:00:26.029Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532260576211652608",
+      "text": "Innovation is our way of creating added value, and the Innovation Awards give us renewed energy to keep bringing our innovations to life. We are proud to be named one of the Top 4 nominees out of 100 innovations across all categories at the Bio Farma Innovation Challenge 2026, and to receive the Good Improvement 1 Award, an achievement that belongs to the entire team!\n\nNVT AI is an AI-based solution designed to accelerate and optimize Neurovirulence Testing (NVT). Evaluation that originally relied on manual microscopy, involving tens of thousands of fragile physical glass slides, is moving to AI-assisted digital evaluation.\n\nWe have completed the digitization of physical glass slides using a high-throughput scanner, producing high-resolution Whole Slide Images. This has established a strong data foundation, with more than 10,000 slides now digitally archived.\n\nBio Farma - Indonesia has also initiated the development of a new validation and regulatory framework for AI implementation. We expect this framework to be adoptable for other AI solutions requiring regulatory approval, another direct contribution to the wider community.\n\nOur special appreciation goes to our outstanding PathologistsSiti Vanessa Fransiska Hedira Aisyah Hiksamdaning Mahyumi Impian Nathasya, AI & Infra Engineer Ahmad Alfi Adz-Dzikri, Digital & Information Technology Division, Idzni Harashta Haifa and International Relations Division, all our partners, and all end users across the QC team. Great work, everyone!",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532260572977922048",
+      "timestamp": "2026-11-28T01:54:24.003Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -312,43 +326,71 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532197819764641792",
-      "text": "Jakarta, Cairo, Lahore: same dollar salary dream, same next problem.\n\nKelvin Desman, a software engineer, wrote a guide on Medium for Indonesian developers chasing remote jobs paid in US dollars. His argument: skills are rarely the obstacle. Finding employers that hire from Indonesia and pay in dollars is. And dollar pay \"holds its value even when the rupiah weakens.\"\n\nI agree, and I'd add what comes after the offer letter. Four things I'd tell any developer in an emerging market:\n\n1. Check they can pay your country. Not every payroll or contractor platform supports every country. Ask early.\n\n2. Price the net, not the gross. Platform fees, transfer fees and the exchange spread come off the top.\n\n3. Decide when you convert. Rent is local. Savings don't have to be. Convert what you spend.\n\n4. Keep the paper trail. Contracts and invoices matter when your bank asks where the dollars came from.\n\nThe offer is step one. Getting paid is step two, in Jakarta, Cairo or Lahore.\n\nWhich one caught you out first: the fees, the timing or the paperwork?\n\nInspired by Kelvin Desman's piece on Medium, 6 Jul 2026",
+      "id": "urn:li:activity:7532263269407916034",
+      "text": "#hiring Internal Sales\n\nApply here:https://lnkd.in/gCkS8NNA\n\nDrive sales, support customers & grow your career with a leading industrial supplier. Apply now!$ Market aligned remuneration + Bonuses + Annual salary reviews!Unlock your potential with free training and clear career growth pathways!Exclusive employee benefits retail discounts + uniform supplied and more!As an Internal Sales team member, you are the essential connection between our customers and our products.Your role ensures exceptional service, timely order processing, and strong customer relationships that keep our business thriving and our customers satisfied.What We Offer You:Market aligned remuneration with annual salary reviews: Your salary grows with your skills and performance.Career",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532181361118420992",
-      "timestamp": "2026-11-27T21:45:01.700Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532263267566505986",
+      "timestamp": "2026-11-28T02:05:06.111Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532192714671558656",
-      "text": "#Greece /#Harvest ‘We come back to save our parents’ livelihood. ’With price of olive oil sinking and difficulty of finding workers, some Greeks take time off from their jobs to participate in harvest -Kathimerini\n\nEvery morning, October-December, a familiar routine unfolds in olive-growing regions: fields fill with workers, & nets are spread out to ensure not a single olive is lost, while the rhythmic clatter of harvesting poles & long sticks sets the pace. In the afternoon, pickup trucks & tractors, laden with cargo, transport sacks of olives to mills.\n\nThis year in particular, with olive oil prices hitting record lows & difficulty of finding labor remaining a persistent headache (even when workers can be found, daily wages range from 70-€100), young people with roots in these rural areas are not sitting idly by. They step away from their jobs & daily lives, travel to their ancestral lands, & pitch in with the harvest. A mechanical engineer takes leave from her job in London. A teacher returns from a trip to Indonesia and heads straight to the fields. A stand-up comedian schedules his performances around the conclusion of the olive harvest.\n\nFor 27-year-old Elena Malapani, the harvest season has been a constant, ingrained tradition since her primary school years. Today, Malapani is a mechanical engineer and has been living and working abroad for the past three years. However, every year she makes a point of traveling to her family’s olive groves in Kalamata, using up whatever leave she has available. The primary reason is financial.\n\n“The price of olive oil is under three and a half euros. It’s very difficult for us. At this price, with labor costs through the roof, it simply doesn’t make economic sense to hire workers or even to own olive trees. So, as a family, we try to do more of the work ourselves,” she tells Kathimerini. Malapani had the foresight to book her flight tickets well in advance to secure a better price. “I got a round trip ticket for €120. That’s only about a day and a half’s worth of wages. It’s worth it for us,” she says, quickly doing the math in her head...\n\nBeyond the financial aspect, the olive harvest serves as a great opportunity for her to see her loved ones and take a break from constant screen time. “Since I live abroad, I can’t always be close to my family. This way, I get to spend a good amount of time with them. At the same time, it’s liberating to set your phone aside, only picking it up during breaks, and simply disconnect from all forms of communication.”\n\n...Yet, she notes, there is a certain paradox: “Many of us young people left Greece in search of better career opportunities and higher wages. But when harvest season arrives, we try to get time off, return home, and help our families. We go abroad to secure our own future, but we come back to Greece to save our parents’ livelihood,” Malapani says.\n\nStory continues: https://lnkd.in/edtJNmBG",
+      "id": "urn:li:activity:7532262158139723776",
+      "text": "PS Centre | Business Needs Board\nReal Business Challenges. Connecting the Right Expertise.\n \nEvery business challenge presents an opportunity for the right expertise and connections to make a difference.\n\nAcross our PS Centres in Singapore, Jakarta, Ho Chi Minh City, Shanghai and Nanjing, businesses are turning to the PS Centre network for professional expertise, business connections and support in navigating challenges and pursuing growth opportunities.\n \nThrough our weekly Business Needs Board, we spotlight selected, anonymised business requests received across our network and invite professional services firms and potential partners to explore opportunities to help.\n \n📌 THIS WEEK'S BUSINESS NEEDS\n \n01 | Market Expansion\n📍 Singapore | Accounting Firm\n\nFollowing its participation in a promotional study mission to China organised by the PS Centre Alliance, a Singapore-based accounting firm is exploring opportunities to expand into the Chinese market.\n\nExpertise Sought: HR Advisory / Employer of Record (EOR)\nSeeking guidance on EOR services to support hiring in China before establishing a local entity, enabling faster market entry and reducing administrative complexities.\n \n02 | Market Expansion\n 📍 Vietnam | AI Technology Firm\n\nA Vietnam-based AI technology firm is looking to expand its customer base in Indonesia, having already secured its first client in Jakarta. Over the next five years, the firm aims to focus on developing AI applications for the audit profession.\n\nSupport Sought: Event Collaboration & Business Connections\nSeeking opportunities to organise a webinar or host an in-person session at the PS Centre in Jakarta to showcase its AI solutions, engage prospective clients and build connections with local businesses and audit practitioners.\n \n03 | Valuation Advisory\n 📍 Singapore | Manufacturing Company\n\nA Singapore-based manufacturing company with over 40 years of operations is exploring a potential business sale to an identified buyer with whom it has maintained a 20-year business relationship.\nThe proposed acquisition would offer the buyer an opportunity to enter the ASEAN market.\n\nExpertise Sought: Business Valuation Advisory\nSeeking a valuation firm to assess the company's business and financial performance, determine an appropriate valuation approach and support the proposed transaction.\n \n🤝 CAN YOUR ORGANISATION SUPPORT?\nIf your organisation has relevant expertise, industry connections or collaboration opportunities, we'd love to hear from you!\n \n📩 Express your interest: info@pscentre.com.sg\nPlease indicate the relevant request number (01, 02 or 03), your firm's expertise and how you may be able to help.\n \nHave a business challenge of your own?\nJoin our monthly Business Growth Clinic, held on the last Thursday of each month across our PS Centre network in 2027. Connect with professional services experts and explore solutions to your business challenges.\n\n🔗 Discover more about PS Centre: Professional Service (PS) Centre",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532192711576064000",
-      "timestamp": "2026-11-27T21:24:44.551Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017689633071104",
+      "timestamp": "2026-11-28T02:00:41.164Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532172194253012993",
-      "text": "𝗪𝗶𝗹𝗹𝗶𝗮𝗺 𝗣𝗮𝘀𝘀𝗼𝘀 𝗧𝗮𝗸𝗲𝘀 𝘁𝗵𝗲 𝗦𝘁𝗮𝗴𝗲 𝗮𝘁 𝗧𝗘𝗞𝗔𝘀𝗶𝗮 𝟮𝟬𝟮𝟳\n\nProject manager, mechanical engineer and cave explorer William “Will” Passos combines engineering expertise with underwater photogrammetry to document and explore cave systems.\n\nA founding member of the Soggy Wombats and an active member of Bottomline Projects, Will has created 3D models and updated maps of some of Australia’s premier cave systems. In 2024, he and the Soggy Wombats used photogrammetry as an exploration tool to discover an extension that doubled the known size of South Australia’s Pines Cave.\n\nSince taking up cave diving at 35, Will has contributed to technical diving documentation and overhead environment exploration through international collaborations in Poland, Thailand, Indonesia, Japan and the USA.\n\nJoin Will at TEKAsia 2027 for insights into the role of engineering, underwater mapping and collaboration in cave exploration.\n\n9–11 April 2027 | Suntec Singapore\nHeld alongside ADEX Big Blue Legacy 2027.\nBrought to you by OZTek and ADEX.\n\nFind out more and book tickets: https://lnkd.in/g53GZe4V\n\n#TEKAsia2027 #ADEX2027 #TechnicalDiving #CaveExploration #UnderwaterPhotogrammetry #WilliamPassos",
+      "id": "urn:li:activity:7532262165584523264",
+      "text": "hrd@inspeksirumah.id",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532172193213075456",
-      "timestamp": "2026-11-27T20:03:12.102Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531261209053040641",
+      "timestamp": "2026-11-28T02:00:42.939Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532262297818411010",
+      "text": "Lowongan Kerja PT Yamaha Motor Parts Manufacturing Indonesia\n\nInventory Control Staff\n\nRequirement\n- Bachelor/Diploma degree in any Engineering major, Management Accounting, Informatics, or other relevant majors\n- Graduated from reputable university with GPA min 3.00\n- Hard worker, able to multi tasks and prioritize tasks with strict deadlines\n- Good analytical and problem solving skills\n- Fluent in English (verbal and written).\n- Willing to be placed in KIIC, Karawang, Jawa Barat.\n\nInfo lengkap dan cara melamarnya klik link dibawah ini\nhttps://lnkd.in/gVx9eARm\n\nJoin telegram : t.me/lokernusantara_com\n\n#lowongankerja #lokernusantara #lokerterbaru #infoloker #lowongan #jobs #karir #infokarir #hiring #wearehiring #loker",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532243868021473281",
+      "timestamp": "2026-11-28T02:01:14.466Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532262308052656128",
+      "text": "We're hiring! 🌱\n\nAgros Indonesia is looking for an Operations Support to join our team and support our operational activities.\n\nIf you're organized, proactive, detail-oriented, and enjoy making sure things run smoothly behind the scenes, we'd love to hear from you.\n\nInterested? Check out the details below and send your CV to hr.indonesia@agrosglobal.com, or tag someone who might be a good fit!\n\n#Hiring #CareerOpportunity #Operations #Agros #JoinOurTeam",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532071514716954624",
+      "timestamp": "2026-11-28T02:01:16.906Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -438,11 +480,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532254014780948480",
-      "text": "WE ARE HIRING\nARCHITECTURAL DRAFTER\n\nWe are looking for a passionate, detail-oriented, and dedicated Architectural Drafter to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
+      "id": "urn:li:activity:7532253858870263808",
+      "text": "WE ARE HIRING\nLANDSCAPE ARCHITECT\n\nWe are looking for a passionate, detail-oriented, and dedicated Landscape Architect to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532254013812064256",
-      "timestamp": "2026-11-28T01:28:19.636Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532253857884733440",
+      "timestamp": "2026-11-28T01:27:42.464Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -494,11 +536,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532253858870263808",
-      "text": "WE ARE HIRING\nLANDSCAPE ARCHITECT\n\nWe are looking for a passionate, detail-oriented, and dedicated Landscape Architect to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
+      "id": "urn:li:activity:7532254014780948480",
+      "text": "WE ARE HIRING\nARCHITECTURAL DRAFTER\n\nWe are looking for a passionate, detail-oriented, and dedicated Architectural Drafter to join our team in Bali. \n\nIf you have a strong interest in architecture, design, and technical drawing, we would love to hear from you.\n\nLet's create and bring ideas to life together.\n\nPlease send your updated CV and Portfolio to:\n📩 kastawanarchitect@gmail.com\n📩 admkastawanarsitekdanrekan@gmail.com\nLocation: Bali, Indonesia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532253857884733440",
-      "timestamp": "2026-11-28T01:27:42.464Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532254013812064256",
+      "timestamp": "2026-11-28T01:28:19.636Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -578,57 +620,57 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532176307120586752",
-      "text": "JOB APPLICATION LETTER\n\nTo,\nThe Hiring Manager,\n\nSubject: Application for a Job Opportunity\n\nDear Sir/Madam,\n\nMy Name : Narayan Saha, and I am from Agartala, Tripura, India.\n\nI am writing to apply for a suitable job opportunity in your company. I am an educated and hardworking person with 7 years of work experience.\n\nMy work experience includes:\n\n* DishD2H: 4 years of experience.\n* Other Companyes: 3 years of experience.\n*DCA (Diploma in Computer Applications ) : 1 year of experience \n\nI am responsible, punctual, dedicated, and willing to learn new skills. I can work independently as well as in a team.\n\nI would be grateful if you could give me an opportunity to work with your company. I assure you that I will perform my duties with honesty and dedication.\n\nThank you for your time and consideration. I look forward to hearing from you.\n\nYours faithfully,\nNarayan Saha\nAgartala, Tripura, India\n\nPlz anyone help mee\n\nI need a job ..\nMy Father Is Very Old  And He Is Now Bed Rest Totally.. My Family Condition Very Bad \n\nAnyone plz Help mee \nUrgent need a job\n\nDishTV The Walt Disney Company DISHA Pramit Kumar Saha Ashesh Ghosh realme India realme realme Indonesia vivo India vivo vivo India OPPO India OPPO LinkedIn for Marketing Jobgether Xiaomi Technology Job Application SA T-Mobile ACTING moDel\nApple MEHEER SUZUKI AGARTALA Tata Communications Tata Group Tata Consultancy Services Tata Consultancy Services - India Tech Mahindra Mahindra Group ???",
+      "id": "urn:li:activity:7532241930584408064",
+      "text": "Earlier this month we hosted the first AWS Indonesia Observability Day in Jakarta! 🇮🇩\n\nCloudOps engineers, SREs, architects and IT leaders from across Indonesia spent the day with us on where operations is heading: from monitoring to AI-led, agentic operations.\n\n✨ Spotlight: Amazon CloudWatch Omni Omni is the next generation of Amazon CloudWatch: an AI-powered observability experience built on open standards, with native OpenTelemetry. It was great to show it live and see how quickly the conversation turned to what teams could do with it in their own environments.\n\nWe also covered: 🔹 What's new in AWS Observability 🔹 Application Performance Monitoring (APM) 🔹 Unified Data Store 🔹 GenAI Observability 🔹 AWS DevOps Agent 🔹 A hands-on workshop and quiz to finish the day\n\nWhat stood out to me: most teams already collect plenty of telemetry. The real challenge is finding the root cause fast enough. That's exactly where Omni and AI-assisted investigation come in.\n\nThank you to everyone who joined us, and to an amazing team: Attha Surya Dharma Elkana Pariwono Kovan Chandra Triadimas Satria Dhika Isfahan andEko Wajar Hidayat. 🙏\n\nNone of this would have happened without our sponsors:Baino Paul from the APJ GTM Specialist team, who brought Observability Day to Indonesia, andWelianthy Sukirman from AWS Enterprise Support Indonesia. \n\nLooking forward to the next one!\n\n#AWS #Observability #CloudOps #AIOps #AmazonCloudWatch #CloudWatchOmni #OpenTelemetry #AWSEnterpriseSupport #AWSAdaUntukIndonesia",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532176306025779200",
-      "timestamp": "2026-11-27T20:19:32.686Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532241927413542912",
+      "timestamp": "2026-11-28T00:40:18.539Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532162267346571264",
-      "text": "🌍 WE'RE HIRING | TWO GLOBAL REMOTE OPPORTUNITIES IN BLOCKCHAIN & WEB3!\n\nAre you an experienced professional in Blockchain, Web3, Digital Assets or Real-World Asset (RWA) tokenization? Your next career opportunity could be here!\nCruiTee is recruiting for two senior-level positions on behalf of an innovative blockchain company building within the Real Estate RWA and digital asset ecosystem.\n\nWe are looking for exceptional professionals to fill the following positions:\n🔹 1. OPERATIONS LEAD – REAL ESTATE RWA PLATFORM\nWe are looking for an experienced operations professional who can build, manage and scale operational processes across blockchain, digital assets, investor operations and real-world asset platforms.\n\n🔹 2. BUSINESS DEVELOPMENT LEAD – REAL ESTATE RWA PLATFORM\nWe are seeking a strategic business development professional with strong experience in building partnerships, identifying commercial opportunities and driving business growth within Blockchain, Web3, RWA and digital asset markets.\n\n📌 WHAT WE'RE LOOKING FOR\nFor BOTH positions:\n✅ 10+ years of overall professional experience.\n✅ At least 2+ years of professional Blockchain experience.\n✅ Strong understanding of Blockchain, Web3, Digital Assets or Tokenization.\n✅ Relevant leadership experience in your respective field.\n\n🌏 TARGET LOCATIONS – WHERE WE'RE HIRING\nThese opportunities are fully remote and open to qualified candidates based in:\n🇹🇼 Taiwan\n🇮🇩 Indonesia\n🇮🇷 Iran\n🇯🇵 Japan\n🇲🇾 Malaysia\n🇵🇭 Philippines\n🇶🇦 Qatar\n🇸🇬 Singapore\n🇹🇭 Thailand\n🇻🇳 Vietnam\n\n📍 Work Arrangement: 100% Fully Remote\n🌐 Industry: Blockchain | Web3 | Real Estate Tokenization | RWA | FinTech\n\n📩 INTERESTED? LET'S TALK!\nIf you meet the requirements or know someone who would be a great fit, we'd love to hear from you.\n\n👉 Send CruiTee a DM with:\nYour updated CV/Resume.\nThe position you're applying for (Operations Lead or Business Development Lead).\nKnow someone who fits? Tag them, share this opportunity or repost to help us reach the right talent!\n\n#CruiTee #WereHiring #BlockchainJobs #Web3Jobs #RemoteJobs #GlobalHiring #OperationsLead #BusinessDevelopmentLead #RWA #RealWorldAssets #Tokenization #BlockchainCareers #FinTechJobs #DigitalAssets #RemoteHiring #AsiaJobs #SingaporeJobs #JapanJobs #MalaysiaJobs #PhilippinesJobs #TaiwanJobs #IndonesiaJobs #QatarJobs #ThailandJobs #VietnamJobs",
+      "id": "urn:li:activity:7532197819764641792",
+      "text": "Jakarta, Cairo, Lahore: same dollar salary dream, same next problem.\n\nKelvin Desman, a software engineer, wrote a guide on Medium for Indonesian developers chasing remote jobs paid in US dollars. His argument: skills are rarely the obstacle. Finding employers that hire from Indonesia and pay in dollars is. And dollar pay \"holds its value even when the rupiah weakens.\"\n\nI agree, and I'd add what comes after the offer letter. Four things I'd tell any developer in an emerging market:\n\n1. Check they can pay your country. Not every payroll or contractor platform supports every country. Ask early.\n\n2. Price the net, not the gross. Platform fees, transfer fees and the exchange spread come off the top.\n\n3. Decide when you convert. Rent is local. Savings don't have to be. Convert what you spend.\n\n4. Keep the paper trail. Contracts and invoices matter when your bank asks where the dollars came from.\n\nThe offer is step one. Getting paid is step two, in Jakarta, Cairo or Lahore.\n\nWhich one caught you out first: the fees, the timing or the paperwork?\n\nInspired by Kelvin Desman's piece on Medium, 6 Jul 2026",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:activity:7532162267346571264",
-      "timestamp": "2026-11-27T19:23:45.343Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532181361118420992",
+      "timestamp": "2026-11-27T21:45:01.700Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532229895192465408",
-      "text": "We are Hiring! 🚀\n\nHead of HR (Human Resources)\n\nHi, I’m Crystin, Hiring Partner from Matcha Talent, currently supporting our client in the Consumer Electronics, Trading & Distribution, FMCG, or Manufacturing & Retail industry.\n\n📍 Location: Indonesia\n🏢 Industry: Consumer Electronics, Trading & Distribution, FMCG, Manufacturing & Retail\n\nQualifications:\n\n* Head of HR capacity handling an all-rounder generalist scope.\n* Strong HR exposure in Consumer Electronics, Trading & Distribution, Fast-Moving Consumer Goods (FMCG), or Multi-Site Manufacturing or Retail. Manufacturing experience is no longer mandatory, provided the candidate has strong all-rounder multi-unit experience.\n* True HR All-Rounder: Must possess hands-on mastery across all HR pillars, including Talent Acquisition, Compensation & Benefits, Industrial Relations/Employee Relations, Performance Management, HR Policy, and HR Administration. Must also have a proven ability to build HR systems and foundations from scratch or strengthen unstructured HR setups.\n\n📩 Send your CV to: crystin.diaspora@partner.matchatalent.com\n\nEmail Subject: Head of HR_Full Name\n\nOnly shortlisted candidates will be contacted.\n\n#Hiring #WeAreHiring #HeadOfHR #HRJobs #HumanResources #HRGeneralist #JobOpportunity #Career #Recruitment",
+      "id": "urn:li:activity:7532132746853339136",
+      "text": "My Curriculum Vitae\n\nHello Recruiters & Professionals,\n\nI'm Mugen Repsolano, a Information Technology student at Telkom University Jakarta. I’m actively building expertise and seeking opportunities and connections in Backend Development and Data Operation Engineer\n\nCheck my profile and CV for projects. I'm keen to discuss collaborations and insights.\n\nContact: repsolano07@gmail.com\n\nThank you for connecting!\n\n#OpenToConnect\n#CurriculumVitae\n#CV\n#BackendDeveloper\n#DataEngineer",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532229893942755329",
-      "timestamp": "2026-11-27T23:52:29.078Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532132745993486337",
+      "timestamp": "2026-11-27T17:26:27.109Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532129222811852801",
-      "text": "🚨 The U.S. just shut a big back door to China's AI #computing power.\n#Chinese firms couldn't freely buyNVIDIA's top #chips, but they could #rent them remotely in other countries, especially#Malaysia.\n\nHere's what matters:\n→ #Remote access supplies an estimated 24% of China's AI computing power (Institute for Progress)\n→ A new#rule requires a U.S.#license to lease significant Nvidia computing power to Chinese companies\n→ Providers already doing so have 90 days, until#February, to get a license or drop those clients\n→ Nvidia has reportedly #paused server shipments to Malaysia,#Singapore, #Thailand and#Indonesia\n→ #Smuggling is also a target, with#export-control officers set to reach 20 by year-end\n\n💡 My opinion: In the AI race, controlling who can use computing power is becoming as important as controlling who can buy chips.\n\n📚 Learning: A #business model built on a regulatory#loophole can change overnight, so diversify your customers early.\n\n✅ Action: If your AI product relies on rented#GPUs, check where they're hosted, who can access them and which export rules apply.\n\n💬 Will tighter controls slow China's AI progress, or push it to build its own alternatives faster?\n\n♻️ Repost if this made you think.\n🤝 I'm open to AI Product Manager / AI Consultant roles, so if you're hiring or know someone who is, please reach out or DM me.\n\n📰 Reference: The Wall Street Journal, \"U.S. Closes Loophole In Chip Rules\" by Stu Woo, Jon Emont, Robbie Whelan and Anissa Gardizy, dated 27th November 2026.\n#AI #Nvidia #Semiconductors #ExportControls #China #CloudComputing #AIProductManagement",
+      "id": "urn:li:activity:7532104637567356928",
+      "text": "Among three Directors, there's a Lead Piping Engineer sneaking into the picture... hahaha! ✌️🤭\n\n1. Former Director of JGC\n2. Former Director of Shell\n3. Lead Piping Engineer\n4. Former Director of Bukaka (also a former SKK Migas official)\n\nNumber 2 is a close friend of Mr. Anindya Bakrie, President Director of Bakrie Group.\n\n.\n.\n.\n\nMy Schedule for This Week:\n\nMonday ---> Lunch with the Director of PT. Hiramisu Jimmulya Offshore.\n\nTuesday ---> Dinner with the Marketing Manager of PT. AMS\n\nWednesday ---> Meet-up with the Director of PT. PPS.\n\nThursday ---> Dinner with the PMT of the Genting Oil Project.\n\nFriday --->\n\n- Meeting with the Director of PT. CKN.\n- Meet-up with a Manager from Top Golf.\n- Lunch with my circle of friends, former PGN colleagues.\n- Meeting with Director PT. MTS\n\nSaturday ---> Taekwondo with several CEOs.\n\nSunday ---> Drone activities with the Director and Manager of PT. RDA.\n\nSo, my side activities every weekend usually involve Golf, Drones, and Sports with various Directors and Managers.\n\nConnecting Vendors to EPC Projects. That's part of what I do!\n\nThey know me so well, indeed...\n\nThis Saturday morning, I'm heading to Bandung for a business trip and will be returning to Jakarta on Sunday afternoon.\n\n.\n.\n.\n\nFabiayyi aalaa'i Rabbikumaa tukadzdhibaan... 😭😭😭",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532129221343592448",
-      "timestamp": "2026-11-27T17:12:26.912Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532104636770537472",
+      "timestamp": "2026-11-27T15:34:45.333Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
@@ -667,34 +709,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532181361118420992",
       "timestamp": "2026-11-27T21:45:01.700Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532120105028075520",
-      "text": "Nine indoor courts in one Jakarta club — that is the scale I would study first.\n\nViva Sports Club has just been introduced in Permata Hijau, South Jakarta. JakartaHype and Media Indonesia report nine indoor padel courts, built to national and international standards, with modern lighting and an air-circulation system designed for player comfort. A restaurant and bar sit alongside the courts, and a grand opening is planned for 12 December, with a six-category tournament and Rp200 million in prizes.\n\nhttps://lnkd.in/ewAFZcQ8\n\nFor club developers, a cluster this size is not just more of the same court. Indoor play in a tropical city depends on lighting and airflow being specified early, and on a layout that still works when all nine courts are busy. The F&B and community layer, and a programme that starts with a public tournament, are part of the plan, not an afterthought.\n\nAt PANO we manufacture panoramic, super panoramic, classic and singles courts factory-direct from Hebei, with lighting laid out on the approved drawing. Planning an indoor cluster? Let's talk: https://panocourt.com\n\n#padel #PadelIndonesia #PadelCourt #PadelClub",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532120104105463808",
-      "timestamp": "2026-11-27T16:36:13.063Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "developer jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532111746858405888",
-      "text": "You don't have to be an expert to make an impact in open source.\n\nContributing to Jakarta EE is an opportunity to grow your technical skills, collaborate with experienced developers, and help shape technologies used across the enterprise Java ecosystem.\n\nWhether you're interested in code, specifications, documentation or community discussions, there are ways to get involved.\n\n🎥 Hear why contributing to Jakarta EE matters: https://hubs.la/Q04FRGps0\n\n👉 Learn more here: https://hubs.la/Q04FRGpt0\n\n#JakartaEE #JavaDevelopers",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532111745969225728",
-      "timestamp": "2026-11-27T16:03:00.320Z",
       "surfaces": [
         {
           "type": "linkedin",
