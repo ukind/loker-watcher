@@ -1,7 +1,8 @@
 {
   "version": 1,
   "marks": {
-    "https://api.opencheap.si/v1": 2
+    "https://api.opencheap.si/v1": 2,
+    "https://ai.nube-api.com/v1": 1
   },
   "outageOpen": false
 }
