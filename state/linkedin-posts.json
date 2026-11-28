@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-28T04:15:14.399Z",
+  "writtenAt": "2026-11-28T04:47:03.644Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -83,6 +83,48 @@
         {
           "type": "linkedin",
           "value": "react indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532293885859926016",
+      "text": "🇨🇳 China's AI labs are losing their back door to Nvidia chips. One Shanghai investor calls it their \"darkest hour\". For two years, China's leading AI developers kept pace with American rivals partly by renting Nvidia chips in data centers abroad. That route is closing, and the industry is starting to say so out loud.\n\nWashington now requires data centers to obtain a US license before renting large amounts of computing power to Chinese clients. Add the measures OpenAI and Anthropic have taken against \"distillation,\" training a model on a stronger model's answers, and the result is a \"total lockdown\" in the short term, Shanghai venture capitalist Bob Chen told AFP. A post he wrote titled \"China's AI Models Face Their Darkest Hour\" spread widely among insiders before it was taken down.\n\nThe strain is showing up in release schedules. Moonshot AI, maker of the Kimi models, has reportedly canceled a deal of 150 million dollars to use Blackwell chips through Indonesia, and Zhipu AI has pushed its next flagship model from this month to next year or later, according to foreign reports compiled by South Korea's Seoul Economic Daily. Tencent President Martin Lau told investors this month that \"every company in China will be affected.\" The Institute for Progress, a US think tank, estimated in October that 46 percent of the computing used by Chinese AI firms ran on Nvidia chips in overseas data centers or smuggled into China.\n\nLenders are nervous too. A loan increase of 6.6 billion dollars for a Bain Capital-owned data center operator in Malaysia whose clients include ByteDance has been suspended while some banks run extra checks, the Korean paper reported.\n\nThe long-term effect may cut the other way. Alibaba says its T-Head chip unit will be able to train models on in-house chips by early next year, and DeepSeek is reportedly training its next flagship on Huawei hardware. Zhang Yi of the research firm iiMedia told AFP that once China's chips and software mature together, the shift away from Nvidia will become irreversible.\n\nSources: AFP, Seoul Economic Daily",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532293884572360704",
+      "timestamp": "2026-11-28T04:06:45.642Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532291642913906688",
+      "text": "Looking to start your journey in global IT? 🚀\n\nNTT DATA Inc. in Indonesia, a certified Top Employer 2026, is opening its next internship batch in collaboration with Maganghub 2026 Batch 3B\n\nAvailable Roles:\n- HRBP Intern\n- Application Support Consultant (Order Management System)\n- Application Support Consultant (HR System)\n- Technical Developer Microsoft BC\n- Business Analyst (Application Solutions)\n- Logistics Admin\n- Junior Project Coordinator   \n\nKey Dates:\nRegister: 23 November – 01 December 2026\nApply: 27 November – 01 December 2026   \n\nHead to maganghub.kemnaker.go.id, search PT NTT Indonesia Technology, and apply before the window closes!\n\n#NTTDATA #Maganghub #Internship2026 #GlobalTech #TopEmployer2026 #EarlyCareer",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532291642054336512",
+      "timestamp": "2026-11-28T03:57:50.882Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532288869619093504",
+      "text": "Learning directly from those who have walked the path turns global academic aspirations into actionable roadmaps. 🇬🇧🎓✨\nI recently had the inspiring opportunity to join the Study UK: Meet & Greet with UK Alumni and Study UK Alumni Awards 2026 Finalists! Stepping into a room filled with accomplished Indonesian graduates from UK universities—alongside exceptional changemakers recognized by the British Council’s Alumni Awards—was a powerful reminder of how transformative international education can be.\nThroughout the session, engaging directly with alumni and finalists offered invaluable, real-world insights beyond university brochures:\n🏆 Impact-Driven Journeys: Hearing firsthand how UK alumni translate world-class academic training into tangible leadership across education, science, business, and social impact in Indonesia.\n🎓Navigating UK Higher Education: Candid advice on choosing the right postgraduate program, adapting to independent research culture, and making the most of UK campus networks.\n🤝Meaningful Mentorship & Connection: Building authentic connections with inspiring scholars and fellow aspiring postgraduate applicants who share a vision for lifelong learning and global collaboration.\nAs an English educator and curriculum developer preparing for my own postgraduate journey abroad, conversations like these sharpen both my academic direction and my ability to mentor students dreaming of studying on a global stage.\nGrateful toStudy UK andBritish Council Indonesia for fostering such an empowering space to connect, learn, and be inspired!\n💡 If you could sit down with an international alumnus or scholarship awardee today, what is the one question you would ask them? Share your thoughts in the comments below!\n#StudyUK #UKAlumni #GlobalHigherEducation",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532288866637021184",
+      "timestamp": "2026-11-28T03:46:49.677Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "developer indonesia"
         }
       ]
     },
@@ -172,71 +214,71 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532255634579365888",
-      "text": "This week in cybersecurity and AI: 5 things worth knowing\n\n1️⃣ The US Air Force's Cloud One platform was breached. Reuters says a software flaw gave attackers control-plane access, and migrations and updates are on hold. Whoever owns the control plane owns everything under it.\n\n2️⃣ NFS2ROOT (CVE-2026-99362), CVSS 9.8. A 12-year-old heap overflow in the Linux kernel NFS server gives remote root with no authentication. File servers, NAS, build farms and Kubernetes storage nodes are in scope. Patch and reboot, or restrict TCP 2049 to trusted hosts today.\n\n3️⃣ Developer accounts are the new front door. SAP and 1Password both reported incidents tied to employee GitHub accounts and tokens. Phishing-resistant MFA and short-lived tokens, please.\n\n4️⃣ Nvidia has reportedly paused AI server shipments to Singapore, Malaysia, Thailand and Indonesia under new US rules on offshore data centres. If you have regional AI capacity plans, check your delivery dates.\n\n5️⃣ CSA says reported incidents in Singapore since September are running at three times the January to August monthly average. Patch internet-facing systems, enforce MFA and least privilege, watch your vendors. PDPC and CSA also issued a joint advisory on insecure APIs.\n\nMy take:\nI have been in infrastructure a long time, and most incidents I have seen up close did not need a genius attacker. They needed one unpatched box, one shared admin password, or one vendor account nobody switched off.\n\nThis week is the same story with bigger names. Cloud One is a control-plane problem. NFS2ROOT is an old bug on a port that should never have been reachable from half the network. SAP and 1Password are identity problems.\n\nIn NS we checked the boring things before every sail, every time, even when nothing ever went wrong. Nobody gets a medal for it. Security is the same. AI makes attackers faster, but it does not change the doors they walk through.\n\nMy homework this weekend: find every host listening on 2049, and every token older than 90 days.\n\nWhat's at the top of your patch list this week?\n\nFeel free to comment, like, forward and subscribe for more cybersecurity info/insight. Refer to the news URLs for details.\n\nSources:\n1. https://lnkd.in/gcMPvwWz\n2. https://lnkd.in/g-QdnRMz\n3. https://lnkd.in/gbtM_tXb\nhttps://lnkd.in/gQ_pwtQw\n4. https://lnkd.in/gcNYC-PE\n5. https://lnkd.in/gbmcD7Em\nhttps://lnkd.in/g6wkYyMV\n\n#Cybersecurity #AI #CloudSecurity #Linux #Singapore #InfoSec #5cybersecure #5cyber #qicyber #formintiumai",
+      "id": "urn:li:activity:7532299516859912192",
+      "text": "https://lnkd.in/gwgVjVZV",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532255631815323648",
-      "timestamp": "2026-11-28T01:34:45.826Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532299515513643008",
+      "timestamp": "2026-11-28T04:29:08.177Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532243105811546112",
-      "text": "Uzone.id",
+      "id": "urn:li:activity:7532299204757454848",
+      "text": "I joined Smoore before I even graduated. One year later, here is what I have learned.\nAs a Mechatronics Engineering graduate, I started in the Smoore Development Program 2025 (SDP25) and was later offered a contract as Procurement Technical Engineer. In one year, I went from learning the fundamentals to contributing to real production and supply chain results.\nHighlights:\n\nReduced a production defect rate from 9.3% to below 1% in just 2 working weeks, using structured problem solving (RCA, 8D, 5 Whys, SMART, 4M+1E).\n\nSupplier sourcing & development: Managed the full cycle for new suppliers, from sourcing and capability assessment to price negotiation, contracting, and documentation.\n\nChina-to-Indonesia localization: Involved in transfer projects from China to Indonesia, from development through to mass production, to improve cost and supply reliability.\n\nSupplier audits & compliance: Coordinated supplier audits to assess manufacturing capability and compliance. Also participated as auditee inISO 9001 and ISO 14001 audits with no major findings.\n\nSupplier performance management: Monitored and improved suppliers across Quality, Cost, Delivery, and Service (QCDS).\n\nTechnical collaboration: Supported SOP, SIP, and QCP alignment, analyzed Cp/Cpk, and coordinated new sample development based on engineering specifications.\n\nI work with suppliers acrossplastic, silicone, packaging, metal, and CMF, and I communicate with China-based suppliers in English, building strong working relationships across cultures.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532243104884699136",
-      "timestamp": "2026-11-28T00:44:58.735Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532299203633479680",
+      "timestamp": "2026-11-28T04:27:53.766Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532238322694344704",
-      "text": "On 27 October 2007, around 500 bloggers from across Indonesia met at Blitz Megaplex, Grand Indonesia, Jakarta, for Pesta Blogger 2007, the country's first national blogger gathering. The theme was \"Suara Baru Indonesia\" (A New Voice of Indonesia). Organizing chair Enda Nasution proposed making the day National Bloggers' Day, and Communications Minister Muhammad Nuh declared it on stage.\n\nWhy it still matters to me: a lot of what we now call content, online communities and personal branding grew out of those personal blogs. Communities from Makassar, Semarang, Bandung, Padang and other cities that knew each other only through comment sections finally met in person. Writing consistently and honestly built trust long before social media algorithms existed.\n\nMy lesson: having your own place on the web to write and share is still worth it, especially for developers and business owners. Platforms change, but the writing and relationships you build stay yours. Does anyone here still blog regularly?\n\nSource: https://lnkd.in/gYz-yGiS\nhttps://lnkd.in/gfs7W7gi\n\n#WebHistory #Blogging #Indonesia #WebDevelopment",
+      "id": "urn:li:activity:7532298133951930368",
+      "text": "🚀 We're hiring: Technical Consultant (Jakarta)\nAI Transcend (AIT) is growing our team that delivers AI and data analytics solutions for banking and financial services, and we're looking for early-career engineers who like to build things and talk to clients.\nWhat you'll do:\n• Help clarify client requirements, data sources, and API constraints\n• Build demos and proofs of concept (PoCs) with the team\n• Write SQL and Python/Java for data extraction, mapping, and API integration\n• Support deployment, integration testing, UAT and go-live\n• Troubleshoot issues using logs, queries, and API responses\nWhat we're looking for:\n• 1–3 years of hands-on experience in software development, data engineering, or systems integration (fresh graduates with strong internships are welcome!)\n• Solid SQL plus Python or Java\n• REST API, Linux, and debugging fundamentals\n• Working English, plus a willingness to work with clients\nNice to have: banking/fintech experience, ETL/BI, AI apps/RAG/vector DBs, Git/Docker/cloud, and Bahasa Indonesia.\n📍 Jakarta, with client-site visits as needed\nInterested? Send your CV and 1–2 representative projects (goal, tech stack, what you built, problems solved, outcome) to kansun.xia@ai-transcend.com\nKnow someone who'd fit? Tag them or share this post 🙏\n#hiring #Jakarta #DataEngineering #TechnicalConsultant #AI #Fintech #FreshGraduate",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532238321218043904",
-      "timestamp": "2026-11-28T00:25:58.351Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532298133070925824",
+      "timestamp": "2026-11-28T04:23:38.466Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532237486329217026",
-      "text": "On 27 October 2007, around 500 bloggers from across Indonesia met at Blitz Megaplex, Grand Indonesia, Jakarta, for Pesta Blogger 2007, the country's first national blogger gathering. The theme was \"Suara Baru Indonesia\" (A New Voice of Indonesia). Organizing chair Enda Nasution proposed making the day National Bloggers' Day, and Communications Minister Muhammad Nuh declared it on stage.\n\nWhy it still matters to me: a lot of what we now call content, online communities and personal branding grew out of those personal blogs. Communities from Makassar, Semarang, Bandung, Padang and other cities that knew each other only through comment sections finally met in person. Writing consistently and honestly built trust long before social media algorithms existed.\n\nMy lesson: having your own place on the web to write and share is still worth it, especially for developers and business owners. Platforms change, but the writing and relationships you build stay yours. Does anyone here still blog regularly?\n\nSource: https://lnkd.in/ggPF7rtC\nhttps://lnkd.in/gxNaCZPg\n\n#WebHistory #Blogging #Indonesia #WebDevelopment",
+      "id": "urn:li:activity:7532292340414341120",
+      "text": "Halo #jobseekers! Yuk jadi bagian Keluarga Besar Lippo Malls Indonesia!\n\n1. Accounting Intern - Lippo Mall Head Office\n2. Finance & Accounting Intern - Lippo Mall Head Office\n3. Graphic Design Intern - Lippo Mall Head Office\n4. Talent Acquisition Intern - Lippo Mall Head Office\n5. Procurement Intern - Lippo Mall Head Office\n6. Advertising & Promotion Intern - WTC Matahari Serpong\n7. Social Media and Advertising & Promotion Intern - Metropolis Town Square\n8. Senior Leasing Officer - Lippo Plaza Aceh\n9. Senior HR Officer - Lippo Plaza Batu\n10. Senior Fit Out Officer - Lippo Mall Nusantara\n11. MEP Engineer - Lippo Office Indonesia Lippo Thamrin\n12. Senior Tenant Relation Officer - Lippo Office Indonesia Lippo Thamrin\n13. Advertising & Promotion Officer - Senayan Park\n14. Senior Casual Leasing Officer - Senayan Park\n15. Account Receivable Officer - Lippo Mall Head Office\n16. Compensation & Benefit Specialist - Lippo Mall Head Office\n17. Finance & Accounting Assistant Manager - Lippo Mall Head Office\n18. Finance Specialist - Lippo Mall Head Office\n19. National Casual Leasing Specialist - Lippo Mall Head Office\n20. Organizational Development Specialist - Lippo Mall Head Office\n21. Senior Finance & Accounting Specialist - Lippo Mall Head Office\n\nKunjungi career.lippomalls.com untuk informasi lebih lanjut dan apply sekarang!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532237484693372928",
-      "timestamp": "2026-11-28T00:22:38.946Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532129589578514433",
+      "timestamp": "2026-11-28T04:00:37.179Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532228015976591360",
-      "text": "𝐒𝐩𝐞𝐚𝐤𝐞𝐫 𝐀𝐧𝐧𝐨𝐮𝐧𝐜𝐞𝐦𝐞𝐧𝐭 | 𝐄𝐝𝐨 𝐌𝐚𝐡𝐞𝐧𝐝𝐫𝐚, 𝐏𝐫𝐢𝐧𝐜𝐢𝐩𝐚𝐥 𝐀𝐝𝐯𝐢𝐬𝐨𝐫 𝐭𝐨 𝐭𝐡𝐞 𝐌𝐢𝐧𝐢𝐬𝐭𝐞𝐫 𝐨𝐟 𝐅𝐨𝐫𝐞𝐬𝐭𝐫𝐲, 𝐑𝐞𝐩𝐮𝐛𝐥𝐢𝐜 𝐨𝐟 𝐈𝐧𝐝𝐨𝐧𝐞𝐬𝐢𝐚\n\nWe are honored to announce Edo Mahendra, Principal Advisor to the Minister of Forestry, Republic of Indonesia, as a distinguished speaker at Carbon Digital Conference 2026 (CDC 2026). Indonesia possesses some of the world's most significant forest carbon assets. However, translating this potential into economic value requires regulatory certainty, credible project development, market access, and long-term investment.\n\nFollowing the issuance of Ministry of Forestry Regulation No. 6/2026, attention is increasingly turning towards implementation and how Indonesia can unlock greater opportunities for forestry carbon projects. How can Indonesia make forest conservation an economically competitive alternative to other land uses? How can carbon markets attract investment while ensuring environmental integrity and tangible benefits for local communities? Join CDC 2026 to gain insights into Indonesia's evolving forestry carbon landscape and explore opportunities to turn regulatory progress into real investment and project development.\n\n- 𝐒𝐩𝐞𝐚𝐤𝐞𝐫𝐬 𝐥𝐢𝐧𝐞 𝐮𝐩 & 𝐚𝐠𝐞𝐧𝐝𝐚: https://lnkd.in/gjK7VfFH\n- 𝐑𝐞𝐠𝐢𝐬𝐭𝐞𝐫: https://lnkd.in/ghTQ3j8a\n- 𝐈𝐧𝐭𝐞𝐫𝐞𝐬𝐭𝐞𝐝 𝐢𝐧 𝐬𝐩𝐨𝐧𝐬𝐨𝐫𝐢𝐧𝐠, exhibiting, or speaking? Email: cdc@idcarbontrade.org\n\n𝐓𝐡𝐞 𝟒𝐭𝐡 𝐂𝐚𝐫𝐛𝐨𝐧 𝐃𝐢𝐠𝐢𝐭𝐚𝐥 𝐂𝐨𝐧𝐟𝐞𝐫𝐞𝐧𝐜𝐞 𝟐𝟎𝟐𝟔\nTHE LARGEST CARBON PROJECT DEVELOPERS CONVENTION IN THE REGION\n📅 8-9 December 2026\n📍 Hotel Sheraton Gandaria, Jakarta, Indonesia\n🌐 https://lnkd.in/gUbDdX6p\n\n#CDC2026 #CarbonDigitalConference #EcobizAsia #IDCTA #EdoMahendra #MinistryOfForestry #CarbonMarket #CarbonCredits #CarbonTrading #CarbonInvestment #CarbonFinance #CarbonEconomy #ForestCarbon #ForestryCarbon #CarbonProjectDevelopers #ForestConservation #REDDplus #NatureBasedSolutions #CarbonRemoval #CarbonMarketIntegrity #ClimateFinance #SustainableForestry #Decarbonization #NetZero #Indonesia",
+      "id": "urn:li:activity:7532287913536094208",
+      "text": "For testing equipment, delivery is just the beginning. Seeing our engineers right there on the factory floor in Indonesia proves that global support isn't just a slogan.",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531956516510412800",
-      "timestamp": "2026-11-27T23:45:01.038Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532287912953098240",
+      "timestamp": "2026-11-28T03:43:01.729Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "developer indonesia"
+          "value": "engineer indonesia"
         }
       ]
     },
@@ -321,6 +363,132 @@
         {
           "type": "linkedin",
           "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532300141693808640",
+      "text": "Hello Vici People's!👋🏻\nWe Are #Hiring!\n\nPT Victoria Care Indonesia is looking for several postion. Here's the update vacancy that we need you to apply:\n\n🔹Supervisor Sales Key Account ( Jakarta Barat )\n🔹Sales Assistant Manager ( Bitung, Tangerang )\n🔹Field Promotion Supervisor ( Palembang )\n🔹Field Promotion Supervisor ( Jakarta Barat ) \n🔹Salesman/Salesgirl ( Jakarta Barat )\n\nHow to Apply:\nIf you are interested and match the qualifications, feel free to submit your CV through email and send it to:\nadmhrdjkt@vci.co.id\ncc: hrgajk1@vci.co.id ;hrgaadmjkt@vci.co.id\nSubject:  Position_Talentvci_Location\n\n✨Join us and grow your career with us \nFeel free to share this job vacancy ☺️ \nGood luck!\n\n#Hiring #WeAreHiring #JobVacancy #LowonganKerja #CareerOpportunity #JoinOurTeam #SalesSupervisor #SalesAssistantManager #KeyAccount #FieldPromotionSupervisor #Salesman #Salesgirl #FMCG #Marketing #Sales #SalesPromotion #JakartaBarat #Jakarta #Palembang #Bitung #VictoriaCareIndonesia #TalentVCI",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532300140670369793",
+      "timestamp": "2026-11-28T04:31:37.149Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532299812382072832",
+      "text": "Featured Jobs. Apply Now.\n\nJob Title : Desktop Application Developer (Electron.js + Tauri)\nJod Desc : Job description\r\nDepartment: Engineering & Technology\r\n\r\nPosition: Desktop Application Developer (Electron.js + Tauri)\r\n\r\nExperience: 3-6 Years\r\n\r\nEmployment Type: Full-Time\r\n\r\nLocation: Mohali (On-site)\r\n\r\nAbout Us:- TRU is a Global Leading Organization dedicated to leveraging cutting-edge technology to drive business innovation and growth. We're architects of online experiences, innovators in the digital landscape, and partners in our clients' success stories. Our journey began with a simple yet powerful vision to transform businesses through strategic and creative digital solutions.\r\nAt TRU, we pride ourselves on a holistic approach to digital excellence. We don't just create websites or run marketing campaigns; we craft immersive digital journeys that resonate with audiences. From the inception of an idea to its execution, we bring together a team of passionate professionals who thrive on pushing boundaries and challenging the status quo.\r\nOur global team comprises of industry experts hailing from Canada and APAC realms including India and Indonesia having creative and innovative minds. We are tech-savvy enthusiasts and bring a wealth of intelligence and expertise to the table. Whether it's web development, design, digital marketing, or emerging technologies, we're here to navigate the complexities and deliver solutions that make a lasting impact.\r\nJob Overview:- We are looking for a skilled Desktop Application Developer with strong experience in Electron.js, Tauri, JavaScript/TypeScript, and native system integrations to develop high-performance, secure, and scalable cross-platform desktop applications. The ideal candidate should have practical experience building desktop applications for Windows, macOS, and Linux, working with operating system APIs, managing background processes, handling system events, and integrating native functionality using Rust or other system-level technologies. The candidate will be responsible for developing desktop application features, optimizing application performance, implementing OS-level integrations, and ensuring reliable application behavior across all three operating systems.\n\nApply Now : https://lnkd.in/dpZbt63n\n\nLooking for your next career move? A new position has been added to Softchief Jobs by one of our trusted employers.\n\nWhether you're a Fresher, Experienced Professional, or Career Switcher, explore exciting opportunities from companies actively hiring.\n\n✅ Verified Employers\n✅ Latest Job Openings\n✅ Easy Online Application\n✅ Multiple Technology & Business Roles\n✅ Apply in Minutes\n\n🔗 View & Apply Now:\nhttps://lnkd.in/dpZbt63n\n\n📧 Need Help?\nsupport@softchief.com\n\n💬 Tag someone who is looking for a new opportunity and help them land their next job!\n\n#Hiring #Jobs #Career #JobAlert #NowHiring #HiringNow #Freshers #Experienced #ITJobs #SoftwareJobs #Microsoft #PowerPlatform #Dynamics365 #Azure #DeveloperJobs #RemoteJobs #IndiaJobs #TechCareers #SoftchiefJobs #SoftchiefLearn",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532299808997335040",
+      "timestamp": "2026-11-28T04:30:18.635Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532298103429943296",
+      "text": "🚀 We’re Hiring: Senior HR Generalist!\n\nExata Indonesia is looking for an experienced HR professional who is ready to take on a strategic role in shaping our people, culture, and organizational growth.\n\nIf you have a strong background in HR, employee relations, performance management, recruitment, and HR operations — we’d love to hear from you!\n\n💰 Salary: IDR 6–8 Million\n📩 hrd@exataindonesia.com\n📱 0811-8889-9748\n\nPenempatan : Bekasi\n\nKnow someone who might be a great fit? Tag them or share this post!\n\n#Hiring #SeniorHRGeneralist #HRJobs #HumanResources #CareerOpportunity #ExataIndonesia",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532298102544945152",
+      "timestamp": "2026-11-28T04:23:31.189Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532298133951930368",
+      "text": "🚀 We're hiring: Technical Consultant (Jakarta)\nAI Transcend (AIT) is growing our team that delivers AI and data analytics solutions for banking and financial services, and we're looking for early-career engineers who like to build things and talk to clients.\nWhat you'll do:\n• Help clarify client requirements, data sources, and API constraints\n• Build demos and proofs of concept (PoCs) with the team\n• Write SQL and Python/Java for data extraction, mapping, and API integration\n• Support deployment, integration testing, UAT and go-live\n• Troubleshoot issues using logs, queries, and API responses\nWhat we're looking for:\n• 1–3 years of hands-on experience in software development, data engineering, or systems integration (fresh graduates with strong internships are welcome!)\n• Solid SQL plus Python or Java\n• REST API, Linux, and debugging fundamentals\n• Working English, plus a willingness to work with clients\nNice to have: banking/fintech experience, ETL/BI, AI apps/RAG/vector DBs, Git/Docker/cloud, and Bahasa Indonesia.\n📍 Jakarta, with client-site visits as needed\nInterested? Send your CV and 1–2 representative projects (goal, tech stack, what you built, problems solved, outcome) to kansun.xia@ai-transcend.com\nKnow someone who'd fit? Tag them or share this post 🙏\n#hiring #Jakarta #DataEngineering #TechnicalConsultant #AI #Fintech #FreshGraduate",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532298133070925824",
+      "timestamp": "2026-11-28T04:23:38.466Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532297375663423488",
+      "text": "Nadyanaaa1@gmail.com",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532297375047114752",
+      "timestamp": "2026-11-28T04:20:37.676Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532295983762771968",
+      "text": "WE ARE HIRING | FREELANCE JUNIOR ARCHITECTURAL DESIGNER & DRAFTER\n\nOHA Design Workshop – Jakarta\nSydney-Affiliated Architectural Practice.\n\n📍 Location: Jakarta / Remote Working  \n📅 Engagement Period: December 2026 – January 2027  \n💼 Employment Type: Freelance / Project-Based\n\nJOIN OUR PROJECT TEAM\n\nOHA Design Workshop – Jakarta is seeking motivated and technically capable emerging architectural professionals to support our ongoing architectural projects.\n\nWe welcome applications from final-year Architecture students and fresh graduates who are ready to translate their academic knowledge and technical skills into practical project delivery within an internationally connected architectural working environment.\n\nTHE POSITION\n\nFreelance Junior Architectural Designer & Drafter\n\nKEY TECHNICAL COMPETENCIES\n\n- AutoCAD:** Strong command of 2D drafting and architectural working drawings.\n- Revit:** Competency in architectural modelling and design documentation.\n- SketchUp:** Proficiency in 3D architectural modelling and design development.\n\n### WHAT WE ARE LOOKING FOR\n\n- Strong technical skills and efficient work delivery.\n- Ability to interpret architectural concepts and translate them into accurate technical drawings.\n- Attention to detail and commitment to project deadlines.\n- Proactive attitude, adaptability, and problem-solving capabilities.\n- Ability to work independently and collaboratively within a project team.\n- Own laptop and access to relevant design software.\n\n### ENGAGEMENT DETAILS\n\n- Freelance / Project-Based Appointment.\n- Fixed project period: December 2026 – January 2027.\n- Jakarta-based coordination with remote working arrangements where applicable.\n- Project-oriented deliverables and agreed deadlines.\n\n### APPLICATION DEADLINE\n\nWednesday, 2 December 2026, by 23:59 WIB (Western Indonesia Time).\n\n### INTERESTED? LET'S TALK!\n\nIf you are ready to apply your architectural skills, gain hands-on project experience, and contribute to professional architectural project delivery, we would be pleased to hear from you.\n\n**APPLY DIRECTLY VIA EMAIL:**\n\n📩 n.handayani@ohaworkshop.com\ninfo@ohaworkshop.com\n\nPlease submit:\n\n1. Updated CV.\n2. Architectural portfolio or samples of previous work.\n3. Software proficiency (AutoCAD, Revit and SketchUp).\n4. Availability during December 2026 – January 2027.\n5. Expected freelance fee.\n\nWe welcome applications from talented final-year Architecture students and fresh graduates.\n\nKnow someone who might be a good fit? Feel free to share this opportunity with your academic and professional networks.\n\nOHA Design Workshop – Jakarta | Connecting Architectural Talent, Design Excellence and International Project Collaboration.\n\n---\n\n#OHADesignWorkshop #WeAreHiring #HiringNow #ArchitectureJobs #JakartaJobs #FreelanceOpportunity #FreelanceArchitect #JuniorArchitect #ArchitecturalDesigner #ArchitecturalDrafter #ArchitectureStudents #FinalYearStudents #FreshGraduate #ArchitectureCareers #AutoCAD #Revit #SketchUp #3DModelling #ArchitecturalDesign #WorkingDrawings #SydneyArchitecture #InternationalCollaboration #IndonesiaArchitecture #CareerOpportunity #JobVacancy",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532295981682319360",
+      "timestamp": "2026-11-28T04:15:05.821Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532295912358916096",
+      "text": "Hello Vici People's!👋🏻\nWe Are #Hiring!\n\nPT Victoria Care Indonesia is looking for several postion. Here's the update vacancy that we need you to apply:\n\n🔹Supervisor Sales Key Account ( Jakarta Barat )\n🔹Sales Assistant Manager ( Bitung, Tangerang )\n🔹Field Promotion Supervisor ( Palembang )\n🔹Field Promotion Supervisor ( Jakarta Barat ) \n🔹Salesman/Salesgirl ( Jakarta Barat )\n\nHow to Apply:\nIf you are interested and match the qualifications, feel free to submit your CV through email and send it to:\nadmhrdjkt@vci.co.id\ncc: hrgajk1@vci.co.id ;hrgaadmjkt@vci.co.id\nSubject:  Position_Talentvci_Location\n\n✨Join us and grow your career with us \nFeel free to share this job vacancy ☺️ \nGood luck!\n\n#Hiring #WeAreHiring #JobVacancy #LowonganKerja #CareerOpportunity #JoinOurTeam #SalesSupervisor #SalesAssistantManager #KeyAccount #FieldPromotionSupervisor #Salesman #Salesgirl #FMCG #Marketing #Sales #SalesPromotion #JakartaBarat #Jakarta #Palembang #Bitung #VictoriaCareIndonesia #TalentVCI",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532295911641710592",
+      "timestamp": "2026-11-28T04:14:48.797Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532294074356207616",
+      "text": "https://bit.ly/LMJLoker",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532294073374912512",
+      "timestamp": "2026-11-28T04:07:30.583Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532294103280025602",
+      "text": "CAREER DEVELOPMENT COMPANIES (HIRING LIST)\n  \nHere are 28 career development companies that are actively hiring right now, ranked by percentage headcount growth in the past six months. This is No.304 of On My Radar, my weekly list of the companies I can't stop watching:\n\nHandshake - job marketplace for students and early talent (San Francisco)\nBetterUp - coaching plus AI for workforce development (Austin)\nAbby Care - caregiver certification training and jobs (San Francisco)\nValence - AI coaching for employee development (New York)\nBites - microlearning for frontline workers (Tel Aviv, Israel)\nTechWolf - AI skills intelligence for workforce planning (Ghent, Belgium)\nPathstream - career programs for frontline employees (San Francisco)\nWorkera - skills assessment and upskilling (Palo Alto)\nAttensi - game-based simulation training (Oslo, Norway)\nBetterworks - performance and talent development (Menlo Park)\nDisprz - skills-based learning and career pathing (West Orange, NJ)\nRuangguru - tech-enabled learning and skills courses (Jakarta, Indonesia)\nEightfold AI - talent intelligence and internal mobility (Santa Clara)\nPlanetSpark - communication and public-speaking training (Gurgaon, India)\nThe Mom Project - AI talent marketplace and return-to-work paths (Chicago)\n360Learning - AI-driven collaborative learning (New York)\nYOOBIC - training for frontline retail teams (New York)\nMultiverse - AI and tech upskilling through apprenticeships (London, UK)\nupGrad - online degrees and career upskilling (Mumbai, India)\nCodeSignal - assessing and building job skills (San Francisco)\nOpenSesame- workforce learning software (Portland)\nSection - AI training and adoption for workforces (New York)\nUNIVO Education - online degrees run with universities (Noida, India)\nOpen English - English learning for individuals and businesses (Coral Gables)\nCengage - digital learning content and workforce skills (Boston)\nSpringboard - career-change bootcamps with mentors (San Francisco)\nAdda Education - test prep and job skills (Gurgaon, India)\nWiser Educação - vocational and supplementary education (Curitiba, Brazil)\n  \nCareer page links are in the comments\n  \n🔔 follow me for a new list every week:Grace Gong\n\n🙏Special thanks to Harmonic (the ultimate startup database) for helping me source the list\n  \n🎙️ for more on AI, tune intoVenture with Grace\n\n#careerdevelopment #upskilling #edtech #hiring #vc",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532294101736730624",
+      "timestamp": "2026-11-28T04:07:37.479Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -424,11 +592,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532277323040129024",
-      "text": "Gold Coin Indonesia is participating in MagangHub Batch 3B 2026! 🚀 \n\nCalling all eligible fresh graduates—this is your chance to gain real-world experience and take your first step into the professional world.\n\nJoin us to learn, grow, and contribute through meaningful internship opportunities across various functions and locations.\n\nOpportunities are available in Finance, RTD and many more.\n\n 💬 Ready to apply? Click here: https://lnkd.in/gszrrsBb\n\nHave questions about any of the available positions? Feel free to leave a comment below—we'll be happy to help!\n\n#Hiring #MagangHub #AboitizFoods #GoldCoinIndonesia #GrowWithGoldCoin",
+      "id": "urn:li:activity:7532277110846148608",
+      "text": "Hiring across tech, sales and corporate teams often means juggling three different agencies.\n\nBase Camp is a boutique recruitment firm that covers all three: IT, go-to-market and corporate hiring.\n\nFrom our offices in Singapore and Jakarta, we work with companies hiring across Singapore, Indonesia, Thailand and the wider region. One team that already knows your business when the next role opens, so you don't have to explain your company, your culture or your tech stack all over again each time.\n\nPlanning hires for the new year? Send us the brief:\nhttps://basecamp.com.sg/\n\n#Recruitment #Singapore",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532277322029170688",
-      "timestamp": "2026-11-28T03:00:56.758Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532277107780001792",
+      "timestamp": "2026-11-28T03:00:06.167Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -438,11 +606,11 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532277110846148608",
-      "text": "Hiring across tech, sales and corporate teams often means juggling three different agencies.\n\nBase Camp is a boutique recruitment firm that covers all three: IT, go-to-market and corporate hiring.\n\nFrom our offices in Singapore and Jakarta, we work with companies hiring across Singapore, Indonesia, Thailand and the wider region. One team that already knows your business when the next role opens, so you don't have to explain your company, your culture or your tech stack all over again each time.\n\nPlanning hires for the new year? Send us the brief:\nhttps://basecamp.com.sg/\n\n#Recruitment #Singapore",
+      "id": "urn:li:activity:7532277323040129024",
+      "text": "Gold Coin Indonesia is participating in MagangHub Batch 3B 2026! 🚀 \n\nCalling all eligible fresh graduates—this is your chance to gain real-world experience and take your first step into the professional world.\n\nJoin us to learn, grow, and contribute through meaningful internship opportunities across various functions and locations.\n\nOpportunities are available in Finance, RTD and many more.\n\n 💬 Ready to apply? Click here: https://lnkd.in/gszrrsBb\n\nHave questions about any of the available positions? Feel free to leave a comment below—we'll be happy to help!\n\n#Hiring #MagangHub #AboitizFoods #GoldCoinIndonesia #GrowWithGoldCoin",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532277107780001792",
-      "timestamp": "2026-11-28T03:00:06.167Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532277322029170688",
+      "timestamp": "2026-11-28T03:00:56.758Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -480,29 +648,15 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532275190572142592",
-      "text": "https://lnkd.in/g7kkt3jy",
+      "id": "urn:li:activity:7532255699788083200",
+      "text": "#MSBUKonsultan",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532275189506809856",
-      "timestamp": "2026-11-28T02:52:28.338Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532255698819121152",
+      "timestamp": "2026-11-28T01:35:01.373Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532274764304867328",
-      "text": "HIRING: Lawyer \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house lawyers to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and model performance.\nCreate evaluation frameworks and grading criteria.\nCollaborate with product and research teams to improve AI-driven legal tools.\n\nRequirements:\nJ.D. or equivalent recognized law degree.\nActive license to practice law or current admission in good standing with the relevant legal authority.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review, draft, and negotiate complex legal agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d3S-D2gY\n\n#LawyerJobs #LegalJobs #Lawyer #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractLaw #ContractNegotiation #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274763365244928",
-      "timestamp": "2026-11-28T02:50:46.708Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
+          "value": "engineer jakarta"
         }
       ]
     },
