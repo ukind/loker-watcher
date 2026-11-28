@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "writtenAt": "2026-11-28T03:32:22.066Z",
+  "writtenAt": "2026-11-28T04:15:14.399Z",
   "posts": [
     {
       "platform": "linkedin",
@@ -37,20 +37,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531933875082776577",
       "timestamp": "2026-11-27T04:16:12.587Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "react jakarta"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7531926992477413376",
-      "text": "🚨 Urgently Hiring! 🚨\n\nWe’re looking for passionate and experienced professionals to grow with us in the energy sector! Work full-time in South Jakarta and contribute to exciting projects that make an impact.\n\nOpen Positions:\n1. Senior Structure Engineer – Min. 8+ years experience \n2. Senior Pipeline Engineer – Min. 8+ years experience \n3. Lead Pipeline Engineer – Min. 15 years experience managing Pipeline teams\n4. Lead Structure Designer - Min. 15 years experience\n5. Structure Designer - Min 8+ years experience\n\n📩 How to Apply:\n Please send your updated CV to careers@asiatekenergi.com\n\nEmail subject format: Position – Name – Total Years of Experience\n\nFeel free to reach out via DM or email for further information.\nYou are also welcome to share, react, or recommend anyone who may be suitable for these positions.\n \nOnly shortlisted candidates will be contacted.\n \nImportant Notice:\nOur recruitment process is free of charge. We do not request or accept any payment at any stage of the hiring process.\n \n Be part of building energy infrastructure that matters — Connecting Indonesia to the World. \n \n Goodluck!\n\n#opportunity #aem #energy #offshore #engineer #jobseeker #SURF",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531926991671959554",
-      "timestamp": "2026-11-27T03:48:51.443Z",
       "surfaces": [
         {
           "type": "linkedin",
@@ -102,43 +88,43 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532020743925288960",
-      "text": "From understanding programming fundamentals to exploring front-end development!\n\nMy learning journey in Asah led by Dicoding 2026 continued with JavaScript, Front-End Development, and React.\n\nThrough these modules, I gained a better understanding of how websites work, how interactive interfaces are built, and how React helps developers organize applications using reusable components.\n\nOne thing that stood out to me was the importance of connecting technical implementation with user experience.\n\nBuilding a website is not just about making things work. It's also about creating an experience that makes sense for its users.\n\nStill learning, still exploring, and looking forward to building more projects!\n\nWhat is your favorite part of front-end development?\nThank youGoTo Group andDicoding Indonesia for being part of this journey!\n#asahledbydicoding #GoToGroup #Asah2026 #FrontendDevelopment #JavaScript #ReactJS #WebDevelopment",
+      "id": "urn:li:activity:7532281945851006976",
+      "text": "AI news today, 28 November 2026.\n\nNvidia has told manufacturing partners such as Dell and Supermicro to stop shipping servers with its chips to Malaysia, Singapore, Thailand and Indonesia, according to the Financial Times. Chinese AI developers have been renting advanced Nvidia compute through cloud providers in the region. A new US Commerce rule gives those providers 90 days to get a licence by proving their end users aren't restricted. Nvidia booked $104bn of revenue through its Singapore subsidiary in 2025. It is unclear whether the halt is temporary.\n\nOpenAI posted a preprint claiming to disprove the polynomial Hirsch conjecture, which bounds how many steps the simplex method's edge walk can need. OpenAI says the main statements are formalised in Lean. Independent expert review is still pending.\n\nMeta declined the UK Financial Conduct Authority's offer to test its Muse agent in a supervised sandbox before the UK launch, WIRED reports. Meta says it engaged constructively with regulators.\n\nOpenAI fixed a billing error that undercounted GPT-6.2 usage. The same work now reaches limits 40% faster on Astra and 25% faster on Sol, with one banked reset for paid users.\n\nCanada expanded its AI Compute Access Fund by C$700 million to C$1 billion, covering up to 80% of costs on Canadian-owned clouds and none for services hosted abroad.\n\nAs someone who runs AI platforms for students across India, I read this as one story. Compute is turning into geography. Where your workloads run, and under whose rules, is becoming a product decision, not just an infra one.\n\nPlan for the rules, not just the benchmarks. Judgment > tools.\n\nSources: Financial Times (25 Nov 2026), Reuters (26 Nov 2026); OpenAI math repository (24 Nov 2026); WIRED (26 Nov 2026); BleepingComputer (26 Nov 2026); Government of Canada (26 Nov 2026).",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017627024588800",
-      "timestamp": "2026-11-27T10:01:23.530Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532281943288213504",
+      "timestamp": "2026-11-28T03:19:18.922Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531977703252561920",
-      "text": "We ran forged-JWT attack tests on our own app and closed cross-tenant vulnerabilities before they could be exploited.\n\nBuilding UMKM Unggul Indonesia taught me one thing: speed comes from AI, but quality comes from guardrails.\n\nWhat we put in place:\n1. Tenant Isolation: Row-level security across all tables, verified with forged-JWT tests.\n2. Access Control: Granular permissions + segregation of duties (nobody can approve their own void, refund, or price change).\n\n4 practices I’m keeping for every build:\n- Staged database migrations\n- Atomic transactions & hash-chained audit logs\n- Privacy by design \n- Hardened operations \n\nSee the live product: www.umkmunggul.id\nCase studies & full portfolio: www.aziztaufiqurrahman.com\n\n#BuildInPublic #NextJs #React #SaaS #ProductEngineering",
+      "id": "urn:li:activity:7532281123687600128",
+      "text": "🤖 TechiesHub AI Daily #10 | 28 Nov 2026\n\nGoogle makes MCP the front door to Workspace, OpenAI corrects a GPT-6.2 billing bug, and Microsoft shows how attackers are running AI agent frameworks. What developers should know:\n\n1. Google made Workspace MCP servers and the official Workspace CLI generally available, covering Gmail, Drive, Docs, Sheets, Slides, Calendar, Chat and Tasks. From 1 February 2027, AI agents must reach Workspace through MCP or the CLI rather than calling REST APIs directly. Admins get agent controls, confirmation rules for sensitive actions and agent audit logs.\n2. OpenAI fixed a billing bug that over-discounted GPT-6.2 Astra and Sol usage. Users now hit limits 40% faster on Astra and 25% faster on Sol than last week, with no retroactive charges. Go, Plus, Pro and Business subscribers get an extra usage reset, and Business users get free Fast Mode through the end of 2026.\n3. Claude Code 2.1.332 adds a PreSkillShellCommand hook event, an OpenTelemetry assistant_response event and skills from MCP servers shown as server:skill, along with many reliability fixes.\n4. Microsoft Threat Intelligence detailed how state-backed groups, including Salt Typhoon and Onyx Sleet, use ARTEX, a multi-agent AI penetration testing framework. One campaign logged over 151,000 failed sign-ins, peaking at 2,900 per minute. Microsoft recommends phishing-resistant MFA, rate limiting, secret scanning and decoys.\n5. Cloudflare launched Search for Agents in beta. One switch indexes a site and serves Markdown search results to AI agents at /.well-known/search, on all plans.\n6. Policy: the Financial Times reports Nvidia told server partners to halt shipments to Malaysia, Singapore, Thailand and Indonesia after new US export controls aimed at Chinese firms renting GPUs from overseas cloud providers.\n\nDev takeaway: if your agents touch Gmail, Drive or Calendar, plan the move from raw REST calls to Workspace MCP or the CLI before 1 February 2027, and harden internet-facing apps with rate limits and phishing-resistant MFA.\n\nShould every SaaS app force AI agents through MCP?\n\nJoin the TechiesHub community: https://lnkd.in/ddc7GYxT\n\n#AI #GenAI #MCP #GoogleWorkspace #OpenAI #CyberSecurity #TechiesHub #LearnTeachGrow\n\nSources: Google Workspace Updates, The Decoder, Claude Code changelog, Microsoft Security Blog, Cloudflare Changelog, Financial Times",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7531977702501965824",
-      "timestamp": "2026-11-27T07:10:21.834Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532281121913528320",
+      "timestamp": "2026-11-28T03:16:02.903Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7531966868459302914",
-      "text": "🚨 Urgently Hiring! 🚨\n\nAsiatek Energi Mitratama (AEM) is looking for qualified and experienced professionals to join our growing team and contribute to exciting engineering projects in the energy sector.\n\n📌 OPEN POSITIONS\n\n1. Pipeline Engineer - Singapore\nMinimum 8+ years of relevant working experience in the Oil & Gas industry.\nStrong experience in pipeline engineering, design, and technical deliverables.\nExperience in an Engineering Consultant or EPC company is preferred.\nWork Location: Singapore.\nMandarin language proficiency is an advantage.\n\n2. Project Engineer – Singapore\nMinimum 5+ years of relevant working experience in the Oil & Gas industry.\nExperience in project engineering, multidisciplinary engineering coordination, and project execution.\nAbility to coordinate with Project Managers, Lead Engineers, and multidisciplinary engineering teams.\nWork Location: Singapore.\nMandarin language proficiency is an advantage.\n\n3. Project Engineer – South Jakarta, Indonesia\nMinimum 5+ years of relevant working experience in the Oil & Gas industry.\nExperience in engineering project coordination and execution within an Engineering Consultant, EPC, or EPCIC environment.\nGood understanding of multidisciplinary engineering activities, project schedules, progress monitoring, and engineering deliverables.\nStrong communication and coordination skills.\nWork Location: South Jakarta, Indonesia.\n\n📩 How to Apply:\n Please send your updated CV to careers@asiatekenergi.com\n\nEmail subject format: Position – Name – Total Years of Experience\n\nFeel free to reach out via DM or email for further information.\nYou are also welcome to share, react, or recommend anyone who may be suitable for these positions.\n \nOnly shortlisted candidates will be contacted.\n \nImportant Notice:\nOur recruitment process is free of charge. We do not request or accept any payment at any stage of the hiring process.\n \n Be part of building energy infrastructure that matters — Connecting Indonesia to the World.\n\n#Hiring #WeAreHiring #OilAndGasJobs #EngineeringJobs #PipelineEngineer #ProjectEngineer #SingaporeJobs #JakartaJobs #OilAndGasIndustry #EngineeringConsultant #AEM",
+      "id": "urn:li:activity:7532279926020894720",
+      "text": "2027–2028: FALLING ALUMINIUM PRICES — A HIDDEN OPPORTUNITY FOR SAUDI ARABIA AND THE UAE?\n\nWhat if falling aluminium prices become an unexpected competitive advantage for the Middle East while the rest of the world is preparing for another economic slowdown?\n\nThere is an interesting contradiction developing in global markets.\n\nSaudi Arabia is investing billions in infrastructure, tourism, residential developments and Vision 2030.\n\nThe UAE continues expanding its real estate, financial services, logistics and industrial sectors.\n\nYet aluminium prices are facing downward pressure as global production capacity expands and the market anticipates a possible supply surplus.\n\nIs this bad news?\n\nNot necessarily.\n\nIn fact, it could create an important opportunity for both economies.\n\nBut the bigger picture goes far beyond aluminium.\n\n1. CHEAPER ALUMINIUM COULD MEAN MORE COMPETITIVE CONSTRUCTION\n\nThink about what goes into building a modern city:\n\nResidential towers.\nCommercial buildings.\nAirports and hotels.\nShopping malls.\nIndustrial facilities.\nData centres and energy infrastructure.\n\nAluminium is essential for windows, façades, curtain walls, electrical infrastructure and countless construction applications.\n\nIf aluminium prices decline while construction activity remains strong, developers could benefit from lower material costs.\n\nSaudi Arabia could improve the economics of major development projects.\n\nThe UAE could strengthen its position as a competitive destination for international real estate investment.\n\nBut lower material prices do not automatically translate into lower property prices. Financing, land, labour and developer margins also matter.\n\n2. SAUDI ARABIA: TURNING LOWER INPUT COSTS INTO ECONOMIC DIVERSIFICATION\n\nSaudi Arabia has an opportunity to use a period of lower industrial input costs to accelerate infrastructure, manufacturing and downstream industrial development.\n\nThe objective should not simply be to build more projects.\n\nIt should be to develop a stronger domestic industrial ecosystem.\n\nMore local manufacturing, more competitive supply chains, greater industrial productivity and less dependence on imported finished products.\n\nThe real opportunity is to capture more value from every dollar invested.\n\n3. UAE: THE ADVANTAGE OF BEING BOTH A PRODUCER AND A CONSUMER\n\nThe UAE has a different position.\n\nIt is both a major aluminium producer and a major consumer of industrial materials.\n\nCompanies such as Emirates Global Aluminium are important to the country’s industrial and export economy.\n\nThis creates two opposing effects:\n\nLower aluminium prices can benefit construction companies and downstream manufacturers.\n\nBut they can also reduce revenue and margins for primary aluminium producers.\n\nThe opportunity for the UAE is to move further up the value chain:\n\nFrom producing raw aluminium to manufacturing higher-value products, developing industrial capabilities and expanding international market access.\n\nThe real competitive advantage is not simply producing more aluminium. It is creating more economic value from every tonne produced.\n\n4. THE GLOBAL SUPPLY EQUATION: CHINA AND INDONESIA\n\nChina’s production capacity constraints and Indonesia’s expanding aluminium industry are changing the global supply landscape.\n\nIf new production enters the market faster than consumption grows, aluminium prices could remain under pressure during 2027.\n\nThis could benefit major aluminium-consuming economies, but challenge producers competing on margins.\n\nThe important question is whether global demand from construction, electrification, electric vehicles, power grids and AI infrastructure can absorb this additional capacity.\n\n5. THE US DOLLAR, EURO AND JAPANESE YEN: THE FINANCIAL SIDE OF THE STORY\n\nNow connect the commodity market with global currencies.\n\nA stronger US Dollar Index (DXY) can create additional pressure on dollar-priced commodities.\n\nA weaker euro changes European purchasing power and the competitiveness of European industry.\n\nMeanwhile, Japanese monetary normalisation could change the attractiveness of domestic bonds versus overseas investments.\n\nJapan’s position in US Treasury markets also deserves attention.\n\nIf Japanese investors increasingly find domestic yields attractive, international bond allocation decisions could change.\n\nThis may influence US Treasury yields, global financing costs, real estate investment and capital flows.\n\nFor Saudi Arabia and the UAE, the cost and availability of international capital are just as important as the price of construction materials.\n\n6. OIL, ENERGY AND GEOPOLITICS: THE FACTORS THAT COULD REVERSE THE TREND\n\nOil revenues influence government investment capacity.\n\nEnergy costs influence aluminium production economics.\n\nAnd geopolitical disruptions around the Strait of Hormuz can affect shipping, energy exports, industrial production and regional supply chains.\n\nA global market expecting aluminium oversupply could quickly change direction if major supply disruptions occur.\n\nThis is why falling aluminium prices should not automatically be interpreted as a long-term bearish signal.\n\n7. MY OUTLOOK FOR 2027–2028\n\nI see three possible outcomes:\n\nSCENARIO A — THE GOLDEN OPPORTUNITY\n\nAluminium prices decline moderately, construction investment remains strong, and Saudi Arabia and the UAE use lower input costs to accelerate real estate, infrastructure and manufacturing.\n\nThis could be the most favourable scenario for regional economic diversification.\n\nSCENARIO B — THE GLOBAL OVERSUPPLY TRAP\n\nNew production capacity increases faster than demand.\n\nAluminium prices fall further, putting pressure on smelter profitability, industrial investment and commodity-producing economies.\n\nDevelopers may benefit from cheaper inputs, but weaker global demand could undermine the wider economic outlook.\n\nSCENARIO C — THE GEOPOLITICAL REVERSAL\n\nEnergy prices rise, shipping routes face disruption and aluminium supply becomes constrained.\n\nPrices recover sharply, increasing costs for construction and manufacturing.\n\nThe countries with reliable energy, competitive production and resilient supply chains could gain a significant advantage.\n\n⸻\n\nMY FINAL THOUGHT\n\nI believe the most interesting opportunity for Saudi Arabia and the UAE in 2027–2028 is not simply benefiting from lower aluminium prices.\n\nIt is using this potential commodity correction to strengthen their economic foundations.\n\nCheaper industrial inputs.\n\nMore competitive construction.\n\nStronger local manufacturing.\n\nHigher-value aluminium production.\n\nMore resilient supply chains.\n\nGreater economic diversification.\n\nBut there is one condition: lower commodity prices must come from improving supply economics, not from a collapse in global demand.\n\nA country that can build more competitively, manufacture more efficiently and attract capital at the right time may gain an advantage over economies that are still paying yesterday’s prices.\n\nThe question I would put to investors, developers and policymakers:\n\nCould falling aluminium prices become one of the unexpected economic advantages for Saudi Arabia and the UAE in 2027–2028?\n\nOr are we looking at an early warning of a much bigger global economic slowdown?\n\n#SaudiArabia #UAE #Aluminium #RealEstate #Vision2030 #Dubai #GlobalEconomy #Commodities #Manufacturing #OilMarkets #DXY #CapitalFlows #InvestmentStrategy #2027 #2028",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531966865678614528",
-      "timestamp": "2026-11-27T06:27:18.618Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532279924737413121",
+      "timestamp": "2026-11-28T03:11:17.357Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "react indonesia"
+          "value": "developer indonesia"
         }
       ]
     },
@@ -256,6 +242,34 @@
     },
     {
       "platform": "linkedin",
+      "id": "urn:li:activity:7532284493341057024",
+      "text": "wa.me/6281319550813",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532284492456202240",
+      "timestamp": "2026-11-28T03:29:26.291Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532284114272587777",
+      "text": "🚀 OPEN TO WORK | HSE SUPERVISOR | SAFETY SUPERVISOR | SAFETY ENGINEER\n\nDear Hiring Managers, Recruiters, and Professional Connections,\n\nI am currently open to new career opportunities in the field of Health, Safety & Environment (HSE).\n\nWith more than 5 years of professional experience in Nickel Smelter, Construction, and Oil & Gas industries, I have developed strong competencies in managing workplace safety, supervising contractors, conducting risk assessments, and implementing effective HSE programs.\n\nMy Core Competencies:\n🔹 HSE Management & Supervision\n🔹 Contractor Safety Management\n🔹 Hazard Identification & Risk Assessment (HIRADC)\n🔹 Job Safety Analysis (JSA)\n🔹 Permit to Work (PTW)\n🔹 Working at Height & Confined Space Safety\n🔹 Gas Testing & Emergency Response\n🔹 Safety Inspection & Incident Investigation\n\nProfessional Certifications:\n✔ AK3U – Ministry of Manpower, Republic of Indonesia\n✔ Working at Height Level I & II\n✔ Accredited Gas Tester\n✔ Confined Space Safety\n✔ First Aid Training\n✔ Training of Trainer (ToT) Level 4 – BNSP\n\nI am passionate about building a strong safety culture, preventing workplace accidents, and ensuring compliance with occupational health and safety standards.\n\nI welcome opportunities to contribute my knowledge, skills, and experience to support your organization's HSE objectives.\n\nIf you know of any suitable opportunities, I would greatly appreciate your recommendations or referrals.\n\nThank you for your time and support.\n\nBest Regards,\nAripin Hidayattulloh\n\n#OpenToWork #HSESupervisor #SafetySupervisor #SafetyEngineer #HSEProfessional #K3 #OccupationalHealthAndSafety #NickelSmelter #Construction #OilAndGas #Hiring",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532284113513353216",
+      "timestamp": "2026-11-28T03:27:55.914Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "engineer indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
       "id": "urn:li:activity:7532274495470977025",
       "text": "DEVELOP YOUR PROFESSIONAL COMPETENCY IN WELDING INSPECTION\n\nKompetensi Welding Inspection dan Non-Destructive Testing (NDT) merupakan bekal penting dalam mendukung kualitas, keselamatan, dan keandalan pekerjaan pengelasan di berbagai sektor industri.\n\nSLV Metropolitan Indonesia menghadirkan:\n\nWELDING INSPECTOR STANDARD + NDT 5 METHODS\n\nProgram sertifikasi terintegrasi yang mencakup:\n\n• Welding Inspector Standard – SLV BNSP\n• NDT Level 2 ASNT\n• Visual Testing (VT)\n• Magnetic Testing (MT)\n• Penetrant Testing (PT)\n• Ultrasonic Testing (UT)\n• Radiographic Interpretation (RI)\n\nPROGRAM SCHEDULE\n\n* Online Theory: 7 December 2026 – 21 January 2027\n* Offline Practical & Examination: 23–31 January 2027\n\nProgram ini ditujukan bagi Welder, QC/QA Engineer, Supervisor, Inspector, Fresh Graduate Teknik, serta tenaga profesional yang ingin meningkatkan kompetensi di bidang inspeksi pengelasan.\n\nInvest in your competency. Strengthen your professional value. Expand your career opportunities.\n\nRegistration:\n\n📲 0878 4321 4710 \nChat WA https://lnkd.in/gEn9aWt2\n\n📲 0819 2854 5169 \nChat WA https://lnkd.in/ggydYicG\n\n🌐 https://lnkd.in/ga7_MQyv\n\nSLV METROPOLITAN INDONESIA\nTraining | Certification | Consultancy\n\n#WeldingInspector #NDTLevel2 #ASNT #WeldingInspection #ProfessionalCertification #QualityAssurance #OilAndGas #EPC #SLVTraining",
       "author": "linkedin-member",
@@ -312,29 +326,99 @@
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532257266222305280",
-      "text": "Hi everyone! \nURGENT for companies needing fast improvement in Operations, Quality, and Continuous Improvement to work with me! \nI’m a Mechanical Engineer 13 years in manufacturing 5 years as a Quality & Operational Manager and 8+ years as a System Auditor. Over 80% of my career was in Japanese companies (Yamaha Motor, Boltz Indonesia, Global Teknindo, APM Auto Components), shaping my discipline, Kaizen mindset, and high standards.\nIn automotive (OEM, Tier 1, Tier 2), I have hands-on customer handling on quality, technical alignment, audits, and issue solving with OEMs like Hyundai, Honda, Suzuki, Toyota, and Yamaha. End-to-end Operations is my strength: from demand/supply planning, production control & SAP/LN, inventory/stock opname, logistics, and machine maintenance to building systems from zero, factory setup, and machine installation.\nCore Skills & Tools:\n• Systems & Audits: ISO 9001, IATF 16949, ISO 14001, ISO 45001, ISO 50001, SNI 7079, ASTM, CE Marking, ISO 19011.\n• Automotive Quality: APQP, PPAP, FMEA, Control Plan, MSA, SPC, QC 7 Tools, 5W1H/RCA, Yokoten.\n• OpEx & Tech: Lean Six Sigma (Green & White Belt), TPM, Kaizen (QCC/SGA), OKR/KPI, WMS, flow mapping, layouting, SOLIDWORKS, Autodesk.\nKey Results:\n• Cost Reduction: Saved IDR 390.99M (162% of IDR 240M target) at Boltz Indonesia; saved IDR 31M/yr by cutting 6-sided grinding rejects up to 80% at Global Teknindo.\n• MRP & Delivery: Full control of MRP & planning across China, India, Singapore, and local suppliers with zero shortages, supporting 100% OTD KPI at Kurnia Indo Manufaktur.\n• Maintenance & Troubleshooting: Zero breakdown & zero downtime at Kurnia Indo Manufaktur via priority spare parts control and daily checks (pre/post-shift) on rotary injection machines, compressors, and support units.\n• Productivity & Efficiency: Boosted productivity +80% by fixing bonding defects (Kurnia Indo Manufaktur); streamlined inspection flow & removed double checks/unneeded areas at Boltz Indonesia; cut Document Control workload 90% via digital Level 1–4 docs (Composite Core Indonesia).\n• Quality Up: Eliminated 100% bonding defects, 9x SATRA strength, and cut IQC reject >50% to <0.2% (Kurnia Indo Manufaktur); 99.999% quality ratio / zero NG on 1DY Body Cylinder (Yamaha Motor); cut customer outflow 87% (Global Teknindo) & 74% (Boltz Indonesia); zero water leak defects at VinFast; upgraded IQC-IPQC-OQC-FAI & ISO 9001 docs (Imtec Mold).\n• Audit & Compliance: Zero NC in Intertek ISO 9001 surveillance audit (Composite Core Indonesia); led shop floor SCC, compliance, and 100% CAPA closure in GA, Body & Paint (VinFast).\nLike a swimmer looking for a big \"pool,\" I’m ready to pour all my improvement energy into driving real gains in Cost, Delivery, Quality, Productivity, and work culture. Let’s connect and build great operations together! 🤝🔥\n#manufacturing #automotive #qualitymanagementsystem #operationalmanager #factorymanager #plantmanager #sumedang #bandung #karawang #purwakarta #cikarang",
+      "id": "urn:li:activity:7532293196043968512",
+      "text": "📣 Your Career Awaits at Amaris Hotel Tasikmalaya!\n\nWe are hiring for :\n\n1. Human Resources Supervisor\n\nBuild a birghter career with an energetic and supportive team at Amaris Hotel Tasikmalaya!\n\nSubmit your updated CV and Applicantion Letter to :\nhrd@tasikmalaya.amarishotel.com\nSubject : Position_Name\n\nDo'nt miss this opportunity - become part of the Santika Indonesia family!",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532257264838184960",
-      "timestamp": "2026-11-28T01:41:14.840Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532293195192238080",
+      "timestamp": "2026-11-28T04:04:01.177Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
         }
       ]
     },
     {
       "platform": "linkedin",
-      "id": "urn:li:activity:7532255699788083200",
-      "text": "#MSBUKonsultan",
+      "id": "urn:li:activity:7532292042287218688",
+      "text": "WE’RE HIRING!\n\nPT Porto Indonesia Sejahtera is looking for talented professionals to join our growing team!\nWe’re currently opening opportunities for Supervisor & Senior Staff positions across various departments. If you're ready for a new challenge and looking to grow your career, this could be your next opportunity! ✨\n\n📌OPEN POSITIONS\n- Supervisor Quality Control \n- Senior Quality Control Staff\n- Senior Production Staff\n 📍 PLACEMENT : KARANGANYAR, JAWA TENGAH\n\n📩 Interested in joining us? Apply now!\n📧 Email: elizabeth.dian@porto.co.id (Subject : Positions_Name_Linkedin) \n📱 WhatsApp: +62 857-8651-8534",
       "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532255698819121152",
-      "timestamp": "2026-11-28T01:35:01.373Z",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532292041473622016",
+      "timestamp": "2026-11-28T03:59:26.100Z",
       "surfaces": [
         {
           "type": "linkedin",
-          "value": "engineer indonesia"
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532289941356326912",
+      "text": "🚀 WE ARE HIRING – IT PROGRAMMER!\n\nAre you passionate about technology, enjoy solving problems, and love developing applications that create real solutions?\n\nPT Mitra Multi Packaging (MMP) is looking for a creative and enthusiastic IT Programmer who enjoys logical thinking, exploring new technologies, and developing smart digital solutions!\n\nWhat we're looking for:\n- Excited to learn new technologies and explore new possibilities.\n - Enjoy solving problems through logical thinking and creative ideas.\n - Able to turn challenges into simple and effective solutions.\n - Passionate about application development.\n - Familiarity with FileMaker is a plus.\n - Minimum Diploma (D3).\n\n📍 Work Location: Balaraja, Tangerang, Indonesia\n\nReady to be part of our team?\nWe'd love to hear from you!\n\nApply now through the link below:\n🔗 Application Form: https://lnkd.in/ggyF5hzY\n\nBe part of our digital transformation and innovation journey at MMP!\n\n#WeAreHiring #ITProgrammer #CareerOpportunity #ITJobs #ProgrammerJobs #MitraMultiPackaging\n\nIda Royani Tamba Recruitment PT. Mitra Multi Packaging",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532289939875483649",
+      "timestamp": "2026-11-28T03:51:05.199Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532288632636760065",
+      "text": "📢 WE ARE HIRING — Sales Admin / Director Assistant\n\nPT Tae Gwang Sewing Machine Indonesia | Purwakarta, West Java · Full-time\n\nWe are looking for a Sales Admin / Director Assistant to support our Branch Director and sales team.\n\n🔧 Key Responsibilities\n• Support the Branch Director and the sales team in daily operations\n• Prepare sales reports and manage administrative documents\n• Coordinate with customers and internal teams\n\n✅ Requirements\n• Fluent English AND Korean (both mandatory)\n• Strong Microsoft Excel skills\n• Organised, detail-oriented, and able to work in a fast-paced environment\n\n📩 How to Apply\nSend your CV to taegwang.indonesia@gmail.com\nSubject: SALES ADMIN – Your Name\nOr WhatsApp: +62 821 1947 990\n\n🔖 #Hiring #JobVacancy #SalesAdmin #KoreanSpeaker #EnglishSpeaker #Purwakarta #WestJava",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532288631621910528",
+      "timestamp": "2026-11-28T03:45:53.176Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532287162386636800",
+      "text": "We're Hiring! \n\nHi LinkedIn Connections. \nPasuruan 100MW solar power project EPC contractor CEEC (China Energy Engineering Corporation) company currently looking for qualified candidates for the following position:\n\n➤ Position: \n- QA/QC Manager\n\n➤ Requirement: \n- English is Mandatory\n- WNI / Indonesia citizenship\n- Experience as QA/QC Manager for PLTS project / similar project\n\n➤ Advantages if you : \n- Experience work in EPC \n- Experience working in PLTS, PLN, PLTA, or similar project before\n- Experience work as same position before\n- Ready to join ASAP\n\n➤ Location: Site Pasuruan\n\n➤ Additional: \n- Interview FULL Online in English\n\nIf you're interested in exploring this opportunity I'd be happy to connect. Please send your updated CV to my email recruitment.site.indonesia@gmail.com with the subject line [Position] – [Your Name] or DM me through LinkedIn.\n\nPlease note that only shortlisted candidates will be contacted. \n\nThank you, and feel free to share this opportunity with your network.\n#Hiring #Recruitment #PLTS #SolarPower #RenewableEnergy #Engineering #Energy #Site #Indonesia #EPC #QAQC #Manager #Pasuruan",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532287161744732160",
+      "timestamp": "2026-11-28T03:40:02.641Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532284114272587777",
+      "text": "🚀 OPEN TO WORK | HSE SUPERVISOR | SAFETY SUPERVISOR | SAFETY ENGINEER\n\nDear Hiring Managers, Recruiters, and Professional Connections,\n\nI am currently open to new career opportunities in the field of Health, Safety & Environment (HSE).\n\nWith more than 5 years of professional experience in Nickel Smelter, Construction, and Oil & Gas industries, I have developed strong competencies in managing workplace safety, supervising contractors, conducting risk assessments, and implementing effective HSE programs.\n\nMy Core Competencies:\n🔹 HSE Management & Supervision\n🔹 Contractor Safety Management\n🔹 Hazard Identification & Risk Assessment (HIRADC)\n🔹 Job Safety Analysis (JSA)\n🔹 Permit to Work (PTW)\n🔹 Working at Height & Confined Space Safety\n🔹 Gas Testing & Emergency Response\n🔹 Safety Inspection & Incident Investigation\n\nProfessional Certifications:\n✔ AK3U – Ministry of Manpower, Republic of Indonesia\n✔ Working at Height Level I & II\n✔ Accredited Gas Tester\n✔ Confined Space Safety\n✔ First Aid Training\n✔ Training of Trainer (ToT) Level 4 – BNSP\n\nI am passionate about building a strong safety culture, preventing workplace accidents, and ensuring compliance with occupational health and safety standards.\n\nI welcome opportunities to contribute my knowledge, skills, and experience to support your organization's HSE objectives.\n\nIf you know of any suitable opportunities, I would greatly appreciate your recommendations or referrals.\n\nThank you for your time and support.\n\nBest Regards,\nAripin Hidayattulloh\n\n#OpenToWork #HSESupervisor #SafetySupervisor #SafetyEngineer #HSEProfessional #K3 #OccupationalHealthAndSafety #NickelSmelter #Construction #OilAndGas #Hiring",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532284113513353216",
+      "timestamp": "2026-11-28T03:27:55.914Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
+        }
+      ]
+    },
+    {
+      "platform": "linkedin",
+      "id": "urn:li:activity:7532287911560400896",
+      "text": "📢 WE ARE HIRING — Sales Executive (Korean Speaker)\n\nPT Tae Gwang Sewing Machine Indonesia | Purwakarta, West Java · Full-time\n\nWe are looking for a Sales Executive fluent in Korean to drive business-to-business sales of industrial sewing machines.\n\n🔧 Key Responsibilities\n• Develop and manage B2B sales of industrial sewing machines to garment factories\n• Build and maintain strong relationships with customers across Indonesia\n• Identify new business opportunities and grow our customer base\n\n✅ Requirements\n• Fluent Korean (mandatory) — spoken and written\n• Experience in business-to-business (B2B) sales, preferably industrial equipment\n• Strong communication and negotiation skills\n• Willing to travel across Indonesia\n\n📩 How to Apply\nSend your CV to taegwang.indonesia@gmail.com\nSubject: SALES EXECUTIVE – Your Name\nOr WhatsApp: +62 821 1947 990\n\n🔖 #Hiring #JobVacancy #SalesJobs #KoreanSpeaker #Purwakarta #WestJava #GarmentIndustry",
+      "author": "linkedin-member",
+      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532287910537179136",
+      "timestamp": "2026-11-28T03:43:01.258Z",
+      "surfaces": [
+        {
+          "type": "linkedin",
+          "value": "hiring indonesia"
         }
       ]
     },
@@ -415,160 +499,6 @@
       "author": "linkedin-member",
       "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274763365244928",
       "timestamp": "2026-11-28T02:50:46.708Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532274629659426816",
-      "text": "🌿 Let's Grow with Us at MagangHub Batch 3B 🌿\n\nNestled at the foothills of Mount Merapi,Griya Persada Convention Hotel & Resort Kaliurang is opening its doors to passionate and motivated individuals ready to learn, grow, and gain real hands-on experience in hospitality.\n\nIn collaboration withKementerian Ketenagakerjaan Republik Indonesia underMagangHub Batch #3B, we’re now opening internship positions for:\n✨ Content Creator \n✨ Social Media Specialist \n✨ Sport & Recreation Attendant\n✨ Engineering\n✨ General Maintenance/Engineering\n\n📲 How to apply:\nVisit https://lnkd.in/gJ27p3NC and search“GRIYA PERSADA MITRA”\n\nGriya Persada Convention Hotel & Resort Kaliurang\n📍 Jl. Boyong 99 Kaliurang Barat, Pakem, Sleman, Yogyakarta 55585\n🌐 https://lnkd.in/gwT3vU52\n\nYour journey in hospitality starts here. Don’t miss this chance! 🚀\n\n#GriyaPersadaKaliurang #GriyaPersada #MagangHub #Kemnaker #Hiring #Internship #GrowAtGriyaPersadaKaliurang",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274628594020352",
-      "timestamp": "2026-11-28T02:50:14.606Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532272898414219264",
-      "text": "🍃 WE ARE HIRING! JOIN MOLLY TEA – LIVING WORLD DENPASAR, BALI! 🍃\n\nHello, Bali! 👋✨\n\nExciting career opportunities are now open atMolly Tea, a new F&B brand under PT Jasmine Journey Indonesia. We are looking for passionate, motivated, and talented individuals to join our team and grow together!\n\n📍 Location: Living World Denpasar, Bali\n\nOPEN POSITIONS:\n1. Store Manager (F&B)\n2. Tea Barista\n\n🚀 HOW TO APPLY?\nInterested in joining Molly Tea? Apply through:\n🔹 Scan the barcode on the recruitment flyer, or\n🔹 Visit the following link: bit.ly/MollyTea_Dps\n\nApplication Guidelines:\n- Applications must be submitted online through karir.kawanlamagroup.com.\n- Create an account and complete your personal profile.\n-Complete the online psychometric test available on the career website.\nGoogle Chrome is recommended for a smoother application process.\n\n📌 IMPORTANT NOTES:\nOnly candidates who meet the qualifications will be considered for further recruitment processes.\nThe entire recruitment process is FREE OF CHARGE.\nDon't miss this opportunity to be part of Molly Tea's journey in Bali! 🌿\n\nTag your friends, family, or connections who might be interested in this opportunity!\n\nLet's grow together and create meaningful experiences with Molly Tea! 💚\n\n#KawanLamaGroup #MollyTea #BaliJobs #StoreManager #TeaBarista",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532272895448858624",
-      "timestamp": "2026-11-28T02:43:21.845Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532270293709471744",
-      "text": "hrdsulton@gmail.com",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532270293176893440",
-      "timestamp": "2026-11-28T02:33:00.835Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532274193065799680",
-      "text": "HIRING: General Counsel \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house General Counsels to help train and evaluate advanced AI systems focused on legal contract review, negotiation, and risk assessment.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to complex legal contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop objective evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams to improve legal AI systems.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing in your jurisdiction.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and ability to review and negotiate complex agreements.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/d4v9Zpba\n\n#GeneralCounsel #GeneralCounselJobs #LegalJobs #InHouseCounsel #CorporateLaw #TechnologyLaw #ContractNegotiation #ContractDrafting #LegalTech #AITraining #RemoteJobs #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532274192201805824",
-      "timestamp": "2026-11-28T02:48:30.514Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532269534448365571",
-      "text": "bit.ly/TalentPoolFirman",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532269533760364544",
-      "timestamp": "2026-11-28T02:29:59.813Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532263269407916034",
-      "text": "#hiring Internal Sales\n\nApply here:https://lnkd.in/gCkS8NNA\n\nDrive sales, support customers & grow your career with a leading industrial supplier. Apply now!$ Market aligned remuneration + Bonuses + Annual salary reviews!Unlock your potential with free training and clear career growth pathways!Exclusive employee benefits retail discounts + uniform supplied and more!As an Internal Sales team member, you are the essential connection between our customers and our products.Your role ensures exceptional service, timely order processing, and strong customer relationships that keep our business thriving and our customers satisfied.What We Offer You:Market aligned remuneration with annual salary reviews: Your salary grows with your skills and performance.Career",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532263267566505986",
-      "timestamp": "2026-11-28T02:05:06.111Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262165584523264",
-      "text": "hrd@inspeksirumah.id",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7531261209053040641",
-      "timestamp": "2026-11-28T02:00:42.939Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532273605729239040",
-      "text": "HIRING: Transactional Attorney \n\nPay: $75–$90/hour\nType: Part-time Contractor\nLocation: Remote\nMinimum Commitment: 5 hours/week\n\nmicro1 is seeking experienced in-house transactional attorneys to help train and evaluate advanced AI systems focused on legal contract review and negotiation.\n\nKey Responsibilities:\nPerform simulated contract negotiations and redlining exercises.\nReview AI-generated responses to contract scenarios.\nProvide expert feedback to improve legal accuracy and risk identification.\nDevelop evaluation frameworks and grading criteria.\nCollaborate with AI research and product teams.\n\nRequirements:\nJ.D. or equivalent legal qualification.\nActive law license or admission in good standing.\nAt least 3 years of in-house legal experience focused on technology transactions.\nExperience negotiating MSAs, NDAs, and DPAs.\nStrong commercial contract law knowledge.\nProfessional English proficiency and experience reviewing complex legal agreements.\n\nPreferred: Experience in AI, legal technology, or corporate law, including M&A or private equity fund formation.\nFlexible schedule with a minimum commitment of 5 hours per week.\n\nApply here: https://lnkd.in/dSQQCDYV\n\n#TransactionalAttorney #LegalJobs #AttorneyJobs #CorporateLaw #TechnologyLaw #ContractLaw #LegalTech #ArtificialIntelligence #AITraining #RemoteJobs #LegalProfessionals #Albania #Andorra #Austria #Belarus #Belgium #BosniaAndHerzegovina #Bulgaria #Croatia #Cyprus #CzechRepublic #Denmark #Estonia #Finland #France #Germany #Greece #Hungary #Iceland #Ireland #Italy #Kosovo #Latvia #Liechtenstein #Lithuania #Luxembourg #Malta #Moldova #Monaco #Montenegro #Netherlands #NorthMacedonia #Norway #Poland #Portugal #Romania #Russia #SanMarino #Serbia #Slovakia #Slovenia #Spain #Sweden #Switzerland #Turkey #Ukraine #UnitedKingdom #VaticanCity #Argentina #Belize #Bolivia #Brazil #Chile #Colombia #CostaRica #Cuba #Dominica #DominicanRepublic #Ecuador #ElSalvador #Grenada #Guatemala #Guyana #Haiti #Honduras #Jamaica #Mexico #Nicaragua #Panama #Paraguay #Peru #SaintKittsAndNevis #SaintLucia #SaintVincentAndTheGrenadines #Suriname #TrinidadAndTobago #Uruguay #Venezuela #AntiguaAndBarbuda #Bahamas #Barbados #India #Japan #SouthKorea #Singapore #Malaysia #Indonesia #Philippines #Thailand #Vietnam #Bangladesh #Nepal #SriLanka #Taiwan #HongKong #Kazakhstan #Uzbekistan #Armenia #Azerbaijan #Georgia #UnitedStates #Canada",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532273604965691392",
-      "timestamp": "2026-11-28T02:46:10.482Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262297818411010",
-      "text": "Lowongan Kerja PT Yamaha Motor Parts Manufacturing Indonesia\n\nInventory Control Staff\n\nRequirement\n- Bachelor/Diploma degree in any Engineering major, Management Accounting, Informatics, or other relevant majors\n- Graduated from reputable university with GPA min 3.00\n- Hard worker, able to multi tasks and prioritize tasks with strict deadlines\n- Good analytical and problem solving skills\n- Fluent in English (verbal and written).\n- Willing to be placed in KIIC, Karawang, Jawa Barat.\n\nInfo lengkap dan cara melamarnya klik link dibawah ini\nhttps://lnkd.in/gVx9eARm\n\nJoin telegram : t.me/lokernusantara_com\n\n#lowongankerja #lokernusantara #lokerterbaru #infoloker #lowongan #jobs #karir #infokarir #hiring #wearehiring #loker",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532243868021473281",
-      "timestamp": "2026-11-28T02:01:14.466Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262308052656128",
-      "text": "We're hiring! 🌱\n\nAgros Indonesia is looking for an Operations Support to join our team and support our operational activities.\n\nIf you're organized, proactive, detail-oriented, and enjoy making sure things run smoothly behind the scenes, we'd love to hear from you.\n\nInterested? Check out the details below and send your CV to hr.indonesia@agrosglobal.com, or tag someone who might be a good fit!\n\n#Hiring #CareerOpportunity #Operations #Agros #JoinOurTeam",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:share:7532071514716954624",
-      "timestamp": "2026-11-28T02:01:16.906Z",
-      "surfaces": [
-        {
-          "type": "linkedin",
-          "value": "hiring indonesia"
-        }
-      ]
-    },
-    {
-      "platform": "linkedin",
-      "id": "urn:li:activity:7532262158139723776",
-      "text": "PS Centre | Business Needs Board\nReal Business Challenges. Connecting the Right Expertise.\n \nEvery business challenge presents an opportunity for the right expertise and connections to make a difference.\n\nAcross our PS Centres in Singapore, Jakarta, Ho Chi Minh City, Shanghai and Nanjing, businesses are turning to the PS Centre network for professional expertise, business connections and support in navigating challenges and pursuing growth opportunities.\n \nThrough our weekly Business Needs Board, we spotlight selected, anonymised business requests received across our network and invite professional services firms and potential partners to explore opportunities to help.\n \n📌 THIS WEEK'S BUSINESS NEEDS\n \n01 | Market Expansion\n📍 Singapore | Accounting Firm\n\nFollowing its participation in a promotional study mission to China organised by the PS Centre Alliance, a Singapore-based accounting firm is exploring opportunities to expand into the Chinese market.\n\nExpertise Sought: HR Advisory / Employer of Record (EOR)\nSeeking guidance on EOR services to support hiring in China before establishing a local entity, enabling faster market entry and reducing administrative complexities.\n \n02 | Market Expansion\n 📍 Vietnam | AI Technology Firm\n\nA Vietnam-based AI technology firm is looking to expand its customer base in Indonesia, having already secured its first client in Jakarta. Over the next five years, the firm aims to focus on developing AI applications for the audit profession.\n\nSupport Sought: Event Collaboration & Business Connections\nSeeking opportunities to organise a webinar or host an in-person session at the PS Centre in Jakarta to showcase its AI solutions, engage prospective clients and build connections with local businesses and audit practitioners.\n \n03 | Valuation Advisory\n 📍 Singapore | Manufacturing Company\n\nA Singapore-based manufacturing company with over 40 years of operations is exploring a potential business sale to an identified buyer with whom it has maintained a 20-year business relationship.\nThe proposed acquisition would offer the buyer an opportunity to enter the ASEAN market.\n\nExpertise Sought: Business Valuation Advisory\nSeeking a valuation firm to assess the company's business and financial performance, determine an appropriate valuation approach and support the proposed transaction.\n \n🤝 CAN YOUR ORGANISATION SUPPORT?\nIf your organisation has relevant expertise, industry connections or collaboration opportunities, we'd love to hear from you!\n \n📩 Express your interest: info@pscentre.com.sg\nPlease indicate the relevant request number (01, 02 or 03), your firm's expertise and how you may be able to help.\n \nHave a business challenge of your own?\nJoin our monthly Business Growth Clinic, held on the last Thursday of each month across our PS Centre network in 2027. Connect with professional services experts and explore solutions to your business challenges.\n\n🔗 Discover more about PS Centre: Professional Service (PS) Centre",
-      "author": "linkedin-member",
-      "permalink": "https://www.linkedin.com/feed/update/urn:li:ugcPost:7532017689633071104",
-      "timestamp": "2026-11-28T02:00:41.164Z",
       "surfaces": [
         {
           "type": "linkedin",
